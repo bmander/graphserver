@@ -1,0 +1,20 @@
+Prerequisites:
+
+Ruby 1.8.5
+libiberty
+
+=================================================================================
+Install:
+
+ruby install.rb
+
+=================================================================================
+Quickstart:
+
+Go to the instance directory and read the comments in gserver.rb. They guide you
+through implementing your own graphserver. After you've done that, just run
+
+ruby gserver.rb
+
+and access the graphserver as a webserver. A sample webserver client has been 
+provided for your amusement.
