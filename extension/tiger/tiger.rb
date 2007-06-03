@@ -1,7 +1,14 @@
 module TigerLine
-  RT1_format = "A1A4A10A1A1A2A30A4A2A3A11A11A11A11A1A1A1A1A5A5A5A5A1A1A1A1A2A2A3A3A5A5A5A5A5A5A6A6A4A4A10A9A10A9"
-  RT2_format = "A1A4A10A3A10A9A10A9A10A9A10A9A10A9A10A9A10A9A10A9A10A9A10A9"
-  RTI_format = "A1A4A5A10A10A10A5A10A5A10A1017A10A10A10"
+  #Complete Chain Basic Data Record
+  RT1_format = [[:rs, "A1"], [:version, "A4"], [:tlid, "A10"], [:side1, "A1"], [:source, "A1"], [:fedirp, "A2"], [:fename, "A30"], [:fetype, "A4"], [:fedirs, "A2"], [:cfcc, "A3"], [:fraddl, "A11"], [:toaddl, "A11"], [:fraddr, "A11"], [:toaddr, "A11"], [:friaddl, "A1"], [:toiaddl, "A1"], [:friaddr, "A1"], [:toiaddr, "A1"], [:zipl, "A5"], [:zipr, "A5"], [:aianhhfpl, "A5"], [:aianhhfpr, "A5"], [:aihhtlil, "A1"], [:aihhtlir, "A1"], [:census1, "A1"], [:census2, "A1"], [:statel, "A2"], [:stater, "A2"], [:countyl, "A3"], [:countyr, "A3"], [:cousubl, "A5"], [:cousubr, "A5"], [:submcdl, "A5"], [:submcdr, "A5"], [:placel, "A5"], [:placer, "A5"], [:tractl, "A6"], [:tractr, "A6"], [:blockl, "A4"], [:blockr, "A4"], [:frlong, "A10"], [:frlat, "A9"], [:tolong, "A10"], [:tolat, "A9"]]
+  #Complete Chain Shape Coordinates
+  RT2_format = [[:rt, "A1"], [:version, "A4"], [:tlid, "A10"], [:rtsq, "A3"], [:long1, "A10"], [:lat1, "A9"], [:long2, "A10"], [:lat2, "A9"], [:long3, "A10"], [:lat3, "A9"], [:long4, "A10"], [:lat4, "A9"], [:long5, "A10"], [:lat5, "A9"], [:long6, "A10"], [:lat6, "A9"], [:long7, "A10"], [:lat7, "A9"], [:long8, "A10"], [:lat8, "A9"], [:long9, "A10"], [:lat9, "A9"], [:long10, "A10"], [:lat10, "A9"]]
+  #Index to Alternate Feature Identifiers
+  RT4_format = [[:rt, "A1"], [:version, "A4"], [:tlid, "A10"], [:rtsq, "A3"], [:feat1, "A8"], [:feat2, "A8"], [:feat3, "A8"], [:feat4, "A8"], [:feat5, "A8"]]
+  #Additional Address Range and ZIP Code Data
+  RT6_format = [[:rt, "A1"], [:version, "A4"], [:tlid, "A10"], [:rtsq, "A3"], [:fraddl, "A11"], [:toaddl, "A11"], [:fraddr, "A11"], [:toaddr, "A11"], [:friaddl, "A1"], [:toiaddl, "A1"], [:friaddr, "A1"], [:toiaddr, "A1"], [:zipl, "A5"], [:zipr, "A5"]]
+  #Link Between Complete Chains And (Link Between) Polygons
+  RTI_format = [[:rt, "A1"], [:version, "A4"], [:file, "A5"], [:tlid, "A10"], [:tzids, "A10"], [:tzide, "A10"], [:cenidl, "A5"], [:polyidl, "A10"], [:cenidr, "A5"], [:polyidr, "A10"], [:rsi4, "A10"], [:ftseg, "A17"], [:rsi1, "A10"], [:rsi2, "A10"], [:rsi3, "A10"]]
 
   class TigerFile
     attr_reader :data
