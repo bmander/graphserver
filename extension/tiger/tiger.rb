@@ -1,124 +1,201 @@
 module TigerLine
   #Complete Chain Basic Data Record
-  RT1_format = [[:rs, "A1"], [:version, "A4"], [:tlid, "A10"], [:side1, "A1"], [:source, "A1"], [:fedirp, "A2"], [:fename, "A30"], [:fetype, "A4"], [:fedirs, "A2"], [:cfcc, "A3"], [:fraddl, "A11"], [:toaddl, "A11"], [:fraddr, "A11"], [:toaddr, "A11"], [:friaddl, "A1"], [:toiaddl, "A1"], [:friaddr, "A1"], [:toiaddr, "A1"], [:zipl, "A5"], [:zipr, "A5"], [:aianhhfpl, "A5"], [:aianhhfpr, "A5"], [:aihhtlil, "A1"], [:aihhtlir, "A1"], [:census1, "A1"], [:census2, "A1"], [:statel, "A2"], [:stater, "A2"], [:countyl, "A3"], [:countyr, "A3"], [:cousubl, "A5"], [:cousubr, "A5"], [:submcdl, "A5"], [:submcdr, "A5"], [:placel, "A5"], [:placer, "A5"], [:tractl, "A6"], [:tractr, "A6"], [:blockl, "A4"], [:blockr, "A4"], [:frlong, "A10"], [:frlat, "A9"], [:tolong, "A10"], [:tolat, "A9"]]
+  RT1_fields = [[:rs, 1], [:version, 4], [:tlid, 10], [:side1, 1], [:source, 1], [:fedirp, 2], [:fename, 30], [:fetype, 4], [:fedirs, 2], [:cfcc, 3], [:fraddl, 11], [:toaddl, 11], [:fraddr, 11], [:toaddr, 11], [:friaddl, 1], [:toiaddl, 1], [:friaddr, 1], [:toiaddr, 1], [:zipl, 5], [:zipr, 5], [:aianhhfpl, 5], [:aianhhfpr, 5], [:aihhtlil, 1], [:aihhtlir, 1], [:census1, 1], [:census2, 1], [:statel, 2], [:stater, 2], [:countyl, 3], [:countyr, 3], [:cousubl, 5], [:cousubr, 5], [:submcdl, 5], [:submcdr, 5], [:placel, 5], [:placer, 5], [:tractl, 6], [:tractr, 6], [:blockl, 4], [:blockr, 4], [:frlong, 10], [:frlat, 9], [:tolong, 10], [:tolat, 9]]
   #Complete Chain Shape Coordinates
-  RT2_format = [[:rt, "A1"], [:version, "A4"], [:tlid, "A10"], [:rtsq, "A3"], [:long1, "A10"], [:lat1, "A9"], [:long2, "A10"], [:lat2, "A9"], [:long3, "A10"], [:lat3, "A9"], [:long4, "A10"], [:lat4, "A9"], [:long5, "A10"], [:lat5, "A9"], [:long6, "A10"], [:lat6, "A9"], [:long7, "A10"], [:lat7, "A9"], [:long8, "A10"], [:lat8, "A9"], [:long9, "A10"], [:lat9, "A9"], [:long10, "A10"], [:lat10, "A9"]]
+  RT2_fields = [[:rt, 1], [:version, 4], [:tlid, 10], [:rtsq, 3], [:long1, 10], [:lat1, 9], [:long2, 10], [:lat2, 9], [:long3, 10], [:lat3, 9], [:long4, 10], [:lat4, 9], [:long5, 10], [:lat5, 9], [:long6, 10], [:lat6, 9], [:long7, 10], [:lat7, 9], [:long8, 10], [:lat8, 9], [:long9, 10], [:lat9, 9], [:long10, 10], [:lat10, 9]]
   #Index to Alternate Feature Identifiers
-  RT4_format = [[:rt, "A1"], [:version, "A4"], [:tlid, "A10"], [:rtsq, "A3"], [:feat1, "A8"], [:feat2, "A8"], [:feat3, "A8"], [:feat4, "A8"], [:feat5, "A8"]]
+  RT4_fields = [[:rt, 1], [:version, 4], [:tlid, 10], [:rtsq, 3], [:feat1, 8], [:feat2, 8], [:feat3, 8], [:feat4, 8], [:feat5, 8]]
+  #Complete Chain Feature Identifiers
+  RT5_fields = [[:rt, 1], [:version, 4], [:file, 5], [:feat, 8], [:fedirp, 2], [:fename, 30], [:fetype, 4], [:fedirs, 2]]
   #Additional Address Range and ZIP Code Data
-  RT6_format = [[:rt, "A1"], [:version, "A4"], [:tlid, "A10"], [:rtsq, "A3"], [:fraddl, "A11"], [:toaddl, "A11"], [:fraddr, "A11"], [:toaddr, "A11"], [:friaddl, "A1"], [:toiaddl, "A1"], [:friaddr, "A1"], [:toiaddr, "A1"], [:zipl, "A5"], [:zipr, "A5"]]
+  RT6_fields = [[:rt, 1], [:version, 4], [:tlid, 10], [:rtsq, 3], [:fraddl, 11], [:toaddl, 11], [:fraddr, 11], [:toaddr, 11], [:friaddl, 1], [:toiaddl, 1], [:friaddr, 1], [:toiaddr, 1], [:zipl, 5], [:zipr, 5]]
   #Link Between Complete Chains And (Link Between) Polygons
-  RTI_format = [[:rt, "A1"], [:version, "A4"], [:file, "A5"], [:tlid, "A10"], [:tzids, "A10"], [:tzide, "A10"], [:cenidl, "A5"], [:polyidl, "A10"], [:cenidr, "A5"], [:polyidr, "A10"], [:rsi4, "A10"], [:ftseg, "A17"], [:rsi1, "A10"], [:rsi2, "A10"], [:rsi3, "A10"]]
+  RTI_fields = [[:rt, 1], [:version, 4], [:file, 5], [:tlid, 10], [:tzids, 10], [:tzide, 10], [:cenidl, 5], [:polyidl, 10], [:cenidr, 5], [:polyidr, 10], [:rsi4, 10], [:ftseg, 17], [:rsi1, 10], [:rsi2, 10], [:rsi3, 10]]
 
-  class TigerFile
-    attr_reader :data
+  #==========Number Parsing Helper Methods===========
 
-    def initialize filename
-      @data = nil
-      @filename = filename
-      @format = "A*"
+  LONG_DEC_POS = 4
+  LAT_DEC_POS = 3
+
+  #decimal numbers are stored in TIGER with an implied accuracy
+  def parse_number str, point_pos
+    Float( str.insert(point_pos, ".") )
+  end
+
+  def parse_long str
+    parse_number( str, LONG_DEC_POS )
+  end
+
+  def parse_lat str
+    parse_number( str, LAT_DEC_POS )
+  end
+
+  #A Record is an array of values and a hash of field names to array indices, and is used like a Hash.
+  #Since the ordinal hash can be shared by reference by a large number of arrays, it is more lightweight
+  #than a large number of hashes with identical sets of keys.
+  class Record
+    #this, and the self.class.etc nonsense is a trick to make non-inheritable class variables
+    class <<self; attr_accessor :format; attr_accessor :ordinals end
+    @format = ""    #passed to string.unpack to split up raw_data
+    @ordinals = {}  #hash of {fieldname => ordinal}
+
+    def initialize raw_data  #a string of fixed-length fields
+      @data = raw_data.unpack( self.class.format ).map do |field| field.strip end
     end
 
-    def read
-      @data = []
+    def [] name
+      @data[ self.class.ordinals[ name ] ]
+    end
+
+    #This class is a pretend hash. This method returns a real hash, but it's relatively expensive
+    def to_hash
+      self.class.ordinals.inject({}) do |hash, ordinal| hash[ordinal.first] = @data[ordinal.last] end
+    end
+
+    def inspect
+      to_hash.inspect
+    end
+
+  private
+    def self.fields= fields
+      @format = fields.map do |field| "A"+field.last end.join
+      @ordinals = fields.inject({}) do |memo, field| memo[field.first] = memo.size end
+    end
+  end
+
+  class RT1 < Record
+    fields = RT1_fields
+
+    attr_accessor :rt2_records, :rt4_records, :rt5_records, :rti_record
+
+    def initialize raw_data
+      super raw_data
+
+      @rt2_records = []
+      @rt4_records = []
+      @rt5_records = []
+    end
+  end
+
+  class RT2 < Record
+    fields = RT2_fields
+  end
+
+  class RT4 < Record
+    fields = RT4_fields
+
+    attr_accessor :rt5_records
+
+    def initialize raw_data
+      super raw_data
+
+      @rt5_records = []
+    end
+  end
+
+  class RT5 < Record
+    fields = RT5_fields
+  end
+
+  class RT6 < Record
+    fields = RT6_fields
+  end
+
+  class RTI < Record
+    fields = RTI_fields
+  end
+
+  class File
+    def self.read filename, record_class, key_field=nil
+      if key_field then
+        @records = {}
+      else
+        @records = []
+      end
  
-      fp_size = File.size @filename
-      fp = File.new @filename, "r"
+      fp_size = File.size filename
+      fp = File.new filename, "r"
       i=0
       fp.each_line do |line|
         if i%5000 == 0 then print sprintf("%.1f", (Float(fp.pos)/fp_size)*100 ) + "%\n" end
 
-        @data << line.unpack(@format)
+        record = record_class.new( line )
+        if key_field then
+          @records[ record[ key_field ] ] = record
+        else
+          @records << record
+        end
 
         i += 1
       end
       fp.close
-    end
 
-    def each_record
-      unless @data then
-        return nil
-      end
-
-      @data.each do |record|
-        yield record
-      end
+      @records
     end
   end
 
-  class RT1File < TigerFile
-    def initialize filename
-      super filename
-      @format = RT1_format
-    end
-
-    def read
-      super
-      indexed_data = {}
-      @data.each do |data_line|
-        tlid = data_line[2].strip
-        indexed_data[ tlid ] = data_line
+  class Feature
+    attr_accessor :tlid, :tzids, :tzide, :addess_ranges, :names, :cfcc, :points
+ 
+    def initialize rt1_record
+      #tlid
+      @tlid = rt1_record[:tlid]
+      #tzids, tzide
+      @tzids = rt1_record.rti_record[:tzids]
+      @tzide = rt1_record.rti_record[:tzide]
+      #address_ranges
+      @address_ranges = []
+      @address_ranges << {:fraddl => rt1_record[:fraddl], 
+                          :toaddl => rt1_record[:toaddl], 
+                          :fraddr => rt1_record[:fraddr], 
+                          :toaddr => rt1_record[:toaddr]}
+      rt1_records.rt6_records.each do |rt6_record|
+        @address_ranges << {:fraddl => rt6_record[:fraddl], 
+                            :toaddl => rt6_record[:toaddl], 
+                            :fraddr => rt6_record[:fraddr], 
+                            :toaddr => rt6_record[:toaddr]}
       end
-      @data = indexed_data
-    end
-  end
-
-  class RT2File < TigerFile
-    def initialize filename
-      super filename
-      @format = RT2_format
-    end
-
-    def read
-      super
-      indexed_data = {}
-      @data.each do |data_line|
-        tlid = data_line[2].strip
-        indexed_data[ tlid ] ||= []
-        10.times do |i|
-          long = Float( data_line[4+2*i].insert(4, ".") )
-          lat  = Float( data_line[4+2*i+1].insert(3, ".") )
+      #names
+      @names = []
+      @names << {:fedirp => rt1_record[:fedirp], 
+                 :fename => rt1_record[:fename], 
+                 :fetype => rt1_record[:fetype], 
+                 :fedirs => rt1_record[:fedirs]}
+      rt1_records.rt4_records.each do |rt4_record|
+        rt4_record.rt5_records.each do |rt5_record|
+          @names << {:fedirp => rt5_record[:fedirp], 
+                     :fename => rt5_record[:fename], 
+                     :fetype => rt5_record[:fetype], 
+                     :fedirs => rt5_record[:fedirs]}
+        end
+      end
+      #cfcc
+      @cfcc = rt1_record[:cfcc]
+      #points
+      @points = []
+      @points << [ parse_long( rt1_record[:frlong] ), parse_lat( rt1_record[:frlat] ) ]
+      rt1_record.rt2_records.sort! do |a,b| a[:rtsq] <=> b[:rtsq] end
+      rt1_record.rt2_records.each do |rt2_record|
+        (1..10).each do |i|
+          long = parse_long( rt2_record[ ("long"+i).intern ] )
+          lat  = parse_lat( rt2_record[ ("lat"+i).intern ] )
           if lat!=0 and long!=0 then
-            indexed_data[tlid] << [long, lat]
+            @points << [long, lat]
           end
         end
       end
-      @data = indexed_data
+      @points << [ parse_long( rt1_record[:tolong] ), parse_lat( rt1_record[:tolat] ) ]
     end
-  end 
-
-  class RTIFile < TigerFile
-    def initialize filename
-      super filename
-      @format = RTI_format
-    end
-
-    def read
-      super
-
-      indexed_data = {}
-      @data.each do |data_line|
-        tlid = data_line[3].strip
-        indexed_data[ tlid ] = data_line
-      end
-      @data = indexed_data
-    end
-  end
-
-  class TigerFeature
-    attr_accessor :tlid, :fedirp, :fename, :fetype, :fedirs, :cfcc, :tzids, :tzide, :points
 
     def line_wkt
       ret = "LINESTRING("
-      points.each do |long, lat|
-        ret << "#{long} #{lat}, "
-      end
-      ret[-2..-1]=')'
+      ret << points.map do |long, lat| "#{long} #{lat}" end.join(",")
+      ret << ")"
       return ret
     end
   end
 
-  class TigerLine
+  class Dataset
     attr_reader :filename_base
 
     def initialize directory
@@ -130,50 +207,44 @@ module TigerLine
       return @filename_base
     end
 
-    def read
+    def read	
       @features = {}
 
-      rt1_file = RT1File.new( @filename_base + ".RT1" )
-      rt2_file = RT2File.new( @filename_base + ".RT2" )
-      rti_file = RTIFile.new( @filename_base + ".RTI" )
+      #read record 1, 2, 4, 5, 6, I into arrays, or hashes if an key field name is provided
+      rt1_records = Tiger::File.read( @filename_base + ".RT1", RT1, :tlid )
+      rt2_records = Tiger::File.read( @filename_base + ".RT2", RT2 )
+      rt4_records = Tiger::File.read( @filename_base + ".RT4", RT4 )
+      rt5_records = Tiger::File.read( @filename_base + ".RT5", RT5, :feat )
+      rt6_records = Tiger::File.read( @filename_base + ".RT6", RT6 )
+      rti_records = Tiger::File.read( @filename_base + ".RTI", RTI )
 
-      #get the tlid for each feature
-      print "Reading Complete Chain Basic Data Record...\n"
-      rt1_file.read
-      rt1_file.each_record do |tlid, record|
-        start_point = [ Float( record[40].insert(4, ".") ), Float( record[41].insert(3, ".") ) ]
-        end_point = [ Float( record[42].insert(4, ".") ), Float( record[43].insert(3, ".") ) ]
-
-        feature = TigerFeature.new
-        feature.tlid = tlid
-        feature.fedirp = record[5].strip
-        feature.fename = record[6].strip
-        feature.fetype = record[7].strip
-        feature.fedirs = record[8].strip
-        feature.cfcc = record[9].strip
-        feature.points = [start_point, end_point]
-        @features[ tlid ] = feature
+      #associate RT2s with their RT1
+      rt2_records.each do |record|
+        rt1_records[ record[:tlid] ].rt2_records << record
       end
 
-      #get the feature geometry
-      print "Reading Shape Coordinates...\n"
-      rt2_file.read
-      rt2_file.each_record do |record|
-        feature = @features[ record[0] ]
-        unless feature then next end
-        if record[1] then
-          feature.points = [feature.points.first] + record[1] + [feature.points.last]
-        end
+      #associate RT4s with their RT1
+      rt4_records.each do |record|
+        rt1_records[ record[:tlid] ].rt4_records << record
       end
 
-      #get feature endpoints
-      print "Reading Endpoint Nodes...\n"
-      rti_file.read
-      rti_file.each_record do |record|
-        feature = @features[ record[0] ]
-        unless feature then next end
-        feature.tzids = record[1][4].strip
-        feature.tzide = record[1][5].strip
+      #associate RT6s with their RT5
+      rt6_records.each do |record|
+        rt5_records[ record[:feat] ].rt6_records << record
+      end
+
+      #associate RT5s with their RT1
+      rt5_records.each do |record|
+        rt1_records[ record[:tlid] ].rt5_records << record
+      end
+
+      #associate RTI with its RT1
+      rti_records.each do |record|
+        rt1_records[ record[:tlid] ].rti_record = record
+      end
+
+      rt1_records.each do |record|
+        @features[ record[:tlid] ] << Feature.new( record )
       end
     end
 
