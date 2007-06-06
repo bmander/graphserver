@@ -14,20 +14,22 @@ module TigerLine
 
   #==========Number Parsing Helper Methods===========
 
-  LONG_DEC_POS = 4
-  LAT_DEC_POS = 3
+  class Helper
+    LONG_DEC_POS = 4
+    LAT_DEC_POS = 3
 
-  #decimal numbers are stored in TIGER with an implied accuracy
-  def parse_number str, point_pos
-    Float( str.insert(point_pos, ".") )
-  end
+    #decimal numbers are stored in TIGER with an implied accuracy
+    def self.parse_number str, point_pos
+      str.insert(point_pos, ".").to_f
+    end
 
-  def parse_long str
-    parse_number( str, LONG_DEC_POS )
-  end
+    def self.parse_long str
+      self.parse_number( str, LONG_DEC_POS )
+    end
 
-  def parse_lat str
-    parse_number( str, LAT_DEC_POS )
+    def self.parse_lat str
+      self.parse_number( str, LAT_DEC_POS )
+    end
   end
 
   #A Record is an array of values and a hash of field names to array indices, and is used like a Hash.
@@ -35,7 +37,7 @@ module TigerLine
   #than a large number of hashes with identical sets of keys.
   class Record
     #this, and the self.class.etc nonsense is a trick to make non-inheritable class variables
-    class <<self; attr_accessor :format; attr_accessor :ordinals end
+    class <<self; attr_accessor :format, :ordinals end
     @format = ""    #passed to string.unpack to split up raw_data
     @ordinals = {}  #hash of {fieldname => ordinal}
 
@@ -49,7 +51,11 @@ module TigerLine
 
     #This class is a pretend hash. This method returns a real hash, but it's relatively expensive
     def to_hash
-      self.class.ordinals.inject({}) do |hash, ordinal| hash[ordinal.first] = @data[ordinal.last] end
+      ret = {}
+      self.class.ordinals.each do |key, value|
+        ret[key] = @data[value]
+      end
+      ret
     end
 
     def inspect
@@ -57,32 +63,37 @@ module TigerLine
     end
 
   private
-    def self.fields= fields
-      @format = fields.map do |field| "A"+field.last end.join
-      @ordinals = fields.inject({}) do |memo, field| memo[field.first] = memo.size end
+    class <<self
+      def fields= fields
+        @format = fields.map do |field| "A"+field.last.to_s end.join
+        @ordinals = {}
+        fields.each_with_index do |field, i|
+          @ordinals[field.first] = i
+        end
+      end
     end
   end
 
   class RT1 < Record
-    fields = RT1_fields
+    self.fields= RT1_fields
 
-    attr_accessor :rt2_records, :rt4_records, :rt5_records, :rti_record
+    attr_accessor :rt2_records, :rt4_records, :rt6_records, :rti_record
 
     def initialize raw_data
       super raw_data
 
       @rt2_records = []
       @rt4_records = []
-      @rt5_records = []
+      @rt6_records = []
     end
   end
 
   class RT2 < Record
-    fields = RT2_fields
+    self.fields= RT2_fields
   end
 
   class RT4 < Record
-    fields = RT4_fields
+    self.fields= RT4_fields
 
     attr_accessor :rt5_records
 
@@ -94,19 +105,20 @@ module TigerLine
   end
 
   class RT5 < Record
-    fields = RT5_fields
+    self.fields= RT5_fields
   end
 
   class RT6 < Record
-    fields = RT6_fields
+    self.fields= RT6_fields
   end
 
   class RTI < Record
-    fields = RTI_fields
+    self.fields= RTI_fields
   end
 
-  class File
+  class RecordFile
     def self.read filename, record_class, key_field=nil
+      print "Loading and parsing record type #{record_class.inspect}\n"
       if key_field then
         @records = {}
       else
@@ -148,43 +160,43 @@ module TigerLine
       @address_ranges << {:fraddl => rt1_record[:fraddl], 
                           :toaddl => rt1_record[:toaddl], 
                           :fraddr => rt1_record[:fraddr], 
-                          :toaddr => rt1_record[:toaddr]}
-      rt1_records.rt6_records.each do |rt6_record|
+                          :toaddr => rt1_record[:toaddr]} if not rt1_record[:fraddl].empty?
+      rt1_record.rt6_records.each do |rt6_record|
         @address_ranges << {:fraddl => rt6_record[:fraddl], 
                             :toaddl => rt6_record[:toaddl], 
                             :fraddr => rt6_record[:fraddr], 
-                            :toaddr => rt6_record[:toaddr]}
+                            :toaddr => rt6_record[:toaddr]} if not rt6_record[:fraddl].empty?
       end
       #names
       @names = []
       @names << {:fedirp => rt1_record[:fedirp], 
                  :fename => rt1_record[:fename], 
                  :fetype => rt1_record[:fetype], 
-                 :fedirs => rt1_record[:fedirs]}
-      rt1_records.rt4_records.each do |rt4_record|
+                 :fedirs => rt1_record[:fedirs]} if not rt1_record[:fename].empty?
+      rt1_record.rt4_records.each do |rt4_record|
         rt4_record.rt5_records.each do |rt5_record|
           @names << {:fedirp => rt5_record[:fedirp], 
                      :fename => rt5_record[:fename], 
                      :fetype => rt5_record[:fetype], 
-                     :fedirs => rt5_record[:fedirs]}
+                     :fedirs => rt5_record[:fedirs]} if not rt5_record[:fename].empty?
         end
       end
       #cfcc
       @cfcc = rt1_record[:cfcc]
       #points
       @points = []
-      @points << [ parse_long( rt1_record[:frlong] ), parse_lat( rt1_record[:frlat] ) ]
+      @points << [ Helper.parse_long( rt1_record[:frlong] ), Helper.parse_lat( rt1_record[:frlat] ) ]
       rt1_record.rt2_records.sort! do |a,b| a[:rtsq] <=> b[:rtsq] end
       rt1_record.rt2_records.each do |rt2_record|
         (1..10).each do |i|
-          long = parse_long( rt2_record[ ("long"+i).intern ] )
-          lat  = parse_lat( rt2_record[ ("lat"+i).intern ] )
+          long = Helper.parse_long( rt2_record[ ("long#{i}").intern ] )
+          lat  = Helper.parse_lat( rt2_record[ ("lat#{i}").intern ] )
           if lat!=0 and long!=0 then
             @points << [long, lat]
           end
         end
       end
-      @points << [ parse_long( rt1_record[:tolong] ), parse_lat( rt1_record[:tolat] ) ]
+      @points << [ Helper.parse_long( rt1_record[:tolong] ), Helper.parse_lat( rt1_record[:tolat] ) ]
     end
 
     def line_wkt
@@ -207,45 +219,63 @@ module TigerLine
       return @filename_base
     end
 
-    def read	
+    def read
       @features = {}
 
       #read record 1, 2, 4, 5, 6, I into arrays, or hashes if an key field name is provided
-      rt1_records = Tiger::File.read( @filename_base + ".RT1", RT1, :tlid )
-      rt2_records = Tiger::File.read( @filename_base + ".RT2", RT2 )
-      rt4_records = Tiger::File.read( @filename_base + ".RT4", RT4 )
-      rt5_records = Tiger::File.read( @filename_base + ".RT5", RT5, :feat )
-      rt6_records = Tiger::File.read( @filename_base + ".RT6", RT6 )
-      rti_records = Tiger::File.read( @filename_base + ".RTI", RTI )
+      rt1_records = RecordFile.read( @filename_base + ".RT1", RT1, :tlid )
+      rt2_records = RecordFile.read( @filename_base + ".RT2", RT2 )
+      rt4_records = RecordFile.read( @filename_base + ".RT4", RT4 )
+      rt5_records = RecordFile.read( @filename_base + ".RT5", RT5, :feat )
+      rt6_records = RecordFile.read( @filename_base + ".RT6", RT6 )
+      rti_records = RecordFile.read( @filename_base + ".RTI", RTI )
 
+      print "Joining tables\n"
+      print "RT2 to RT1\n"
       #associate RT2s with their RT1
       rt2_records.each do |record|
         rt1_records[ record[:tlid] ].rt2_records << record
       end
 
+      print "RT4 to RT1\n"
       #associate RT4s with their RT1
       rt4_records.each do |record|
         rt1_records[ record[:tlid] ].rt4_records << record
       end
 
-      #associate RT6s with their RT5
+      print "RT5 to RT4\n"
+      #associate RT5s with their RT4
+      rt4_records.each do |record|
+        #the double hash call could be optimized
+        record.rt5_records << rt5_records[ record[:feat1] ] if not record[:feat1].empty?
+        record.rt5_records << rt5_records[ record[:feat2] ] if not record[:feat2].empty?
+        record.rt5_records << rt5_records[ record[:feat3] ] if not record[:feat3].empty?
+        record.rt5_records << rt5_records[ record[:feat4] ] if not record[:feat4].empty?
+        record.rt5_records << rt5_records[ record[:feat5] ] if not record[:feat5].empty?
+      end
+      
+      print "RT6 to RT1\n"
+      #associate RT6s with their RT1
       rt6_records.each do |record|
-        rt5_records[ record[:feat] ].rt6_records << record
+        rt1_records[ record[:tlid] ].rt6_records << record
       end
 
-      #associate RT5s with their RT1
-      rt5_records.each do |record|
-        rt1_records[ record[:tlid] ].rt5_records << record
-      end
-
+      print "RTI to RT1\n"
       #associate RTI with its RT1
       rti_records.each do |record|
         rt1_records[ record[:tlid] ].rti_record = record
       end
 
-      rt1_records.each do |record|
-        @features[ record[:tlid] ] << Feature.new( record )
+      print "Parsing TIGER records into features...\n"
+      i=0
+      n=rt1_records.size
+      rt1_records.each do |key, record|
+        i += 1; if i%5000 == 0 then print sprintf("%.1f", (Float(i)/n)*100 ) + "%\n" end
+        
+        @features[ key ] = Feature.new( record )
       end
+
+      true
     end
 
     def each_feature
