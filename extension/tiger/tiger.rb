@@ -15,20 +15,11 @@ module TigerLine
   #==========Number Parsing Helper Methods===========
 
   class Helper
-    LONG_DEC_POS = 4
-    LAT_DEC_POS = 3
+    COORD_ACCURACY = 10**6
 
     #decimal numbers are stored in TIGER with an implied accuracy
-    def self.parse_number str, point_pos
-      str.insert(point_pos, ".").to_f
-    end
-
-    def self.parse_long str
-      self.parse_number( str, LONG_DEC_POS )
-    end
-
-    def self.parse_lat str
-      self.parse_number( str, LAT_DEC_POS )
+    def self.parse_coord str
+      (str.to_f)/COORD_ACCURACY
     end
   end
 
@@ -146,7 +137,7 @@ module TigerLine
     end
   end
 
-  class Feature
+  class LineFeature
     attr_accessor :tlid, :tzids, :tzide, :addess_ranges, :names, :cfcc, :points
  
     def initialize rt1_record
@@ -160,12 +151,16 @@ module TigerLine
       @address_ranges << {:fraddl => rt1_record[:fraddl], 
                           :toaddl => rt1_record[:toaddl], 
                           :fraddr => rt1_record[:fraddr], 
-                          :toaddr => rt1_record[:toaddr]} if not rt1_record[:fraddl].empty?
+                          :toaddr => rt1_record[:toaddr],
+                          :zipl   => rt1_record[:zipl],
+                          :zipr   => rt1_record[:zipr]} if not rt1_record[:fraddl].empty?
       rt1_record.rt6_records.each do |rt6_record|
         @address_ranges << {:fraddl => rt6_record[:fraddl], 
                             :toaddl => rt6_record[:toaddl], 
                             :fraddr => rt6_record[:fraddr], 
-                            :toaddr => rt6_record[:toaddr]} if not rt6_record[:fraddl].empty?
+                            :toaddr => rt6_record[:toaddr],
+                            :zipl   => rt6_record[:zipl],
+                            :zipr   => rt6_record[:zipr]} if not rt6_record[:fraddl].empty?
       end
       #names
       @names = []
@@ -185,18 +180,18 @@ module TigerLine
       @cfcc = rt1_record[:cfcc]
       #points
       @points = []
-      @points << [ Helper.parse_long( rt1_record[:frlong] ), Helper.parse_lat( rt1_record[:frlat] ) ]
+      @points << [ Helper.parse_coord( rt1_record[:frlong] ), Helper.parse_coord( rt1_record[:frlat] ) ]
       rt1_record.rt2_records.sort! do |a,b| a[:rtsq] <=> b[:rtsq] end
       rt1_record.rt2_records.each do |rt2_record|
         (1..10).each do |i|
-          long = Helper.parse_long( rt2_record[ ("long#{i}").intern ] )
-          lat  = Helper.parse_lat( rt2_record[ ("lat#{i}").intern ] )
+          long = Helper.parse_coord( rt2_record[ "long#{i}".intern ] )
+          lat  = Helper.parse_coord( rt2_record[ "lat#{i}".intern ] )
           if lat!=0 and long!=0 then
             @points << [long, lat]
           end
         end
       end
-      @points << [ Helper.parse_long( rt1_record[:tolong] ), Helper.parse_lat( rt1_record[:tolat] ) ]
+      @points << [ Helper.parse_coord( rt1_record[:tolong] ), Helper.parse_coord( rt1_record[:tolat] ) ]
     end
 
     def line_wkt
@@ -272,7 +267,7 @@ module TigerLine
       rt1_records.each do |key, record|
         i += 1; if i%5000 == 0 then print sprintf("%.1f", (Float(i)/n)*100 ) + "%\n" end
         
-        @features[ key ] = Feature.new( record )
+        @features[ key ] = LineFeature.new( record )
       end
 
       true
