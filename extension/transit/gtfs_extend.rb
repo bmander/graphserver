@@ -1,14 +1,5 @@
 require 'google_transit_feed'
 
-class TripHopSchedule
-
-  #takes an open postgres conn object. will not close it
-  def geom conn
-    
-  end
-
-end
-
 class Graphserver
   WGS84_LATLONG_EPSG = 4326
   GTFS_PREFIX = "gtfs"
@@ -60,7 +51,7 @@ class Graphserver
     #for each service_id in the calendar table
     dates.each do |service_id, mon, tue, wed, thu, fri, sat, sun, start_date, end_date|
       #monday is defined as "1" and sunday "7", so we need to pad the array by one.
-      daymask = [nil, mon, tue, wed, thu, fri, sat, sun].collect do |day| day == "1" end      
+      daymask = [mon, tue, wed, thu, fri, sat, sun].collect do |day| day == "1" end      
 
       i = GoogleTransitFeed::parse_date( start_date )
       n = GoogletransitFeed::parse_date( end_date ) #end date is inclusive
