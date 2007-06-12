@@ -86,20 +86,24 @@ class Graphserver
     @server.mount_proc( "/shortest_path" ) do |request, response|
       init_state = parse_init_state( request )
       vertices, edges = @gg.shortest_path( request.query['from'], request.query['to'], init_state )
+     
+      #p vertices
+      if vertices.class == Graph then 
+      	p vertices.edges
 
-      p vertices
-      if vertices.class == Graph then p vertices.edges end
-
-      ret = []
-      ret << "<?xml version='1.0'?>"
-      ret << "<route>"
-      ret << vertices.shift.to_xml
-      edges.each do |edge|
-        ret << edge.to_xml
+        ret = []
+        ret << "<?xml version='1.0'?>"
+        ret << "<route>"
         ret << vertices.shift.to_xml
+        edges.each do |edge|
+          ret << edge.to_xml
+          ret << vertices.shift.to_xml
+        end
+        ret << "</route>"
+        response.body = ret.join
+      else
+        response.body = "None."
       end
-      ret << "</route>"
-      response.body = ret.join
     end
 
     @server.mount_proc( "/all_vertex_labels" ) do |request, response|
