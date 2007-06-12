@@ -6,6 +6,14 @@ class Graphserver
 
   attr_reader :calendar
 
+  alias_method :parse_init_state_before_gtfs, :parse_init_state
+
+  def parse_init_state request
+    init_state = parse_init_state_before_gtfs( request )
+    init_state[:calendar_day] = @calendar.day_of_or_after( init_state[:time] )
+    return init_state
+  end
+
   def load_service_ids
     sid_numbers = {}
 
@@ -54,7 +62,7 @@ class Graphserver
       daymask = [mon, tue, wed, thu, fri, sat, sun].collect do |day| day == "1" end      
 
       i = GoogleTransitFeed::parse_date( start_date )
-      n = GoogletransitFeed::parse_date( end_date ) #end date is inclusive
+      n = GoogleTransitFeed::parse_date( end_date ) #end date is inclusive
 
       #for each day in the service_id date range
       while i <= n  do
@@ -83,12 +91,13 @@ class Graphserver
       end
     end
 
-    #========SORT EXPANDED CALENDAR===================================
+    #========CONVERT EXPANDED CALENDAR TO SORTED ARRAY===================================
     expanded_calendar = expanded_calendar.to_a
-	    expanded_calendar.sort! do |a,b|
+    expanded_calendar.sort! do |a,b|
       a.first <=> b.first
     end
 
+    #========CONVERT SORTED ARRAY INTO CALENDAR OBJECT===================================
     ret = Calendar.new
     expanded_calendar.each do |day, service_ids|
       ret.append_day( day.to_i+sid_start, day.to_i+sid_end, service_ids )
@@ -148,6 +157,9 @@ class Graphserver
     triphops.each_pair do |stops, sched|
       @gg.add_edge( GTFS_PREFIX+stops[0], GTFS_PREFIX+stops[1], TripHopSchedule.new( stops[2], sched ) )
     end
+
+    #load calendar
+    load_calendar
 
     return true
   end

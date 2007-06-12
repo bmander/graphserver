@@ -63,34 +63,46 @@ ARGV.options do |opts|
   opts.parse!
 end
 
-class GSREST < WEBrick::HTTPServlet::AbstractServlet
+class Graphserver  
+  attr_reader :gg 
 
-  def initialize( config, graph, calendar )
-    super
-    @gg = graph
-    @calendar = calendar
-  end
+  def parse_init_state request
+    State.new( (request.query['time'] or Time.now) ) #breaks without the extra parens
+  end 
 
-  def do_GET( request, response )
-    case request.path_info
-    when "/shortest_path"
-      p init_time = request.query['time'] 
-      unless init_time then init_time = Time.now end
-      init_state = State.new( init_time )
-      init_state[:calendar_day] = @calendar.day_of_or_after( init_time )
+  def initialize
+    @gg = Graph.create #horrible hack
+
+    @server = WEBrick::HTTPServer.new(:Port => OPTIONS[:port])
+
+    @server.mount_proc( "/" ) do |request, response|
+      ret = ["Graphserver Web API"]
+      ret << "shortest_path?from=FROM&to=TO"
+      ret << "all_vertex_labels"
+      ret << "outgoing_edges?label=LABEL"
+      response.body = ret.join("\n")
+    end
+
+    @server.mount_proc( "/shortest_path" ) do |request, response|
+      init_state = parse_init_state( request )
+      vertices, edges = @gg.shortest_path( request.query['from'], request.query['to'], init_state )
+
+      p vertices
+      if vertices.class == Graph then p vertices.edges end
 
       ret = []
       ret << "<?xml version='1.0'?>"
       ret << "<route>"
-      vertices, edges = @gg.shortest_path( request.query['from'], request.query['to'], init_state )
-      ret << vertices.shift.to_xml      
+      ret << vertices.shift.to_xml
       edges.each do |edge|
         ret << edge.to_xml
         ret << vertices.shift.to_xml
       end
       ret << "</route>"
       response.body = ret.join
-    when "/all_vertex_labels"
+    end
+
+    @server.mount_proc( "/all_vertex_labels" ) do |request, response|
       vlabels = []
       vlabels << "<?xml version='1.0'?>"
       vlabels << "<labels>"
@@ -99,7 +111,9 @@ class GSREST < WEBrick::HTTPServlet::AbstractServlet
       end
       vlabels << "</labels>"
       response.body = vlabels.join
-    when "/outgoing_edges"
+    end
+
+    @server.mount_proc( "/outgoing_edges" ) do |request, response|
       vertex = @gg.get_vertex( request.query['label'] )
       ret = []
       ret << "<?xml version='1.0'?>"
@@ -113,59 +127,7 @@ class GSREST < WEBrick::HTTPServlet::AbstractServlet
       ret << "</edges>"
       response.body = ret.join
     end
-  end
-end
 
-class Graphserver  
-  attr_reader :gg  
-
-  def initialize
-    @gg = Graph.create #horrible hack
-
-    @servlet = XMLRPC::WEBrickServlet.new
-    @servlet.add_handler("shortest_path") do |from, to, init_time| 
-      p path = @gg.shortest_path( from, to, State.new( init_time ) ) 
-      path
-    end
-    @servlet.add_handler("shortest_path_tree") do |from, to, init_time|
-      @gg.shortest_path_tree( from, to, State.new( init_time ) )
-    end
-    @servlet.add_handler("all_vertex_labels") do
-      @gg.vertices.collect do |vertex|
-        vertex.label
-      end
-    end
-    @servlet.add_handler("outgoing_edges") do |label|
-      vertex = @gg.get_vertex( label )
-
-      ret = []
-      vertex.each_outgoing do |edge|
-        ret << [edge.to.label, edge.payload]
-      end
-
-      ret
-    end
-    @servlet.add_handler("outgoing_edge") do |label, ordinal|
-      vertex = @gg.get_vertex( label )
-      
-      i = 0
-      vertex.each_outgoing do |edge|
-        if i == ordinal then
-          break edge.inspect
-        end
-        i += 1
-      end
-    end
-    @servlet.add_handler("vertex_outgoing_weights") do |label, param|
-      vertex = @gg.get_vertex( label )
-
-      ret = []
-      vertex.each_outgoing do |edge|
-        ret << {:to => edge.to.label, :w => edge.weight(param)}
-      end
-
-      ret
-    end
   end
 
   def database_params= params
@@ -218,11 +180,8 @@ class Graphserver
   end
 
   def start
-    server = WEBrick::HTTPServer.new(:Port => OPTIONS[:port])
-    trap("INT"){ server.shutdown }
-    server.mount("/RPC2", @servlet)
-    server.mount( "", GSREST, @gg, @calendar )
-    server.start
+    trap("INT"){ @server.shutdown }
+    @server.start
   end
 
 end

@@ -376,7 +376,7 @@ VALUE t_state_new( VALUE class, VALUE rbtime ) {
   return ret;
 }
 
-VALUE t_state_ref( VALUE self, VALUE rbkey, VALUE rbvalue ) {
+VALUE t_state_set( VALUE self, VALUE rbkey, VALUE rbvalue ) {
   State* state = unpack_state( self );
   char* key = STR2CSTR( rb_funcall( rbkey, rb_intern( "to_s" ), 0 ) );
 
@@ -414,6 +414,11 @@ VALUE t_state_to_hash( VALUE self ) {
 
 
   return ret;
+}
+
+VALUE t_state_ref( VALUE self, VALUE rbkey ) {
+  VALUE hsh = t_state_to_hash( self );
+  return rb_hash_aref( hsh, rbkey );
 }
 
 VALUE t_state_inspect( VALUE self ) {
@@ -691,7 +696,8 @@ void Init_graph_core() {
   //MST CORE OBJECTS
   cState = rb_define_class( "State", rb_cObject );
   rb_define_singleton_method( cState, "new", t_state_new, 1 );
-  rb_define_method( cState, "[]=", t_state_ref, 2 );
+  rb_define_method( cState, "[]=", t_state_set, 2 );
+  rb_define_method( cState, "[]", t_state_ref, 1 );
   rb_define_method( cState, "inspect", t_state_inspect, 0 );
   rb_define_method( cState, "to_hash", t_state_to_hash, 0 );
   rb_define_method( cState, "dup", t_state_dup, 0 );
