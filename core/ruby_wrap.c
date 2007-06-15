@@ -636,7 +636,7 @@ static VALUE t_shortest_path_tree( VALUE self, VALUE from, VALUE to, VALUE init,
   }
 
   // if we did not reach destination in the shortest path tree
-  if (!gGetVertex(tree,to))
+  if (!gGetVertex(tree,STR2CSTR(to)))
     rb_raise(rb_eRuntimeError,"can't reach destination");
     
 
