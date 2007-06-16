@@ -1,7 +1,8 @@
 require 'webrick'
-require 'xmlrpc/server.rb'
+#require 'xmlrpc/server.rb'
 require 'graph.rb'
 require 'optparse'
+require 'cgi'
 
 class Link
   def to_xml
@@ -17,7 +18,13 @@ end
 
 class TripHopSchedule
   def to_xml
-    "<triphopschedule/>"
+    ret = ["<triphopschedule service_id='#{service_id}'>"]
+    triphops.each do |depart, arrive, transit, trip_id|
+      ret << "<triphop depart='#{depart}' arrive='#{arrive}' transit='#{transit}' trip_id='#{trip_id}' />"
+    end
+    ret << "</triphopschedule>"
+
+    return ret.join
   end
 end
 
@@ -25,7 +32,7 @@ class State
   def to_xml
     ret = "<state "
     self.to_hash.each_pair do |name, value|
-      ret << "#{name}='#{value.to_s}' "
+      ret << "#{name}='#{CGI.escape(value.to_s)}' "
     end
     ret << "/>"
   end
@@ -87,10 +94,10 @@ class Graphserver
       init_state = parse_init_state( request )
       vertices, edges = @gg.shortest_path( request.query['from'], request.query['to'], init_state )
      
-      #p vertices
       if vertices.class == Graph then 
       	p vertices.edges
-
+        response.body = "None."
+      else
         ret = []
         ret << "<?xml version='1.0'?>"
         ret << "<route>"
@@ -101,8 +108,6 @@ class Graphserver
         end
         ret << "</route>"
         response.body = ret.join
-      else
-        response.body = "None."
       end
     end
 
@@ -129,6 +134,32 @@ class Graphserver
         ret << "</edge>"
       end
       ret << "</edges>"
+      response.body = ret.join
+    end
+
+    @server.mount_proc( "/eval_edges" ) do |request, response|
+      vertex = @gg.get_vertex( request.query['label'] )
+      init_state = parse_init_state( request )
+
+      ret = ["<?xml version='1.0'?>"]
+      ret << "<vertex>"
+      ret << init_state.to_xml
+      ret << "<outgoing_edges>"
+      vertex.each_outgoing do |edge|
+        ret << "<edge>"
+        ret <<   "<destination label='#{edge.to.label}'>"
+        if dest_state = edge.walk( init_state ) then
+          ret << dest_state.to_xml
+        else
+          ret << "<state/>"
+        end
+        ret <<   "</destination>"
+        ret <<   "<payload>#{edge.payload.to_xml}</payload>"
+        ret << "</edge>"
+      end
+      ret << "</outgoing_edges>"
+      ret << "</vertex>"
+
       response.body = ret.join
     end
 

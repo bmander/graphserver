@@ -64,19 +64,32 @@ thsWalk(TripHopSchedule* this, State* params) {
 #else
 thsWalkBack(TripHopSchedule* this, State* params) {
 #endif
+
+    // if the params->calendar_day is NULL, use the params->time to find the calendar_day
+    // the calendar_day is actually a denormalization of the params->time
+    // this way, the user doesn't need to worry about it
+    CalendarDay* calendar_day = params->calendar_day;
+    if( !calendar_day )
+#ifndef ROUTE_REVERSE
+      calendar_day = calDayOfOrAfter( this->calendar, params->time );
+#else
+      calendar_day = calDayOfOrBefore( this->calendar, params->time );
+#endif
+
     // if the schedule never runs
     // or if the schedule does not run on this day
     // this link goes nowhere
-    if( !params->calendar_day ||
-        !calDayHasServiceId( params->calendar_day, this->service_id) ||
+    if( !calendar_day ||
+        !calDayHasServiceId( calendar_day, this->service_id) ||
         this->n == 0 ) {
       return NULL;
     }
 
     State* ret = stateDup( params );
+    ret->calendar_day = calendar_day;
 
     //convert params->time, N seconds since the epoch, to seconds since midnight within the span of the service day
-    long adjusted_time = (params->time - params->calendar_day->begin_time) + params->calendar_day->begin_time%SECONDS_IN_DAY;
+    long adjusted_time = (params->time - calendar_day->begin_time) + calendar_day->begin_time%SECONDS_IN_DAY;
 
     long wait;
     TripHop* hop;
@@ -87,8 +100,9 @@ thsWalkBack(TripHopSchedule* this, State* params) {
     if( hop = thsGetLastHop(this, adjusted_time) )
       wait = (adjusted_time - hop->arrive);
 #endif
-    else
+    else {
       return NULL;
+    }
 
     long transfer_penalty=0;
     //if this is a transfer
@@ -107,8 +121,14 @@ thsWalkBack(TripHopSchedule* this, State* params) {
 
 #ifndef ROUTE_REVRSE
     ret->time           += wait + hop->transit;
+    if( ret->time >= calendar_day->end_time) {
+      ret->calendar_day = calendar_day->next_day;
+    }
 #else
     ret->time           -= wait - hop->transit;
+    if( ret->time < calendar_day->begin_time) {
+      ret->calendar_day = calendar_day->prev_day;
+    }
 #endif
     ret->weight         += wait + hop->transit + transfer_penalty;
     ret->dist_walked    = 0;

@@ -90,10 +90,11 @@ typedef struct TripHopSchedule {
   int n;
   TripHop* hops;
   ServiceId service_id;
+  CalendarDay* calendar;
 } TripHopSchedule;
 
 TripHopSchedule*
-thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id );
+thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar );
 
 void
 thsDestroy(TripHopSchedule* this);

@@ -64,8 +64,9 @@ int
 calDayHasServiceId( CalendarDay* this, ServiceId service_id) {
   int i;
   for(i=0; i<this->n_service_ids; i++) {
-    if( this->service_ids[i] == service_id )
+    if( this->service_ids[i] == service_id ) {
       return 1;
+    }
   }
   return 0;
 }

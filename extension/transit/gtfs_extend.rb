@@ -4,16 +4,6 @@ class Graphserver
   WGS84_LATLONG_EPSG = 4326
   GTFS_PREFIX = "gtfs"
 
-  attr_reader :calendar
-
-  alias_method :parse_init_state_before_gtfs, :parse_init_state
-
-  def parse_init_state request
-    init_state = parse_init_state_before_gtfs( request )
-    init_state[:calendar_day] = @calendar.day_of_or_after( init_state[:time] )
-    return init_state
-  end
-
   def load_service_ids
     sid_numbers = {}
 
@@ -103,10 +93,13 @@ class Graphserver
       ret.append_day( day.to_i+sid_start, day.to_i+sid_end, service_ids )
     end
 
-    @calendar = ret.rewind!
+    return ret.rewind!
   end
   
   def load_google_transit_feed
+
+    calendar = load_calendar
+
     #service_ids are numbers in graphserver
     #sid_numbers is a service_id -> number dictionary
     sid_numbers = load_service_ids
@@ -155,11 +148,8 @@ class Graphserver
     #dump triphops to graphserver
     print "Importing triphops to Graphserver\n"
     triphops.each_pair do |stops, sched|
-      @gg.add_edge( GTFS_PREFIX+stops[0], GTFS_PREFIX+stops[1], TripHopSchedule.new( stops[2], sched ) )
+      @gg.add_edge( GTFS_PREFIX+stops[0], GTFS_PREFIX+stops[1], TripHopSchedule.new( stops[2], sched, calendar ) )
     end
-
-    #load calendar
-    load_calendar
 
     return true
   end

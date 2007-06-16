@@ -200,7 +200,7 @@ VALUE t_street_inspect( VALUE self ) {
 //TRIPHOPSCHEDULE METHODS----------------------------------------------------------
 
 //rbtriphops is an array of [depart, arrive, trip_id]
-VALUE t_ths_new( VALUE class, VALUE rbservice_id, VALUE rbtriphops ) {
+VALUE t_ths_new( VALUE class, VALUE rbservice_id, VALUE rbtriphops, VALUE rbcalendar ) {
   long size = RARRAY(rbtriphops)->len;
   int* departs = (int*)malloc(size*sizeof(int));
   int* arrives = (int*)malloc(size*sizeof(int));
@@ -219,8 +219,9 @@ VALUE t_ths_new( VALUE class, VALUE rbservice_id, VALUE rbtriphops ) {
     memcpy( trip_ids[i], tid, tid_len );
   }
   int service_id = NUM2INT( rbservice_id );
+  CalendarDay* calendar = unpack_cal( rbcalendar );
 
-  TripHopSchedule* raw = thsNew( departs, arrives, trip_ids, size, service_id );
+  TripHopSchedule* raw = thsNew( departs, arrives, trip_ids, size, service_id, calendar );
 
   free(departs);
   free(arrives);
@@ -273,6 +274,12 @@ VALUE t_ths_triphops( VALUE self ) {
   }
 
   return ret;
+}
+
+VALUE t_ths_service_id( VALUE self ) {
+  TripHopSchedule* ths = unpack_ths( self );
+
+  return INT2NUM( ths->service_id );
 }
 
 //STATE CLASSES=========================================================
@@ -680,11 +687,12 @@ void Init_graph_core() {
   rb_define_method( cStreet, "inspect", t_street_inspect, 0 );
 
   cTripHopSchedule = rb_define_class("TripHopSchedule", rb_cObject);
-  rb_define_singleton_method( cTripHopSchedule, "new", t_ths_new, 2 );
+  rb_define_singleton_method( cTripHopSchedule, "new", t_ths_new, 3 );
   rb_define_method( cTripHopSchedule, "walk", t_ths_walk, 1 );
   rb_define_method( cTripHopSchedule, "walk_back", t_ths_walk_back, 1);
   rb_define_method( cTripHopSchedule, "inspect", t_ths_inspect, 0 );
   rb_define_method( cTripHopSchedule, "triphops", t_ths_triphops, 0 );
+  rb_define_method( cTripHopSchedule, "service_id", t_ths_service_id, 0);
 
   //STATE OBJECTS
   cCalendar = rb_define_class("Calendar", rb_cObject);
