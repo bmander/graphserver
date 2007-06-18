@@ -12,8 +12,8 @@ DB_PARAMS = { :host => nil,
               :port => nil,
               :options => nil,
               :tty => nil,
-              :dbname => 'graphserver',
-              :login => nil, #database username
+              :dbname => 'trimet',
+              :login => 'postgres', #database username
               :password => nil }
 
 gs = Graphserver.new
