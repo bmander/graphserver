@@ -8,12 +8,13 @@ if ARGV.size < 1 then
   exit
 end
 
+
 DB_PARAMS = { :host => nil,
               :port => nil,
               :options => nil,
               :tty => nil,
-              :dbname => 'trimet',
-              :login => 'postgres', #database username
+              :dbname => 'graphserver',
+              :login => nil, #database username
               :password => nil }
 
 gs = Graphserver.new
