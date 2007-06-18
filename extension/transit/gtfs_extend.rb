@@ -162,7 +162,8 @@ class Graphserver
         agency_id          text,
         agency_name        text NOT NULL,
         agency_url         text NOT NULL,
-        agency_timezone    text NOT NULL
+        agency_timezone    text NOT NULL,
+	agency_lang	   text	
       );
 
       create table gtf_stops (
@@ -172,7 +173,8 @@ class Graphserver
         stop_lat         numeric,
         stop_lon         numeric,
         zone_id          numeric,
-        stop_url         text
+        stop_url         text,
+	stop_code	 text
       );
 
       select AddGeometryColumn( 'gtf_stops', 'location', #{WGS84_LATLONG_EPSG}, 'POINT', 2 );
@@ -323,8 +325,10 @@ class Graphserver
     stop_lon_index = stops_file.header.index("stop_lon")
 
     conn.exec "COPY gtf_stops ( #{stops_file.header.join(",")}, location ) FROM STDIN"
+    header_len = stops_file.header.length
     stops_file.data.each do |row|
       shape_wkt = "SRID=#{WGS84_LATLONG_EPSG};POINT(#{row[stop_lon_index]} #{row[stop_lat_index]})"
+      row += [""] * (header_len - row.length) if row.length != header_len #added this to parse trimet
       row.collect! do |item| if item.empty? then "\\N" else item end end
       conn.putline "#{row.join("\t")}\t#{shape_wkt}\n"
     end
