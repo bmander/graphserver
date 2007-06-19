@@ -43,4 +43,11 @@ calDayOfOrAfter( CalendarDay* this, long time );
 
 CalendarDay*
 calDayOfOrBefore( CalendarDay* this, long time );
+
+void
+calPrint( CalendarDay* this );
+
+void
+calPrintDay( CalendarDay* this );
+
 #endif

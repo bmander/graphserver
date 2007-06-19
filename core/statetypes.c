@@ -1,4 +1,5 @@
 #include "statetypes.h"
+#include "stdio.h"
 
 //CALENDAR FUNCTIONS
 
@@ -111,3 +112,23 @@ calDayOfOrBefore( CalendarDay* this, long time ) {
   return this;
 }
 
+void
+calPrint( CalendarDay* this ) {
+  CalendarDay* curr = calRewind( this );
+  while( curr->next_day ) {
+    calPrintDay( curr );
+    curr = curr->next_day;
+  }
+}
+
+void
+calPrintDay( CalendarDay* this ) {
+  printf( "time=%ld..%ld service_ids=[", this->begin_time, this->end_time );
+  int i;
+  for(i=0; i<this->n_service_ids; i++) {
+    printf("%d", this->service_ids[i]);
+    if( i != this->n_service_ids-1 )
+      printf(", ");
+  }
+  printf( "]\n" );
+}

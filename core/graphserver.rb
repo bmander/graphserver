@@ -109,6 +109,7 @@ class Graphserver
       
       begin
         unless  @gg.get_vertex(from) and @gg.get_vertex(to) then raise ArgumentError end
+
         init_state = parse_init_state( request )
         vertices, edges = @gg.shortest_path(from, to, init_state )      #Throws RuntimeError if no shortest path found.
         ret << "<?xml version='1.0'?>"
@@ -119,10 +120,11 @@ class Graphserver
           ret << vertices.shift.to_xml
         end
         ret << "</route>"
-      rescue RuntimeError                                               #TODO: change exception type, RuntimeError is too vague.
-        ret << "Couldn't find a shortest path from #{from} to #{to}"
-      rescue ArgumentError
-        ret << "ERROR: Invalid parameters."
+
+        rescue RuntimeError                                               #TODO: change exception type, RuntimeError is too vague.
+          ret << "Couldn't find a shortest path from #{from} to #{to}"
+        rescue ArgumentError
+          ret << "ERROR: Invalid parameters."
       end
       
       response.body = ret.join
