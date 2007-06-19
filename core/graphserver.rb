@@ -119,7 +119,7 @@ class Graphserver
              ret << vertices.shift.to_xml
            end
            ret << "</route>"
-         rescue RuntimeError  #TO DO: change exception type, RuntimeError is too vague.
+         rescue RuntimeError  #TODO: change exception type, RuntimeError is too vague.
            ret << "Couldn't find a shortest path from #{from} to #{to}"
          end
       else
