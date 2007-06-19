@@ -3,6 +3,7 @@ require 'google_transit_feed'
 class Graphserver
   WGS84_LATLONG_EPSG = 4326
   GTFS_PREFIX = "gtfs"
+  SECONDS_IN_DAY = 86400
 
   def load_service_ids
     sid_numbers = {}
@@ -41,6 +42,9 @@ class Graphserver
     sid_start = GoogleTransitFeed::parse_time( day_bounds[0][0] )
     sid_end   = GoogleTransitFeed::parse_time( day_bounds[0][1] )
 
+    #pop an error of service days oevrlap
+    if sid_end-sid_start > SECONDS_IN_DAY then raise "Service day spans #{day_bounds[0][0]} to #{day_bounds[0][1]}; Service days may not overlap" end
+
     #=========EXPAND calendar TABLE INTO HASH===============
     dates = conn.exec <<-SQL
       SELECT service_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday, start_date, end_date from gtf_calendar
@@ -61,7 +65,7 @@ class Graphserver
           expanded_calendar[i] << sid_numbers[service_id]
         end        
 
-        i += 60*60*24 #increment the day
+        i += SECONDS_IN_DAY
       end
     end
 
