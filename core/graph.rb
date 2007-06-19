@@ -46,16 +46,11 @@ class Graph
     path_vertices = []
     path_edges    = []
    
-    begin
-      spt = shortest_path_tree( from, to, init_state, true )
-      curr = spt.get_vertex( to )
-    rescue RuntimeError 
-      p "*** couldn't reach destination #{to}"
-      curr = nil
-    end
+    spt = shortest_path_tree( from, to, init_state, true )
+    curr = spt.get_vertex( to )
     
     #if the end node wasn't found
-    unless curr then return [spt, nil] end
+    unless curr then raise RuntimeError end
 
     path_vertices << curr
     

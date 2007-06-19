@@ -107,21 +107,20 @@ class Graphserver
       to = request.query['to']
       ret = []
       
-      if @gg.get_vertex(from)  and @gg.get_vertex(to) #make sure parameters are valid vertices
+      if @gg.get_vertex(from) and @gg.get_vertex(to) #make sure parameters are valid vertices
          init_state = parse_init_state( request )
-         vertices, edges = @gg.shortest_path(from, to, init_state )
-   
-         if vertices == nil then 
-            ret << "Couldn't find a shortest path from #{from} to #{to}"
-         else
-            ret << "<?xml version='1.0'?>"
-            ret << "<route>"
-            ret << vertices.shift.to_xml
-            edges.each do |edge|
-              ret << edge.to_xml( verbose )
-              ret << vertices.shift.to_xml
-            end
-            ret << "</route>"
+         begin
+           vertices, edges = @gg.shortest_path(from, to, init_state ) 
+           ret << "<?xml version='1.0'?>"
+           ret << "<route>"
+           ret << vertices.shift.to_xml
+           edges.each do |edge|
+             ret << edge.to_xml( verbose )
+             ret << vertices.shift.to_xml
+           end
+           ret << "</route>"
+         rescue RuntimeError  #TO DO: change exception type, RuntimeError is too vague.
+           ret << "Couldn't find a shortest path from #{from} to #{to}"
          end
       else
          ret << "ERROR: Invalid parameters."

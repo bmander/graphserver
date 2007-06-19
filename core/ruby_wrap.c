@@ -642,11 +642,6 @@ static VALUE t_shortest_path_tree( VALUE self, VALUE from, VALUE to, VALUE init,
     tree = gShortestPathTreeRetro( gg, STR2CSTR( from ), STR2CSTR( to ), unpack_state( init ) );
   }
 
-  // if we did not reach destination in the shortest path tree
-  if (!gGetVertex(tree,STR2CSTR(to)))
-    rb_raise(rb_eRuntimeError,"can't reach destination");
-    
-
   return pack_g( tree );
 }
 
