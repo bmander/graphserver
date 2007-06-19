@@ -109,7 +109,7 @@ class Graphserver
       
       if @gg.get_vertex(from)  and @gg.get_vertex(to) #make sure parameters are valid vertices
          init_state = parse_init_state( request )
-         vertices, edges = @gg.shortest_path( request.query['from'], request.query['to'], init_state )
+         vertices, edges = @gg.shortest_path(from, to, init_state )
    
          if vertices == nil then 
             ret << "Couldn't find a shortest path from #{from} to #{to}"
