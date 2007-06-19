@@ -40,14 +40,19 @@ end
 
 class Vertex
   def to_xml
-    "<vertex label='#{label}'/>"
+    ret = ["<vertex label='#{label}'>"]
+    if pl=payload then #to avoid calling payload twice. instantiating a variable may actually be more expensive.
+      ret << pl.to_xml
+    end
+    ret << "</vertex>"
+    return ret.join
   end
 end
 
 class Edge
-  def to_xml
+  def to_xml verbose=true
     ret = "<edge>"
-    ret << payload.to_xml
+    ret << payload.to_xml if verbose
     ret << "</edge>"
   end
 end
@@ -87,10 +92,17 @@ class Graphserver
       ret << "shortest_path?from=FROM&to=TO"
       ret << "all_vertex_labels"
       ret << "outgoing_edges?label=LABEL"
+      ret << "eval_edges?label=LABEL&statevar1=STV1&statevar2=STV2..."
       response.body = ret.join("\n")
     end
 
     @server.mount_proc( "/shortest_path" ) do |request, response|
+      if request.query['debug'] == 'true' then
+         verbose=true
+      else
+         verbose=false
+      end
+
       init_state = parse_init_state( request )
       vertices, edges = @gg.shortest_path( request.query['from'], request.query['to'], init_state )
      
@@ -103,7 +115,7 @@ class Graphserver
         ret << "<route>"
         ret << vertices.shift.to_xml
         edges.each do |edge|
-          ret << edge.to_xml
+          ret << edge.to_xml( verbose )
           ret << vertices.shift.to_xml
         end
         ret << "</route>"
