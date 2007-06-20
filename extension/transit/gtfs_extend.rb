@@ -43,7 +43,7 @@ class Graphserver
     sid_end   = GoogleTransitFeed::parse_time( day_bounds[0][1] )
 
     #pop an error of service days oevrlap
-    if sid_end-sid_start > SECONDS_IN_DAY then raise "Service day spans #{day_bounds[0][0]} to #{day_bounds[0][1]}; Service days may not overlap" end
+    #if sid_end-sid_start > SECONDS_IN_DAY then raise "Service day spans #{day_bounds[0][0]} to #{day_bounds[0][1]}; Service days may not overlap" end
 
     #=========EXPAND calendar TABLE INTO HASH===============
     dates = conn.exec <<-SQL

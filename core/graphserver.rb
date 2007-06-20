@@ -17,9 +17,14 @@ class Street
 end
 
 class TripHopSchedule
+  SEC_IN_HOUR = 3600
+  SEC_IN_MINUTE = 60
+
   def to_xml
     ret = ["<triphopschedule service_id='#{service_id}'>"]
     triphops.each do |depart, arrive, transit, trip_id|
+      depart = "#{sprintf("%02d", depart/SEC_IN_HOUR)}:#{sprintf("%02d", (depart%SEC_IN_HOUR)/SEC_IN_MINUTE)}:#{sprintf("%02d", depart%SEC_IN_MINUTE)}"
+      arrive = "#{sprintf("%02d", arrive/SEC_IN_HOUR)}:#{sprintf("%02d", (arrive%SEC_IN_HOUR)/SEC_IN_MINUTE)}:#{sprintf("%02d", arrive%SEC_IN_MINUTE)}"
       ret << "<triphop depart='#{depart}' arrive='#{arrive}' transit='#{transit}' trip_id='#{trip_id}' />"
     end
     ret << "</triphopschedule>"
@@ -32,7 +37,11 @@ class State
   def to_xml
     ret = "<state "
     self.to_hash.each_pair do |name, value|
-      ret << "#{name}='#{CGI.escape(value.to_s)}' "
+      if name == "time" then #TODO kludge alert
+        ret << "time='#{Time.at( value ).inspect}' " 
+      else
+        ret << "#{name}='#{CGI.escape(value.to_s)}' "
+      end
     end
     ret << "/>"
   end
