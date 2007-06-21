@@ -92,9 +92,10 @@ class Graphserver
     end
 
     #========CONVERT SORTED ARRAY INTO CALENDAR OBJECT===================================
+    daylight_savings = 0 #TODO: this is a stub
     ret = Calendar.new
     expanded_calendar.each do |day, service_ids|
-      ret.append_day( day.to_i+sid_start, day.to_i+sid_end, service_ids )
+      ret.append_day( day.to_i+sid_start, day.to_i+sid_end, service_ids, daylight_savings )
     end
 
     return ret.rewind!

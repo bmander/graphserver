@@ -91,11 +91,11 @@ typedef struct TripHopSchedule {
   TripHop* hops;
   ServiceId service_id;
   CalendarDay* calendar;
-  double timezone_offset;
+  int timezone_offset; //number of seconds this schedule is offset from GMT, eg. -8*3600=-28800 for US West Coast
 } TripHopSchedule;
 
 TripHopSchedule*
-thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, double timezone_offset );
+thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, int timezone_offset );
 
 void
 thsDestroy(TripHopSchedule* this);

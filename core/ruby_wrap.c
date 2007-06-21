@@ -220,7 +220,7 @@ VALUE t_ths_new( VALUE class, VALUE rbservice_id, VALUE rbtriphops, VALUE rbcale
   }
   int service_id = NUM2INT( rbservice_id );
   CalendarDay* calendar = unpack_cal( rbcalendar );
-  double timezone_offset = NUM2DBL( rbtimezone_offset );
+  int timezone_offset = NUM2INT( rbtimezone_offset );
 
   TripHopSchedule* raw = thsNew( departs, arrives, trip_ids, size, service_id, calendar, timezone_offset );
 
@@ -294,16 +294,17 @@ VALUE t_cal_new( VALUE class ) {
   return ret;
 }
 
-VALUE t_cal_append_day( VALUE self, VALUE begin_time, VALUE end_time, VALUE service_ids ) {
+VALUE t_cal_append_day( VALUE self, VALUE begin_time, VALUE end_time, VALUE service_ids, VALUE daylight_savings ) {
   CalendarDay* this = unpack_cal( self );
   int n_service_ids = RARRAY( service_ids )->len;
   ServiceId* c_service_ids = (ServiceId*)malloc(n_service_ids*sizeof(ServiceId));
+
   int i;
   for(i=0; i<n_service_ids; i++) {
     c_service_ids[i] = NUM2INT( rb_ary_entry( service_ids, i ) );
   }
 
-  CalendarDay*  ret = calAppendDay( this, NUM2LONG( begin_time ), NUM2LONG( end_time ), n_service_ids, c_service_ids );
+  CalendarDay*  ret = calAppendDay( this, NUM2LONG( begin_time ), NUM2LONG( end_time ), n_service_ids, c_service_ids, NUM2INT( daylight_savings ) );
 
   free( c_service_ids );
 
@@ -683,7 +684,7 @@ void Init_graph_core() {
   rb_define_method( cStreet, "inspect", t_street_inspect, 0 );
 
   cTripHopSchedule = rb_define_class("TripHopSchedule", rb_cObject);
-  rb_define_singleton_method( cTripHopSchedule, "new", t_ths_new, 3 );
+  rb_define_singleton_method( cTripHopSchedule, "new", t_ths_new, 4 );
   rb_define_method( cTripHopSchedule, "walk", t_ths_walk, 1 );
   rb_define_method( cTripHopSchedule, "walk_back", t_ths_walk_back, 1);
   rb_define_method( cTripHopSchedule, "inspect", t_ths_inspect, 0 );
@@ -693,7 +694,7 @@ void Init_graph_core() {
   //STATE OBJECTS
   cCalendar = rb_define_class("Calendar", rb_cObject);
   rb_define_singleton_method( cCalendar, "new", t_cal_new, 0);
-  rb_define_method( cCalendar, "append_day", t_cal_append_day, 3 );
+  rb_define_method( cCalendar, "append_day", t_cal_append_day, 4 );
   rb_define_method( cCalendar, "inspect", t_cal_inspect, 0 );
   rb_define_method( cCalendar, "previous!", t_cal_previous, 0 );
   rb_define_method( cCalendar, "next!", t_cal_next, 0 );

@@ -12,16 +12,18 @@ struct CalendarDay {
   long end_time;   //the last second on which the day is valid
   int n_service_ids;
   ServiceId* service_ids;
+  int daylight_savings; //number of seconds to shift local time this day
+                        //typically +3600 (one hour) in the summer months, 0 in the winter months
   CalendarDay* prev_day;
   CalendarDay* next_day;
 } ;
 
 
 CalendarDay*
-calNew( );
+calNew( long begin_time, long end_time, int n_service_ids, ServiceId* service_ids, int daylight_savings );
 
 CalendarDay*
-calAppendDay( CalendarDay* this, long begin_time, long end_time, int n_service_ids, ServiceId* service_ids);
+calAppendDay( CalendarDay* this, long begin_time, long end_time, int n_service_ids, ServiceId* service_ids, int daylight_savings);
 
 void
 calDestroy(CalendarDay* this);

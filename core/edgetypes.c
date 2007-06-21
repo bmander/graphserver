@@ -84,7 +84,7 @@ int hopcmp(const void* a, const void* b) {
  */
 
 TripHopSchedule*
-thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, double timezone_offset ) {
+thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, int timezone_offset ) {
   TripHopSchedule* ret = (TripHopSchedule*)malloc(sizeof(TripHopSchedule));
   ret->hops = (TripHop*)malloc(n*sizeof(TripHop));
   ret->n = n;

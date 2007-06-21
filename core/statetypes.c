@@ -3,12 +3,13 @@
 
 //CALENDAR FUNCTIONS
 
-CalendarDay* calNew( long begin_time, long end_time, int n_service_ids, ServiceId* service_ids ) {
+CalendarDay* calNew( long begin_time, long end_time, int n_service_ids, ServiceId* service_ids, int daylight_savings ) {
   CalendarDay* ret = (CalendarDay*)malloc(sizeof(CalendarDay));
   ret->begin_time    = begin_time;
   ret->end_time      = end_time;
   ret->n_service_ids = n_service_ids;
   ret->service_ids  = (ServiceId*)malloc(n_service_ids*sizeof(ServiceId));
+  ret->daylight_savings = daylight_savings;
   memcpy( ret->service_ids, service_ids, n_service_ids*sizeof(ServiceId) );
   ret->prev_day = NULL;
   ret->next_day = NULL;
@@ -18,8 +19,8 @@ CalendarDay* calNew( long begin_time, long end_time, int n_service_ids, ServiceI
 
 //Inserts a new day into the calendar linked list. Pass NULL to create a new linked list
 CalendarDay*
-calAppendDay( CalendarDay* this, long begin_time, long end_time, int n_service_ids, ServiceId* service_ids) {
-  CalendarDay* ret = calNew( begin_time, end_time, n_service_ids, service_ids );
+calAppendDay( CalendarDay* this, long begin_time, long end_time, int n_service_ids, ServiceId* service_ids, int daylight_savings) {
+  CalendarDay* ret = calNew( begin_time, end_time, n_service_ids, service_ids, daylight_savings );
 
   //if it's a new calendar
   if(!this)
