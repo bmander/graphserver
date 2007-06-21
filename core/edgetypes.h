@@ -91,10 +91,11 @@ typedef struct TripHopSchedule {
   TripHop* hops;
   ServiceId service_id;
   CalendarDay* calendar;
+  double timezone_offset;
 } TripHopSchedule;
 
 TripHopSchedule*
-thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar );
+thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, double timezone_offset );
 
 void
 thsDestroy(TripHopSchedule* this);

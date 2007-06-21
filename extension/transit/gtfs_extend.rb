@@ -102,6 +102,8 @@ class Graphserver
   
   def load_google_transit_feed
 
+    timezone_offset = 0 #number of hours offset from Greenwich Mean Time. Can be decimal.
+
     calendar = load_calendar
 
     #service_ids are numbers in graphserver
@@ -152,7 +154,7 @@ class Graphserver
     #dump triphops to graphserver
     print "Importing triphops to Graphserver\n"
     triphops.each_pair do |stops, sched|
-      @gg.add_edge( GTFS_PREFIX+stops[0], GTFS_PREFIX+stops[1], TripHopSchedule.new( stops[2], sched, calendar ) )
+      @gg.add_edge( GTFS_PREFIX+stops[0], GTFS_PREFIX+stops[1], TripHopSchedule.new( stops[2], sched, calendar, timezone_offset ) )
     end
 
     return true
