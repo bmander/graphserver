@@ -324,6 +324,31 @@ VALUE t_cal_inspect( VALUE self ) {
   return rb_str_new2( ret );
 }
 
+VALUE t_cal_begin_time( VALUE self ) {
+  CalendarDay* this = unpack_cal( self );
+  
+  return INT2NUM( this->begin_time );
+}
+
+VALUE t_cal_end_time( VALUE self ) {
+  CalendarDay* this = unpack_cal( self );
+
+  return INT2NUM( this->end_time );
+}
+
+VALUE t_cal_service_ids( VALUE self ) {
+  CalendarDay* this = unpack_cal( self );
+
+  VALUE ret = rb_ary_new();
+
+  int i;
+  for(i=0; i<this->n_service_ids; i++) {
+    rb_ary_push( ret, INT2NUM( this->service_ids[i] ) );   
+  }
+
+  return ret;
+}
+
 VALUE t_cal_previous( VALUE self ) {
   CalendarDay* this = unpack_cal( self );
 
@@ -696,6 +721,9 @@ void Init_graph_core() {
   rb_define_singleton_method( cCalendar, "new", t_cal_new, 0);
   rb_define_method( cCalendar, "append_day", t_cal_append_day, 4 );
   rb_define_method( cCalendar, "inspect", t_cal_inspect, 0 );
+  rb_define_method( cCalendar, "begin_time", t_cal_begin_time, 0 );
+  rb_define_method( cCalendar, "end_time", t_cal_end_time, 0 );
+  rb_define_method( cCalendar, "service_ids", t_cal_service_ids, 0 );
   rb_define_method( cCalendar, "previous!", t_cal_previous, 0 );
   rb_define_method( cCalendar, "next!", t_cal_next, 0 );
   rb_define_method( cCalendar, "rewind!", t_cal_rewind, 0 );
