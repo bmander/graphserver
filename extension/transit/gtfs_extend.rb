@@ -1,5 +1,9 @@
 require 'google_transit_feed'
 
+require 'rubygems'
+require_gem 'tzinfo'
+include TZInfo
+
 class Graphserver
   WGS84_LATLONG_EPSG = 4326
   GTFS_PREFIX = "gtfs"
@@ -27,7 +31,9 @@ class Graphserver
     sid_numbers
   end
 
-  def load_calendar
+  #optionally specify the agency who's calendary you want to load
+  #if no agency is specified, uses the first one in the agencies table
+  def load_calendar agency_id=nil
     expanded_calendar = {}
 
     #=========GET SERVICE_IDs, ASSOCIATE THEM WITH INTs=====
@@ -42,8 +48,18 @@ class Graphserver
     sid_start = GoogleTransitFeed::parse_time( day_bounds[0][0] )
     sid_end   = GoogleTransitFeed::parse_time( day_bounds[0][1] )
 
-    #pop an error of service days oevrlap
+    #pop an error of service days overlap
     #if sid_end-sid_start > SECONDS_IN_DAY then raise "Service day spans #{day_bounds[0][0]} to #{day_bounds[0][1]}; Service days may not overlap" end
+
+    #=========GET TIMEZONE INFORMATION======================
+    if agency_id then
+      timezone = conn.exec "SELECT agency_timezone FROM gtf_agency WHERE agency_id='#{agency_id}'"
+    else
+      timezone = conn.exec "SELECT agency_timezone FROM gtf_agency"
+    end
+    timezone = TZInfo::Timezone.get( timezone[0][0] ) #convert timezone string (eg "America/New York") to timezone
+    tz_offset  = timezone.current_period.utc_offset                  #number of seconds offset from UTC (eg -18000)
+    dst_offset = timezone.current_period.std_offset                  #number of seconds changed during daylight savings eg 3600
 
     #=========EXPAND calendar TABLE INTO HASH===============
     dates = conn.exec <<-SQL
@@ -52,11 +68,12 @@ class Graphserver
 
     #for each service_id in the calendar table
     dates.each do |service_id, mon, tue, wed, thu, fri, sat, sun, start_date, end_date|
-      #monday is defined as "1" and sunday "7", so we need to pad the array by one.
+      #convert to boolean daymask
       daymask = [mon, tue, wed, thu, fri, sat, sun].collect do |day| day == "1" end      
 
-      i = GoogleTransitFeed::parse_date( start_date )
-      n = GoogleTransitFeed::parse_date( end_date ) #end date is inclusive
+      #Find the UTC date, as if we're in London
+      i = GoogleTransitFeed::parse_date( start_date )  #date as parsed to UTC
+      n = GoogleTransitFeed::parse_date( end_date )    #end date is inclusive
 
       #for each day in the service_id date range
       while i <= n  do
@@ -75,6 +92,7 @@ class Graphserver
     SQL
 
     single_dates.each do |service_id, date, exception_type|
+      #returns UTC date, as if we're in London
       i = GoogleTransitFeed::parse_date( date )
       expanded_calendar[i] ||= []
   
@@ -92,20 +110,36 @@ class Graphserver
     end
 
     #========CONVERT SORTED ARRAY INTO CALENDAR OBJECT===================================
-    daylight_savings = 0 #TODO: this is a stub
     ret = Calendar.new
     expanded_calendar.each do |day, service_ids|
-      ret.append_day( day.to_i+sid_start, day.to_i+sid_end, service_ids, daylight_savings )
+      local_daystart = day.to_i-tz_offset
+      #if daylight savings is in effect
+      if timezone.period_for_utc( day.to_i ).dst? then
+        local_daystart -= dst_offset
+        daylight_savings = dst_offset
+      else
+        daylight_savings = 0
+      end
+
+      ret.append_day( local_daystart+sid_start, local_daystart+sid_end, service_ids, daylight_savings )
     end
 
     return ret.rewind!
   end
   
-  def load_google_transit_feed
+  def load_google_transit_feed agency_id=nil
+    #=========GET TIMEZONE INFORMATION======================
+    if agency_id then
+      timezone = conn.exec "SELECT agency_timezone FROM gtf_agency WHERE agency_id='#{agency_id}'"
+    else
+      timezone = conn.exec "SELECT agency_timezone FROM gtf_agency"
+    end
+    timezone = TZInfo::Timezone.get( timezone[0][0] ) #convert timezone string (eg "America/New York") to timezone
+    tz_offset  = timezone.current_period.utc_offset                  #number of seconds offset from UTC (eg -18000)
 
-    timezone_offset = 0 #number of hours offset from Greenwich Mean Time. Can be decimal.
+    #=========LOAD CALENDAR=================================
 
-    calendar = load_calendar
+    calendar = load_calendar( agency_id )
 
     #service_ids are numbers in graphserver
     #sid_numbers is a service_id -> number dictionary
@@ -155,7 +189,7 @@ class Graphserver
     #dump triphops to graphserver
     print "Importing triphops to Graphserver\n"
     triphops.each_pair do |stops, sched|
-      @gg.add_edge( GTFS_PREFIX+stops[0], GTFS_PREFIX+stops[1], TripHopSchedule.new( stops[2], sched, calendar, timezone_offset ) )
+      @gg.add_edge( GTFS_PREFIX+stops[0], GTFS_PREFIX+stops[1], TripHopSchedule.new( stops[2], sched, calendar, tz_offset ) )
     end
 
     return true
