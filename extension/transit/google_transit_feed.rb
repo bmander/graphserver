@@ -1,11 +1,13 @@
 module GoogleTransitFeed
 
   #parse the form "YYYY-MM-DD"
+  #returns that date in UTC
   def self.parse_date date
-    Time.mktime( date[0..3], date[5..6], date[8..9], 0, 0, 0, 0 )
+    Time.utc( date[0..3], date[5..6], date[8..9], 0, 0, 0, 0 )
   end
 
   #parse the form "HH:MM:SS"
+  #returns seconds since beginning of local midnight
   def self.parse_time time
     time[0..1].to_i*3600 + time[3..4].to_i*60 + time[6..7].to_i
   end
