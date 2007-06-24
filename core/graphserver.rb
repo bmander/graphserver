@@ -4,6 +4,12 @@ require 'graph.rb'
 require 'optparse'
 require 'cgi'
 
+class Calendar
+  def to_xml
+    "<calendar begin_time='#{Time.at(begin_time)}' end_time='#{Time.at(end_time)}' service_ids='#{service_ids.join(", ")}' />"
+  end
+end
+
 class Link
   def to_xml
     "<link/>"
@@ -40,10 +46,16 @@ class State
       if name == "time" then #TODO kludge alert
         ret << "time='#{Time.at( value ).inspect}' " 
       else
-        ret << "#{name}='#{CGI.escape(value.to_s)}' "
+        ret << "#{name}='#{CGI.escape(value.to_s)}' " unless value.public_methods.include? "to_xml"
       end
     end
-    ret << "/>"
+    ret << ">"
+
+    self.to_hash.each_pair do |name, value|
+      ret << value.to_xml if value.public_methods.include? "to_xml"
+    end
+
+    ret << "</state>"
   end
 end
 
