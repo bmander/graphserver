@@ -89,7 +89,15 @@ thsWalkBack(TripHopSchedule* this, State* params) {
     ret->calendar_day = calendar_day;
 
     //convert params->time, N seconds since the epoch, to seconds since midnight within the span of the service day
-    long adjusted_time = (params->time - calendar_day->begin_time) + calendar_day->begin_time%SECONDS_IN_DAY;
+
+    //difference between utc midnight and local midnight
+    long utc_offset = this->timezone_offset + calendar_day->daylight_savings;
+    //difference between local midnight and calendar day
+    long since_midnight_local = (calendar_day->begin_time+utc_offset)%SECONDS_IN_DAY;
+    //seconds since the calendar day began
+    long since_calday_begin = params->time - calendar_day->begin_time;
+    //seconds since local midnight
+    long adjusted_time = since_midnight_local + since_calday_begin;
 
     long wait;
     TripHop* hop;
