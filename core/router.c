@@ -47,7 +47,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
 #else
     ListNode* edges = vGetIncomingEdgeList( u );
 #endif
-    while( edges ) {                                 //For each Edge 'edge' outgoing from u
+    while( edges ) {                                 //For each Edge 'edge' connecting u
       Edge* edge = edges->data;
 #ifndef RETRO
       v = edge->to;                                  //to Vertex v:
@@ -55,9 +55,14 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
       v = edge->from;
 #endif
 
-      spt_v = gGetVertex( spt, v->label );             //get the SPT Vertex corresponding to 'v' 
-                                                       //(which may not exist yet)
-      dv = (spt_v ? (State*)spt_v->payload : NULL);    //and its State 'dv'.
+      long old_w;
+      if( spt_v = gGetVertex( spt, v->label ) ) {        //get the SPT Vertex corresponding to 'v'
+        dv = (State*)spt_v->payload;                     //and its State 'dv'
+        old_w = dv->weight;
+      } else {
+        dv = NULL;                                       //which may not exist yet
+        old_w = INFINITY;
+      }
       
 #ifndef RETRO
       State *new_dv = eWalk( edge, du );               //Get the State of v via edge 'new_dv'.
@@ -78,9 +83,8 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
         continue;
       }
 
-      long old_w = ( dv ? dv->weight : INFINITY);
       long new_w = new_dv->weight;
-      // If the weight to 'v' via 'edge' 'new_dv' is smaller than the previously known weight to 'v',
+      // If the new way of getting there is better,
       if( new_w < old_w ) {
         dirfibheap_insert_or_dec_key( q, v, new_w );    // rekey v in the priority queue
 
