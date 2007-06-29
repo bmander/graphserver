@@ -1,16 +1,18 @@
-# USAGE:
-# Start the server
-# $ ruby gserver.rb --port=PORT
-#
-# Then test the XML API from a web browser:
-# http://path.to.server:port/                               (blank, returns API documentation)
-# /all_vertex_labels
-# /outgoing_edges?label=Seattle                             (currently segfaults. eep!)
-# /eval_edges?label=Seattle                                 (evaluates outgoing edges at current time)
-# /eval_edges?label=Seattle-busstop&time=0                  (evaluates edges at given unix time)
-# /shortest_path?from=Seattle&to=Portland                   (finds shortest route for current. this example broken due to int range issues)
-# /shortest_path?from=Seattle&to=Portland&time=0            (finds short for given unix time)
-# /shortest_path?from=Seattle&to=Portland&time=0&debug=true (finds short for given unix time, with verbose output)
+USAGE = %<
+ USAGE:
+ Start the server
+ $ ruby gserver.rb --port=PORT
+
+ Then test the XML API from a web browser:
+ http://path.to.server:port/                               (blank, returns API documentation)
+ .../all_vertex_labels
+ .../outgoing_edges?label=Seattle                             (currently segfaults. eep!)
+ .../eval_edges?label=Seattle                                 (evaluates outgoing edges at current time)
+ .../eval_edges?label=Seattle-busstop&time=0                  (evaluates edges at given unix time)
+ .../shortest_path?from=Seattle&to=Portland                   (finds shortest route for current. this example broken due to int range issues)
+ .../shortest_path?from=Seattle&to=Portland&time=0            (finds short for given unix time)
+ .../shortest_path?from=Seattle&to=Portland&time=0&debug=true (finds short for given unix time, with verbose output)
+>
 
 require 'graphserver.rb'
 
@@ -88,6 +90,11 @@ class ExampleServer < Graphserver
     load_scheduled_data
     load_street_data
     load_links
+  end
+
+  def start
+    print USAGE
+    super
   end
 end
 
