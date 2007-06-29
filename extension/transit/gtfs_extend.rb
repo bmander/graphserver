@@ -188,8 +188,9 @@ class Graphserver
 
     #dump triphops to graphserver
     print "Importing triphops to Graphserver\n"
-    triphops.each_pair do |stops, sched|
-      @gg.add_edge( GTFS_PREFIX+stops[0], GTFS_PREFIX+stops[1], TripHopSchedule.new( stops[2], sched, calendar, tz_offset ) )
+    triphops.each_pair do |sched_key, sched|
+      from_id, to_id, service_id = sched_key
+      @gg.add_edge( GTFS_PREFIX+from_id, GTFS_PREFIX+to_id, TripHopSchedule.new( service_id, sched, calendar, tz_offset ) )
     end
 
     return true
