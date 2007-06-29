@@ -1,33 +1,57 @@
-require 'graphserver.rb'
+# USAGE:
+# Start the server
+# $ ruby gserver.rb --port=PORT
+#
+# Then test the XML API from a web browser:
+# http://path.to.server:port/                               (blank, returns API documentation)
+# /all_vertex_labels
+# /outgoing_edges?label=Seattle                             (currently segfaults. eep!)
+# /eval_edges?label=Seattle                                 (evaluates outgoing edges at current time)
+# /eval_edges?label=Seattle-busstop&time=0                  (evaluates edges at given unix time)
+# /shortest_path?from=Seattle&to=Portland                   (finds shortest route for current. this example broken due to int range issues)
+# /shortest_path?from=Seattle&to=Portland&time=0            (finds short for given unix time)
+# /shortest_path?from=Seattle&to=Portland&time=0&debug=true (finds short for given unix time, with verbose output)
 
-require '../extension/load_tiger_line.rb'
+require 'graphserver.rb'
 
 class ExampleServer < Graphserver
 
   def load_scheduled_data
 
-    #make database or file calls to get your scheduled data
+    #====Create a Calendar Object====
+    calendar = Calendar.new
+    
+    day_begin = 0               #In unix time - Midnight UTC, January 1st 1970
+    day_end = 86400             #Also unix time - Midnight UTC, January 2nd 1970
+    service_ids = [0]           #One bus service type runs this day, called "0"
+    daylight_savings_offset = 0 #The daylight savings time offset for this day is 0 seconds
+    calendar.append_day( day_begin, day_end, service_ids, daylight_savings_offset )
 
-    # format it into a "schedule" object.
-    # A schedule is a short array that looks like this: [depart, arrive, trip_id, daymask]
-    # depart and arrive are expressed as seconds since midnight sunday
-    # trip_id is a string; it has to be unique
-    # daymask is an array of seven booleans like [true, false, false, false, false, false, true]
-    #   that indicate which days-of-the-week the schedule runs
+    #====Create a schedule array====
+    #A schedule is an array of three-element arrays in the form [depart, arrive, trip_id].
+    #The "depart" and "arrive" elements are expressed in seconds-since-midnight in the service day in question.
+    #It is possible for depart and arrive to both be larger than 86400 (24 hours)
 
     sched = []
-    sched << [10, 20, "A", [true, false, false, false, false, false, true]]
-    sched << [15, 30, "B", [true, false, false, false, false, false, true]]
-    sched << [400, 430, "C", [false, true, true, true, true, true, false]]
+    sched << [10, 20, "A"]  #departs at 10 seconds, arrives 10 seconds later, called "A"
+    sched << [15, 30, "B"]
+    sched << [400, 430, "C"]
+
+    #====Create TripHopSchedule object====
+    #A TripHopSchedule represents the unevaluated weight of an edge containing schedule information
+
+    service_id = 0   #The service type for this day is "0". Service_ids are integers, but stand in for "weekday" or "saturday" etc.
+    tz_offset = 0    #The timezone offset in seconds. US West coast is -28800 (-8 hours) for instance.
+    ths = TripHopSchedule.new( service_id, sched, calendar, tz_offset )
 
     # add the pertinent vertices to the ExampleServer's member variable Graph object:
 
-    @gg.add_vertex( "Seattle-busstop", nil )
-    @gg.add_vertex( "Portland-busstop", nil )
+    @gg.add_vertex( "Seattle-busstop" )
+    @gg.add_vertex( "Portland-busstop" )
 
     # now connect the vertices with an edge
 
-    @gg.add_triphop_schedule( "Seattle-busstop", "Portland-busstop", sched )
+    @gg.add_edge( "Seattle-busstop", "Portland-busstop", ths )
 
   end
 
@@ -35,13 +59,13 @@ class ExampleServer < Graphserver
 
     #Street-style data is simpler
     
-    @gg.add_vertex( "Seattle", nil )
-    @gg.add_vertex( "Portland", nil )
+    @gg.add_vertex( "Seattle" )
+    @gg.add_vertex( "Portland" )
 
     # street edges are one-way by default, and given length in feet
 
-    @gg.add_street( "Seattle", "Portland", "I-5", 240000 )
-    @gg.add_street( "Portland", "Seattle", "I-5", 250000 ) #the return trip is longer, for some reason
+    @gg.add_edge( "Seattle", "Portland", Street.new( "I-5", 240000 ) )
+    @gg.add_edge( "Portland", "Seattle", Street.new( "I-5", 250000 ) ) #say the return trip is longer, for some reason
 
   end
 
@@ -51,11 +75,11 @@ class ExampleServer < Graphserver
 
     #They're one-way
     
-    @gg.add_link( "Seattle", "Seattle-busstop" )
-    @gg.add_link( "Seattle-busstop", "Seattle" )
+    @gg.add_edge( "Seattle", "Seattle-busstop", Link.new )
+    @gg.add_edge( "Seattle-busstop", "Seattle", Link.new )
 
-    @gg.add_link( "Portland", "Portland-busstop" )
-    @gg.add_link( "Portland-busstop", "Portland" )
+    @gg.add_edge( "Portland", "Portland-busstop", Link.new )
+    @gg.add_edge( "Portland-busstop", "Portland", Link.new )
 
   end
 
