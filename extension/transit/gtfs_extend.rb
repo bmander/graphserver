@@ -180,10 +180,10 @@ class Graphserver
       i += 1
       if i%10000==0 then print "#{(i.to_f/n)*100}%\n" end      
 
-      ary = [from_id, to_id, sid_numbers[service_id]]
+      schedule_key = [from_id, to_id, sid_numbers[service_id]]
 
-      triphops[ary] ||= []
-      triphops[ary] << [GoogleTransitFeed::parse_time( departure_time ), GoogleTransitFeed::parse_time( arrival_time ), trip_id ]
+      triphops[schedule_key] ||= []
+      triphops[schedule_key] << [GoogleTransitFeed::parse_time( departure_time ), GoogleTransitFeed::parse_time( arrival_time ), trip_id ]
     end
 
     #dump triphops to graphserver
