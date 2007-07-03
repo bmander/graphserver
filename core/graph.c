@@ -45,14 +45,14 @@ gGetVertex( Graph* this, char *label ) {
 }
 
 Edge*
-gAddEdge( Graph* this, char *from, char *to, edgepayload_t edgetype, void *payload ) {
+gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload ) {
   Vertex* vtx_from = gGetVertex( this, from );
   Vertex* vtx_to   = gGetVertex( this, to );
 
   if(!(vtx_from && vtx_to))
     return NULL;
 
-  return vLink( vtx_from, vtx_to, edgetype, payload ); 
+  return vLink( vtx_from, vtx_to, payload ); 
 }
 
 Vertex**
@@ -211,9 +211,9 @@ vDestroy(Vertex *this, int free_vertex_payload, int free_edge_payloads) {
 
 
 Edge*
-vLink(Vertex* this, Vertex* to, edgepayload_t edgetype, void* payload) {
+vLink(Vertex* this, Vertex* to, EdgePayload* payload) {
     //create edge object
-    Edge* link = eNew(this, to, edgetype, payload);
+    Edge* link = eNew(this, to, payload);
 
     ListNode* outlistnode = liNew( link );
     liInsertAfter( this->outgoing, outlistnode );
@@ -228,7 +228,7 @@ vLink(Vertex* this, Vertex* to, edgepayload_t edgetype, void* payload) {
 
 //the comments say it all
 Edge*
-vSetParent( Vertex* this, Vertex* parent, edgepayload_t edgetype, void* payload ) {
+vSetParent( Vertex* this, Vertex* parent, EdgePayload* payload ) {
     //delete all incoming edges
     ListNode* edges = vGetIncomingEdgeList( this );
     while(edges) {
@@ -237,7 +237,7 @@ vSetParent( Vertex* this, Vertex* parent, edgepayload_t edgetype, void* payload 
     }
 
     //add incoming edge
-    return vLink( parent, this, edgetype, payload );  
+    return vLink( parent, this, payload );  
 }
 
 ListNode*
@@ -263,11 +263,10 @@ vRemoveInEdgeRef( Vertex* this, Edge* todie ) {
 // EDGE FUNCTIONS
 
 Edge*
-eNew(Vertex* from, Vertex* to, edgepayload_t edgetype, void* payload) {
+eNew(Vertex* from, Vertex* to, EdgePayload* payload) {
     Edge *this = (Edge *)malloc(sizeof(Edge));
     this->from = from;
     this->to = to;
-    this->payloadtype = edgetype;
     this->payload = payload;
     return this;
 }
@@ -275,21 +274,8 @@ eNew(Vertex* from, Vertex* to, edgepayload_t edgetype, void* payload) {
 void
 eDestroy(Edge *this, int destroy_payload) {
     //free payload
-    if(destroy_payload) {
-      switch( this->payloadtype ) {
-        case PL_STREET:
-          streetDestroy( this->payload );
-          break;
-        case PL_TRIPHOPSCHED:
-          thsDestroy( this->payload );
-          break;
-        case PL_LINK:
-          linkDestroy( this->payload );
-          break;
-        default:
-          free( this->payload );
-      }
-    }
+    if(destroy_payload)
+      epDestroy( this->payload, 1 ); //destroy payload object and contents
 
     vRemoveOutEdgeRef( this->from, this );
     vRemoveInEdgeRef( this->to, this );
@@ -298,32 +284,13 @@ eDestroy(Edge *this, int destroy_payload) {
 
 State*
 eWalk(Edge *this, State* params) {
-   switch( this->payloadtype ) {
-     case PL_STREET:
-       return streetWalk( (Street*)this->payload, params );
-     case PL_TRIPHOPSCHED:
-       return thsWalk((TripHopSchedule*)this->payload, params);
-     case PL_LINK:
-       return linkWalk((Link*)this->payload, params);
-     default:
-       return NULL;
-   }
+  return epWalk( this->payload, params );
 }
 
 State*
 eWalkBack(Edge *this, State* params) {
-   switch( this->payloadtype ) {
-     case PL_STREET:
-       return streetWalkBack( (Street*)this->payload, params );
-     case PL_TRIPHOPSCHED:
-       return thsWalkBack((TripHopSchedule*)this->payload, params);
-     case PL_LINK:
-       return linkWalkBack((Link*)this->payload, params);
-     default:
-       return NULL;
-   }
+  return epWalkBack( this->payload, params );
 }
-
 
 // LIST FUNCTIONS
 

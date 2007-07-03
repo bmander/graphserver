@@ -41,10 +41,9 @@ struct Vertex {
 } ;
 
 struct Edge {
-   Vertex* from;
-   Vertex* to;
-   edgepayload_t payloadtype;
-   void* payload;
+  Vertex* from;
+  Vertex* to;
+  EdgePayload* payload;
 } ;
 
 struct ListNode {
@@ -67,7 +66,7 @@ Vertex*
 gGetVertex( Graph* this, char *label );
 
 Edge*
-gAddEdge( Graph* this, char *from, char *to, edgepayload_t edgetype, void *payload );
+gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload );
 
 Vertex**
 gVertices( Graph* this, long* num_vertices );
@@ -97,10 +96,10 @@ void
 vMark(Vertex* this) ;
 
 Edge*
-vLink(Vertex* this, Vertex* to, edgepayload_t edgetype, void* payload) ;
+vLink(Vertex* this, Vertex* to, EdgePayload* payload) ;
 
 Edge*
-vSetParent( Vertex* this, Vertex* parent, edgepayload_t edgetype, void* payload );
+vSetParent( Vertex* this, Vertex* parent, EdgePayload* payload );
 
 inline ListNode*
 vGetOutgoingEdgeList( Vertex* this );
@@ -117,7 +116,7 @@ vRemoveInEdgeRef( Vertex* this, Edge* todie );
 //EDGE FUNCTIONS
 
 Edge*
-eNew(Vertex* from, Vertex* to, edgepayload_t edgetype, void* payload);
+eNew(Vertex* from, Vertex* to, EdgePayload* payload);
 
 void
 eDestroy(Edge *this, int destroy_payload) ;
@@ -130,6 +129,7 @@ eWalk(Edge *this, State* params) ;
 
 State*
 eWalkBack(Edge *this, State *params) ;
+
 //LIST FUNCTIONS
 
 ListNode*
