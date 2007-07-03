@@ -5,15 +5,6 @@
 #include <string.h>
 #include <statetypes.h>
 
-typedef enum {
-  PL_STREET,
-  PL_TRIPHOPSCHED,
-  PL_TRIPHOP,
-  PL_LINK,
-  PL_RUBYVALUE,
-  PL_NONE,
-} edgepayload_t;
-
 //---------------DECLARATIONS FOR STATE CLASS---------------------
 
 typedef struct State {
@@ -35,6 +26,43 @@ stateDestroy();
 State*
 stateDup( State* this );
 
+//---------------DECLARATIONS FOR EDGEPAYLOAD CLASS---------------------
+
+typedef enum {
+  PL_STREET,
+  PL_TRIPHOPSCHED,
+  PL_TRIPHOP,
+  PL_LINK,
+  PL_RUBYVALUE,
+  PL_NONE,
+} edgepayload_t;
+
+typedef struct EdgePayload {
+  edgepayload_t  type;
+  void*          payload;        //could use a union
+}
+
+EdgePayload*
+epNew( edgepayload_t type, void* payload );
+
+EdgePayload*
+epDup( EdgePayload* this );
+
+void
+epDestroy( EdgePayload* this, int destroy_payload );
+
+State*
+epWalk( EdgePayload* this, State* param );
+
+State*
+epWalkBack( EdgePayload* this, State* param );
+
+EdgePayload*
+epCollapse( EdgePayload* this, State* param );
+
+EdgePayload*
+epCollapseBack( EdgePayload* this, State* param );
+
 //---------------DECLARATIONS FOR LINK  CLASS---------------------
 
 typedef struct Link {
@@ -52,12 +80,6 @@ linkWalk(Link* this, State* param);
 
 inline State*
 linkWalkBack(Link* this, State* param);
-
-inline Link*
-linkCollapse(Link* this, State* param);
-
-inline Link*
-linkCollapseBack( Link* this, State* param );
 
 //---------------DECLARATIONS FOR STREET  CLASS---------------------
 
@@ -77,12 +99,6 @@ streetWalk(Street* this, State* params);
 
 inline State*
 streetWalkBack(Street* this, State* params);
-
-inline Street*
-streetCollapse( Street* this, State* params );
-
-inline Street*
-streetCollapseBack( Street* this, State* params );
 
 //---------------DECLARATIONS FOR TRIPHOPSCHEDULE and TRIPHOP  CLASSES---------------------
 

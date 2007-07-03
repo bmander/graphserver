@@ -30,6 +30,103 @@ stateDestroy(State* this) {
   free( this );
 }
 
+//--------------------EDGEPAYLOAD FUNCTIONS-------------------
+
+EdgePayload*
+epNew( edgepayload_t type, void* payload ) {
+  EdgePayload* ret = (EdgePayload*)malloc(sizeof(EdgePayload));
+  ret->type = type;
+  ret->payload = payload;
+  
+  return ret;
+}
+
+EdgePayload*
+epDup( EdgePayload* this ) {
+  EdgePayload* ret = (EdgePayload*)malloc( sizeof(EdgePayload) );
+  memcpy( ret, this, sizeof( EdgePayload ) );
+  return ret;
+}
+
+void
+epDestroy( EdgePayload* this, int destroy_payload ) {
+  if( destroy_payload ) {
+    switch( this->payloadtype ) {
+      case PL_STREET:
+        streetDestroy( this->payload );
+        break;
+      case PL_TRIPHOPSCHED:
+        thsDestroy( this->payload );
+        break;
+      case PL_TRIPHOP:
+        triphopDestroy( this->payload );
+      case PL_LINK:
+        linkDestroy( this->payload );
+        break;
+      default:
+        free( this->payload );
+    }
+  }
+  free( this );
+}
+
+State*
+epWalk( EdgePayload* this, State* param ) {
+  switch( this->payloadtype ) {
+    case PL_STREET:
+      return streetWalk( (Street*)this->payload, params );
+    case PL_TRIPHOPSCHED:
+      return thsWalk((TripHopSchedule*)this->payload, params);
+    case PL_TRIPHOP:
+      return triphopWalk((TripHop*)this->payload, params );
+    case PL_LINK:
+      return linkWalk((Link*)this->payload, params);
+    default:
+      return NULL;
+  }
+}
+
+State*
+epWalkBack( EdgePayload* this, State* param ) {
+  switch( this->payloadtype ) {
+    case PL_STREET:
+      return streetWalkBack( (Street*)this->payload, params );
+    case PL_TRIPHOPSCHED:
+      return thsWalkBack((TripHopSchedule*)this->payload, params);
+    case PL_TRIPHOP:
+      return triphopWalkBack((TripHop*)this->payload, params);
+    case PL_LINK:
+      return linkWalkBack((Link*)this->payload, params);
+    default:
+      return NULL;
+  }
+}
+
+EdgePayload*
+epCollapse( EdgePayload* this, State* param ) {
+  switch( this->payloadtype ) {
+    case PL_TRIPHOPSCHED:
+      return epNew( PL_TRIPHOP, thsCollapse( (TripHopSchedule*)this->payload, params) );
+    default:
+      return epDup( this );
+  }
+}
+
+EdgePayload*
+epCollapseBack( EdgePayload* this, State* param ) {
+  switch( this->payloadtype ) {
+    case PL_TRIPHOPSCHED:
+      return epNew( PL_TRIPHOP, thsCollapseBack( (TripHopSchedule*)this->payload, params) );
+    default:
+      return epDup( this );
+  }
+}
+
+//EdgePayload*
+//epCollapse( EdgePayload* this, State* param );
+
+//EdgePayload*
+//epCollapseBack( EdgePayload* this, State* param );
 
 //LINK FUNCTIONS
 Link*
