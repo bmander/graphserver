@@ -98,6 +98,7 @@ thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id
     ret->hops[i].arrive = arrives[i];
     ret->hops[i].transit = arrives[i] - departs[i];
     ret->hops[i].trip_id = trip_ids[i];
+    ret->hops[i].schedule = ret;
   }
 
   //make sure departure and arrival arrays are sorted, as they're subjected to a binsearch

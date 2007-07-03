@@ -8,6 +8,7 @@
 typedef enum {
   PL_STREET,
   PL_TRIPHOPSCHED,
+  PL_TRIPHOP,
   PL_LINK,
   PL_RUBYVALUE,
   PL_NONE,
@@ -97,6 +98,7 @@ typedef struct TripHop {
   int arrive;
   int transit;
   char* trip_id;
+  TripHopSchedule* schedule;
 } TripHop;
 
 typedef struct TripHopSchedule {
@@ -118,6 +120,12 @@ thsWalk(TripHopSchedule* this, State* params);
 
 inline State*
 thsWalkBack(TripHopSchedule* this, State* params);
+
+inline State*
+triphopWalk( TripHop* this, State* params );
+
+inline State*
+triphopWalkBack( TripHop* this, State* params );
 
 inline TripHop*
 thsCollapse( TripHopSchedule* this, State* params );
