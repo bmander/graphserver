@@ -176,6 +176,8 @@ inline TripHop* thsGetLastHop(TripHopSchedule* this, long time) {
       return inquestion;
     }
   }
+  
+  //crazycakes!
 
   if( high == this->n ) //there is no next departure
     return NULL;
