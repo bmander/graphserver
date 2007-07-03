@@ -25,17 +25,6 @@ linkWalkBack(Link* this, State* params) {
   return ret;
 }
 
-inline Link*
-#ifndef ROUTE_REVERSE
-linkCollapse(Link* this, State* param) {
-  return this;
-}
-#else
-linkCollapseBack( Link* this, State* param) {
-  return this;
-}
-#endif
-
 inline State*
 #ifndef ROUTE_REVERSE
 streetWalk(Street* this, State* params) {
@@ -69,18 +58,6 @@ streetWalkBack(Street* this, State* params) {
   return ret;
 }
 
-inline Street*
-#ifndef ROUTE_REVERSE
-streetCollapse(Street* this, State* param) {
-  return this;
-}
-#else
-streetCollapseBack( Street* this, State* param) {
-  return this;
-}
-#endif
-
-
 inline State*
 #ifndef ROUTE_REVERSE
 thsWalk(TripHopSchedule* this, State* params) {
@@ -111,16 +88,7 @@ thsWalkBack(TripHopSchedule* this, State* params) {
     State* ret = stateDup( params );
     ret->calendar_day = calendar_day;
 
-    //convert params->time, N seconds since the epoch, to seconds since midnight within the span of the service day
-
-    //difference between utc midnight and local midnight
-    long utc_offset = this->timezone_offset + calendar_day->daylight_savings;
-    //difference between local midnight and calendar day
-    long since_midnight_local = (calendar_day->begin_time+utc_offset)%SECONDS_IN_DAY;
-    //seconds since the calendar day began
-    long since_calday_begin = params->time - calendar_day->begin_time;
-    //seconds since local midnight
-    long adjusted_time = since_midnight_local + since_calday_begin;
+    long adjusted_time = thsSecondsSinceMidnight( this, params->time );
 
     long wait;
     TripHop* hop;
@@ -165,6 +133,56 @@ thsWalkBack(TripHopSchedule* this, State* params) {
     ret->dist_walked    = 0;
     ret->prev_edge_type = PL_TRIPHOPSCHED;
     ret->prev_edge_name = hop->trip_id;
+
+    return ret;
+}
+
+inline State*
+#ifndef ROUTE_REVERSE
+triphopWalk(TripHop* this, State* params) {
+#else
+triphopWalkBack(TripHop* this, State* params) {
+#endif
+
+    long adjusted_time = thsSecondsSinceMidnight( this, params->time );
+
+    long wait;
+#ifndef ROUTE_REVERSE
+    wait = (this->depart - adjusted_time);
+#else
+    wait = (adjusted_time - this->arrive);
+#endif
+  
+    long transfer_penalty=0;
+    //if this is a transfer
+    if( params->prev_edge_type != PL_TRIPHOP  ||    //the last edge wasn't a bus
+        !params->prev_edge_name               ||    //it was a bus, but the trip_id was NULL
+        strcmp( params->prev_edge_name, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
+
+      //add a weight penalty to the transfer under some conditions
+      if( wait < MIN_TRANSFER_TIME && 
+          params->num_transfers > 0)
+        transfer_penalty = (MIN_TRANSFER_TIME-wait)*TRANSFER_PENALTY;
+      //transfer_penalty = 1000; //penalty of making a transfer; flat rate.
+
+      ret->num_transfers += 1;
+    }
+
+#ifndef ROUTE_REVRSE
+    ret->time           += wait + this->transit;
+    if( ret->time >= this->schedule->calendar_day->end_time) {
+      ret->calendar_day = this->schedule->calendar_day->next_day;
+    }
+#else
+    ret->time           -= wait - this->transit;
+    if( ret->time < this->schedule->calendar_day->begin_time) {
+      ret->calendar_day = this->schedule->calendar_day->prev_day;
+    }
+#endif
+    ret->weight         += wait + this->transit + transfer_penalty;
+    ret->dist_walked    = 0;
+    ret->prev_edge_type = PL_TRIPHOP;
+    ret->prev_edge_name = this->trip_id;
 
     return ret;
 }
