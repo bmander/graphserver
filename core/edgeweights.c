@@ -11,8 +11,6 @@
 #define WALKING_OVERAGE 0     //hassle/second/meter
 #define WALKING_RELUCTANCE 1  //hassle/second*/
 
-//Made a change!
-
 inline State*
 #ifndef ROUTE_REVERSE
 linkWalk(Link* this, State* params) {
@@ -169,6 +167,44 @@ thsWalkBack(TripHopSchedule* this, State* params) {
     ret->prev_edge_name = hop->trip_id;
 
     return ret;
+}
+
+inline TripHop*
+#ifndef ROUTE_REVERSE
+thsCollapse(TripHopSchedule* this, State* params) {
+#else
+thsCollapseBack(TripHopSchedule* this, State* params) {
+#endif
+
+    // if the params->calendar_day is NULL, use the params->time to find the calendar_day
+    // the calendar_day is actually a denormalization of the params->time
+    // this way, the user doesn't need to worry about it
+    CalendarDay* calendar_day = params->calendar_day;
+    if( !calendar_day )
+#ifndef ROUTE_REVERSE
+      calendar_day = calDayOfOrAfter( this->calendar, params->time );
+#else
+      calendar_day = calDayOfOrBefore( this->calendar, params->time );
+#endif
+
+    // if the schedule never runs
+    // or if the schedule does not run on this day
+    // this link goes nowhere
+    if( !calendar_day ||
+        !calDayHasServiceId( calendar_day, this->service_id) ||
+        this->n == 0 ) {
+      return NULL;
+    }
+
+    long adjusted_time = thsSecondsSinceMidnight( this, params->time );
+
+    TripHop* hop;
+#ifndef ROUTE_REVERSE
+    return thsGetNextHop(this, adjusted_time)
+#else
+    return thsGetLastHop(this, adjusted_time)
+#endif
+
 }
 
 #ifndef ROUTE_REVERSE
