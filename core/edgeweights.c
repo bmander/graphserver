@@ -25,6 +25,17 @@ linkWalkBack(Link* this, State* params) {
   return ret;
 }
 
+inline Link*
+#ifndef ROUTE_REVERSE
+linkCollapse(Link* this, State* param) {
+  return this;
+}
+#else
+linkCollapseBack( Link* this, State* param) {
+  return this;
+}
+#endif
+
 inline State*
 #ifndef ROUTE_REVERSE
 streetWalk(Street* this, State* params) {
@@ -57,6 +68,18 @@ streetWalkBack(Street* this, State* params) {
 
   return ret;
 }
+
+inline Street*
+#ifndef ROUTE_REVERSE
+streetCollapse(Street* this, State* param) {
+  return this;
+}
+#else
+streetCollapseBack( Street* this, State* param) {
+  return this;
+}
+#endif
+
 
 inline State*
 #ifndef ROUTE_REVERSE
@@ -177,8 +200,6 @@ inline TripHop* thsGetLastHop(TripHopSchedule* this, long time) {
     }
   }
   
-  //crazycakes!
-
   if( high == this->n ) //there is no next departure
     return NULL;
   else

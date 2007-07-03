@@ -24,7 +24,7 @@ stateDup( State* this ) {
   return ret;
 }
 
-//the State object does not own it's contained calnedar
+//the State object does not own State#calendar
 void
 stateDestroy(State* this) {
   free( this );
