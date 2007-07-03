@@ -11,6 +11,8 @@
 #define WALKING_OVERAGE 0     //hassle/second/meter
 #define WALKING_RELUCTANCE 1  //hassle/second*/
 
+//Made a change!
+
 inline State*
 #ifndef ROUTE_REVERSE
 linkWalk(Link* this, State* params) {
