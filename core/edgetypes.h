@@ -51,6 +51,11 @@ linkWalk(Link* this, State* param);
 inline State*
 linkWalkBack(Link* this, State* param);
 
+inline Link*
+linkCollapse(Link* this, State* param);
+
+inline Link*
+linkCollapseBack( Link* this, State* param );
 //STREET
 
 typedef struct Street {
@@ -70,6 +75,11 @@ streetWalk(Street* this, State* params);
 inline State*
 streetWalkBack(Street* this, State* params);
 
+inline Street*
+streetCollapse( Street* this, State* params );
+
+inline Street*
+streetCollapseBack( Street* this, State* params );
 //TRIPHOPSCHEDULE
 
 #define INFINITY 100000000
@@ -112,4 +122,9 @@ thsGetNextHop(TripHopSchedule* this, long time);
 inline TripHop*
 thsGetLastHop(TripHopSchedule* this, long time);
 
+inline TripHop*
+thsCollapse( TripHopSchedule* this, State* params );
+
+inline TripHop*
+thsCollapseBack( TripHopSchedule* this, State* params );
 #endif

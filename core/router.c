@@ -33,7 +33,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
  *
  */ 
   
-  while( !dirfibheap_empty( q ) ) {                //Until the priority queue is empty:
+  while( !dirfibheap_empty( q ) ) {                  //Until the priority queue is empty:
     u = dirfibheap_extract_min( q );                 //get the lowest-weight Vertex 'u',
 
     if( !strcmp( u->label, target ) )                //(end search if reached destination vertex)
@@ -63,7 +63,13 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
         dv = NULL;                                       //which may not exist yet
         old_w = INFINITY;
       }
-      
+    
+      /*TODO: proposed edge evaluation procedure:
+        (1) collapse edge using du
+        (2) find node impedance from incoming collapsed edge to outgoing collapsed edge
+        (3) new_dv = eWalk( collapsed_edge, nodeWalk( incoming, outgoing, node, du ) )
+      */
+
 #ifndef RETRO
       State *new_dv = eWalk( edge, du );               //Get the State of v via edge 'new_dv'.
 #else
