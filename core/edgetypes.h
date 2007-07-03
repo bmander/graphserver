@@ -13,6 +13,8 @@ typedef enum {
   PL_NONE,
 } edgepayload_t;
 
+//---------------DECLARATIONS FOR STATE CLASS---------------------
+
 typedef struct State {
    long          time;           //seconds since the epoch
    long          weight;
@@ -23,7 +25,6 @@ typedef struct State {
    CalendarDay*  calendar_day;
 } State;
 
-//STATE
 State*
 stateNew();
 
@@ -33,7 +34,7 @@ stateDestroy();
 State*
 stateDup( State* this );
 
-//LINK
+//---------------DECLARATIONS FOR LINK  CLASS---------------------
 
 typedef struct Link {
   char* name;
@@ -56,7 +57,8 @@ linkCollapse(Link* this, State* param);
 
 inline Link*
 linkCollapseBack( Link* this, State* param );
-//STREET
+
+//---------------DECLARATIONS FOR STREET  CLASS---------------------
 
 typedef struct Street {
    char* name;
@@ -80,7 +82,8 @@ streetCollapse( Street* this, State* params );
 
 inline Street*
 streetCollapseBack( Street* this, State* params );
-//TRIPHOPSCHEDULE
+
+//---------------DECLARATIONS FOR TRIPHOPSCHEDULE and TRIPHOP  CLASSES---------------------
 
 #define INFINITY 100000000
 #define SECONDS_IN_WEEK 604800
@@ -116,15 +119,20 @@ thsWalk(TripHopSchedule* this, State* params);
 inline State*
 thsWalkBack(TripHopSchedule* this, State* params);
 
+inline TripHop*
+thsCollapse( TripHopSchedule* this, State* params );
+
+inline TripHop*
+thsCollapseBack( TripHopSchedule* this, State* params );
+
+//convert time, N seconds since the epoch, to seconds since midnight within the span of the service day
+inline long
+thsSecondsSinceMidnight( TripHopSchedule* this, long time );
+
 inline TripHop* 
 thsGetNextHop(TripHopSchedule* this, long time);
 
 inline TripHop*
 thsGetLastHop(TripHopSchedule* this, long time);
 
-inline TripHop*
-thsCollapse( TripHopSchedule* this, State* params );
-
-inline TripHop*
-thsCollapseBack( TripHopSchedule* this, State* params );
 #endif
