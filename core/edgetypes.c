@@ -106,6 +106,18 @@ thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id
   return ret; // return NULL;
 }
 
+inline long
+thsSecondsSinceMidnight( TripHopSchedule* this, long time ) {
+    //difference between utc midnight and local midnight
+    long utc_offset = this->timezone_offset + this->calendar_day->daylight_savings;
+    //difference between local midnight and calendar day begin
+    long since_midnight_local = (this->calendar_day->begin_time+utc_offset)%SECONDS_IN_DAY;
+    //seconds since the calendar day began
+    long since_calday_begin = time - this->calendar_day->begin_time;
+    //seconds since local midnight
+    return since_midnight_local + since_calday_begin;
+}
+
 //DEBUG CODE
 void
 thsPrintHops(TripHopSchedule* this) {
