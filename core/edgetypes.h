@@ -5,6 +5,15 @@
 #include <string.h>
 #include <statetypes.h>
 
+typedef enum {
+  PL_STREET,
+  PL_TRIPHOPSCHED,
+  PL_TRIPHOP,
+  PL_LINK,
+  PL_RUBYVALUE,
+  PL_NONE,
+} edgepayload_t;
+
 //---------------DECLARATIONS FOR STATE CLASS---------------------
 
 typedef struct State {
@@ -28,19 +37,10 @@ stateDup( State* this );
 
 //---------------DECLARATIONS FOR EDGEPAYLOAD CLASS---------------------
 
-typedef enum {
-  PL_STREET,
-  PL_TRIPHOPSCHED,
-  PL_TRIPHOP,
-  PL_LINK,
-  PL_RUBYVALUE,
-  PL_NONE,
-} edgepayload_t;
-
 typedef struct EdgePayload {
   edgepayload_t  type;
   void*          payload;        //could use a union
-}
+} EdgePayload;
 
 EdgePayload*
 epNew( edgepayload_t type, void* payload );
@@ -109,6 +109,8 @@ streetWalkBack(Street* this, State* params);
 #define SECONDS_IN_MINUTE 60
 #define DAYS_IN_WEEK 7
 
+typedef struct TripHopSchedule TripHopSchedule;
+
 typedef struct TripHop {
   int depart;
   int arrive;
@@ -117,13 +119,13 @@ typedef struct TripHop {
   TripHopSchedule* schedule;
 } TripHop;
 
-typedef struct TripHopSchedule {
+struct TripHopSchedule {
   int n;
   TripHop* hops;
   ServiceId service_id;
   CalendarDay* calendar;
   int timezone_offset; //number of seconds this schedule is offset from GMT, eg. -8*3600=-28800 for US West Coast
-} TripHopSchedule;
+};
 
 TripHopSchedule*
 thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, int timezone_offset );
@@ -151,7 +153,7 @@ thsCollapseBack( TripHopSchedule* this, State* params );
 
 //convert time, N seconds since the epoch, to seconds since midnight within the span of the service day
 inline long
-thsSecondsSinceMidnight( TripHopSchedule* this, long time );
+thsSecondsSinceMidnight( TripHopSchedule* this, State* param );
 
 inline TripHop* 
 thsGetNextHop(TripHopSchedule* this, long time);

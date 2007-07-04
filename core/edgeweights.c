@@ -88,7 +88,7 @@ thsWalkBack(TripHopSchedule* this, State* params) {
     State* ret = stateDup( params );
     ret->calendar_day = calendar_day;
 
-    long adjusted_time = thsSecondsSinceMidnight( this, params->time );
+    long adjusted_time = thsSecondsSinceMidnight( this, params );
 
     long wait;
     TripHop* hop;
@@ -143,8 +143,9 @@ triphopWalk(TripHop* this, State* params) {
 #else
 triphopWalkBack(TripHop* this, State* params) {
 #endif
+    State* ret = stateDup( params );
 
-    long adjusted_time = thsSecondsSinceMidnight( this, params->time );
+    long adjusted_time = thsSecondsSinceMidnight( this->schedule, params );
 
     long wait;
 #ifndef ROUTE_REVERSE
@@ -170,13 +171,13 @@ triphopWalkBack(TripHop* this, State* params) {
 
 #ifndef ROUTE_REVRSE
     ret->time           += wait + this->transit;
-    if( ret->time >= this->schedule->calendar_day->end_time) {
-      ret->calendar_day = this->schedule->calendar_day->next_day;
+    if( ret->time >= ret->calendar_day->end_time) {
+      ret->calendar_day = ret->calendar_day->next_day;
     }
 #else
     ret->time           -= wait - this->transit;
-    if( ret->time < this->schedule->calendar_day->begin_time) {
-      ret->calendar_day = this->schedule->calendar_day->prev_day;
+    if( ret->time < ret->calendar_day->begin_time) {
+      ret->calendar_day = ret->calendar_day->prev_day;
     }
 #endif
     ret->weight         += wait + this->transit + transfer_penalty;
@@ -187,6 +188,7 @@ triphopWalkBack(TripHop* this, State* params) {
     return ret;
 }
 
+// Note that this has the side effect of filling in the params->calendar_day if it is not already set
 inline TripHop*
 #ifndef ROUTE_REVERSE
 thsCollapse(TripHopSchedule* this, State* params) {
@@ -204,6 +206,7 @@ thsCollapseBack(TripHopSchedule* this, State* params) {
 #else
       calendar_day = calDayOfOrBefore( this->calendar, params->time );
 #endif
+    params->calendar_day = calendar_day;
 
     // if the schedule never runs
     // or if the schedule does not run on this day
@@ -214,13 +217,13 @@ thsCollapseBack(TripHopSchedule* this, State* params) {
       return NULL;
     }
 
-    long adjusted_time = thsSecondsSinceMidnight( this, params->time );
+    long adjusted_time = thsSecondsSinceMidnight( this, params );
 
     TripHop* hop;
 #ifndef ROUTE_REVERSE
-    return thsGetNextHop(this, adjusted_time)
+    return thsGetNextHop(this, adjusted_time);
 #else
-    return thsGetLastHop(this, adjusted_time)
+    return thsGetLastHop(this, adjusted_time);
 #endif
 
 }

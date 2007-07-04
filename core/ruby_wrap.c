@@ -535,14 +535,14 @@ static VALUE t_e_to( VALUE self ) {
 static VALUE t_e_payload( VALUE self ) {
   Edge* e = unpack_e( self );
 
-  edgepayload_t type = e->payloadtype;
+  edgepayload_t type = e->payload->type;
   switch (type) {
     case PL_STREET:
-      return pack_street( e->payload );
+      return pack_street( e->payload->payload );
     case PL_TRIPHOPSCHED:
-      return pack_ths( e->payload );
+      return pack_ths( e->payload->payload );
     case PL_LINK:
-      return pack_link( e->payload );
+      return pack_link( e->payload->payload );
     case PL_RUBYVALUE:
       return (VALUE)e->payload;
     default:
@@ -631,7 +631,7 @@ static VALUE t_add_edge(VALUE self, VALUE key_from, VALUE key_to, VALUE rbpayloa
     type = PL_RUBYVALUE;
   }
 
-  Edge* ee = gAddEdge( gg, STR2CSTR( key_from ), STR2CSTR( key_to ), type, payload );
+  Edge* ee = gAddEdge( gg, STR2CSTR( key_from ), STR2CSTR( key_to ), epNew( type, payload ) );
 
   return pack_e( ee );
 }

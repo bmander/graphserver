@@ -51,7 +51,7 @@ epDup( EdgePayload* this ) {
 void
 epDestroy( EdgePayload* this, int destroy_payload ) {
   if( destroy_payload ) {
-    switch( this->payloadtype ) {
+    switch( this->type ) {
       case PL_STREET:
         streetDestroy( this->payload );
         break;
@@ -71,8 +71,8 @@ epDestroy( EdgePayload* this, int destroy_payload ) {
 }
 
 State*
-epWalk( EdgePayload* this, State* param ) {
-  switch( this->payloadtype ) {
+epWalk( EdgePayload* this, State* params ) {
+  switch( this->type ) {
     case PL_STREET:
       return streetWalk( (Street*)this->payload, params );
     case PL_TRIPHOPSCHED:
@@ -87,8 +87,8 @@ epWalk( EdgePayload* this, State* param ) {
 }
 
 State*
-epWalkBack( EdgePayload* this, State* param ) {
-  switch( this->payloadtype ) {
+epWalkBack( EdgePayload* this, State* params ) {
+  switch( this->type ) {
     case PL_STREET:
       return streetWalkBack( (Street*)this->payload, params );
     case PL_TRIPHOPSCHED:
@@ -103,8 +103,8 @@ epWalkBack( EdgePayload* this, State* param ) {
 }
 
 EdgePayload*
-epCollapse( EdgePayload* this, State* param ) {
-  switch( this->payloadtype ) {
+epCollapse( EdgePayload* this, State* params ) {
+  switch( this->type ) {
     case PL_TRIPHOPSCHED:
       return epNew( PL_TRIPHOP, thsCollapse( (TripHopSchedule*)this->payload, params) );
     default:
@@ -113,8 +113,8 @@ epCollapse( EdgePayload* this, State* param ) {
 }
 
 EdgePayload*
-epCollapseBack( EdgePayload* this, State* param ) {
-  switch( this->payloadtype ) {
+epCollapseBack( EdgePayload* this, State* params ) {
+  switch( this->type ) {
     case PL_TRIPHOPSCHED:
       return epNew( PL_TRIPHOP, thsCollapseBack( (TripHopSchedule*)this->payload, params) );
     default:
@@ -205,13 +205,13 @@ thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id
 }
 
 inline long
-thsSecondsSinceMidnight( TripHopSchedule* this, long time ) {
+thsSecondsSinceMidnight( TripHopSchedule* this, State* param ) {
     //difference between utc midnight and local midnight
-    long utc_offset = this->timezone_offset + this->calendar_day->daylight_savings;
+    long utc_offset = this->timezone_offset + param->calendar_day->daylight_savings;
     //difference between local midnight and calendar day begin
-    long since_midnight_local = (this->calendar_day->begin_time+utc_offset)%SECONDS_IN_DAY;
+    long since_midnight_local = (param->calendar_day->begin_time+utc_offset)%SECONDS_IN_DAY;
     //seconds since the calendar day began
-    long since_calday_begin = time - this->calendar_day->begin_time;
+    long since_calday_begin = param->time - param->calendar_day->begin_time;
     //seconds since local midnight
     return since_midnight_local + since_calday_begin;
 }
