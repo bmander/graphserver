@@ -114,6 +114,7 @@ class Graphserver
       ret << "all_vertex_labels"
       ret << "outgoing_edges?label=LABEL"
       ret << "eval_edges?label=LABEL&statevar1=STV1&statevar2=STV2..."
+      ret << "collapse_edges?label=LABEL&statevar1=STV1&statevar2=STV2..."
       response.body = ret.join("\n")
     end
 
@@ -202,7 +203,27 @@ class Graphserver
 
       response.body = ret.join
     end
-
+    
+    @server.mount_proc( "/collapse_edges" ) do |request, response|
+      vertex = @gg.get_vertex( request.query['label'] )
+      init_state = parse_init_state( request )
+      
+      ret = ["<?xml version='1.0'?>"]
+      ret << "<vertex>"
+      ret << init_state.to_xml
+      ret << "<outgoing_edges>"
+      vertex.each_outgoing do |edge|
+        ret << "<edge>"
+        ret <<   "<destination label='#{edge.to.label}' />"
+        ret <<   "<payload>#{edge.payload.collapse( init_state ).to_xml}</payload>"
+        ret << "</edge>"
+      end
+      ret << "</outgoing_edges>"
+      ret << "</vertex>"
+      
+      response.body = ret.join
+    end
+    
   end
 
   def database_params= params
