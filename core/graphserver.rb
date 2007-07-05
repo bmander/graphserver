@@ -4,6 +4,8 @@ require 'graph.rb'
 require 'optparse'
 require 'cgi'
 
+#made a change over here
+
 class Calendar
   def to_xml
     "<calendar begin_time='#{Time.at(begin_time)}' end_time='#{Time.at(end_time)}' service_ids='#{service_ids.join(", ")}' />"
