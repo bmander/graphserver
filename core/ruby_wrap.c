@@ -8,6 +8,7 @@
 VALUE cLink;
 VALUE cStreet;
 VALUE cTripHopSchedule;
+VALUE cTripHop;
 //CORE MST CLASSES
 VALUE cState;
 //CORE GRAPH CLASSES
@@ -125,8 +126,65 @@ VALUE pack_edge_type( edgepayload_t type ) {
   return INT2NUM( type );
 }
 
+inline EdgePayload* unpack_ep( VALUE rbpayload ) {
+	void* payload;
+  edgepayload_t type;
 
-//EDGETYPE CLASSES======================================================
+  if( rb_obj_is_instance_of( rbpayload, cLink ) ) {
+    payload = (void*)unpack_link( rbpayload );
+    type = PL_LINK;
+  } else if( rb_obj_is_instance_of( rbpayload, cStreet ) ) {
+    payload = (void*)unpack_street( rbpayload );
+    type = PL_STREET;
+  } else if( rb_obj_is_instance_of( rbpayload, cTripHopSchedule ) ) {
+    payload = (void*)unpack_ths( rbpayload );
+    type = PL_TRIPHOPSCHED;
+	} else if( rb_obj_is_instance_of( rbpayload, cTripHop ) ) {
+		payload = (void*)unpack_triphop( rbpayload );
+		type = PL_TRIPHOP;
+  } else {
+    payload = (void*)rbpayload;
+    type = PL_RUBYVALUE;
+  }
+	
+	return epNew( type, payload );
+}
+
+inline VALUE pack_ep( EdgePayload* unpacked ) {
+	edgepayload_t type = unpacked->type;
+  switch (type) {
+    case PL_STREET:
+      return pack_street( unpacked->payload );
+    case PL_TRIPHOPSCHED:
+      return pack_ths( unpacked->payload );
+		case Pl_TRIPHOP:
+			return pack_triphop( unpacked->payload );
+    case PL_LINK:
+      return pack_link( unpacked->payload );
+    case PL_RUBYVALUE:
+      return (VALUE)unpacked->payload;
+    default:
+      return Qnil;
+  }
+}
+
+inline TripHop* unpack_triphop( VALUE packed ) {
+  TripHop* unpacked_ptr;
+  Data_Get_Struct( packed, TripHop, unpacked_ptr );
+  return unpacked_ptr;
+}
+
+inline VALUE pack_triphop( TripHop* unpacked ) {
+  if( unpacked )
+    return Data_Wrap_Struct( cTripHop, 0, 0, unpacked );
+  else
+    return Qnil;
+}
+
+
+//EDGETYPE METHODS----------------------------------------------------
+
+
 //LINK METHODS----------------------------------------------------------
 
 VALUE t_link_new( VALUE class ) {
@@ -535,19 +593,7 @@ static VALUE t_e_to( VALUE self ) {
 static VALUE t_e_payload( VALUE self ) {
   Edge* e = unpack_e( self );
 
-  edgepayload_t type = e->payload->type;
-  switch (type) {
-    case PL_STREET:
-      return pack_street( e->payload->payload );
-    case PL_TRIPHOPSCHED:
-      return pack_ths( e->payload->payload );
-    case PL_LINK:
-      return pack_link( e->payload->payload );
-    case PL_RUBYVALUE:
-      return (VALUE)e->payload;
-    default:
-      return Qnil;
-  }
+	return pack_ep( e->payload );
 }
 
 static VALUE t_e_walk( VALUE self, VALUE rbinit ) {
@@ -614,24 +660,8 @@ static VALUE t_get_vertex(VALUE self, VALUE key)
 static VALUE t_add_edge(VALUE self, VALUE key_from, VALUE key_to, VALUE rbpayload)
 {
   Graph* gg = unpack_g( self );
-  void* payload;
-  edgepayload_t type;
 
-  if( rb_obj_is_instance_of( (VALUE)payload, cLink ) ) {
-    payload = (void*)unpack_link( rbpayload );
-    type = PL_LINK;
-  } else if( rb_obj_is_instance_of( (VALUE)payload, cStreet ) ) {
-    payload = (void*)unpack_street( rbpayload );
-    type = PL_STREET;
-  } else if( rb_obj_is_instance_of( (VALUE)payload, cTripHopSchedule ) ) {
-    payload = (void*)unpack_ths( rbpayload );
-    type = PL_TRIPHOPSCHED;
-  } else {
-    payload = (void*)rbpayload;
-    type = PL_RUBYVALUE;
-  }
-
-  Edge* ee = gAddEdge( gg, STR2CSTR( key_from ), STR2CSTR( key_to ), epNew( type, payload ) );
+  Edge* ee = gAddEdge( gg, STR2CSTR( key_from ), STR2CSTR( key_to ), unpack_ep( rbpayload ) );
 
   return pack_e( ee );
 }
@@ -715,6 +745,8 @@ void Init_graph_core() {
   rb_define_method( cTripHopSchedule, "inspect", t_ths_inspect, 0 );
   rb_define_method( cTripHopSchedule, "triphops", t_ths_triphops, 0 );
   rb_define_method( cTripHopSchedule, "service_id", t_ths_service_id, 0);
+	
+	cTripHop = rb_define_class( "TripHop", rb_cObject) ;
 
   //STATE OBJECTS
   cCalendar = rb_define_class("Calendar", rb_cObject);
