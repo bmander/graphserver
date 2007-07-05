@@ -71,9 +71,11 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
       */
 
 #ifndef RETRO
-      State *new_dv = eWalk( edge, du );               //Get the State of v via edge 'new_dv'.
+      EdgePayload *collapsed = epCollapse( edge->payload, du );
+      State *new_dv = epWalk( collapsed, du );
 #else
-      State *new_dv = eWalkBack( edge, du );
+      EdgePayload *collapsed = epCollapseBack( edge->payload, du );
+      State *new_dv = epWalkBack( collapsed, du );
 #endif
 
       // When an edge leads nowhere (as indicated by returning NULL), the iteration is over.
