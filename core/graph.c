@@ -180,6 +180,7 @@ vNew( char* label ) {
     this->degree_out = 0;
     this->outgoing = liNew( NULL ) ;
     this->incoming = liNew( NULL ) ;
+    this->payload = NULL;
 
     size_t labelsize = strlen(label)+1;
     this->label = (char*)malloc(labelsize*sizeof(char));
@@ -275,7 +276,7 @@ void
 eDestroy(Edge *this, int destroy_payload) {
     //free payload
     if(destroy_payload)
-      epDestroy( this->payload, 1 ); //destroy payload object and contents
+      epDestroy( this->payload ); //destroy payload object and contents
 
     vRemoveOutEdgeRef( this->from, this );
     vRemoveInEdgeRef( this->to, this );
