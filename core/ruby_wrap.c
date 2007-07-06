@@ -5,6 +5,7 @@
 #include <sys/time.h>
 
 //EDGETYPE CLASSES
+VALUE cEdgePayload;
 VALUE cLink;
 VALUE cStreet;
 VALUE cTripHopSchedule;
@@ -140,42 +141,27 @@ VALUE pack_edge_type( edgepayload_t type ) {
 }
 
 inline EdgePayload* unpack_ep( VALUE rbpayload ) {
-  void* payload;
-  edgepayload_t type;
-
-  if( rb_obj_is_instance_of( rbpayload, cLink ) ) {
-    payload = (void*)unpack_link( rbpayload );
-    type = PL_LINK;
-  } else if( rb_obj_is_instance_of( rbpayload, cStreet ) ) {
-    payload = (void*)unpack_street( rbpayload );
-    type = PL_STREET;
-  } else if( rb_obj_is_instance_of( rbpayload, cTripHopSchedule ) ) {
-    payload = (void*)unpack_ths( rbpayload );
-    type = PL_TRIPHOPSCHED;
-  } else if( rb_obj_is_instance_of( rbpayload, cTripHop ) ) {
-    payload = (void*)unpack_triphop( rbpayload );
-    type = PL_TRIPHOP;
-  } else {
-    payload = (void*)rbpayload;
-    type = PL_RUBYVALUE;
-  }
-  
-  return epNew( type, payload );
+  EdgePayload* unpacked_ptr;
+  Data_Get_Struct( rbpayload, EdgePayload, unpacked_ptr );
+  return unpacked_ptr;
 }
 
-inline VALUE pack_ep( EdgePayload* unpacked ) {
+inline VALUE pack_ep_as_children( EdgePayload* unpacked ) {
+  if(!unpacked)
+    return Qnil;
+
   edgepayload_t type = unpacked->type;
   switch (type) {
     case PL_STREET:
-      return pack_street( unpacked->payload );
+      return pack_street( (Street*)unpacked );
     case PL_TRIPHOPSCHED:
-      return pack_ths( unpacked->payload );
+      return pack_ths( (TripHopSchedule*)unpacked );
     case PL_TRIPHOP:
-      return pack_triphop( unpacked->payload );
+      return pack_triphop( (TripHop*)unpacked );
     case PL_LINK:
-      return pack_link( unpacked->payload );
+      return pack_link( (Link*)unpacked );
     case PL_RUBYVALUE:
-      return (VALUE)unpacked->payload;
+      return (VALUE)unpacked;
     default:
       return Qnil;
   }
@@ -183,6 +169,14 @@ inline VALUE pack_ep( EdgePayload* unpacked ) {
 
 //EDGETYPE METHODS----------------------------------------------------
 
+VALUE t_ep_collapse( VALUE self, VALUE rbstate ) {
+  EdgePayload* ep = unpack_ep( self );
+  State* state = unpack_state( rbstate );
+
+  EdgePayload* ret = epCollapse( ep, state );
+
+  return pack_ep_as_children( ret ); 
+}
 
 //LINK METHODS----------------------------------------------------------
 
@@ -322,13 +316,13 @@ VALUE t_ths_triphops( VALUE self ) {
 
   int i;
   for(i=0; i<ths->n; i++) {
-    VALUE hop = rb_ary_new();
+    /*VALUE hop = rb_ary_new();
     rb_ary_push( hop, INT2NUM( ths->hops[i].depart ) );
     rb_ary_push( hop, INT2NUM( ths->hops[i].arrive ) );
     rb_ary_push( hop, INT2NUM( ths->hops[i].transit ) );
-    rb_ary_push( hop, rb_str_new2( ths->hops[i].trip_id ) );
+    rb_ary_push( hop, rb_str_new2( ths->hops[i].trip_id ) );*/
 
-    rb_ary_push( ret, hop );
+    rb_ary_push( ret, pack_triphop( &ths->hops[i] ) );
   }
 
   return ret;
@@ -338,6 +332,31 @@ VALUE t_ths_service_id( VALUE self ) {
   TripHopSchedule* ths = unpack_ths( self );
 
   return INT2NUM( ths->service_id );
+}
+
+//TRIPHOP METHODS-------------------------------------------------------
+VALUE t_triphop_depart( VALUE self ) {
+  TripHop* th = unpack_triphop( self );
+  
+  return INT2NUM( th->depart );
+}
+
+VALUE t_triphop_arrive( VALUE self ) {
+  TripHop* th = unpack_triphop( self );
+
+  return INT2NUM( th->arrive );
+}
+
+VALUE t_triphop_transit( VALUE self ) {
+  TripHop* th = unpack_triphop( self );
+
+  return INT2NUM( th->transit );
+}
+
+VALUE t_triphop_trip_id( VALUE self ) {
+  TripHop* th = unpack_triphop( self );
+
+  return rb_str_new2( th->trip_id );
 }
 
 //STATE CLASSES=========================================================
@@ -492,6 +511,7 @@ VALUE t_state_set( VALUE self, VALUE rbkey, VALUE rbvalue ) {
 }
 
 VALUE t_state_to_hash( VALUE self ) {
+  printf( "t_state_to_hash begin\n" );
   State* state = unpack_state( self );
 
   VALUE ret = rb_hash_new();
@@ -503,6 +523,7 @@ VALUE t_state_to_hash( VALUE self ) {
   rb_hash_aset( ret, rb_str_new2( "prev_edge_name" ), (state->prev_edge_name?rb_str_new2(state->prev_edge_name ):Qnil ) );
   rb_hash_aset( ret, rb_str_new2( "calendar_day" ), pack_cal( state->calendar_day ) );
 
+  printf( "t_state_to_hash return\n") ;
 
   return ret;
 }
@@ -592,7 +613,7 @@ static VALUE t_e_to( VALUE self ) {
 static VALUE t_e_payload( VALUE self ) {
   Edge* e = unpack_e( self );
 
-  return pack_ep( e->payload );
+  return pack_ep_as_children( e->payload );
 }
 
 static VALUE t_e_walk( VALUE self, VALUE rbinit ) {
@@ -724,12 +745,15 @@ static VALUE t_shortest_path_tree( VALUE self, VALUE from, VALUE to, VALUE init,
 void Init_graph_core() {
 
   //EDGETYPE OBJECTS
-  cLink = rb_define_class("Link", rb_cObject);
+  cEdgePayload = rb_define_class( "EdgePayload", rb_cObject );
+  rb_define_method( cEdgePayload, "collapse", t_ep_collapse, 1 );
+
+  cLink = rb_define_class("Link", cEdgePayload);
   rb_define_singleton_method( cLink, "new", t_link_new, 0 );
   rb_define_method( cLink, "walk", t_link_walk, 1 );
   rb_define_method( cLink, "walk_back", t_link_walk_back, 1 );
 
-  cStreet = rb_define_class("Street", rb_cObject);
+  cStreet = rb_define_class("Street", cEdgePayload);
   rb_define_singleton_method( cStreet, "new", t_street_new, 2 );
   rb_define_method( cStreet, "name", t_street_name, 0 );
   rb_define_method( cStreet, "length", t_street_length, 0 );
@@ -737,7 +761,7 @@ void Init_graph_core() {
   rb_define_method( cStreet, "walk_back", t_street_walk_back, 1 );
   rb_define_method( cStreet, "inspect", t_street_inspect, 0 );
 
-  cTripHopSchedule = rb_define_class("TripHopSchedule", rb_cObject);
+  cTripHopSchedule = rb_define_class("TripHopSchedule", cEdgePayload);
   rb_define_singleton_method( cTripHopSchedule, "new", t_ths_new, 4 );
   rb_define_method( cTripHopSchedule, "walk", t_ths_walk, 1 );
   rb_define_method( cTripHopSchedule, "walk_back", t_ths_walk_back, 1);
@@ -745,7 +769,11 @@ void Init_graph_core() {
   rb_define_method( cTripHopSchedule, "triphops", t_ths_triphops, 0 );
   rb_define_method( cTripHopSchedule, "service_id", t_ths_service_id, 0);
   
-  cTripHop = rb_define_class( "TripHop", rb_cObject) ;
+  cTripHop = rb_define_class( "TripHop", cEdgePayload) ;
+  rb_define_method( cTripHop, "depart", t_triphop_depart, 0 );
+  rb_define_method( cTripHop, "arrive", t_triphop_arrive, 0 );
+  rb_define_method( cTripHop, "transit", t_triphop_transit, 0 );
+  rb_define_method( cTripHop, "trip_id", t_triphop_trip_id, 0 );
 
   //STATE OBJECTS
   cCalendar = rb_define_class("Calendar", rb_cObject);

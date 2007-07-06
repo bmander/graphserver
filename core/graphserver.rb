@@ -25,19 +25,25 @@ class Street
 end
 
 class TripHopSchedule
-  SEC_IN_HOUR = 3600
-  SEC_IN_MINUTE = 60
-
   def to_xml
     ret = ["<triphopschedule service_id='#{service_id}'>"]
-    triphops.each do |depart, arrive, transit, trip_id|
-      depart = "#{sprintf("%02d", depart/SEC_IN_HOUR)}:#{sprintf("%02d", (depart%SEC_IN_HOUR)/SEC_IN_MINUTE)}:#{sprintf("%02d", depart%SEC_IN_MINUTE)}"
-      arrive = "#{sprintf("%02d", arrive/SEC_IN_HOUR)}:#{sprintf("%02d", (arrive%SEC_IN_HOUR)/SEC_IN_MINUTE)}:#{sprintf("%02d", arrive%SEC_IN_MINUTE)}"
-      ret << "<triphop depart='#{depart}' arrive='#{arrive}' transit='#{transit}' trip_id='#{trip_id}' />"
+    triphops.each do |triphop|
+      ret << triphop.to_xml
     end
     ret << "</triphopschedule>"
 
     return ret.join
+  end
+end
+
+class TripHop
+  SEC_IN_HOUR = 3600
+  SEC_IN_MINUTE = 60
+
+  def to_xml
+    s_depart = "#{sprintf("%02d", depart/SEC_IN_HOUR)}:#{sprintf("%02d", (depart%SEC_IN_HOUR)/SEC_IN_MINUTE)}:#{sprintf("%02d", depart%SEC_IN_MINUTE)}"
+    s_arrive = "#{sprintf("%02d", arrive/SEC_IN_HOUR)}:#{sprintf("%02d", (arrive%SEC_IN_HOUR)/SEC_IN_MINUTE)}:#{sprintf("%02d", arrive%SEC_IN_MINUTE)}"
+    "<triphop depart='#{s_depart}' arrive='#{s_arrive}' transit='#{transit}' trip_id='#{trip_id}' />"
   end
 end
 
@@ -172,8 +178,11 @@ class Graphserver
       ret << "<edges>"
       vertex.each_outgoing do |edge|
         ret << "<edge>"
+        p 1
         ret << "<dest>#{edge.to.to_xml}</dest>"
+        p 2
         ret << "<payload>#{edge.payload.to_xml}</payload>"
+        p 3
         ret << "</edge>"
       end
       ret << "</edges>"
@@ -216,8 +225,12 @@ class Graphserver
       ret << "<outgoing_edges>"
       vertex.each_outgoing do |edge|
         ret << "<edge>"
-        ret <<   "<destination label='#{edge.to.label}' />"
-        ret <<   "<payload>#{edge.payload.collapse( init_state ).to_xml}</payload>"
+        ret << "<destination label='#{edge.to.label}' />"
+        if collapsed = edge.payload.collapse( init_state ) then
+          ret << "<payload>#{collapsed.to_xml}</payload>"
+        else
+          ret << "<payload/>"
+        end
         ret << "</edge>"
       end
       ret << "</outgoing_edges>"
