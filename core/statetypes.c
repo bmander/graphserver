@@ -64,12 +64,14 @@ calDestroy(CalendarDay* this) {
 }
 int
 calDayHasServiceId( CalendarDay* this, ServiceId service_id) {
+  printf("calDayHasServiceId begin\n");
   int i;
   for(i=0; i<this->n_service_ids; i++) {
     if( this->service_ids[i] == service_id ) {
       return 1;
     }
   }
+  printf("calDayHasServiceId return\n");
   return 0;
 }
 
