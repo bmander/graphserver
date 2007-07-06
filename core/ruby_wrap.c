@@ -335,6 +335,25 @@ VALUE t_ths_service_id( VALUE self ) {
 }
 
 //TRIPHOP METHODS-------------------------------------------------------
+VALUE t_triphop_walk( VALUE self, VALUE rbstate ) {
+  TripHop* th = unpack_triphop( self );
+  State* state = unpack_state( rbstate );
+
+  State* ret = triphopWalk( th, state );
+
+  return pack_state( ret );
+}
+
+VALUE t_triphop_walk_back( VALUE self, VALUE rbstate ) {
+  TripHop* th = unpack_triphop( self );
+  State* state = unpack_state( rbstate );
+
+  State* ret = triphopWalkBack( th, state );
+
+  return pack_state( ret );
+}
+
+
 VALUE t_triphop_depart( VALUE self ) {
   TripHop* th = unpack_triphop( self );
   
@@ -770,6 +789,8 @@ void Init_graph_core() {
   rb_define_method( cTripHopSchedule, "service_id", t_ths_service_id, 0);
   
   cTripHop = rb_define_class( "TripHop", cEdgePayload) ;
+  rb_define_method( cTripHop, "walk", t_triphop_walk, 1 );
+  rb_define_method( cTripHop, "walk_back", t_triphop_walk_back, 1 );
   rb_define_method( cTripHop, "depart", t_triphop_depart, 0 );
   rb_define_method( cTripHop, "arrive", t_triphop_arrive, 0 );
   rb_define_method( cTripHop, "transit", t_triphop_transit, 0 );

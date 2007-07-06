@@ -121,7 +121,7 @@ class Graphserver
       ret << "shortest_path?from=FROM&to=TO"
       ret << "all_vertex_labels"
       ret << "outgoing_edges?label=LABEL"
-      ret << "eval_edges?label=LABEL&statevar1=STV1&statevar2=STV2..."
+      ret << "walk_edges?label=LABEL&statevar1=STV1&statevar2=STV2..."
       ret << "collapse_edges?label=LABEL&statevar1=STV1&statevar2=STV2..."
       response.body = ret.join("\n")
     end
@@ -178,18 +178,15 @@ class Graphserver
       ret << "<edges>"
       vertex.each_outgoing do |edge|
         ret << "<edge>"
-        p 1
         ret << "<dest>#{edge.to.to_xml}</dest>"
-        p 2
         ret << "<payload>#{edge.payload.to_xml}</payload>"
-        p 3
         ret << "</edge>"
       end
       ret << "</edges>"
       response.body = ret.join
     end
 
-    @server.mount_proc( "/eval_edges" ) do |request, response|
+    @server.mount_proc( "/walk_edges" ) do |request, response|
       vertex = @gg.get_vertex( request.query['label'] )
       init_state = parse_init_state( request )
 
@@ -200,13 +197,17 @@ class Graphserver
       vertex.each_outgoing do |edge|
         ret << "<edge>"
         ret <<   "<destination label='#{edge.to.label}'>"
-        if dest_state = edge.walk( init_state ) then
-          ret << dest_state.to_xml
+        if collapsed = edge.payload.collapse( init_state ) then
+          ret << collapsed.walk( init_state ).to_xml
         else
           ret << "<state/>"
         end
         ret <<   "</destination>"
-        ret <<   "<payload>#{edge.payload.to_xml}</payload>"
+        if collapsed then
+          ret << "<payload>#{collapsed.to_xml}</payload>"
+        else
+          ret << "<payload/>"
+        end
         ret << "</edge>"
       end
       ret << "</outgoing_edges>"
