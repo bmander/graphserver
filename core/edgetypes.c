@@ -35,9 +35,7 @@ stateDestroy(State* this) {
 EdgePayload*
 epNew( edgepayload_t type, void* payload ) {
   EdgePayload* ret = (EdgePayload*)malloc(sizeof(EdgePayload));
-  ret->type = type;
-  ret->payload = payload;
-  
+  ret->type = PL_NONE;
   return ret;
 }
 
@@ -49,38 +47,36 @@ epDup( EdgePayload* this ) {
 }
 
 void
-epDestroy( EdgePayload* this, int destroy_payload ) {
-  if( destroy_payload ) {
-    switch( this->type ) {
-      case PL_STREET:
-        streetDestroy( this->payload );
-        break;
-      case PL_TRIPHOPSCHED:
-        thsDestroy( this->payload );
-        break;
-      case PL_TRIPHOP:
-        triphopDestroy( this->payload );
-      case PL_LINK:
-        linkDestroy( this->payload );
-        break;
-      default:
-        free( this->payload );
-    }
+epDestroy( EdgePayload* this ) {
+  switch( this->type ) {
+    case PL_STREET:
+      streetDestroy( (Street*)this );
+      break;
+    case PL_TRIPHOPSCHED:
+      thsDestroy( (TripHopSchedule*)this );
+      break;
+    case PL_TRIPHOP:
+      triphopDestroy( (TripHop*)this );
+      break;
+    case PL_LINK:
+      linkDestroy( (Link*)this );
+      break;
+    default:
+      free( this );
   }
-  free( this );
 }
 
 State*
 epWalk( EdgePayload* this, State* params ) {
   switch( this->type ) {
     case PL_STREET:
-      return streetWalk( (Street*)this->payload, params );
+      return streetWalk( (Street*)this, params );
     case PL_TRIPHOPSCHED:
-      return thsWalk((TripHopSchedule*)this->payload, params);
+      return thsWalk((TripHopSchedule*)this, params);
     case PL_TRIPHOP:
-      return triphopWalk((TripHop*)this->payload, params );
+      return triphopWalk((TripHop*)this, params );
     case PL_LINK:
-      return linkWalk((Link*)this->payload, params);
+      return linkWalk((Link*)this, params);
     default:
       return NULL;
   }
@@ -90,13 +86,13 @@ State*
 epWalkBack( EdgePayload* this, State* params ) {
   switch( this->type ) {
     case PL_STREET:
-      return streetWalkBack( (Street*)this->payload, params );
+      return streetWalkBack( (Street*)this, params );
     case PL_TRIPHOPSCHED:
-      return thsWalkBack((TripHopSchedule*)this->payload, params);
+      return thsWalkBack( (TripHopSchedule*)this, params );
     case PL_TRIPHOP:
-      return triphopWalkBack((TripHop*)this->payload, params);
+      return triphopWalkBack( (TripHop*)this, params );
     case PL_LINK:
-      return linkWalkBack((Link*)this->payload, params);
+      return linkWalkBack( (Link*)this, params );
     default:
       return NULL;
   }
@@ -106,9 +102,9 @@ EdgePayload*
 epCollapse( EdgePayload* this, State* params ) {
   switch( this->type ) {
     case PL_TRIPHOPSCHED:
-      return epNew( PL_TRIPHOP, thsCollapse( (TripHopSchedule*)this->payload, params) );
+      return (EdgePayload*)thsCollapse( (TripHopSchedule*)this, params) ;
     default:
-      return epDup( this );
+      return (EdgePayload*)this;
   }
 }
 
@@ -116,9 +112,9 @@ EdgePayload*
 epCollapseBack( EdgePayload* this, State* params ) {
   switch( this->type ) {
     case PL_TRIPHOPSCHED:
-      return epNew( PL_TRIPHOP, thsCollapseBack( (TripHopSchedule*)this->payload, params) );
+      return (EdgePayload*)thsCollapseBack( (TripHopSchedule*)this, params);
     default:
-      return epDup( this );
+      return (EdgePayload*)this;
   }
 }
 
@@ -132,6 +128,7 @@ epCollapseBack( EdgePayload* this, State* params ) {
 Link*
 linkNew() {
   Link* ret = (Link*)malloc(sizeof(Link));
+  ret->type = PL_LINK;
   ret->name = (char*)malloc(5*sizeof(char));
   strcpy(ret->name, "LINK");
 
@@ -148,6 +145,7 @@ linkDestroy(Link* tokill) {
 Street*
 streetNew(const char *name, double length) {
   Street* ret = (Street*)malloc(sizeof(Street));
+  ret->type = PL_STREET;
   ret->name = (char*)malloc((strlen(name)+1)*sizeof(char));
   strcpy(ret->name, name);
   ret->length = length;
@@ -183,6 +181,7 @@ int hopcmp(const void* a, const void* b) {
 TripHopSchedule*
 thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, int timezone_offset ) {
   TripHopSchedule* ret = (TripHopSchedule*)malloc(sizeof(TripHopSchedule));
+  ret->type = PL_TRIPHOPSCHED;
   ret->hops = (TripHop*)malloc(n*sizeof(TripHop));
   ret->n = n;
   ret->service_id = service_id;
@@ -191,6 +190,7 @@ thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id
 
   int i;
   for(i=0; i<n; i++) {
+    ret->hops[i].type = PL_TRIPHOP;
     ret->hops[i].depart = departs[i];
     ret->hops[i].arrive = arrives[i];
     ret->hops[i].transit = arrives[i] - departs[i];

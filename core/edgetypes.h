@@ -38,18 +38,14 @@ stateDup( State* this );
 //---------------DECLARATIONS FOR EDGEPAYLOAD CLASS---------------------
 
 typedef struct EdgePayload {
-  edgepayload_t  type;
-  void*          payload;        //could use a union
+  edgepayload_t type;
 } EdgePayload;
 
 EdgePayload*
-epNew( edgepayload_t type, void* payload );
-
-EdgePayload*
-epDup( EdgePayload* this );
+epNew( );
 
 void
-epDestroy( EdgePayload* this, int destroy_payload );
+epDestroy( EdgePayload* this );
 
 State*
 epWalk( EdgePayload* this, State* param );
@@ -66,6 +62,7 @@ epCollapseBack( EdgePayload* this, State* param );
 //---------------DECLARATIONS FOR LINK  CLASS---------------------
 
 typedef struct Link {
+  edgepayload_t type;
   char* name;
 } Link;
 
@@ -84,6 +81,7 @@ linkWalkBack(Link* this, State* param);
 //---------------DECLARATIONS FOR STREET  CLASS---------------------
 
 typedef struct Street {
+   edgepayload_t type;
    char* name;
    double length;
 } Street;
@@ -112,6 +110,7 @@ streetWalkBack(Street* this, State* params);
 typedef struct TripHopSchedule TripHopSchedule;
 
 typedef struct TripHop {
+  edgepayload_t type;
   int depart;
   int arrive;
   int transit;
@@ -120,6 +119,7 @@ typedef struct TripHop {
 } TripHop;
 
 struct TripHopSchedule {
+  edgepayload_t type;
   int n;
   TripHop* hops;
   ServiceId service_id;
