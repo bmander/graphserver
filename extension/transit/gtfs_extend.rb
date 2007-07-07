@@ -196,6 +196,31 @@ class Graphserver
     return true
   end
 
+  #links nearby stops with a direct line-of-sight
+  def link_stops_los
+    search_range = 0.03 #decimal degrees lat/long around a stop to look for nearby stops
+    stops = conn.exec "SELECT stop_id, location FROM gtf_stops"
+
+    n = stops.num_tuples; i=0
+    stops.each do |from_id, location|
+      @gg.add_vertex( GTFS_PREFIX+from_id )
+
+      i += 1
+      if i%10==0 then $stderr.print( sprintf("\rLinked %d/%d stops (%d%%)", i, n, (i.to_f/n)*100) ) end
+
+      nearby_stops = conn.exec <<-SQL 
+        SELECT stop_id, distance_sphere( '#{location}'::geometry, location ) AS dist 
+        FROM gtf_stops 
+        WHERE location && expand( '#{location}'::geometry, #{search_range} )
+      SQL
+
+      nearby_stops.each do |to_id, dist|
+        @gg.add_vertex( GTFS_PREFIX+to_id )
+        @gg.add_edge( GTFS_PREFIX+from_id, GTFS_PREFIX+to_id, Street.new( "LOS", dist.to_f ) )
+      end
+    end
+  end
+
   def create_gtfs_tables!
     conn.exec <<-SQL
       BEGIN;
@@ -220,6 +245,7 @@ class Graphserver
       );
 
       select AddGeometryColumn( 'gtf_stops', 'location', #{WGS84_LATLONG_EPSG}, 'POINT', 2 );
+      CREATE INDEX gtf_stops_location_ix ON gtf_stops USING GIST ( location GIST_GEOMETRY_OPS );
 
       create table gtf_routes (
         route_id          text PRIMARY KEY,

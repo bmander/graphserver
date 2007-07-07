@@ -17,5 +17,6 @@ gs.database_params = DB_PARAMS
 #load gtfs data
 print "Loading GTFS data\n"
 gs.load_google_transit_feed
+gs.link_stops_los
 
 gs.start
