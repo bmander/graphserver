@@ -127,12 +127,6 @@ class Graphserver
     end
 
     @server.mount_proc( "/shortest_path" ) do |request, response|
-      if request.query['debug'] == 'true' then
-         verbose=true
-      else
-         verbose=false
-      end
-      
       from = request.query['from']
       to = request.query['to']
       ret = []
@@ -146,7 +140,7 @@ class Graphserver
         ret << "<route>"
         ret << vertices.shift.to_xml
         edges.each do |edge|
-          ret << edge.to_xml( verbose )
+          ret << edge.to_xml
           ret << vertices.shift.to_xml
         end
         ret << "</route>"

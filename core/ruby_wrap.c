@@ -530,7 +530,6 @@ VALUE t_state_set( VALUE self, VALUE rbkey, VALUE rbvalue ) {
 }
 
 VALUE t_state_to_hash( VALUE self ) {
-  printf( "t_state_to_hash begin\n" );
   State* state = unpack_state( self );
 
   VALUE ret = rb_hash_new();
@@ -541,8 +540,6 @@ VALUE t_state_to_hash( VALUE self ) {
   rb_hash_aset( ret, rb_str_new2( "prev_edge_type" ), INT2NUM( state->prev_edge_type ) );
   rb_hash_aset( ret, rb_str_new2( "prev_edge_name" ), (state->prev_edge_name?rb_str_new2(state->prev_edge_name ):Qnil ) );
   rb_hash_aset( ret, rb_str_new2( "calendar_day" ), pack_cal( state->calendar_day ) );
-
-  printf( "t_state_to_hash return\n") ;
 
   return ret;
 }

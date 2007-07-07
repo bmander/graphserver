@@ -68,6 +68,9 @@ epDestroy( EdgePayload* this ) {
 
 State*
 epWalk( EdgePayload* this, State* params ) {
+  if( !this )
+    return NULL;
+
   switch( this->type ) {
     case PL_STREET:
       return streetWalk( (Street*)this, params );
@@ -84,6 +87,9 @@ epWalk( EdgePayload* this, State* params ) {
 
 State*
 epWalkBack( EdgePayload* this, State* params ) {
+  if(!this)
+    return NULL;
+
   switch( this->type ) {
     case PL_STREET:
       return streetWalkBack( (Street*)this, params );
