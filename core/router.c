@@ -72,6 +72,9 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
 
 #ifndef RETRO
       EdgePayload *collapsed = epCollapse( edge->payload, du );
+      //EdgePayload* prev_collapsed = vParent( spt_u )->payload;
+      //State *du_with_penalty = vWalk( spt_u, prev_collapsed, collapsed, du );
+      //State *new_dv = epWalk( collapsed, du_with_penalty );
       State *new_dv = epWalk( collapsed, du );
 #else
       EdgePayload *collapsed = epCollapseBack( edge->payload, du );

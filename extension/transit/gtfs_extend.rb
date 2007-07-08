@@ -178,13 +178,14 @@ class Graphserver
     i=0
     stop_times.each do |trip_id, from_id, to_id, departure_time, arrival_time, service_id|
       i += 1
-      if i%10000==0 then print "#{(i.to_f/n)*100}%\n" end      
+      if i%1000==0 then $stderr.print( sprintf( "\rSorted %d/%d trip hops (%d%%)", i, n, (i.to_f/n)*100 ) ) end      
 
       schedule_key = [from_id, to_id, sid_numbers[service_id]]
 
       triphops[schedule_key] ||= []
       triphops[schedule_key] << [GoogleTransitFeed::parse_time( departure_time ), GoogleTransitFeed::parse_time( arrival_time ), trip_id ]
     end
+    $stderr.print( "...done\n" )
 
     #dump triphops to graphserver
     print "Importing triphops to Graphserver\n"
@@ -199,9 +200,11 @@ class Graphserver
   #links nearby stops with a direct line-of-sight
   def link_stops_los
     search_range = 0.03 #decimal degrees lat/long around a stop to look for nearby stops
+    num_links = 30
     stops = conn.exec "SELECT stop_id, location FROM gtf_stops"
 
     n = stops.num_tuples; i=0
+    
     stops.each do |from_id, location|
       @gg.add_vertex( GTFS_PREFIX+from_id )
 
@@ -212,6 +215,8 @@ class Graphserver
         SELECT stop_id, distance_sphere( '#{location}'::geometry, location ) AS dist 
         FROM gtf_stops 
         WHERE location && expand( '#{location}'::geometry, #{search_range} )
+        ORDER BY dist
+        LIMIT #{num_links}
       SQL
 
       nearby_stops.each do |to_id, dist|
@@ -219,6 +224,9 @@ class Graphserver
         @gg.add_edge( GTFS_PREFIX+from_id, GTFS_PREFIX+to_id, Street.new( "LOS", dist.to_f ) )
       end
     end
+  
+    $stderr.print( "...done.\n" )
+
   end
 
   def create_gtfs_tables!
