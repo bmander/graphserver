@@ -36,7 +36,7 @@ class Graphserver
   end
 
   def load_tiger_from_file dir
-    tiger_line = TigerLine::TigerLine.new( dir )
+    tiger_line = TigerLine::Dataset.new( dir )
     tiger_line.read
 
     tiger_line.each_feature do |feature|
