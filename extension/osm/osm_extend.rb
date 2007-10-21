@@ -1,66 +1,89 @@
 require 'rexml/document'
+require "rexml/streamlistener"
 require 'rubygems'
 require 'json'
 
+include REXML
+
+class OSMNode
+  attr_accessor :id, :lat, :lon, :tags
+  
+  def initialize id
+    @id = id
+    @tags = {}
+  end
+  
+end
+
+class OSMWay
+  attr_accessor :id, :nodes, :tags
+  
+  def initialize id
+    @id = id
+    @nodes = []
+    @tags = {}
+  end
+  
+end
+
 class Graphserver
 
-USAGE = %<
- USAGE:
- Start the server
- $ ruby gserver.rb --port=PORT
-
- Then test the XML API from a web browser:
- http://path.to.server:port/                               (blank, returns API documentation)
- .../all_vertex_labels
- .../outgoing_edges?label=Seattle                             (currently segfaults. eep!)
- .../eval_edges?label=Seattle                                 (evaluates outgoing edges at current time)
- .../eval_edges?label=Seattle-busstop&time=0                  (evaluates edges at given unix time)
- .../shortest_path?from=Seattle&to=Portland                   (finds shortest route for current. this example broken due to int range issues)
- .../shortest_path?from=Seattle&to=Portland&time=0            (finds short for given unix time)
- .../shortest_path?from=Seattle&to=Portland&time=0&debug=true (finds short for given unix time, with verbose output)
->
-
-  def load_osm_from_file osmfile, verbose=true
-
-    if verbose then
-        print "Loading OSM file #{osmfile}\n"
+  class MyListener
+    include StreamListener
+    
+    def initialize graph
+      #general parsing varialbes
+      @curr_obj = nil
+      
+      #graphserver-specific variables
+      @nodes = {}
+      @gg = graph
     end
-
-    #Street-style data is simpler
     
-    # Load raw OSM street data from file
-    f = File.new osmfile, "r"
-    @xml_data =  f.read
-    
-    if verbose then print "Parsing XML in one big bite...\n" end
-    # Parse all data all at once - very expensive
-    doc = REXML::Document.new(@xml_data)
-    
-    if verbose then print "Putting nodes in the graph...\n" end
-    # Pull all the nodes out
-    @nodes = {} 
-    doc.elements.each('osm/node') do |ele|
-       @gg.add_vertex( ele.attribute('id').value.to_s )
-       @nodes[ele.attributes['id']] = [ele.attributes['lat'].to_f,ele.attributes['lon'].to_f]
+    # Subclass listener
+    def tag_start name, attr
+      
+      case name
+        when 'node'
+          @curr_obj = OSMNode.new( attr['id'] )
+          @curr_obj.lat = attr['lat'].to_f
+          @curr_obj.lon = attr['lon'].to_f
+        when 'way'
+          @curr_obj = OSMWay.new( attr['id'] )
+        when 'nd'
+          @curr_obj.nodes << attr['ref']
+        when 'tag'
+          @curr_obj.tags[ attr['k'] ] = attr['v']
+      end
     end
-   
-    if verbose then print "Putting ways in the graph...\n" end
-    # For each way...
-    doc.elements.each('osm/way') do |ele|
+    
+    # Subclass listener
+    def tag_end name
+      case name
+        when 'node'
+          handle_node @curr_obj
+        when 'way'
+          handle_way @curr_obj
+      end
+    end
+    
+    def handle_node node
+      @gg.add_vertex( node.id )
+      @nodes[node.id] = [node.lat, node.lon]
+    end
+    
+    def handle_way way
       current = nil
-      name = "Unnamed"  
-      tag = ele.elements['tag[@k="name"]']
-      if tag then
-        name = "#{tag.attributes["v"]} (#{ele.attributes['id']})" 
-      end  
+      
+      name = "#{way.tags['name'] || "Unnamed"} (#{way.id})"
     
       # For each node in the way...
-      ele.elements.each('nd') do |node|
+      way.nodes.each do |node|
         if current then
-          prev_id = current.attributes['ref']
-          cur_id = node.attributes['ref']
+          prev_id = current
+          cur_id = node
           x = (@nodes[prev_id][0] - @nodes[cur_id][0]) 
-          y = (@nodes[prev_id][1] - @nodes[cur_id][1]) 
+          y = (@nodes[prev_id][1] - @nodes[cur_id][1])
           num = (x*x + y*y)
           len = Math.sqrt(num) * 10000
           @gg.add_edge( prev_id, cur_id, Street.new(name, len) )
@@ -70,7 +93,13 @@ USAGE = %<
       end  
     end
     
-    if verbose then print "done\n" end
+  end
+
+  def load_osm_from_file osmfile, verbose=true
+
+    list = MyListener.new @gg
+    source = File.new osmfile, "r"
+    REXML::Document.parse_stream(source, list)
   
   end
   
