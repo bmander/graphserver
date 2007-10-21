@@ -87,7 +87,10 @@ class Graphserver
           num = (x*x + y*y)
           len = Math.sqrt(num) * 10000
           @gg.add_edge( prev_id, cur_id, Street.new(name, len) )
-          @gg.add_edge( cur_id, prev_id, Street.new(name, len) )
+          # If the oneway tag isn't set or is set to none, add a reverse directed edge
+          if not way.tags['oneway'] or way.tags['oneway']=='false' or way.tags['oneway']=='no' then
+            @gg.add_edge( cur_id, prev_id, Street.new(name, len) )
+          end
         end
         current = node
       end  
