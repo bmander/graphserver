@@ -31,7 +31,7 @@ class Graphserver
   class MyListener
     include StreamListener
     
-    def initialize graph
+    def initialize graph, directional
       #general parsing varialbes
       @curr_obj = nil
       
@@ -86,11 +86,17 @@ class Graphserver
           y = (@nodes[prev_id][1] - @nodes[cur_id][1])
           num = (x*x + y*y)
           len = Math.sqrt(num) * 10000
+          
           @gg.add_edge( prev_id, cur_id, Street.new(name, len) )
-          # If the oneway tag isn't set or is set to none, add a reverse directed edge
-          if not way.tags['oneway'] or way.tags['oneway']=='false' or way.tags['oneway']=='no' then
+          if directional then
+            # If the oneway tag isn't set or is set to none, add a reverse directed edge
+            if not way.tags['oneway'] or way.tags['oneway']=='false' or way.tags['oneway']=='no' then
+              @gg.add_edge( cur_id, prev_id, Street.new(name, len) )
+            end
+          else
             @gg.add_edge( cur_id, prev_id, Street.new(name, len) )
           end
+        
         end
         current = node
       end  
@@ -98,9 +104,9 @@ class Graphserver
     
   end
 
-  def load_osm_from_file osmfile, verbose=true
-
-    list = MyListener.new @gg
+  def build_graph_from_osmfile osmfile, directional=false
+      
+    list = MyListener.new @gg, directional
     source = File.new osmfile, "r"
     REXML::Document.parse_stream(source, list)
   
