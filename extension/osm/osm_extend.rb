@@ -38,6 +38,7 @@ class Graphserver
       #graphserver-specific variables
       @nodes = {}
       @gg = graph
+      @directional = directional
     end
     
     # Subclass listener
@@ -88,7 +89,7 @@ class Graphserver
           len = Math.sqrt(num) * 10000
           
           @gg.add_edge( prev_id, cur_id, Street.new(name, len) )
-          if directional then
+          if @directional then
             # If the oneway tag isn't set or is set to none, add a reverse directed edge
             if not way.tags['oneway'] or way.tags['oneway']=='false' or way.tags['oneway']=='no' then
               @gg.add_edge( cur_id, prev_id, Street.new(name, len) )
