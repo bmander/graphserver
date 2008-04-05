@@ -1,0 +1,77 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Planificador de ruta SITI</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
+
+    <script src="js/journeyplanner.js"></script>
+    <script src="js/slippymap2.js"></script>
+
+    <script src="http://www.openlayers.org/api/OpenLayers.js"></script>
+<!--    <script src="js/OpenLayers.js"></script>-->
+
+    <link rel="stylesheet" type="text/css" href="css/styles.css" />
+
+  </head>
+  <body onload="init()">
+
+    <div id="sideBar">
+
+      <div id="header">
+        <a href="http://smagris3.uv.es/siti" ><img src="img/logositi2_150.jpg" alt="logo siti"/></a>
+        <a href="http://www.fomento.es" ><img src="img/logo_fomento.gif" alt="logo fomento"/></a>
+      </div>
+
+      <div id="route_options">
+<!--    <form action="/compute" method="post"> -->
+        <form action="" method="post">
+          <p>
+            Desde
+            <input type="text" id="from" name="from" value="" tabindex="1"/>
+            <input type="radio" id="fromRadio" name="radio" checked="checked" />
+            <br/>
+          </p>
+          <div id="lista1"></div>
+          <p>
+            Hasta
+            <input id="to" name="to" value="" tabindex="2"/>
+            <input type="radio" id="toRadio" name="radio" value="1"/>
+            <br/>
+          </p>
+          <div id="lista2"></div>
+          <p>
+            <select id="time_option" name="time_option" tabindex="3">
+              <option value="departing">Saliendo</option>
+              <option value="arriving">Llegando</option>
+            </select>
+            el d&iacute;a
+            <input id="date" name="date" value="29/10/07" tabindex="4"/>
+            a las
+            <input id="time" name="time" value="00:00:00" tabindex="5"/>
+            <br/>
+            <input type="hidden" value="" name="fromId" id="fromId"></input>
+            <input type="hidden" value="" name="toId" id="toId"></input>
+<!--            <img src="img/buscar2.jpg" alt="logo buscar" onclick='PeticionRuta()'/>  -->
+<!--            <button type="submit">Calcular</button> -->
+            <button onclick='computeJourney()'>Calcular</button>
+            <br/>
+          </p>
+        </form>
+      </div>
+
+      <div id="route">
+      </div>
+      <div id="footer">
+        <p>
+          <a href="http://smagris3.uv.es/siti/?q=node/17">Acerca de este prototipo</a><br/>
+          2007 <a href="http://robotica.uv.es">Instituto de Robótica</a> - Universitat de València
+        </p>
+      </div>
+      </div>
+    </div>
+
+    <div id="map_frame">
+    </div>
+  </body>
+</html>

@@ -1,0 +1,128 @@
+body {
+	color: #0b1b12;
+    border: 0px;
+    margin: 0px;
+    padding: 0px;
+	font-family: Times, "Times New Roman", serif;
+	font-size: 0.8em;
+/*	text-align: justify;*/
+}
+
+#sideBar {
+	position: absolute;
+	width: 300px;
+	height: 100%;
+	top: 0px;
+/*	bottom: 0px;*/
+}
+
+#sideBar ul{
+	padding: 0 18px;
+}
+
+#header{
+	height: 80px;
+    display: table;
+}
+
+#header a {
+    display: table-cell;
+    vertical-align: middle;
+    color: #ffffff;
+    text-decoration: none;
+}
+
+#route_options {
+
+}
+
+#route {
+/*	position: absolute;*/
+	height: auto;
+/*	bottom: 40px;*/
+/*	padding: 0 1em;*/
+/*	overflow: auto;*/
+}
+
+#route p {
+/*	padding: 0 1em ;*/
+	font-size: 0.9em;
+}
+
+#from {
+	width: 220px;
+}
+#to {
+	width: 220px;
+}
+#date {
+	width: 60px;
+}
+#time {
+	width: 60px;
+}
+
+#footer {
+	position: absolute;
+/*	width: 300px;*/
+	height: 50px;
+	bottom: 0px;
+}
+#footer p {
+	font-size: 0.8em;
+	text-align: left;
+}
+
+#map_frame {
+	position: absolute;
+	left: 300px;
+	top: 0px;
+	width: auto;
+	height: auto;
+}
+
+/*
+#map {
+	position: absolute;
+	margin-left: 300px;
+	margin-top: 0px;
+	border: 0px;
+	padding: 0px;
+	width: 100%;
+	height: 100%;
+}
+*/
+
+h1 {font-size: 1.3em;
+}
+
+h2 {font-size: 1.3em;
+font-family: Times, "Times New Roman", serif;
+font-weight: bold;
+font-style: italic;
+text-align: right;
+color: #9d9b90;
+background-color: #3e1ceb;}
+
+h3 {font-size: 1.2em;
+font-family: Times, "Times New Roman", serif;
+font-weight: bold;
+text-align: left;}
+
+h4 {font-size: 1.1em;
+font-family: Times, "Times New Roman", serif;
+font-weight: bold;
+text-align: left;}
+
+h5 {font-size: 1em;
+font-family: Times, "Times New Roman", serif;
+font-weight: bold;
+text-align: left;}
+
+p {font-size: 1em;
+font-family: Times, "Times New Roman", serif;
+/*font-weight: bold;*/
+text-align: left;}
+
+a:hover {color: #5e77ff;
+text-decoration: underline;}
