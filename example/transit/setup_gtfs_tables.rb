@@ -1,13 +1,12 @@
-#Incluye el directorio en el path
+#Add extensions directory to the path
 $: << "../../extension/transit"
 
-#Incorpora la clase Graphserver
+#Include class Graphserver
 require 'graphserver.rb'
-#Incorpora las funciones create_gtfs_tables,
-#remove_gtfs_tables e import_gtfs_to_db
-require 'gtfs_extend4.rb'
+#Include functions create_gtfs_tables, remove_gtfs_tables and import_gtfs_to_db
+require 'gtfs_extend.rb'
 
-#Debe haber al menos un parametro (create_tables o directory)
+#At least one parameter (create_tables or directory)
 if ARGV.size < 1 then
   print "usage: ruby setup_gtfs_tables.rb [create_tables] [directory [directory ...] ]\n"
   exit

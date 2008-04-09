@@ -3,7 +3,6 @@ require 'google_transit_feed'
 require 'rubygems'
 #require_gem 'tzinfo'
 #gem 'tzinfo'
-#include TZInfo
 require 'tzinfo'
 include TZInfo
 
@@ -136,6 +135,125 @@ class Graphserver
     return ret.rewind!
   end
 
+  # Returns a hash with all increments from the first departure time for each trip in gtf_frequencies
+  def load_frequencies
+    frequencies = {}
+
+    frequencies_table = conn.exec <<-SQL
+      SELECT * FROM gtf_frequencies
+    SQL
+
+    frequencies_table.each do |trip_id, start_time, end_time, headway_secs|
+      st = GoogleTransitFeed::parse_time( start_time )
+      et = GoogleTransitFeed::parse_time( end_time )
+      hs = headway_secs.to_i
+      # If there is not a key in the hash then creates the key
+      frequencies[trip_id] ||=[]
+      # Fills all the starting times for the trip
+      while st <= et
+        frequencies[trip_id] << st
+        st += hs
+      end
+    end
+
+    # Traverse the frequencies hash and subtract the first start time from all values
+    frequencies.each do |key, row|
+      first = row[0]
+      frequencies[key] = []
+      row.each do |f|
+        frequencies[key] << f - first
+      end
+    end
+    return frequencies
+  end
+
+  def load_triphops
+
+    sid_numbers = load_service_ids
+
+    triphops = {}
+    print "Querying Triphops\n"
+    stop_times = conn.exec <<-SQL
+      SELECT t1.trip_id,
+             t1.stop_id AS from_id,
+             t2.stop_id AS to_id,
+             t1.departure_time,
+             t2.arrival_time,
+--             t1.stop_sequence,
+             gtf_trips.service_id
+      FROM gtf_stop_times AS t1,
+           gtf_stop_times AS t2,
+           gtf_trips
+      WHERE t2.trip_id = t1.trip_id AND
+            t2.stop_sequence = t1.stop_sequence+1 AND
+            t1.trip_id = gtf_trips.trip_id
+      ORDER BY trip_id, t1.stop_sequence
+    SQL
+    print "done\n"
+
+    #load frequencies from frequencies table
+    frequencies = load_frequencies
+
+    print "Interpolating and sorting triphops\n"
+    n=stop_times.num_tuples
+    i=0
+    prev_timed=0
+    stop_times.each do |trip_id, from_id, to_id, departure_time, arrival_time, service_id|
+      if departure_time then
+        # Looks for dep=something arr=something pattern, which triggers regular behaviour
+        if arrival_time then
+          schedule_key = [from_id, to_id, sid_numbers[service_id]]
+          triphops[schedule_key] ||= []
+          dt = GoogleTransitFeed::parse_time( departure_time )
+          at = GoogleTransitFeed::parse_time( arrival_time )
+#          duration = at - dt
+          # If the trip has an associated frequency
+          if frequencies[trip_id] then
+            frequencies[trip_id].each do |f|
+              triphops[schedule_key] << [dt + f, at + f , trip_id ]
+            end
+          else
+            triphops[schedule_key] << [dt, at, trip_id ]
+          end
+        # Looks for dep=something arr=nil pattern
+        else # if arrival_time
+          prev_timed=i
+        end  # if arrival_time
+      else # if departure_time
+        # Looks for dep=nil arr=something pattern which triggers interpolation
+        if arrival_time then
+          first_time = GoogleTransitFeed::parse_time( stop_times[prev_timed][3] )
+          last_time = GoogleTransitFeed::parse_time( stop_times[i][4] )
+          # The time step is linearly interpolated (not based on distance)
+          step = (last_time-first_time)/(i-prev_timed+1)
+          dep_time = first_time
+          arr_time = dep_time + step
+          # Interpolate times and feed triphops hash
+          for j in prev_timed..i
+            schedule_key = [stop_times[j][1], stop_times[j][2], sid_numbers[service_id]]
+            triphops[schedule_key] ||= []
+            # If the trip has an associated frequency
+            if frequencies[trip_id] then
+              frequencies[trip_id].each do |f|
+                triphops[schedule_key] << [dep_time + f, arr_time + f, trip_id ]
+              end
+            else
+              triphops[schedule_key] << [dep_time, arr_time, trip_id ]
+            end
+            dep_time = arr_time
+            arr_time += step
+          end
+        end # if arrival_time
+
+      end # if departure_time
+      i += 1
+      if i%1000==0 then $stderr.print( sprintf( "\rChecked %d/%d trip hops (%d%%)", i, n, (i.to_f/n)*100 ) ) end
+    end #stop_times.each
+    $stderr.print( "...done\n" )
+
+    return triphops
+  end
+
   def load_google_transit_feed agency_id=nil
     #=========GET TIMEZONE INFORMATION======================
     if agency_id then
@@ -163,38 +281,7 @@ class Graphserver
     print "done\n"
 
     #load triphops from stop_times table
-    triphops = {}
-    print "Querying Triphops\n"
-    stop_times = conn.exec <<-SQL
-      SELECT t1.trip_id,
-             t1.stop_id AS from_id,
-             t2.stop_id AS to_id,
-             t1.departure_time,
-             t2.arrival_time,
-             gtf_trips.service_id
-      FROM gtf_stop_times AS t1,
-           gtf_stop_times AS t2,
-           gtf_trips
-      WHERE t2.trip_id = t1.trip_id AND
-            t2.stop_sequence = t1.stop_sequence+1 AND
-            t1.trip_id = gtf_trips.trip_id
-      ORDER BY departure_time
-    SQL
-    print "done\n"
-
-    print "Sorting triphops\n"
-    n=stop_times.num_tuples
-    i=0
-    stop_times.each do |trip_id, from_id, to_id, departure_time, arrival_time, service_id|
-      i += 1
-      if i%1000==0 then $stderr.print( sprintf( "\rSorted %d/%d trip hops (%d%%)", i, n, (i.to_f/n)*100 ) ) end
-
-      schedule_key = [from_id, to_id, sid_numbers[service_id]]
-
-      triphops[schedule_key] ||= []
-      triphops[schedule_key] << [GoogleTransitFeed::parse_time( departure_time ), GoogleTransitFeed::parse_time( arrival_time ), trip_id ]
-    end
-    $stderr.print( "...done\n" )
+    triphops = load_triphops
 
     #dump triphops to graphserver
     print "Importing triphops to Graphserver\n"
@@ -251,6 +338,7 @@ class Graphserver
       );
 
       create table gtf_stops (
+--        u_id             text PRIMARY KEY,
         stop_id          text PRIMARY KEY,
         stop_name        text NOT NULL,
         stop_desc        text,
@@ -374,47 +462,43 @@ class Graphserver
 
   end
 
-#  def remove_gtfs_tables!
-#
-#    begin
-#      conn.exec <<-SQL
-#        BEGIN;
-#        drop table gtf_agency;
-#        drop table gtf_stops;
-#        drop table gtf_routes;
-#        drop table gtf_trips;
-#        drop table gtf_stop_times;
-#        drop table gtf_calendar;
-#        drop table gtf_calendar_dates;
-#        drop table gtf_fare_attributes;
-#        drop table gtf_fare_rules;
-#        drop table gtf_shapes;
-#        drop table gtf_frequencies;
-#        COMMIT;
-#      SQL
-#    rescue
-#      nil
-#    end
-#
-#  end
+  def add_namespace( data, namespace )
+    #If the data already has a namespace then returns the same data
+    if data.include?(':') then return "#{data}" end
+    #In other case, returns the data with the namespace prefix
+    return "#{namespace}:#{data}"
+  end
 
   def import_google_transit_file( gtf_file, table_name )
     return nil if not gtf_file or gtf_file.header.empty?
     print "Importing #{table_name}.txt file\n"
 
+    #Looks for unique IDs which need a namespace to avoid collisions between agencies
+    u_ids = []
+    i = 0
+    gtf_file.header.each do |field|
+      if GoogleTransitFeed::U_IDS.include?(field) then u_ids << i end
+      i += 1
+    end
+
     conn.exec "COPY #{table_name} ( #{gtf_file.header.join(",")} ) FROM STDIN"
 
-    fsize = gtf_file.data.size
+    #fsize = gtf_file.data.size
     count=0
 
-    gtf_file.data.each do |row|
+    #process each line of the file
+    while row=gtf_file.get_row
       row = Array.new( gtf_file.header.size ) do |i|
         if row[i] and not row[i].empty? then row[i] else "\\N" end
       end
+      #Include namespace for unique IDs to avoid collisions
+      u_ids.each do |i| row[i] = add_namespace( row[i], @namespace ) end
+
       conn.putline(row.join("\t") + "\n")
 
       if (count%5000)==0 then
-        print "#{(Float(count)/fsize)*100}%\n"
+        puts "#{count} processed lines"
+#        print "#{(Float(count)/fsize)*100}%\n"
       end
       count += 1
     end
@@ -422,23 +506,36 @@ class Graphserver
     conn.endcopy
   end
 
+  #The stops.txt file needs special processing
   def import_google_transit_stops_file( stops_file )
     return nil if not stops_file or stops_file.header.empty?
     print "Importing stops.txt file\n"
 
     stop_lat_index = stops_file.header.index("stop_lat")
     stop_lon_index = stops_file.header.index("stop_lon")
+    stop_id_index = stops_file.header.index("stop_id")
 
-    conn.exec "COPY gtf_stops ( #{stops_file.header.join(",")}, location ) FROM STDIN"
     header_len = stops_file.header.length
-    stops_file.data.each do |row|
+
+    #process each line of the file
+    while row=stops_file.get_row
       shape_wkt = "SRID=#{WGS84_LATLONG_EPSG};POINT(#{row[stop_lon_index]} #{row[stop_lat_index]})"
+      #Check if stop_id has already a namespace, if not, add the agency_id as namespace
+      row[stop_id_index] = add_namespace( row[stop_id_index], @namespace )
       row += [""] * (header_len - row.length) if row.length != header_len #added this to parse trimet
       row.collect! do |item| if item.empty? then "\\N" else item end end
-      conn.putline "#{row.join("\t")}\t#{shape_wkt}\n"
+      #Add a rescue statement to the copy process
+      begin
+        conn.exec "COPY gtf_stops ( #{stops_file.header.join(",")}, location ) FROM STDIN"
+        conn.putline "#{row.join("\t")}\t#{shape_wkt}\n"
+        conn.endcopy
+      rescue
+        #In case that a stop with the same u_id (namespace + stop_id) already existed
+        #we consider that it is the same stop (a stop shared between different agencies)
+        puts "The stop #{row[stop_id_index]} already exists, ignoring stop"
+      end
     end
 
-    conn.endcopy
   end
 
   #Necessary to parse arrival_time and departure_time defined as "H:MM:SS" instead of "HH:MM:SS"
@@ -446,15 +543,29 @@ class Graphserver
     return nil if not stop_times_file or stop_times_file.header.empty?
     print "Importing stop_times.txt file\n"
 
+    trip_id_index = stop_times_file.header.index("trip_id")
+    stop_id_index = stop_times_file.header.index("stop_id")
     conn.exec "COPY gtf_stop_times ( #{stop_times_file.header.join(",")} ) FROM STDIN"
 
     header_len = stop_times_file.header.length
-    stop_times_file.data.each do |row|
+    count=0
+
+    #process each line of the file
+    while row=stop_times_file.get_row
+      #Check if stop_id ant trip_id have already a namespace, if not, add the agency_id as namespace
+      row[stop_id_index] = add_namespace( row[stop_id_index], @namespace )
+      row[trip_id_index] = add_namespace( row[trip_id_index], @namespace )
       row += [""] * (header_len - row.length) if row.length != header_len #added this to parse trimet
-      row[1]=row[1].rjust(8,'0')
-      row[2]=row[2].rjust(8,'0')
+      if row[1]!='' then row[1]=row[1].rjust(8,'0') end
+      if row[2]!='' then row[2]=row[2].rjust(8,'0') end
       row.collect! do |item| if item.empty? then "\\N" else item end end
       conn.putline "#{row.join("\t")}\n"
+
+      if (count%5000)==0 then
+        puts "#{count} processed lines"
+#        print "#{(Float(count)/fsize)*100}%\n"
+      end
+      count += 1
     end
 
     conn.endcopy
@@ -465,7 +576,11 @@ class Graphserver
     print "Importing shapes.txt file\n"
 
     shapes = {}
-    shapes_file.data.each do |shape_id, lat, lon, sequence|
+    #process each line of the file
+    while row=shapes_file.get_row
+      shape_id, lat, lon, sequence = row
+      #Add namespace to shape_id to avoid collisions
+      shape_id = add_namespace( shape_id, @namespace )
       shapes[shape_id] ||= []
       shapes[shape_id][sequence.to_i-1] = [lat, lon]
     end
@@ -482,21 +597,32 @@ class Graphserver
 
 
   def import_gtfs_to_db! directory
-    gt = GoogleTransitFeed::GoogleTransitFeed.new( directory, :verbose )
+    gt = GoogleTransitFeed::GoogleTransitFeed.new( directory )
+    @namespace = gt.namespace
 
     import_google_transit_file( gt["agency"],          "gtf_agency" )
+    conn.exec "VACUUM ANALYZE gtf_agency"
     import_google_transit_stops_file( gt["stops"] )
+    conn.exec "VACUUM ANALYZE gtf_stops"
     import_google_transit_file( gt["routes"],          "gtf_routes" )
+    conn.exec "VACUUM ANALYZE gtf_routes"
     import_google_transit_file( gt["trips"],           "gtf_trips" )
-#    import_google_transit_file( gt["stop_times"],      "gtf_stop_times" )
+    conn.exec "VACUUM ANALYZE gtf_trips"
+##    import_google_transit_file( gt["stop_times"],      "gtf_stop_times" )
     import_google_transit_stop_times_file( gt["stop_times"] )
+    conn.exec "VACUUM ANALYZE gtf_stop_times"
     import_google_transit_file( gt["calendar"],        "gtf_calendar" )
+    conn.exec "VACUUM ANALYZE gtf_calendar"
     import_google_transit_file( gt["calendar_dates"],  "gtf_calendar_dates" )
+    conn.exec "VACUUM ANALYZE gtf_calendar_dates"
     import_google_transit_file( gt["fare_attributes"], "gtf_fare_attributes" )
+    conn.exec "VACUUM ANALYZE gtf_fare_attributes"
     import_google_transit_file( gt["fare_rules"],      "gtf_fare_rules" )
+    conn.exec "VACUUM ANALYZE gtf_fare_rules"
     import_google_transit_shapes_file( gt["shapes"] )
+    conn.exec "VACUUM ANALYZE gtf_shapes"
     import_google_transit_file( gt["frequencies"],     "gtf_frequencies" )
+    conn.exec "VACUUM ANALYZE gtf_frequencies"
   end
-
 
 end
