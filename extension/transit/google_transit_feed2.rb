@@ -17,12 +17,22 @@ module GoogleTransitFeed
   U_IDS = ["stop_id", "zone_id", "route_id", "service_id", "trip_id", "fare_id", "shape_id"]
 
   class GoogleTransitFeed
-    def initialize directory, verbose=false
+    attr_reader :namespace
+
+    def initialize directory
       @files = {}
 
+      #The namespace of the feed is the first agency of the agency.txt file
+      f = File.new("#{directory}/agency.txt")
+      @namespace = f.read.split("\n")[1].split( "," )[0]
+      puts "namespace = #{@namespace}"
+      f.close
+
+      #Init files
       FEED_FILES.each do |file|
-        @files[file] = GoogleTransitFeedFile.new "#{directory}/#{file}.txt", verbose
+        @files[file] = GoogleTransitFeedFile.new "#{directory}/#{file}.txt"
       end
+
     end
 
     def [] file
@@ -31,47 +41,28 @@ module GoogleTransitFeed
   end
 
   class GoogleTransitFeedFile
-    attr_reader :header, :data
+    attr_reader :header
 
-    def initialize file, verbose=false
-      print "Parsing #{file}\n" if verbose
-
+    #Read header and leave file open
+    def initialize file
       @header = []
-      @data = []
+      @f = []
 
-      begin
-        contents = File.read file
-      rescue
-        return nil
-      end
+      @f = File.new(file)
+      @header = split_csv_with_quotes( @f.gets )
+      #The file remains open...
+    end
 
-      #check if file is tainted by quotes
-      has_quotes = true if contents.match(/"/) else false
-
-      contents = contents.split("\n")
-      fsize = contents.size
-
-      @header = split_csv_with_quotes( contents.shift )
-
-      i=0
-      if has_quotes then
-        @data = contents.collect do |line|
-          i += 1
-          if verbose and i%5000==0 then
-            print "#{(Float(i)/fsize)*100}%\n"
-          end
-
-          split_csv_with_quotes( line )
-        end
+    #Reads a line from file and converts to fields
+    def get_row
+      line = @f.gets
+      #if eof return nil
+      if line == nil then return nil end
+      #if line has quotes
+      if line.match(/"/) then
+        split_csv_with_quotes( line )
       else
-        @data = contents.collect do |line|
-          i += 1
-          if verbose and i%5000==0 then
-            print "#{(Float(i)/fsize)*100}%\n"
-          end
-
-          line.split(",").collect do |element| element.strip end
-        end
+        line.split(",").collect do |element| element.strip end
       end
     end
 

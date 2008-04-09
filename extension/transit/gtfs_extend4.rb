@@ -1,4 +1,4 @@
-require 'google_transit_feed'
+require 'google_transit_feed2'
 
 require 'rubygems'
 #require_gem 'tzinfo'
@@ -471,11 +471,7 @@ class Graphserver
 
   def import_google_transit_file( gtf_file, table_name )
     return nil if not gtf_file or gtf_file.header.empty?
-#    print "Importing #{table_name}.txt file\n"
-    print "Importando, pedazo de mamon, #{table_name}.txt file\n"
-
-    #Stores the agency name as a member variable when processing agency.txt file
-    if (table_name=="gtf_agency") then @agency_id=gtf_file.data[0][0] end
+    print "Importing #{table_name}.txt file\n"
 
     #Looks for unique IDs which need a namespace to avoid collisions between agencies
     u_ids = []
@@ -487,30 +483,57 @@ class Graphserver
 
     conn.exec "COPY #{table_name} ( #{gtf_file.header.join(",")} ) FROM STDIN"
 
-    fsize = gtf_file.data.size
+    #fsize = gtf_file.data.size
     count=0
 
-    gtf_file.data.each do |row|
+    #process each line of the file
+    while row=gtf_file.get_row
       row = Array.new( gtf_file.header.size ) do |i|
         if row[i] and not row[i].empty? then row[i] else "\\N" end
       end
       #Include namespace for unique IDs to avoid collisions
-      u_ids.each do |i| row[i] = add_namespace( row[i], @agency_id ) end
+      u_ids.each do |i| row[i] = add_namespace( row[i], @namespace ) end
 
       conn.putline(row.join("\t") + "\n")
 
       if (count%5000)==0 then
-        print "#{(Float(count)/fsize)*100}%\n"
-        #Also commit to the DB to avoid memory overflow
-        conn.endcopy
-        puts "commiting to the db"
-        conn.exec "COPY #{table_name} ( #{gtf_file.header.join(",")} ) FROM STDIN"
+        puts "#{count} processed lines"
+#        print "#{(Float(count)/fsize)*100}%\n"
       end
       count += 1
     end
 
     conn.endcopy
   end
+
+#  #The agency.txt file needs special processing
+#  def import_google_transit_agency_file( agency_file )
+#    return nil if not stops_file or stops_file.header.empty?
+#    print "Importing stops.txt file\n"
+#
+#    #process each line of the file
+#    while row=agency_file.get_row
+#      row = Array.new( gtf_file.header.size ) do |i|
+#        if row[i] and not row[i].empty? then row[i] else "\\N" end
+#      end
+#      #Include namespace for unique IDs to avoid collisions
+#      u_ids.each do |i| row[i] = add_namespace( row[i], @agency_id ) end
+#
+#      conn.putline(row.join("\t") + "\n")
+#
+#      if (count%5000)==0 then
+#        puts "#{count} processed lines"
+##        print "#{(Float(count)/fsize)*100}%\n"
+#      end
+#      count += 1
+#    end
+#
+#    conn.endcopy
+#
+#    #Stores the agency name as a member variable when processing agency.txt file
+# #   if (table_name=="gtf_agency") then @agency_id=gtf_file.data[0][0] end
+#
+#  end
 
   #The stops.txt file needs special processing
   def import_google_transit_stops_file( stops_file )
@@ -522,25 +545,23 @@ class Graphserver
     stop_id_index = stops_file.header.index("stop_id")
 
     header_len = stops_file.header.length
-    stops_file.data.each do |row|
+
+    #process each line of the file
+    while row=stops_file.get_row
       shape_wkt = "SRID=#{WGS84_LATLONG_EPSG};POINT(#{row[stop_lon_index]} #{row[stop_lat_index]})"
       #Check if stop_id has already a namespace, if not, add the agency_id as namespace
-      row[stop_id_index] = add_namespace( row[stop_id_index], @agency_id )
-#      u_id = add_namespace( row[stop_id_index], @agency_id )
+      row[stop_id_index] = add_namespace( row[stop_id_index], @namespace )
       row += [""] * (header_len - row.length) if row.length != header_len #added this to parse trimet
       row.collect! do |item| if item.empty? then "\\N" else item end end
       #Add a rescue statement to the copy process
       begin
         conn.exec "COPY gtf_stops ( #{stops_file.header.join(",")}, location ) FROM STDIN"
-#        conn.exec "COPY gtf_stops ( u_id, #{stops_file.header.join(",")}, location ) FROM STDIN"
         conn.putline "#{row.join("\t")}\t#{shape_wkt}\n"
-#        conn.putline "#{u_id}\t#{row.join("\t")}\t#{shape_wkt}\n"
         conn.endcopy
       rescue
         #In case that a stop with the same u_id (namespace + stop_id) already existed
         #we consider that it is the same stop (a stop shared between different agencies)
         puts "The stop #{row[stop_id_index]} already exists, ignoring stop"
-#        puts "The stop #{u_id} already exists, ignoring stop"
       end
     end
 
@@ -558,10 +579,11 @@ class Graphserver
     header_len = stop_times_file.header.length
     count=0
 
-    stop_times_file.data.each do |row|
+    #process each line of the file
+    while row=stop_times_file.get_row
       #Check if stop_id ant trip_id have already a namespace, if not, add the agency_id as namespace
-      row[stop_id_index] = add_namespace( row[stop_id_index], @agency_id )
-      row[trip_id_index] = add_namespace( row[trip_id_index], @agency_id )
+      row[stop_id_index] = add_namespace( row[stop_id_index], @namespace )
+      row[trip_id_index] = add_namespace( row[trip_id_index], @namespace )
       row += [""] * (header_len - row.length) if row.length != header_len #added this to parse trimet
       if row[1]!='' then row[1]=row[1].rjust(8,'0') end
       if row[2]!='' then row[2]=row[2].rjust(8,'0') end
@@ -569,11 +591,8 @@ class Graphserver
       conn.putline "#{row.join("\t")}\n"
 
       if (count%5000)==0 then
-        print "#{(Float(count)/fsize)*100}%\n"
-        #Also commit to the DB to avoid memory overflow
-        conn.endcopy
-        puts "commiting to the db"
-        conn.exec "COPY gtf_stop_times ( #{stop_times_file.header.join(",")} ) FROM STDIN"
+        puts "#{count} processed lines"
+#        print "#{(Float(count)/fsize)*100}%\n"
       end
       count += 1
     end
@@ -586,9 +605,11 @@ class Graphserver
     print "Importing shapes.txt file\n"
 
     shapes = {}
-    shapes_file.data.each do |shape_id, lat, lon, sequence|
+    #process each line of the file
+    while row=shapes_file.get_row
+      shape_id, lat, lon, sequence = row
       #Add namespace to shape_id to avoid collisions
-      shape_id = add_namespace( shape_id, @agency_id )
+      shape_id = add_namespace( shape_id, @namespace )
       shapes[shape_id] ||= []
       shapes[shape_id][sequence.to_i-1] = [lat, lon]
     end
@@ -605,7 +626,8 @@ class Graphserver
 
 
   def import_gtfs_to_db! directory
-    gt = GoogleTransitFeed::GoogleTransitFeed.new( directory, :verbose )
+    gt = GoogleTransitFeed::GoogleTransitFeed.new( directory )
+    @namespace = gt.namespace
 
     import_google_transit_file( gt["agency"],          "gtf_agency" )
     conn.exec "VACUUM ANALYZE gtf_agency"
@@ -616,8 +638,8 @@ class Graphserver
     import_google_transit_file( gt["trips"],           "gtf_trips" )
     conn.exec "VACUUM ANALYZE gtf_trips"
 #    import_google_transit_file( gt["stop_times"],      "gtf_stop_times" )
-#    import_google_transit_stop_times_file( gt["stop_times"] )
-#    conn.exec "VACUUM ANALYZE gtf_stop_times"
+    import_google_transit_stop_times_file( gt["stop_times"] )
+    conn.exec "VACUUM ANALYZE gtf_stop_times"
     import_google_transit_file( gt["calendar"],        "gtf_calendar" )
     conn.exec "VACUUM ANALYZE gtf_calendar"
     import_google_transit_file( gt["calendar_dates"],  "gtf_calendar_dates" )

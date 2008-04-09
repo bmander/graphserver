@@ -5,7 +5,7 @@ $: << "../../extension/transit"
 require 'graphserver.rb'
 #Incorpora las funciones create_gtfs_tables,
 #remove_gtfs_tables e import_gtfs_to_db
-require 'gtfs_extend3.rb'
+require 'gtfs_extend4.rb'
 
 #Debe haber al menos un parametro (create_tables o directory)
 if ARGV.size < 1 then
