@@ -1,4 +1,3 @@
-#$: << "../../extension/tiger_gtfs"
 $: << "../../extension/osm_gtfs"
 
 require 'graphserver.rb'
