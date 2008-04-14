@@ -170,12 +170,13 @@ class Graphserver
         geom_wkt = "MakeLine('#{stop_geom}', '#{location}')"
         puts geom_wkt
         conn.exec "INSERT INTO street_gtfs_links (stop_id, node_id, geom) VALUES ('#{stop_id.delete("\'")}', '#{(node_id).delete("\'")}', '#{(geom_wkt).delete("\'")}')"
-        conn.exec "VACUUM ANALYZE gtf_agency"
         puts "Linked stop #{stop_id}"
       else
         puts "Didn't find a node close to the stop #{stop_id}"
       end
     end
+    #Vacuum analyze table
+    conn.exec "VACUUM ANALYZE street_gtfs_links"
   end
 
   # Metodo que divide los tramos osm en los puntos más cercanos a las paradas

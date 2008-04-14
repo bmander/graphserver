@@ -14,7 +14,12 @@ DB_PARAMS = { :host => nil,
 gs = Graphserver.new
 gs.database_params = DB_PARAMS
 
+puts "Removing OSM-GTFS link table"
 gs.remove_link_table! #clean up first
+puts "Creating OSM-GTFS link table"
 gs.create_link_table!
+#puts "Splitting OSM segments close to GTFS stops..."
 #gs.split_osm_segments!
+puts "Linking OSM segments with GTFS stops..."
 gs.link_osm_gtfs!
+puts "Finished linking OSM-GTFS"
