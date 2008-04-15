@@ -92,8 +92,11 @@ class Graphserver
 
     res.each do |row|
       conn.exec "delete from tiger_streets where id='#{row[id_n]}'"
-      conn.exec "insert into tiger_streets (#{res.fields.join(',')}) VALUES (#{row.map do |ii| "'"+ii+"'" end.join(',')})"
+#      conn.exec "insert into tiger_streets (#{res.fields.join(',')}) VALUES (#{row.map do |ii| "'"+ii+"'" end.join(',')})"
+      #Uses regexp to substitute "'" by "''" to escape offending apostrophes
+      conn.exec "insert into tiger_streets (#{res.fields.join(',')}) VALUES (#{row.map do |ii| "'"+ii.gsub(/'/,"''")+"'" end.join(',')})"
     end
+
   end
 
   def import_tiger_to_db! directory
