@@ -1,11 +1,11 @@
 require 'webrick'
 #require 'xmlrpc/server.rb'
 #Clases Vertex y Graph ademÃ¡s del graph_core y las funciones shortest_path y shortest_path_retro
-require 'graph.rb'
+require '../../core/graph.rb'
 require 'optparse'
 require 'cgi'
 
-#Sobrecarga la clase Calendar para añadir la funcion to_xml
+#Sobrecarga la clase Calendar para aï¿½adir la funcion to_xml
 class Calendar
   #Transforma a xml Calendar
   def to_xml
@@ -15,7 +15,7 @@ end
 
 #made a different change over here
 
-#Sobrecarga la clase Link para añadir la funcion to_xml
+#Sobrecarga la clase Link para aï¿½adir la funcion to_xml
 class Link
   #Transforma a xml Link
   def to_xml
@@ -23,7 +23,7 @@ class Link
   end
 end
 
-#Sobrecarga la clase Street para añadir la funcion to_xml
+#Sobrecarga la clase Street para aï¿½adir la funcion to_xml
 class Street
   #Transforma a xml Street
   def to_xml
@@ -31,14 +31,14 @@ class Street
   end
 end
 
-#Sobrecarga la clase TripHopSchedule para añadir la funcion to_xml
+#Sobrecarga la clase TripHopSchedule para aï¿½adir la funcion to_xml
 class TripHopSchedule
   #Transforma a xml TripHopSchedule
   def to_xml
     ret = ["<triphopschedule service_id='#{service_id}'>"]
     #Para cada triphop inserta su transformacion a xml
     triphops.each do |triphop|
-      #Ret es un Array, << añade un elemento al final de este
+      #Ret es un Array, << aï¿½ade un elemento al final de este
       ret << triphop.to_xml
     end
     ret << "</triphopschedule>"
@@ -48,7 +48,7 @@ class TripHopSchedule
   end
 end
 
-#Sobrecarga la clase TripHop para añadir la funcion to_xml
+#Sobrecarga la clase TripHop para aï¿½adir la funcion to_xml
 class TripHop
   SEC_IN_HOUR = 3600
   SEC_IN_MINUTE = 60
@@ -61,7 +61,7 @@ class TripHop
   end
 end
 
-#Sobrecarga la clase State para añadir la funcion to_xml
+#Sobrecarga la clase State para aï¿½adir la funcion to_xml
 class State
   #Transforma a xml State
   def to_xml
@@ -95,7 +95,7 @@ class State
   end
 end
 
-#Sobrecarga la clase Vertex para añadir la funcion to_xml
+#Sobrecarga la clase Vertex para aï¿½adir la funcion to_xml
 class Vertex
   #Transforma a xml Vertex
   def to_xml
@@ -111,12 +111,14 @@ class Vertex
   end
 end
 
-#Sobrecarga la clase Edge para añadir la funcion to_xml
+#Sobrecarga la clase Edge para aï¿½adir la funcion to_xml
 class Edge
   #Transforma a xml Edge, con parametro de entrada verbose
   #con valor por defecto true
   def to_xml verbose=true
-    ret = "<edge>"
+    if geom=="" then ret = "<edge>"
+    else ret = "<edge geom='#{geom}'>"
+    end
     #Si verbose=true inserta el payload transformado a xml
     ret << payload.to_xml if verbose
     ret << "</edge>"
@@ -175,10 +177,16 @@ class Graphserver
       ret << "outgoing_edges?label=LABEL"
       ret << "walk_edges?label=LABEL&statevar1=STV1&statevar2=STV2..."
       ret << "collapse_edges?label=LABEL&statevar1=STV1&statevar2=STV2..."
+      ret << "dot"
       #Transforma el Array en un String de varias lineas de texto
       response.body = ret.join("\n")
     end
-
+    
+    @server.mount_proc("/dot") do |request, response|
+	begin
+	response.body=@gg.to_dot
+	end
+    end
     #Genera la respuesta a la peticion GET "/shortest_path"
     @server.mount_proc( "/shortest_path" ) do |request, response|
       from = request.query['from']
@@ -193,6 +201,7 @@ class Graphserver
         #Obtiene el parametro 'time' de la peticion GET o lo genera
         init_state = parse_init_state( request )
         vertices, edges = @gg.shortest_path(from, to, init_state )      #Throws RuntimeError if no shortest path found.
+
         ret << "<?xml version='1.0'?>"
         ret << "<route>"
         #Transforma a XML el primer vertice
@@ -214,6 +223,7 @@ class Graphserver
       end
 
       response.body = ret.join
+      GC.start
     end
 
     #Genera la respuesta a la peticion GET "/all_vertex_labels"

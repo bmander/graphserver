@@ -213,6 +213,7 @@ VALUE t_street_new( VALUE class, VALUE rbname, VALUE rblength ) {
   return pack_street( ret );
 }
 
+
 VALUE t_street_name( VALUE self ) {
   return rb_str_new2( ((Street*)DATA_PTR( self ))->name );
 }
@@ -241,8 +242,9 @@ VALUE t_street_walk_back( VALUE self, VALUE rbstate ) {
 
 VALUE t_street_inspect( VALUE self ) {
   Street* street = unpack_street( self );
+  char *ret;
 
-  char ret[512];
+  ret=(char *)malloc(sizeof(char)*512);
   sprintf( ret, "#<Street:%p name=\"%s\" length=%f>", street, street->name, street->length );
 
   return rb_str_new2( ret );
@@ -632,6 +634,13 @@ static VALUE t_e_payload( VALUE self ) {
   return pack_ep_as_children( e->payload );
 }
 
+
+VALUE t_edge_geom( VALUE self ) {
+  Edge* e = unpack_e( self );
+  if (e->geom==NULL) return rb_str_new2("");
+  return rb_str_new2(e->geom->data);
+}
+
 static VALUE t_e_walk( VALUE self, VALUE rbinit ) {
   Edge* e = unpack_e( self );
 
@@ -699,6 +708,15 @@ static VALUE t_add_edge(VALUE self, VALUE key_from, VALUE key_to, VALUE rbpayloa
 
   Edge* ee = gAddEdge( gg, STR2CSTR( key_from ), STR2CSTR( key_to ), unpack_ep( rbpayload ) );
 
+  return pack_e( ee );
+}
+
+static VALUE t_add_edge_geom(VALUE self, VALUE key_from, VALUE key_to, VALUE rbpayload, VALUE rbgeom)
+{
+
+  char *geom=STR2CSTR(rbgeom);
+  Graph* gg = unpack_g( self );
+  Edge* ee = gAddEdgeGeom( gg, STR2CSTR( key_from ), STR2CSTR( key_to ), unpack_ep( rbpayload ) ,geom);
   return pack_e( ee );
 }
 
@@ -777,6 +795,7 @@ void Init_graph_core() {
   rb_define_method( cStreet, "walk_back", t_street_walk_back, 1 );
   rb_define_method( cStreet, "inspect", t_street_inspect, 0 );
 
+
   cTripHopSchedule = rb_define_class("TripHopSchedule", cEdgePayload);
   rb_define_singleton_method( cTripHopSchedule, "new", t_ths_new, 4 );
   rb_define_method( cTripHopSchedule, "walk", t_ths_walk, 1 );
@@ -830,6 +849,7 @@ void Init_graph_core() {
   rb_define_method(cEdge, "to", t_e_to, 0);
   rb_define_method(cEdge, "from", t_e_from, 0);
   rb_define_method(cEdge, "payload", t_e_payload, 0);
+  rb_define_method(cEdge, "geom", t_edge_geom, 0);
   rb_define_method(cEdge, "walk", t_e_walk, 1);
   rb_define_method(cEdge, "inspect", t_e_inspect, 0 );
 
@@ -839,6 +859,7 @@ void Init_graph_core() {
   rb_define_method(cGraph, "get_vertex", t_get_vertex, 1);
   rb_define_method(cGraph, "vertices", t_vertices, 0);
   rb_define_method(cGraph, "add_edge", t_add_edge, 3);
+  rb_define_method(cGraph, "add_edge_geom", t_add_edge_geom, 4);
   rb_define_method(cGraph, "shortest_path_tree", t_shortest_path_tree, 4);
 //  rb_define_method(cGraph, "shortest_path", t_shortest_path, 4);
 }

@@ -2,6 +2,53 @@
 #include "math.h"
 #include <stdio.h>
 
+
+//GEOM FUNTIONS
+
+Geom*
+geomNew (char * geomdata) {
+
+        if (geomdata==NULL) 
+		return NULL;
+	Geom* tmp=(Geom *)malloc(sizeof(Geom));
+        tmp->data=strdup(geomdata);
+	return tmp;
+}
+
+void
+geomDestroy(Geom* this){
+
+	if (this!=NULL)
+	{
+		if (this->data!=NULL) free(this->data);
+		free(this);
+		this=NULL;
+	}
+}
+
+
+//COORDINATES FUNTIONS
+Coordinates*
+coordinatesNew(long latitude,long length)
+{
+	Coordinates* ret=(Coordinates*)malloc(sizeof(Coordinates));
+	ret->lat=latitude;
+	ret->lon=length;
+	return ret;
+}
+
+void 
+coordinatesDestroy(Coordinates* this){
+	if (this!=NULL) free(this);
+}
+
+Coordinates*
+coordinatesDup(Coordinates* this) {
+	Coordinates* ret=(Coordinates*)malloc(sizeof(Coordinates));
+	memcpy(ret,this,sizeof( Coordinates ));
+	return ret;
+}
+
 //STATE FUNCTIONS
 State*
 stateNew(long time) {
@@ -16,6 +63,7 @@ stateNew(long time) {
 
   return ret;
 }
+
 
 State*
 stateDup( State* this ) {
@@ -155,15 +203,17 @@ streetNew(const char *name, double length) {
   ret->name = (char*)malloc((strlen(name)+1)*sizeof(char));
   strcpy(ret->name, name);
   ret->length = length;
-
   return ret;
 }
+
 
 void
 streetDestroy(Street* tokill) {
   free(tokill->name);
   free(tokill);
+  
 }
+
 
 //TRIPHOP FUNCTIONS
 
@@ -235,10 +285,15 @@ thsPrintHops(TripHopSchedule* this) {
 
 void
 thsDestroy(TripHopSchedule* this) {
-  int i;
 
   free(this->hops);
   free(this);
+}
+
+void
+triphopDestroy(TripHop* this) {
+	free(this->trip_id);
+	thsDestroy(this->schedule);
 }
 
 #undef ROUTE_REVERSE

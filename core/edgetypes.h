@@ -14,6 +14,34 @@ typedef enum {
   PL_NONE,
 } edgepayload_t;
 
+// ------------ DECLARATIONS FOR GEOM --------------------------
+
+typedef struct Geom {
+	char *data;
+}Geom;
+
+Geom*
+geomNew (char * geomdata);
+
+void
+geomDestroy(Geom* this);
+
+
+//--------------DECLARATIONS FOR COORDINATES---------------------
+typedef struct Coordinates {
+   long lat;
+   long lon;
+}Coordinates;
+
+Coordinates*
+coordinatesNew(long latitude,long length);
+
+void 
+coordinatesDestroy(Coordinates* this);
+
+Coordinates*
+coordinatesDup(Coordinates* this);
+
 //---------------DECLARATIONS FOR STATE CLASS---------------------
 
 typedef struct State {
@@ -27,7 +55,8 @@ typedef struct State {
 } State;
 
 State*
-stateNew();
+stateNew(long time);
+
 
 void
 stateDestroy();
@@ -42,7 +71,7 @@ typedef struct EdgePayload {
 } EdgePayload;
 
 EdgePayload*
-epNew( );
+epNew();
 
 void
 epDestroy( EdgePayload* this );
@@ -58,6 +87,8 @@ epCollapse( EdgePayload* this, State* param );
 
 EdgePayload*
 epCollapseBack( EdgePayload* this, State* param );
+
+
 
 //---------------DECLARATIONS FOR LINK  CLASS---------------------
 
@@ -81,9 +112,9 @@ linkWalkBack(Link* this, State* param);
 //---------------DECLARATIONS FOR STREET  CLASS---------------------
 
 typedef struct Street {
-   edgepayload_t type;
-   char* name;
-   double length;
+   edgepayload_t type;      //type in this case PL_STREET
+   char* name;              //Name del street
+   double length;           //length metres???
 } Street;
 
 Street*
@@ -91,6 +122,7 @@ streetNew(const char *name, double length);
 
 void
 streetDestroy(Street* tokill);
+
 
 inline State*
 streetWalk(Street* this, State* params);
@@ -160,5 +192,8 @@ thsGetNextHop(TripHopSchedule* this, long time);
 
 inline TripHop*
 thsGetLastHop(TripHopSchedule* this, long time);
+
+void
+triphopDestroy(TripHop* this);
 
 #endif

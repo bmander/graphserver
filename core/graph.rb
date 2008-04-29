@@ -1,6 +1,6 @@
-require 'graph_core'
+require '../../core/graph_core'
 
-#Sobrecarga la clase Vertex para añadir las funciones
+#Sobrecarga la clase Vertex para aï¿½adir las funciones
 #inspect, edge_out y edge_in
 class Vertex
   def inspect
