@@ -17,21 +17,24 @@ class Street
   end
 end
 
+
 class Graphserver
   WGS84_LATLONG_EPSG = 4326
   TIGER_PREFIX = "tg"
 
   def load_tiger_from_db filename_base=nil
-    query = "SELECT id, from_id, to_id, length_spheroid(geom, 'SPHEROID[\"GRS_1980\",6378137,298.257222101]') FROM tiger_streets"
+    query = "SELECT id, from_id, to_id, length_spheroid(geom, 'SPHEROID[\"GRS_1980\",6378137,298.257222101]'), geom FROM tiger_streets"
     query << "WHERE file = '#{filename_base}'" if filename_base
 
     res = conn.exec query
 
-    res.each do |id, from_id, to_id, length|
+    res.each do |id, from_id, to_id, length, geom|
       @gg.add_vertex( TIGER_PREFIX+from_id )
       @gg.add_vertex( TIGER_PREFIX+to_id )
-      @gg.add_edge( TIGER_PREFIX+from_id, TIGER_PREFIX+to_id, Street.new( id, Float(length) ) )
-      @gg.add_edge( TIGER_PREFIX+to_id, TIGER_PREFIX+from_id, Street.new( id, Float(length) ) )
+     @gg.add_edge_geom( TIGER_PREFIX+from_id, TIGER_PREFIX+to_id, Street.new( id, Float(length) ),geom)
+     @gg.add_edge_geom( TIGER_PREFIX+to_id, TIGER_PREFIX+from_id, Street.new( id, Float(length) ),geom)
+	#@gg.add_edge( TIGER_PREFIX+from_id, TIGER_PREFIX+to_id, Street.new( id, Float(length) ))
+	#@gg.add_edge( TIGER_PREFIX+to_id, TIGER_PREFIX+from_id, Street.new( id, Float(length) ))
     end
   end
 
