@@ -1,11 +1,11 @@
 require 'webrick'
 #require 'xmlrpc/server.rb'
 #Clases Vertex y Graph ademÃ¡s del graph_core y las funciones shortest_path y shortest_path_retro
-require '../../core/graph.rb'
+require 'graph.rb'
 require 'optparse'
 require 'cgi'
 
-#Sobrecarga la clase Calendar para aï¿½adir la funcion to_xml
+#Sobrecarga la clase Calendar para añadir la funcion to_xml
 class Calendar
   #Transforma a xml Calendar
   def to_xml
@@ -15,7 +15,7 @@ end
 
 #made a different change over here
 
-#Sobrecarga la clase Link para aï¿½adir la funcion to_xml
+#Sobrecarga la clase Link para añadir la funcion to_xml
 class Link
   #Transforma a xml Link
   def to_xml
@@ -23,7 +23,7 @@ class Link
   end
 end
 
-#Sobrecarga la clase Street para aï¿½adir la funcion to_xml
+#Sobrecarga la clase Street para añadir la funcion to_xml
 class Street
   #Transforma a xml Street
   def to_xml
@@ -31,14 +31,14 @@ class Street
   end
 end
 
-#Sobrecarga la clase TripHopSchedule para aï¿½adir la funcion to_xml
+#Sobrecarga la clase TripHopSchedule para añadir la funcion to_xml
 class TripHopSchedule
   #Transforma a xml TripHopSchedule
   def to_xml
     ret = ["<triphopschedule service_id='#{service_id}'>"]
     #Para cada triphop inserta su transformacion a xml
     triphops.each do |triphop|
-      #Ret es un Array, << aï¿½ade un elemento al final de este
+      #Ret es un Array, << añade un elemento al final de este
       ret << triphop.to_xml
     end
     ret << "</triphopschedule>"
@@ -48,7 +48,7 @@ class TripHopSchedule
   end
 end
 
-#Sobrecarga la clase TripHop para aï¿½adir la funcion to_xml
+#Sobrecarga la clase TripHop para añadir la funcion to_xml
 class TripHop
   SEC_IN_HOUR = 3600
   SEC_IN_MINUTE = 60
@@ -61,7 +61,7 @@ class TripHop
   end
 end
 
-#Sobrecarga la clase State para aï¿½adir la funcion to_xml
+#Sobrecarga la clase State para añadir la funcion to_xml
 class State
   #Transforma a xml State
   def to_xml
@@ -95,7 +95,7 @@ class State
   end
 end
 
-#Sobrecarga la clase Vertex para aï¿½adir la funcion to_xml
+#Sobrecarga la clase Vertex para añadir la funcion to_xml
 class Vertex
   #Transforma a xml Vertex
   def to_xml
@@ -111,7 +111,7 @@ class Vertex
   end
 end
 
-#Sobrecarga la clase Edge para aï¿½adir la funcion to_xml
+#Sobrecarga la clase Edge para añadir la funcion to_xml
 class Edge
   #Transforma a xml Edge, con parametro de entrada verbose
   #con valor por defecto true
@@ -154,10 +154,16 @@ class Graphserver
   #Metodo para hacer publica la lectura de la propiedad gg
   attr_reader :gg
 
-  #Metodo que extrae el parametro 'time' de la peticion GET al servidor
-  #Caso de no existir, toma el valor de la fecha-hora actual
+  #Extracts the 'time' parameter from the GET request
+  #If it doesn't exist, takes the current time
   def parse_init_state request
     State.new( (request.query['time'] or Time.now) ) #breaks without the extra parens
+  end
+
+  #Extracts the 'format' parameter from the GET request
+  #If it doesn't exist, uses xml as default
+  def parse_format request
+    (request.query['format'] or "xml") #breaks without the extra parens
   end
 
   #Funcion llamada al hacer Graphserver.new
@@ -168,7 +174,7 @@ class Graphserver
     #Lanza el servidor en el puerto :port (digo yo)
     @server = WEBrick::HTTPServer.new(:Port => OPTIONS[:port])
 
-    #Genera la respuesta a la peticion GET "/"
+    #Response to GET request "/"
     @server.mount_proc( "/" ) do |request, response|
       #Muestra una pagina web con las posibles peticiones a graphserver
       ret = ["Graphserver Web API"]
@@ -181,17 +187,18 @@ class Graphserver
       #Transforma el Array en un String de varias lineas de texto
       response.body = ret.join("\n")
     end
-    
+
     @server.mount_proc("/dot") do |request, response|
-	begin
-	response.body=@gg.to_dot
-	end
+      begin
+        response.body=@gg.to_dot
+      end
     end
-    #Genera la respuesta a la peticion GET "/shortest_path"
+
+    #Response to GET request "/shortest_path"
     @server.mount_proc( "/shortest_path" ) do |request, response|
       from = request.query['from']
       to = request.query['to']
-      ret = []
+#      ret = []
 
       begin
         #A menos que existan tanto el vertice con id con valor from,
@@ -200,19 +207,20 @@ class Graphserver
 
         #Obtiene el parametro 'time' de la peticion GET o lo genera
         init_state = parse_init_state( request )
+        format = parse_format( request )
         vertices, edges = @gg.shortest_path(from, to, init_state )      #Throws RuntimeError if no shortest path found.
-
-        ret << "<?xml version='1.0'?>"
-        ret << "<route>"
-        #Transforma a XML el primer vertice
-        ret << vertices.shift.to_xml
-        edges.each do |edge|
-          #Para cada enlace, transforma el enlace a XML
-          ret << edge.to_xml
-          #Pasa al siguiente vertice y lo transforma a XML
-          ret << vertices.shift.to_xml
-        end
-        ret << "</route>"
+        ret = format_shortest_path vertices, edges, format
+#        ret << "<?xml version='1.0'?>"
+#        ret << "<route>"
+#        #Transforma a XML el primer vertice
+#        ret << vertices.shift.to_xml
+#        edges.each do |edge|
+#          #Para cada enlace, transforma el enlace a XML
+#          ret << edge.to_xml
+#          #Pasa al siguiente vertice y lo transforma a XML
+#          ret << vertices.shift.to_xml
+#        end
+#        ret << "</route>"
 
         #Sentencia tipo catch
         rescue RuntimeError                                               #TODO: change exception type, RuntimeError is too vague.
@@ -223,7 +231,6 @@ class Graphserver
       end
 
       response.body = ret.join
-      GC.start
     end
 
     #Genera la respuesta a la peticion GET "/all_vertex_labels"
@@ -273,7 +280,6 @@ class Graphserver
         #Busca vertice asociado al parametro 'label'
         #Si no existe, genera una excepcion de parametros invalidos
         unless vertex = @gg.get_vertex( request.query['label'] ) then raise ArgumentError end
-#        vertex = @gg.get_vertex( request.query['label'] )
         #Obtiene el parametro 'time' de la peticion GET o lo genera automaticamente
         init_state = parse_init_state( request )
 
@@ -334,6 +340,25 @@ class Graphserver
     end
 
   end
+
+  #Formats a shortest path response depending on the format parameter
+  def format_shortest_path vertices, edges, format
+    ret = []
+    if format == "xml" then
+      ret << "<?xml version='1.0'?>"
+      ret << "<route>"
+      #Converts to XML the first vertex
+      ret << vertices.shift.to_xml
+      edges.each do |edge|
+        #For each edge, converts the edge to xml
+        ret << edge.to_xml
+        #Shifts to the next vertex and converts to xml
+        ret << vertices.shift.to_xml
+      end
+      ret << "</route>"
+    end
+  end
+
 
   #Asigna los parametros de la base de datos
   def database_params= params

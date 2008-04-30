@@ -1,7 +1,9 @@
 $: << "../../extension/tiger"
+$: << "../../extension/kml"
 
 require 'graphserver.rb'
 require 'tiger_extend.rb'
+require 'kml_extend.rb'
 
 DB_PARAMS = { :host => nil,
               :port => nil,
