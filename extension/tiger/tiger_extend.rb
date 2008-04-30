@@ -23,12 +23,15 @@ class Graphserver
   TIGER_PREFIX = "tg"
 
   def load_tiger_from_db filename_base=nil
-   query = "SELECT id, from_id, to_id, length_spheroid(geom, 'SPHEROID[\"GRS_1980\",6378137,298.257222101]'), AsText(geom) FROM tiger_streets"
+    #The value id is no longer necessary, could be omitted in the query
+#   query = "SELECT id, from_id, to_id, length_spheroid(geom, 'SPHEROID[\"GRS_1980\",6378137,298.257222101]'), AsText(geom) FROM tiger_streets"
+   query = "SELECT id, from_id, to_id, name, length_spheroid(geom, 'SPHEROID[\"GRS_1980\",6378137,298.257222101]'), AsText(geom) FROM tiger_streets"
     query << "WHERE file = '#{filename_base}'" if filename_base
 
     res = conn.exec query
 
-    res.each do |id, from_id, to_id, length, geom|
+#    res.each do |id, from_id, to_id, length, geom|
+    res.each do |id, from_id, to_id, name, length, geom|
       #In KML LineStrings have the spaces and the comas swapped with respect to postgis
       #We just substitute a space for a comma and viceversa
       geom.gsub!(" ","|")
@@ -39,8 +42,8 @@ class Graphserver
       geom.gsub!(")","")
       @gg.add_vertex( TIGER_PREFIX+from_id )
       @gg.add_vertex( TIGER_PREFIX+to_id )
-      @gg.add_edge_geom( TIGER_PREFIX+from_id, TIGER_PREFIX+to_id, Street.new( id, Float(length) ),geom)
-      @gg.add_edge_geom( TIGER_PREFIX+to_id, TIGER_PREFIX+from_id, Street.new( id, Float(length) ),geom)
+      @gg.add_edge_geom( TIGER_PREFIX+from_id, TIGER_PREFIX+to_id, Street.new( CGI::escape(name), Float(length) ),geom)
+      @gg.add_edge_geom( TIGER_PREFIX+to_id, TIGER_PREFIX+from_id, Street.new( CGI::escape(name), Float(length) ),geom)
 	#@gg.add_edge( TIGER_PREFIX+from_id, TIGER_PREFIX+to_id, Street.new( id, Float(length) ))
 	#@gg.add_edge( TIGER_PREFIX+to_id, TIGER_PREFIX+from_id, Street.new( id, Float(length) ))
     end

@@ -23,9 +23,8 @@ class Link
   end
 end
 
-#Sobrecarga la clase Street para añadir la funcion to_xml
+#Overrides class Street to add to_xml function
 class Street
-  #Transforma a xml Street
   def to_xml
     "<street name='#{name}' length='#{length}' />"
   end
