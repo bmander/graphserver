@@ -14,9 +14,24 @@ end
 
 #Overrides class Street to add to_kml function
 class Street
+  #A class variable to hold the last processed street name
+  @@last_name = ""
+  #An accesor method for the last_name class variable
+  def Street.lastName
+
+  end
+
   def to_kml
+#    if @@last_name then
+#      if @@last_name != name then
+#        @@last_name = name
+#        "<name>#{name}</name>"
+#      end
+#    else
+#      @@last_name = name
+      "<name>#{name}</name>"
+#    end
 #    "<street name='#{name}' length='#{length}' />"
-    "<name>#{name}</name>"
   end
 end
 
@@ -98,24 +113,92 @@ end
 
 #Overrides class Edge to add to_kml function
 class Edge
-  def to_kml verbose=true
-#    ret = "<edge>"
+  #A class variable to store the last edge name
+  @@last_name = ""
+  #A class variable to take into account if an xml tag is open
+  @@open = false
+  #A class variable to join coords from several stretches
+  @@geom = ""
+
+  #Method to open the placemark tag
+  def open_placemark verbose=true
+    @@open = true
     ret = "<Placemark>"
-    #If verbose=true inserts payload converted to xml
+    #If verbose=true inserts payload converted to kml
     ret << payload.to_kml if verbose
     ret << "<LineString>"
     ret << "<coordinates>"
-#        -122.364383,37.824664,0 -122.364152,37.824322,0
-    ret << "#{geom}"
-    ret << "</coordinates>"
+  end
+
+  #Method to close the placemark tag
+  def close_placemark
+    @@open = false
+    ret = "</coordinates>"
     ret << "</LineString>"
     ret << "</Placemark>"
-#    ret << "</edge>"
+  end
+
+#  def to_kml verbose=true
+#    ret = "<Placemark>"
+#    #If verbose=true inserts payload converted to kml
+#    ret << payload.to_kml if verbose
+#    ret << "<LineString>"
+#    ret << "<coordinates>"
+#    ret << "#{geom}"
+#    ret << "</coordinates>"
+#    ret << "</LineString>"
+#    ret << "</Placemark>"
+#  end
+
+  def to_kml verbose=true
+    ret = ""
+    name = payload.name
+    type = payload.class
+    if name != @@last_name then
+      #If the stretch belongs to a diferent street, close last tag if necessary and open a new one
+      @@last_name = name
+      if @@open then ret << close_placemark end
+      ret << open_placemark
+      ret << "#{geom}"
+    else
+      #If the stretch belongs to the same street, just add the coordinates that don't repeat the last vertex
+      @@last_name = name
+      ret << " #{geom}"
+    end
   end
 end
 
 #Overrides class Graphserver to override format_shortest_path
 class Graphserver
+
+  #Doesn't work! can't change geom and to from edge
+#  def consolidate_path! vertices, edges
+#    vertices2 = []
+#    edges2 = []
+#    last_name = ""
+#    last_type = ""
+#    vertices2 << vertices.shift
+#    e = edges[0]
+#    edges.each do |edge|
+#      name = edge.payload.name
+#      type = edge.payload.class
+#      if type==last_type and name==last_name then
+#        #Add coordinates
+#        e.geom += " #{edge.geom}"
+#        e.to = edge.to
+#      else
+#        edges2 << e
+#        vertices2 << e.to
+#        e = edge
+#      end
+#      last_name = name
+#      last_type = type
+#    end
+#    vertices = vertices2
+#    edges = edges2
+#    puts "Edges2 length: #{edges2.length}"
+#    puts "Edges length: #{edges.length}"
+#  end
 
   #Formats a shortest path response depending on the format parameter
   def format_shortest_path vertices, edges, format
@@ -132,6 +215,9 @@ class Graphserver
         #Shifts to the next vertex and converts to kml
         ret << vertices.shift.to_kml
       end
+      ret << "</coordinates>"
+      ret << "</LineString>"
+      ret << "</Placemark>"
       ret << "</Document>"
       ret << "</kml>"
     else
