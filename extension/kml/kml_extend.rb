@@ -133,7 +133,11 @@ class Edge
   #Method to close the placemark tag
   def close_placemark
     @@open = false
-    ret = "</coordinates>"
+    #Print the coordinates
+    ret = "#{@@geom.join(' ')}"
+    #Reset the geom class variable
+#    @@geom = ""
+    ret << "</coordinates>"
     ret << "</LineString>"
     ret << "</Placemark>"
   end
@@ -158,12 +162,40 @@ class Edge
       #If the stretch belongs to a diferent street, close last tag if necessary and open a new one
       @@last_name = name
       if @@open then ret << close_placemark end
+      @@geom = geom.split(' ')
       ret << open_placemark
-      ret << "#{geom}"
+#      ret << "#{geom}"
     else
       #If the stretch belongs to the same street, just add the coordinates that don't repeat the last vertex
-      @@last_name = name
-      ret << " #{geom}"
+      coords = geom.split(' ')
+      #Compare first and last coordinates of coords with the last one of the added geom
+      if (coords.first == @@geom.last) then
+        #Delete first point
+        coords.shift
+      else
+        if (coords.last == @@geom.last) then
+          #Reverse and delete first point
+          coords.reverse!
+          coords.shift
+        else
+          if (coords.first == @@geom.first) then
+            #Reverse the added geometry and delete first point of the new one
+            @@geom.reverse!
+            coords.shift
+          else
+            if (coords.last == @@geom.first) then
+              #Reverse both geometrys and delete first point of the new one
+              @@geom.reverse!
+              coords.reverse!
+              coords.shift
+            end
+          end
+        end
+      end
+      #Append the coordinates of the last stretch to the added geom
+      @@geom.concat(coords)
+      #Don't print anything
+      return
     end
   end
 end
