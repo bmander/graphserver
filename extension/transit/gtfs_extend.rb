@@ -274,9 +274,24 @@ class Graphserver
 
     #load vertices
     print "Loading stops..."
-    stops = conn.exec "SELECT stop_id FROM gtf_stops"
-    stops.each do |stop|
-      @gg.add_vertex( GTFS_PREFIX+stop.first )
+#    stops = conn.exec "SELECT stop_id FROM gtf_stops"
+    stops = conn.exec "SELECT stop_id, AsText(location) FROM gtf_stops"
+#    stops.each do |stop|
+    stop_hash = {}
+    stops.each do |stop,location|
+#      @gg.add_vertex( GTFS_PREFIX+stop.first )
+      @gg.add_vertex( GTFS_PREFIX+stop )
+      geom = location
+      #In KML LineStrings have the spaces and the comas swapped with respect to postgis
+      #We just substitute a space for a comma and viceversa
+      geom.gsub!(" ","|")
+      geom.gsub!(","," ")
+      geom.gsub!("|",",")
+      #Also deletes the LINESTRING() envelope
+      geom.gsub!("POINT(","")
+      geom.gsub!(")","")
+      #Stores location in the hash
+      stop_hash[stop]=geom
     end
     print "done\n"
 
@@ -287,7 +302,10 @@ class Graphserver
     print "Importing triphops to Graphserver\n"
     triphops.each_pair do |sched_key, sched|
       from_id, to_id, service_id = sched_key
-      @gg.add_edge( GTFS_PREFIX+from_id, GTFS_PREFIX+to_id, TripHopSchedule.new( service_id, sched, calendar, tz_offset ) )
+      geom = "#{stop_hash[from_id]} #{stop_hash[to_id]}"
+      puts "geom = #{geom}"
+#      @gg.add_edge( GTFS_PREFIX+from_id, GTFS_PREFIX+to_id, TripHopSchedule.new( service_id, sched, calendar, tz_offset ) )
+      @gg.add_edge_geom( GTFS_PREFIX+from_id, GTFS_PREFIX+to_id, TripHopSchedule.new( service_id, sched, calendar, tz_offset ) ,geom)
     end
 
     return true

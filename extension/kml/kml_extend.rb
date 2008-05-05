@@ -14,24 +14,8 @@ end
 
 #Overrides class Street to add to_kml function
 class Street
-  #A class variable to hold the last processed street name
-  @@last_name = ""
-  #An accesor method for the last_name class variable
-  def Street.lastName
-
-  end
-
   def to_kml
-#    if @@last_name then
-#      if @@last_name != name then
-#        @@last_name = name
-#        "<name>#{name}</name>"
-#      end
-#    else
-#      @@last_name = name
-      "<name>#{name}</name>"
-#    end
-#    "<street name='#{name}' length='#{length}' />"
+    "#{CGI.escapeHTML(name)}"
   end
 end
 
@@ -119,13 +103,47 @@ class Edge
   @@open = false
   #A class variable to join coords from several stretches
   @@geom = ""
+  #A class variable to store the added stretch init time
+  @@init_time = ""
+  #A class variable to store the added stretch end time
+  @@end_time = ""
+  #A class variable to store the step number
+  @@step = 0
+
+  #A class method to reset class variables
+  def self.reset
+    @@last_name = ""
+    @@open = false
+    @@geom = ""
+    @@init_time = ""
+    @@end_time = ""
+    @@step = 0
+  end
+
+  #A class method to check wether the placemark tag is closed and close it
+  def self.check_close
+    if @@open then
+      @@open = false
+      #Print the coordinates
+      ret = "#{@@geom.join(' ')}"
+      ret << "</coordinates>"
+      ret << "</LineString>"
+      ret << "</Placemark>"
+    end
+  end
 
   #Method to open the placemark tag
-  def open_placemark verbose=true
+  def open_placemark
     @@open = true
-    ret = "<Placemark>"
+    @@step += 1
+#    @@init_time = "#{Time.at( self.from.payload["time"] ).inspect}"
+    @@init_time = Time.at( self.from.payload["time"] )
+
     #If verbose=true inserts payload converted to kml
-    ret << payload.to_kml if verbose
+    ret = "<Placemark>"
+    ret << "<name>"
+    ret << payload.to_kml
+    ret << "</name>"
     ret << "<LineString>"
     ret << "<coordinates>"
   end
@@ -133,12 +151,30 @@ class Edge
   #Method to close the placemark tag
   def close_placemark
     @@open = false
+#    @@end_time = "#{Time.at( self.from.payload["time"] ).inspect}"
+    @@end_time = Time.at( self.to.payload["time"] )
+
     #Print the coordinates
     ret = "#{@@geom.join(' ')}"
-    #Reset the geom class variable
-#    @@geom = ""
     ret << "</coordinates>"
     ret << "</LineString>"
+    ret << "</Placemark>"
+
+    #An icon showing the start point and description
+    ret << "<Placemark>"
+    ret << "<name>#{@@step.to_s.rjust(2,'0')}</name>"
+    ret << "<description>"
+    ret << "#{@@init_time.strftime("%H:%M")}. "
+    ret << payload.to_kml
+#    ret << "Walk for #{@@end_time-@@init_time} sec"
+#    ret << "Departure time: #{@@init_time.strftime("%T:%M")}"
+#    ret << "Arrival time time: #{@@end_time.strftime("%T:%M")}"
+    ret << "</description>"
+    ret << "<Point>"
+    ret << "<coordinates>"
+    ret << "#{@@geom[0]}"
+    ret << "</coordinates>"
+    ret << "</Point>"
     ret << "</Placemark>"
   end
 
@@ -237,19 +273,20 @@ class Graphserver
     ret = []
     ret << "<?xml version='1.0' encoding='UTF-8'?>"
     if format == "kml" then
-      ret << "<kml xmlns='http://www.opengis.net/kml/2.2'>"
+      #Reset class variables for Edge
+      Edge.reset
+      ret << "<kml xmlns='http://earth.google.com/kml/2.2' xmlns:atom='http://www.w3.org/2005/Atom'>"
       ret << "<Document>"
       #Converts to kml the first vertex
-      ret << vertices.shift.to_kml
       edges.each do |edge|
         #For each edge, converts the edge to kml
         ret << edge.to_kml
-        #Shifts to the next vertex and converts to kml
-        ret << vertices.shift.to_kml
       end
-      ret << "</coordinates>"
-      ret << "</LineString>"
-      ret << "</Placemark>"
+      #Closes the last tag
+      ret << Edge.check_close
+#      ret << "</coordinates>"
+#      ret << "</LineString>"
+#      ret << "</Placemark>"
       ret << "</Document>"
       ret << "</kml>"
     else

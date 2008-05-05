@@ -42,8 +42,10 @@ class Graphserver
       geom.gsub!(")","")
       @gg.add_vertex( TIGER_PREFIX+from_id )
       @gg.add_vertex( TIGER_PREFIX+to_id )
-      @gg.add_edge_geom( TIGER_PREFIX+from_id, TIGER_PREFIX+to_id, Street.new( CGI::escape(name), Float(length) ),geom)
-      @gg.add_edge_geom( TIGER_PREFIX+to_id, TIGER_PREFIX+from_id, Street.new( CGI::escape(name), Float(length) ),geom)
+      @gg.add_edge_geom( TIGER_PREFIX+from_id, TIGER_PREFIX+to_id, Street.new( name, Float(length) ),geom)
+      @gg.add_edge_geom( TIGER_PREFIX+to_id, TIGER_PREFIX+from_id, Street.new( name, Float(length) ),geom)
+#      @gg.add_edge_geom( TIGER_PREFIX+from_id, TIGER_PREFIX+to_id, Street.new( CGI::escape(name), Float(length) ),geom)
+#      @gg.add_edge_geom( TIGER_PREFIX+to_id, TIGER_PREFIX+from_id, Street.new( CGI::escape(name), Float(length) ),geom)
 	#@gg.add_edge( TIGER_PREFIX+from_id, TIGER_PREFIX+to_id, Street.new( id, Float(length) ))
 	#@gg.add_edge( TIGER_PREFIX+to_id, TIGER_PREFIX+from_id, Street.new( id, Float(length) ))
     end

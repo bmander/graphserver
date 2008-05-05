@@ -197,7 +197,7 @@ class Graphserver
     @server.mount_proc( "/shortest_path" ) do |request, response|
       from = request.query['from']
       to = request.query['to']
-#      ret = []
+      ret = []
 
       begin
         #A menos que existan tanto el vertice con id con valor from,
@@ -208,7 +208,7 @@ class Graphserver
         init_state = parse_init_state( request )
         format = parse_format( request )
         vertices, edges = @gg.shortest_path(from, to, init_state )      #Throws RuntimeError if no shortest path found.
-        ret = format_shortest_path vertices, edges, format
+        ret << ( format_shortest_path vertices, edges, format )
 #        ret << "<?xml version='1.0'?>"
 #        ret << "<route>"
 #        #Transforma a XML el primer vertice
