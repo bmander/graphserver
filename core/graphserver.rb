@@ -209,17 +209,6 @@ class Graphserver
         format = parse_format( request )
         vertices, edges = @gg.shortest_path(from, to, init_state )      #Throws RuntimeError if no shortest path found.
         ret << ( format_shortest_path vertices, edges, format )
-#        ret << "<?xml version='1.0'?>"
-#        ret << "<route>"
-#        #Transforma a XML el primer vertice
-#        ret << vertices.shift.to_xml
-#        edges.each do |edge|
-#          #Para cada enlace, transforma el enlace a XML
-#          ret << edge.to_xml
-#          #Pasa al siguiente vertice y lo transforma a XML
-#          ret << vertices.shift.to_xml
-#        end
-#        ret << "</route>"
 
         #Sentencia tipo catch
         rescue RuntimeError                                               #TODO: change exception type, RuntimeError is too vague.

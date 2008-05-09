@@ -282,7 +282,7 @@ class Graphserver
 #      @gg.add_vertex( GTFS_PREFIX+stop.first )
       @gg.add_vertex( GTFS_PREFIX+stop )
       geom = location
-      #In KML LineStrings have the spaces and the comas swapped with respect to postgis
+      #In KML Points have the spaces and the comas swapped with respect to postgis
       #We just substitute a space for a comma and viceversa
       geom.gsub!(" ","|")
       geom.gsub!(","," ")
@@ -303,7 +303,7 @@ class Graphserver
     triphops.each_pair do |sched_key, sched|
       from_id, to_id, service_id = sched_key
       geom = "#{stop_hash[from_id]} #{stop_hash[to_id]}"
-      puts "geom = #{geom}"
+#      puts "geom = #{geom}"
 #      @gg.add_edge( GTFS_PREFIX+from_id, GTFS_PREFIX+to_id, TripHopSchedule.new( service_id, sched, calendar, tz_offset ) )
       @gg.add_edge_geom( GTFS_PREFIX+from_id, GTFS_PREFIX+to_id, TripHopSchedule.new( service_id, sched, calendar, tz_offset ) ,geom)
     end
@@ -315,27 +315,50 @@ class Graphserver
   def link_stops_los
     search_range = 0.03 #decimal degrees lat/long around a stop to look for nearby stops
     num_links = 30
-    stops = conn.exec "SELECT stop_id, location FROM gtf_stops"
+#    stops = conn.exec "SELECT stop_id, location FROM gtf_stops"
+    stops = conn.exec "SELECT stop_id, location, AsText(location) AS geom1 FROM gtf_stops"
 
     n = stops.num_tuples; i=0
 
-    stops.each do |from_id, location|
+    stops.each do |from_id, location, geom1|
       @gg.add_vertex( GTFS_PREFIX+from_id )
 
       i += 1
       if i%10==0 then $stderr.print( sprintf("\rLinked %d/%d stops (%d%%)", i, n, (i.to_f/n)*100) ) end
 
+      #In KML Points have the spaces and the comas swapped with respect to postgis
+      #We just substitute a space for a comma and viceversa
+      geom1.gsub!(" ","|")
+      geom1.gsub!(","," ")
+      geom1.gsub!("|",",")
+      #Also deletes the LINESTRING() envelope
+      geom1.gsub!("POINT(","")
+      geom1.gsub!(")","")
+
       nearby_stops = conn.exec <<-SQL
-        SELECT stop_id, distance_sphere( '#{location}'::geometry, location ) AS dist
+--        SELECT stop_id, distance_sphere( '#{location}'::geometry, location ) AS dist
+        SELECT stop_id, distance_sphere( '#{location}'::geometry, location ) AS dist, AsText(location) AS geom2
         FROM gtf_stops
         WHERE location && expand( '#{location}'::geometry, #{search_range} )
         ORDER BY dist
         LIMIT #{num_links}
       SQL
 
-      nearby_stops.each do |to_id, dist|
+#      nearby_stops.each do |to_id, dist|
+      nearby_stops.each do |to_id, dist, geom2|
+        #In KML Points have the spaces and the comas swapped with respect to postgis
+        #We just substitute a space for a comma and viceversa
+        geom2.gsub!(" ","|")
+        geom2.gsub!(","," ")
+        geom2.gsub!("|",",")
+        #Also deletes the LINESTRING() envelope
+        geom2.gsub!("POINT(","")
+        geom2.gsub!(")","")
+        geom = geom1 + " " + geom2
+
         @gg.add_vertex( GTFS_PREFIX+to_id )
-        @gg.add_edge( GTFS_PREFIX+from_id, GTFS_PREFIX+to_id, Street.new( "LOS", dist.to_f ) )
+#        @gg.add_edge( GTFS_PREFIX+from_id, GTFS_PREFIX+to_id, Street.new( "LOS", dist.to_f ) )
+        @gg.add_edge_geom( GTFS_PREFIX+from_id, GTFS_PREFIX+to_id, Street.new( "LOS", dist.to_f ), geom )
       end
     end
 

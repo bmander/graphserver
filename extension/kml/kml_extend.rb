@@ -44,6 +44,11 @@ class TripHop
 #    s_depart = "#{sprintf("%02d", depart/SEC_IN_HOUR)}:#{sprintf("%02d", (depart%SEC_IN_HOUR)/SEC_IN_MINUTE)}:#{sprintf("%02d", depart%SEC_IN_MINUTE)}"
 #    s_arrive = "#{sprintf("%02d", arrive/SEC_IN_HOUR)}:#{sprintf("%02d", (arrive%SEC_IN_HOUR)/SEC_IN_MINUTE)}:#{sprintf("%02d", arrive%SEC_IN_MINUTE)}"
 #    "<triphop depart='#{s_depart}' arrive='#{s_arrive}' transit='#{transit}' trip_id='#{trip_id}' />"
+#    ret = ["Trip id: #{trip_id}<br>"]
+#    ret << "Departure: #{s_depart}<br>"
+#    ret << "Arrival: #{s_arrive}"
+#    return ret.join
+    "#{trip_id}"
   end
 end
 
@@ -151,8 +156,8 @@ class Edge
   #Method to close the placemark tag
   def close_placemark
     @@open = false
-#    @@end_time = "#{Time.at( self.from.payload["time"] ).inspect}"
     @@end_time = Time.at( self.to.payload["time"] )
+    type = payload.class
 
     #Print the coordinates
     ret = "#{@@geom.join(' ')}"
@@ -164,11 +169,14 @@ class Edge
     ret << "<Placemark>"
     ret << "<name>#{@@step.to_s.rjust(2,'0')}</name>"
     ret << "<description>"
-    ret << "#{@@init_time.strftime("%H:%M")}. "
+    #Different rendering for Streets and Triphops
+    if type == Street then
+      ret << "#{@@init_time.strftime("%H:%M")}. "
+    else
+      ret << "Departure: #{@@init_time.strftime("%H:%M")}. "
+      ret << "Arrival: #{@@init_time.strftime("%H:%M")}. "
+    end
     ret << payload.to_kml
-#    ret << "Walk for #{@@end_time-@@init_time} sec"
-#    ret << "Departure time: #{@@init_time.strftime("%T:%M")}"
-#    ret << "Arrival time time: #{@@end_time.strftime("%T:%M")}"
     ret << "</description>"
     ret << "<Point>"
     ret << "<coordinates>"
@@ -192,15 +200,15 @@ class Edge
 
   def to_kml verbose=true
     ret = ""
-    name = payload.name
+    name = ""
     type = payload.class
+    if type == Street then name = payload.name else name = payload.trip_id end
     if name != @@last_name then
       #If the stretch belongs to a diferent street, close last tag if necessary and open a new one
       @@last_name = name
       if @@open then ret << close_placemark end
       @@geom = geom.split(' ')
       ret << open_placemark
-#      ret << "#{geom}"
     else
       #If the stretch belongs to the same street, just add the coordinates that don't repeat the last vertex
       coords = geom.split(' ')

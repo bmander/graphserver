@@ -1,7 +1,9 @@
 $: << "../../extension/transit"
+$: << "../../extension/kml"
 
 require 'graphserver.rb'
 require 'gtfs_extend.rb'
+require 'kml_extend.rb'
 
 DB_PARAMS = { :host => nil,
               :port => nil,
