@@ -16,7 +16,7 @@ DB_PARAMS = { :host => nil,
               :port => nil,
               :options => nil,
               :tty => nil,
-              :dbname => 'graphserver', #set to the name of the db, usually 'graphserver'
+              :dbname => 'gstest',
               :login => nil, #database username
               :password => nil }
 

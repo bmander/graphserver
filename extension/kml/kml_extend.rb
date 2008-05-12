@@ -104,10 +104,12 @@ end
 class Edge
   #A class variable to store the last edge name
   @@last_name = ""
-  #A class variable to take into account if an xml tag is open
-  @@open = false
-  #A class variable to join coords from several stretches
-  @@geom = ""
+  #A class variable to store the last edge class
+  @@last_type = ""
+  #A class variable to take into account if the edge is the first of the route
+  @@first = true
+  #A class variable to join coordinates from adjacent stretches
+  @@coords = ""
   #A class variable to store the added stretch init time
   @@init_time = ""
   #A class variable to store the added stretch end time
@@ -118,118 +120,119 @@ class Edge
   #A class method to reset class variables
   def self.reset
     @@last_name = ""
-    @@open = false
-    @@geom = ""
+    @@last_type = ""
+    @@first = true
+    @@coords = ""
     @@init_time = ""
     @@end_time = ""
     @@step = 0
   end
 
-  #A class method to check wether the placemark tag is closed and close it
-  def self.check_close
-    if @@open then
-      @@open = false
-      #Print the coordinates
-      ret = "#{@@geom.join(' ')}"
-      ret << "</coordinates>"
-      ret << "</LineString>"
-      ret << "</Placemark>"
-    end
-  end
-
-  #Method to open the placemark tag
-  def open_placemark
-    @@open = true
-    @@step += 1
-#    @@init_time = "#{Time.at( self.from.payload["time"] ).inspect}"
-    @@init_time = Time.at( self.from.payload["time"] )
-
-    #If verbose=true inserts payload converted to kml
-    ret = "<Placemark>"
-    ret << "<name>"
-    ret << payload.to_kml
-    ret << "</name>"
-    ret << "<LineString>"
-    ret << "<coordinates>"
-  end
-
-  #Method to close the placemark tag
-  def close_placemark
-    @@open = false
-    @@end_time = Time.at( self.to.payload["time"] )
-    type = payload.class
-
-    #Print the coordinates
-    ret = "#{@@geom.join(' ')}"
-    ret << "</coordinates>"
-    ret << "</LineString>"
-    ret << "</Placemark>"
-
+  #Method to print the placemark tag
+  def print_placemark
+    #Links are not processed
+    if @@last_type == Link then return end
     #An icon showing the start point and description
-    ret << "<Placemark>"
+    ret = "<Placemark>"
     ret << "<name>#{@@step.to_s.rjust(2,'0')}</name>"
     ret << "<description>"
     #Different rendering for Streets and Triphops
-    if type == Street then
+    if @@last_type == Street then
       ret << "#{@@init_time.strftime("%H:%M")}. "
     else
       ret << "Departure: #{@@init_time.strftime("%H:%M")}. "
       ret << "Arrival: #{@@init_time.strftime("%H:%M")}. "
     end
-    ret << payload.to_kml
+#    ret << payload.to_kml
+    ret << @@last_name
     ret << "</description>"
+    if @@last_type == Street then
+      ret << "<styleUrl>#walkIcon</styleUrl>"
+    else
+      ret << "<styleUrl>#busIcon</styleUrl>"
+    end
     ret << "<Point>"
     ret << "<coordinates>"
-    ret << "#{@@geom[0]}"
+    ret << "#{@@coords[0]}"
     ret << "</coordinates>"
     ret << "</Point>"
     ret << "</Placemark>"
+
+    #A polyline showing the path
+    ret << "<Placemark>"
+    ret << "<name>"
+#    ret << payload.to_kml
+    ret << @@last_name
+    ret << "</name>"
+    if @@last_type == Street then
+      ret << "<styleUrl>#walkPath</styleUrl>"
+    else
+      ret << "<styleUrl>#busPath</styleUrl>"
+    end
+    ret << "<LineString>"
+    ret << "<coordinates>"
+    ret << "#{@@coords.join(' ')}"
+    ret << "</coordinates>"
+    ret << "</LineString>"
+    ret << "</Placemark>"
   end
 
-#  def to_kml verbose=true
-#    ret = "<Placemark>"
-#    #If verbose=true inserts payload converted to kml
-#    ret << payload.to_kml if verbose
-#    ret << "<LineString>"
-#    ret << "<coordinates>"
-#    ret << "#{geom}"
-#    ret << "</coordinates>"
-#    ret << "</LineString>"
-#    ret << "</Placemark>"
-#  end
-
+  #Render the edge in kml format
   def to_kml verbose=true
-    ret = ""
-    name = ""
+#    ret = ""
+#    name = ""
     type = payload.class
-    if type == Street then name = payload.name else name = payload.trip_id end
-    if name != @@last_name then
-      #If the stretch belongs to a diferent street, close last tag if necessary and open a new one
-      @@last_name = name
-      if @@open then ret << close_placemark end
-      @@geom = geom.split(' ')
-      ret << open_placemark
+    if type == Street then
+      name = payload.name
     else
-      #If the stretch belongs to the same street, just add the coordinates that don't repeat the last vertex
+      if type == TripHop then
+        name = payload.trip_id
+      else
+        name = ""
+      end
+    end
+    #If the stretch belongs to a diferent street/triphop
+    if name != @@last_name or type != @@last_type then
+      coords = geom.split(' ')
+      if not @@first then
+        @@end_time = Time.at( self.to.payload["time"] )
+        ret = print_placemark
+        #Compare with the last geom which is supposed to be ordered
+        #to check if the new geom is reversed
+        if (coords.last == @@coords.last) then
+          coords.reverse!
+        end
+      else
+        @@first = false
+      end
+      @@step += 1
+      @@init_time = Time.at( self.from.payload["time"] )
+      @@last_name = name
+      @@last_type = type
+      @@coords = coords
+      return ret
+    else
+      #If the stretch belongs to the same street, add all the coordinates except the first,
+      #which was present in the last stretch
       coords = geom.split(' ')
       #Compare first and last coordinates of coords with the last one of the added geom
-      if (coords.first == @@geom.last) then
+      if (coords.first == @@coords.last) then
         #Delete first point
         coords.shift
       else
-        if (coords.last == @@geom.last) then
+        if (coords.last == @@coords.last) then
           #Reverse and delete first point
           coords.reverse!
           coords.shift
         else
-          if (coords.first == @@geom.first) then
+          if (coords.first == @@coords.first) then
             #Reverse the added geometry and delete first point of the new one
-            @@geom.reverse!
+            @@coords.reverse!
             coords.shift
           else
-            if (coords.last == @@geom.first) then
+            if (coords.last == @@coords.first) then
               #Reverse both geometrys and delete first point of the new one
-              @@geom.reverse!
+              @@coords.reverse!
               coords.reverse!
               coords.shift
             end
@@ -237,7 +240,7 @@ class Edge
         end
       end
       #Append the coordinates of the last stretch to the added geom
-      @@geom.concat(coords)
+      @@coords.concat(coords)
       #Don't print anything
       return
     end
@@ -285,16 +288,42 @@ class Graphserver
       Edge.reset
       ret << "<kml xmlns='http://earth.google.com/kml/2.2' xmlns:atom='http://www.w3.org/2005/Atom'>"
       ret << "<Document>"
-      #Converts to kml the first vertex
+      ret << "<name>Shortest path</name>"
+      #Add styles
+      ret << "<Style id='walkPath'>"
+      ret << "<LineStyle>"
+      ret << "<color>7fff0000</color>"
+      ret << "<width>5</width>"
+      ret << "</LineStyle>"
+      ret << "</Style>"
+      ret << "<Style id='walkIcon'>"
+      ret << "<IconStyle>"
+      ret << "<Icon>"
+      ret << "<href>http://robotica.uv.es/~jjordan/walk.png</href>"
+      ret << "</Icon>"
+      ret << "<hotSpot x='0' y='0' xunits='fraction' yunits='fraction'/>"
+      ret << "</IconStyle>"
+      ret << "</Style>"
+      ret << "<Style id='busPath'>"
+      ret << "<LineStyle>"
+      ret << "<color>7f0000ff</color>"
+      ret << "<width>5</width>"
+      ret << "</LineStyle>"
+      ret << "</Style>"
+      ret << "<Style id='busIcon'>"
+      ret << "<IconStyle>"
+      ret << "<Icon>"
+      ret << "<href>http://robotica.uv.es/~jjordan/bus.png</href>"
+      ret << "</Icon>"
+      ret << "<hotSpot x='0' y='0' xunits='fraction' yunits='fraction'/>"
+      ret << "</IconStyle>"
+      ret << "</Style>"
+      #For each edge, converts the edge to kml
       edges.each do |edge|
-        #For each edge, converts the edge to kml
         ret << edge.to_kml
       end
-      #Closes the last tag
-      ret << Edge.check_close
-#      ret << "</coordinates>"
-#      ret << "</LineString>"
-#      ret << "</Placemark>"
+      #Prints the last Placemark
+      ret << edges.last.print_placemark
       ret << "</Document>"
       ret << "</kml>"
     else

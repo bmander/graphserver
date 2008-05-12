@@ -10,8 +10,8 @@ DB_PARAMS = { :host => nil,
               :options => nil,
               :tty => nil,
               :dbname => 'graphserver',
-              :login => 'postgres', #database username
-              :password => 'postgres' }
+              :login => nil, #database username
+              :password => nil }
 
 gs = Graphserver.new
 gs.database_params = DB_PARAMS

@@ -1,5 +1,6 @@
 #include "graph.h"
 #include "dirfibheap.h"
+#include "list.h"
 #include <time.h>
 //Funciones del grafo
 
@@ -141,20 +142,22 @@ gShortestPath( Graph* this, char *from, char *to, State* init_state, int directi
     return NULL;
   }
 
+   list_t *listpath=list_new();
   //TODO: replace ret with a resizeable array
-  State *temppath = (State*)malloc(LARGEST_ROUTE_SIZE*sizeof(State));
+ // State *temppath = (State*)malloc(LARGEST_ROUTE_SIZE*sizeof(State));
 
 
   int i=0;
   while( curr ) {
     if( i > LARGEST_ROUTE_SIZE ) {         //Bail if our crude memory management techniques fail
       gDestroy( raw_tree, 1, 0 );
-      free(temppath);
+      //free(temppath);
+      list_free(listpath,stateDestroy);
       fprintf( stderr, "Route %d hops long, larger than preallocated %d hops\n", i, LARGEST_ROUTE_SIZE );
       return NULL;
     }
-
-    temppath[i] = *((State*)(curr->payload));
+    list_add(listpath,curr->payload,i);
+    //temppath[i] = *((State*)(curr->payload));
     i++;
 
     if( curr->degree_in == 0 )
@@ -171,18 +174,19 @@ gShortestPath( Graph* this, char *from, char *to, State* init_state, int directi
     i=0;
     int j=n-1;
     for( ; i<n; ) {
-      ret[i] = temppath[j];
+      ret[i] =*((State*)list_get(listpath,j)); //temppath[j];
       i++;
       j--;
     }
   } else {
+     // memcpy(ret,temppath,n*sizeof(State));
     //memcpy would be faster
     for(i=0; i<n; i++) {
-      ret[i] = temppath[i];
+      ret[i] = *((State*)list_get(listpath,i));//temppath[i];
     }
   }
-  free( temppath );
-
+//  free( temppath );
+   list_free(listpath,stateDestroy);
   //destroy vertex payloads - we've transferred the relevant state information out
   //do not destroy the edge payloads - they belong to the creating graph
   //TODO: fix this so memory stops leaking:
@@ -409,3 +413,4 @@ liRemoveRef( ListNode *dummyhead, Edge *data ) {
       curr = prev->next;
     }
 }
+
