@@ -131,22 +131,22 @@ class Edge
   #Method to print the placemark tag
   def print_placemark
     #Links are not processed
-    if @@last_type == Link then return end
+#    if @@last_type == Link then return end
     #An icon showing the start point and description
     ret = "<Placemark>"
     ret << "<name>#{@@step.to_s.rjust(2,'0')}</name>"
     ret << "<description>"
     #Different rendering for Streets and Triphops
-    if @@last_type == Street then
+    if (@@last_type == Street || @@last_type == Link) then
       ret << "#{@@init_time.strftime("%H:%M")}. "
     else
       ret << "Departure: #{@@init_time.strftime("%H:%M")}. "
-      ret << "Arrival: #{@@init_time.strftime("%H:%M")}. "
+      ret << "Arrival: #{@@end_time.strftime("%H:%M")}. "
     end
 #    ret << payload.to_kml
     ret << @@last_name
     ret << "</description>"
-    if @@last_type == Street then
+    if (@@last_type == Street || @@last_type == Link) then
       ret << "<styleUrl>#walkIcon</styleUrl>"
     else
       ret << "<styleUrl>#busIcon</styleUrl>"
@@ -164,7 +164,7 @@ class Edge
 #    ret << payload.to_kml
     ret << @@last_name
     ret << "</name>"
-    if @@last_type == Street then
+    if (@@last_type == Street || @@last_type == Link) then
       ret << "<styleUrl>#walkPath</styleUrl>"
     else
       ret << "<styleUrl>#busPath</styleUrl>"

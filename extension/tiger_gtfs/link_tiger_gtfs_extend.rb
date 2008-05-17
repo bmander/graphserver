@@ -154,11 +154,24 @@ class Graphserver
   end
 
   def load_tiger_gtfs_links
-    res = conn.exec "SELECT stop_id, node_id FROM street_gtfs_links"
+#    res = conn.exec "SELECT stop_id, node_id FROM street_gtfs_links"
+    res = conn.exec "SELECT stop_id, node_id, AsText(geom) AS coords FROM street_gtfs_links"
 
-    res.each do |stop_id, node_id|
-      @gg.add_edge( GTFS_PREFIX+stop_id, TIGER_PREFIX+node_id, Link.new )
-      @gg.add_edge( TIGER_PREFIX+node_id, GTFS_PREFIX+stop_id, Link.new )
+#    res.each do |stop_id, node_id|
+    res.each do |stop_id, node_id, coords|
+      #In KML LineStrings have the spaces and the comas swapped with respect to postgis
+      #We just substitute a space for a comma and viceversa
+      coords.gsub!(" ","|")
+      coords.gsub!(","," ")
+      coords.gsub!("|",",")
+      #Also deletes the LINESTRING() envelope
+      coords.gsub!("LINESTRING(","")
+      coords.gsub!(")","")
+
+#      @gg.add_edge( GTFS_PREFIX+stop_id, TIGER_PREFIX+node_id, Link.new )
+#      @gg.add_edge( TIGER_PREFIX+node_id, GTFS_PREFIX+stop_id, Link.new )
+      @gg.add_edge_geom( GTFS_PREFIX+stop_id, TIGER_PREFIX+node_id, Link.new, coords )
+      @gg.add_edge_geom( TIGER_PREFIX+node_id, GTFS_PREFIX+stop_id, Link.new, coords )
     end
   end
 end

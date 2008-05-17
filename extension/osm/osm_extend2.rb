@@ -156,16 +156,22 @@ class Graphserver
           len = radius * c
           total_len += len
 
+          # Geometry of the edge
+          geom = "#{lon0},#{lat0} #{lon1},#{lat1}"
 #          @gg.add_edge( OSM_PREFIX+from_id, OSM_PREFIX+to_id, Street.new(name, len) )
-          @gg.add_edge( OSM_PREFIX+from_id, OSM_PREFIX+to_id, Street.new(CGI::escape(name), len) )
+#          @gg.add_edge( OSM_PREFIX+from_id, OSM_PREFIX+to_id, Street.new(CGI::escape(name), len) )
+          @gg.add_edge_geom( OSM_PREFIX+from_id, OSM_PREFIX+to_id, Street.new(CGI::escape(name), len), geom)
           if @debug_level==2 then
 #            puts "added Edge( fromId=#{prev_id}, toId=#{prev_id}, length=#{len} )"
             puts "added Edge( fromId=#{OSM_PREFIX+from_id}, toId=#{OSM_PREFIX+to_id}, length=#{len} )"
           end
           # Add reverse edge if not directional or not oneway
           if not @directional or not oneway then
+            # Geometry of the reverse edge
+            rgeom = "#{lon1},#{lat1} #{lon0},#{lat0}"
 #            @gg.add_edge( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new(name, len) )
-            @gg.add_edge( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new(CGI::escape(name), len) )
+#            @gg.add_edge( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new(CGI::escape(name), len) )
+            @gg.add_edge_geom( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new(CGI::escape(name), len), rgeom)
             puts "added Edge( fromId=#{OSM_PREFIX+to_id}, toId=#{OSM_PREFIX+from_id}, length=#{len} )"
           end
 

@@ -218,18 +218,6 @@ class Graphserver
     SQL
   end
 
-#  # Crea enlaces entre las paradas gtf y los nodos más cercanos a éstas de osm
-#  # Ejecutar después de split_osm_segments! para crear nuevos nodos enmedio
-#  # de los tramos osm más cercanos a la parada
-#  def link_street_gtfs!
-#    each_stop do |stop_id, stop_geom|
-#      if node_id = nearest_street_node( stop_geom, SEARCH_RANGE ) then
-#        p node_id
-#        conn.exec "INSERT INTO street_gtfs_links (stop_id, node_id) VALUES ('#{stop_id.delete("\'")}', '#{node_id.delete("\'")}')"
-#      end
-#    end
-#  end
-
   # Carga en el grafo los enlaces entre osm y gtfs
   def load_osm_gtfs_links
     res = conn.exec "SELECT stop_id, node_id FROM street_gtfs_links"
