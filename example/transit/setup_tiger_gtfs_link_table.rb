@@ -7,7 +7,7 @@ DB_PARAMS = { :host => nil,
               :port => nil,
               :options => nil,
               :tty => nil,
-              :dbname => 'gstest',
+              :dbname => 'graphserver',
               :login => 'postgres', #database username
               :password => 'postgres' }
 
