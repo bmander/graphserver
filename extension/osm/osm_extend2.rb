@@ -371,21 +371,28 @@ class Graphserver
   def load_osm_from_db file=nil, directional=false
     query = "SELECT id, from_id, to_id, name, type, oneway, "
     query << "length_spheroid(geom, 'SPHEROID[\"GRS_1980\",6378137,298.257222101]'), "
-    query << "AsText(geom) "
+#    query << "AsText(geom) "
+    query << "AsText(geom), AsText(Reverse(geom))"
     query << "FROM osm_streets "
     query << "WHERE file = '#{file}'" if file
 
     res = conn.exec query
 #    res.each do |id, from_id, to_id, name, type, oneway, length|
-    res.each do |id, from_id, to_id, name, type, oneway, length, coords|
+#    res.each do |id, from_id, to_id, name, type, oneway, length, coords|
+    res.each do |id, from_id, to_id, name, type, oneway, length, coords, rcoords|
       #In KML LineStrings have the spaces and the comas swapped with respect to postgis
       #We just substitute a space for a comma and viceversa
       coords.gsub!(" ","|")
       coords.gsub!(","," ")
       coords.gsub!("|",",")
+      rcoords.gsub!(" ","|")
+      rcoords.gsub!(","," ")
+      rcoords.gsub!("|",",")
       #Also deletes the LINESTRING() envelope
       coords.gsub!("LINESTRING(","")
       coords.gsub!(")","")
+      rcoords.gsub!("LINESTRING(","")
+      rcoords.gsub!(")","")
 #      puts "adding Street (id=#{id}, name='#{name}', type=#{type}, length=#{length}, oneway=#{oneway})"
 #      @gg.add_vertex( from_id )
       @gg.add_vertex( OSM_PREFIX+from_id )
@@ -399,7 +406,8 @@ class Graphserver
 #        puts "adding reverse Edge (from_id=#{to_id}, to_id=#{from_id})"
 #        @gg.add_edge( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new( name, Float(length) ) )
 #        @gg.add_edge( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new( CGI::escape(name), Float(length) ) )
-        @gg.add_edge_geom( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new(CGI::escape(name), Float(length)), coords )
+#        @gg.add_edge_geom( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new(CGI::escape(name), Float(length)), coords )
+        @gg.add_edge_geom( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new(CGI::escape(name), Float(length)), rcoords )
       end
 
     end
