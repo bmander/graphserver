@@ -91,9 +91,6 @@ class Graphserver
   end
 
   def nearest_street_node stop_geom
-#      SELECT from_id AS point,
-#    point, dist = conn.exec(<<-SQL)[0]
-#        (SELECT to_id AS point,
     point, location, dist = conn.exec(<<-SQL)[0]
       SELECT from_id AS point, StartPoint(geom) AS location,
              distance_sphere(StartPoint(geom), '#{stop_geom}') AS dist

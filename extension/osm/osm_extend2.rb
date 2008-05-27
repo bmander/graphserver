@@ -369,25 +369,37 @@ class Graphserver
   # Si se pasa un nombre de archivo como parámetro
   # sólo se cargarán los datos que provienen de ese archivo
   def load_osm_from_db file=nil, directional=false
-    query = "SELECT id, from_id, to_id, name, type, oneway,"
-    query << "length_spheroid(geom, 'SPHEROID[\"GRS_1980\",6378137,298.257222101]')"
-    query << "FROM osm_streets"
+    query = "SELECT id, from_id, to_id, name, type, oneway, "
+    query << "length_spheroid(geom, 'SPHEROID[\"GRS_1980\",6378137,298.257222101]'), "
+    query << "AsText(geom) "
+    query << "FROM osm_streets "
     query << "WHERE file = '#{file}'" if file
 
     res = conn.exec query
-    res.each do |id, from_id, to_id, name, type, oneway, length|
+#    res.each do |id, from_id, to_id, name, type, oneway, length|
+    res.each do |id, from_id, to_id, name, type, oneway, length, coords|
+      #In KML LineStrings have the spaces and the comas swapped with respect to postgis
+      #We just substitute a space for a comma and viceversa
+      coords.gsub!(" ","|")
+      coords.gsub!(","," ")
+      coords.gsub!("|",",")
+      #Also deletes the LINESTRING() envelope
+      coords.gsub!("LINESTRING(","")
+      coords.gsub!(")","")
 #      puts "adding Street (id=#{id}, name='#{name}', type=#{type}, length=#{length}, oneway=#{oneway})"
 #      @gg.add_vertex( from_id )
       @gg.add_vertex( OSM_PREFIX+from_id )
 #      @gg.add_vertex( to_id )
       @gg.add_vertex( OSM_PREFIX+to_id )
 #      @gg.add_edge( OSM_PREFIX+from_id, OSM_PREFIX+to_id, Street.new( name, Float(length) ) )
-      @gg.add_edge( OSM_PREFIX+from_id, OSM_PREFIX+to_id, Street.new( CGI::escape(name), Float(length) ) )
+#      @gg.add_edge( OSM_PREFIX+from_id, OSM_PREFIX+to_id, Street.new( CGI::escape(name), Float(length) ) )
+      @gg.add_edge_geom( OSM_PREFIX+from_id, OSM_PREFIX+to_id, Street.new(CGI::escape(name), Float(length)), coords )
 #      puts "adding Edge (from_id=#{from_id}, to_id=#{to_id})"
       if not directional or oneway=="false"
 #        puts "adding reverse Edge (from_id=#{to_id}, to_id=#{from_id})"
 #        @gg.add_edge( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new( name, Float(length) ) )
-        @gg.add_edge( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new( CGI::escape(name), Float(length) ) )
+#        @gg.add_edge( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new( CGI::escape(name), Float(length) ) )
+        @gg.add_edge_geom( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new(CGI::escape(name), Float(length)), coords )
       end
 
     end
@@ -404,5 +416,56 @@ class Graphserver
 
   end
 
+  #Overrides function which is not implemented in graphserver.rb
+  def get_vertex_from_coords(lat, lon)
+    v = {}
+    #center = "makepoint(#{lon}, #{lat})"
+    center = "GeomFromText(\'POINT(#{lon} #{lat})\',4326)"
+#    puts "Center = #{center}"
+
+    #Searches for vertex in a radius of approximately 500m from the center
+#    label, lat, lon, name, dist = conn.exec(<<-SQL)[0]
+#    r = conn.exec(<<-SQL)[0]
+#      SELECT from_id AS label, Y(StartPoint(geom)) AS lat, X(StartPoint(geom)) AS lon, name,
+#             distance_sphere(StartPoint(geom), #{center}) AS dist
+#      FROM osm_streets
+#      WHERE geom && expand( #{center}::geometry, 0.003 )
+#      UNION
+#        (SELECT to_id AS label, Y(EndPoint(geom)) AS lat, X(EndPoint(geom)) AS lon, name,
+#                distance_sphere(EndPoint(geom), #{center}) AS dist
+#         FROM osm_streets
+#         WHERE geom && expand( #{center}::geometry, 0.003 ))
+#      ORDER BY dist LIMIT 1
+#    SQL
+
+    r = conn.exec(<<-SQL)[0]
+      SELECT from_id AS label, Y(StartPoint(geom)) AS lat, X(StartPoint(geom)) AS lon, name,
+             distance_sphere(StartPoint(geom), #{center}) AS dist_vertex,
+             distance(geom, #{center}) AS dist_street
+      FROM osm_streets
+      WHERE geom && expand( #{center}::geometry, 0.003 )
+      UNION
+     (SELECT to_id AS label, Y(EndPoint(geom)) AS lat, X(EndPoint(geom)) AS lon, name,
+             distance_sphere(EndPoint(geom), #{center}) AS dist_vertex,
+             distance(geom, #{center}) AS dist_street
+      FROM osm_streets
+      WHERE geom && expand( #{center}::geometry, 0.003 ))
+      ORDER BY dist_street, dist_vertex LIMIT 1
+    SQL
+
+    if r then
+#      puts "label=#{label}, lat=#{lat}, lon=#{lon}, name=#{name}, dist=#{dist}"
+      v['label'] = "osm#{r[0]}"
+      v['lat'] = r[1]
+      v['lon'] = r[2]
+      v['name'] = r[3]
+      v['dist'] = r[4]
+      puts "label=#{v['label']}, lat=#{v['lat']}, lon=#{v['lon']}, name=#{v['name']}, dist=#{v['dist']}"
+#    else
+#      v = nil
+    end
+
+    return v
+  end
 
 end

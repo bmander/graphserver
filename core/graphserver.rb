@@ -175,15 +175,16 @@ class Graphserver
 
     #Response to GET request "/"
     @server.mount_proc( "/" ) do |request, response|
-      #Muestra una pagina web con las posibles peticiones a graphserver
+      #Presents all possible requests to graphserver
       ret = ["Graphserver Web API"]
       ret << "shortest_path?from=FROM&to=TO"
       ret << "all_vertex_labels"
       ret << "outgoing_edges?label=LABEL"
       ret << "walk_edges?label=LABEL&statevar1=STV1&statevar2=STV2..."
       ret << "collapse_edges?label=LABEL&statevar1=STV1&statevar2=STV2..."
+      ret << "vertex_from_coords?lat=LAT&lon=LON"
+      ret << "vertex_from_address?add=ADDRESS"
       ret << "dot"
-      #Transforma el Array en un String de varias lineas de texto
       response.body = ret.join("\n")
     end
 
@@ -197,23 +198,37 @@ class Graphserver
     @server.mount_proc( "/shortest_path" ) do |request, response|
       from = request.query['from']
       to = request.query['to']
+      format = parse_format( request )
+      init_state = parse_init_state( request )
       ret = []
 
       begin
-        #A menos que existan tanto el vertice con id con valor from,
-        #como el id con valor to, genera una excepcion de parametros invalidos
-        unless  @gg.get_vertex(from) and @gg.get_vertex(to) then raise ArgumentError end
+        #Looks for coordinates in from and to parameters
+        if from.count(',')==1 or to.count(',')==1 then
+          if from.count(',')==1 and to.count(',')==1 then
+            coords0 = from.split(',')
+            coords1 = to.split(',')
+            puts "origin lat0=#{coords0[0]} lon0=#{coords0[1]}"
+            puts "destination lat1=#{coords1[0]} lon1=#{coords1[1]}"
+          else
+            raise ArgumentError
+          end
 
-        #Obtiene el parametro 'time' de la peticion GET o lo genera
-        init_state = parse_init_state( request )
-        format = parse_format( request )
+        end
+
+        #Checks that both from and to parameters exist, generates an exception elsewhere
+        unless @gg.get_vertex(from) and @gg.get_vertex(to) then raise ArgumentError end
+
+        #Obtains the 'time' parameter from the GET request or generates it
+#        init_state = parse_init_state( request )
+#        format = parse_format( request )
         vertices, edges = @gg.shortest_path(from, to, init_state )      #Throws RuntimeError if no shortest path found.
         ret << ( format_shortest_path vertices, edges, format )
 
-        #Sentencia tipo catch
+        #Catch alike sentence for RuntimeError
         rescue RuntimeError                                               #TODO: change exception type, RuntimeError is too vague.
           ret << "Couldn't find a shortest path from #{from} to #{to}"
-        #Sentencia tipo catch
+        #Catch alike sentence for ArgumentError
         rescue ArgumentError
           ret << "ERROR: Invalid parameters."
       end
@@ -221,7 +236,7 @@ class Graphserver
       response.body = ret.join
     end
 
-    #Genera la respuesta a la peticion GET "/all_vertex_labels"
+    #Response to request GET "/all_vertex_labels"
     @server.mount_proc( "/all_vertex_labels" ) do |request, response|
       vlabels = []
       vlabels << "<?xml version='1.0'?>"
@@ -234,7 +249,7 @@ class Graphserver
       response.body = vlabels.join
     end
 
-    #Genera la respuesta a la peticion GET "/outgoing_edges"
+    #Response to request GET "/outgoing_edges"
     @server.mount_proc( "/outgoing_edges" ) do |request, response|
       ret = []
 
@@ -253,7 +268,7 @@ class Graphserver
         end
         ret << "</edges>"
 
-        #Sentencia tipo catch
+        #Catch alike sentence
         rescue ArgumentError
           ret << "ERROR: Invalid parameters."
       end
@@ -261,7 +276,7 @@ class Graphserver
       response.body = ret.join
     end
 
-    #Genera la respuesta a la peticion GET "/walk_edges"
+    #Response to GET request "/walk_edges"
     @server.mount_proc( "/walk_edges" ) do |request, response|
       ret = []
       begin
@@ -294,7 +309,7 @@ class Graphserver
         ret << "</outgoing_edges>"
         ret << "</vertex>"
 
-        #Sentencia tipo catch
+        #Catch alike sentence
         rescue ArgumentError
           ret << "ERROR: Invalid parameters."
       end
@@ -302,7 +317,7 @@ class Graphserver
       response.body = ret.join
     end
 
-    #Genera la respuesta a la peticion GET "/collapse_edges"
+    #Response to GET request "/collapse_edges"
     @server.mount_proc( "/collapse_edges" ) do |request, response|
       vertex = @gg.get_vertex( request.query['label'] )
       init_state = parse_init_state( request )
@@ -327,6 +342,53 @@ class Graphserver
       response.body = ret.join
     end
 
+    #Response to GET request "/vertex_from_coords"
+    @server.mount_proc( "/vertex_from_coords" ) do |request, response|
+      begin
+        #Check input parameters are present
+        unless lat = request.query['lat'] then raise ArgumentError end
+        unless lon = request.query['lon'] then raise ArgumentError end
+
+        v = get_vertex_from_coords(lat, lon)
+
+        if v == nil then
+          ret = ["ERROR: function not implemented by any extension"]
+        else
+          ret = ["<?xml version='1.0'?>"]
+          ret << "<vertex>"
+          if v['label'] then
+            ret << "<label>#{v['label']}</label>"
+            ret << "<lat>#{v['lat']}</lat>"
+            ret << "<lon>#{v['lon']}</lon>"
+            ret << "<name>#{v['name']}</name>"
+            ret << "<dist>#{v['dist']}</dist>"
+          end
+          ret << "</vertex>"
+        end
+
+        #Catch alike sentence
+        rescue ArgumentError
+          ret = ["ERROR: Invalid parameters."]
+      end
+      response.body = ret.join
+    end
+
+    #Response to GET request "/vertex_from_address"
+    @server.mount_proc( "/vertex_from_address" ) do |request, response|
+      begin
+        unless add = request.query['add'] then raise ArgumentError end
+
+        ret = ["<?xml version='1.0'?>"]
+        ret << "<vertex>"
+        ret << "</vertex>"
+
+        #Catch alike sentence
+        rescue ArgumentError
+          ret = ["ERROR: Invalid parameters."]
+      end
+      response.body = ret.join
+    end
+
   end
 
   #Formats a shortest path response depending on the format parameter
@@ -347,6 +409,11 @@ class Graphserver
     end
   end
 
+  #Returns a list of the nearest vertex to the input coordinates
+  def get_vertex_from_coords(lat, lon)
+    #Override this function in the corresponding extension (tiger and osm initially)
+    return nil
+  end
 
   #Asigna los parametros de la base de datos
   def database_params= params

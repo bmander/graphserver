@@ -165,11 +165,8 @@ class Graphserver
 #      end
       # If found, creates the link in the table
       if node_id then
-#        conn.exec "INSERT INTO street_gtfs_links (stop_id, node_id) VALUES ('#{stop_id.delete("\'")}', '#{(node_id).delete("\'")}')"
-#        geom_wkt = "SRID=#{WGS84_LATLONG_EPSG};LINESTRING( #{x1} #{y1}, #{x2} #{y2} )"
         geom_wkt = "MakeLine('#{stop_geom}', '#{location}')"
-        puts geom_wkt
-        conn.exec "INSERT INTO street_gtfs_links (stop_id, node_id, geom) VALUES ('#{stop_id.delete("\'")}', '#{(node_id).delete("\'")}', '#{(geom_wkt).delete("\'")}')"
+        conn.exec "INSERT INTO street_gtfs_links (stop_id, node_id, geom) VALUES ('#{stop_id}', '#{node_id}', #{geom_wkt})"
         puts "Linked stop #{stop_id}"
       else
         puts "Didn't find a node close to the stop #{stop_id}"
@@ -220,11 +217,24 @@ class Graphserver
 
   # Carga en el grafo los enlaces entre osm y gtfs
   def load_osm_gtfs_links
-    res = conn.exec "SELECT stop_id, node_id FROM street_gtfs_links"
+#    res = conn.exec "SELECT stop_id, node_id FROM street_gtfs_links"
+    res = conn.exec "SELECT stop_id, node_id, AsText(geom) AS coords FROM street_gtfs_links"
 
-    res.each do |stop_id, node_id|
-      @gg.add_edge( GTFS_PREFIX+stop_id, OSM_PREFIX+node_id, Link.new )
-      @gg.add_edge( OSM_PREFIX+node_id, GTFS_PREFIX+stop_id, Link.new )
+#    res.each do |stop_id, node_id|
+    res.each do |stop_id, node_id, coords|
+      #In KML LineStrings have the spaces and the comas swapped with respect to postgis
+      #We just substitute a space for a comma and viceversa
+      coords.gsub!(" ","|")
+      coords.gsub!(","," ")
+      coords.gsub!("|",",")
+      #Also deletes the LINESTRING() envelope
+      coords.gsub!("LINESTRING(","")
+      coords.gsub!(")","")
+
+#      @gg.add_edge( GTFS_PREFIX+stop_id, OSM_PREFIX+node_id, Link.new )
+#      @gg.add_edge( OSM_PREFIX+node_id, GTFS_PREFIX+stop_id, Link.new )
+      @gg.add_edge_geom( GTFS_PREFIX+stop_id, OSM_PREFIX+node_id, Link.new, coords )
+      @gg.add_edge_geom( OSM_PREFIX+node_id, GTFS_PREFIX+stop_id, Link.new, coords )
     end
   end
 end
