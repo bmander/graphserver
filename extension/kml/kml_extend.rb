@@ -197,11 +197,11 @@ class Edge
       if not @@first then
         @@end_time = Time.at( self.to.payload["time"] )
         ret = print_placemark
-        #Compare with the last geom which is supposed to be ordered
-        #to check if the new geom is reversed
-        if (coords.last == @@coords.last) then
-          coords.reverse!
-        end
+#        #Compare with the last geom which is supposed to be ordered
+#        #to check if the new geom is reversed
+#        if (coords.last == @@coords.last) then
+#          coords.reverse!
+#        end
       else
         @@first = false
       end
@@ -219,25 +219,25 @@ class Edge
       if (coords.first == @@coords.last) then
         #Delete first point
         coords.shift
-      else
-        if (coords.last == @@coords.last) then
-          #Reverse and delete first point
-          coords.reverse!
-          coords.shift
-        else
-          if (coords.first == @@coords.first) then
-            #Reverse the added geometry and delete first point of the new one
-            @@coords.reverse!
-            coords.shift
-          else
-            if (coords.last == @@coords.first) then
-              #Reverse both geometrys and delete first point of the new one
-              @@coords.reverse!
-              coords.reverse!
-              coords.shift
-            end
-          end
-        end
+#      else
+#        if (coords.last == @@coords.last) then
+#          #Reverse and delete first point
+#          coords.reverse!
+#          coords.shift
+#        else
+#          if (coords.first == @@coords.first) then
+#            #Reverse the added geometry and delete first point of the new one
+#            @@coords.reverse!
+#            coords.shift
+#          else
+#            if (coords.last == @@coords.first) then
+#              #Reverse both geometrys and delete first point of the new one
+#              @@coords.reverse!
+#              coords.reverse!
+#              coords.shift
+#            end
+#          end
+#        end
       end
       #Append the coordinates of the last stretch to the added geom
       @@coords.concat(coords)
