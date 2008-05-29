@@ -50,12 +50,7 @@ class Graphserver
       @gg.add_vertex( TIGER_PREFIX+from_id )
       @gg.add_vertex( TIGER_PREFIX+to_id )
       @gg.add_edge_geom( TIGER_PREFIX+from_id, TIGER_PREFIX+to_id, Street.new( name, Float(length) ),geom)
-#      @gg.add_edge_geom( TIGER_PREFIX+to_id, TIGER_PREFIX+from_id, Street.new( name, Float(length) ),geom)
       @gg.add_edge_geom( TIGER_PREFIX+to_id, TIGER_PREFIX+from_id, Street.new( name, Float(length) ),rgeom)
-#      @gg.add_edge_geom( TIGER_PREFIX+from_id, TIGER_PREFIX+to_id, Street.new( CGI::escape(name), Float(length) ),geom)
-#      @gg.add_edge_geom( TIGER_PREFIX+to_id, TIGER_PREFIX+from_id, Street.new( CGI::escape(name), Float(length) ),geom)
-	#@gg.add_edge( TIGER_PREFIX+from_id, TIGER_PREFIX+to_id, Street.new( id, Float(length) ))
-	#@gg.add_edge( TIGER_PREFIX+to_id, TIGER_PREFIX+from_id, Street.new( id, Float(length) ))
     end
   end
 
@@ -150,26 +145,86 @@ class Graphserver
   end
 
   #Overrides function which is not implemented in graphserver.rb
+  #This function looks for the vertices of the closest edge to the input coords
+  #Returns an array of 2 rows an columns label, lat, lon, name, dist_vertex. dist_street
+  def get_closest_edge_vertices(lat, lon)
+    center = "GeomFromText(\'POINT(#{lon} #{lat})\',4326)"
+    #Looks for the closest tiger line in the search range
+    line = conn.exec <<-SQL
+      SELECT id, geom, distance(geom, #{center}) AS dist
+      FROM tiger_streets
+      WHERE geom && expand( #{center}::geometry, 0.003 )
+      ORDER BY dist
+      LIMIT 1
+    SQL
+
+    if line.num_tuples == 0 then return nil end
+
+    line_id = line[0][0]
+    line_geom = line[0][1]
+
+    #Calculates nearest point in line
+    point = conn.exec("SELECT line_interpolate_point('#{line_geom}', line_locate_point('#{line_geom}', #{center}))").getvalue(0,0)
+
+    #Looks for the closest street vertex in a radius of approximately 500m from the center
+#    res = conn.exec <<-SQL
+#      SELECT 'new' AS label, Y('#{point}') AS lat, X('#{point}') AS lon, '' AS name,
+#             0 AS dist_vertex, 0 AS dist_street
+#      UNION
+#     (SELECT from_id AS label, Y(StartPoint(geom)) AS lat, X(StartPoint(geom)) AS lon, name,
+#             distance_sphere(StartPoint(geom), #{center}) AS dist_vertex,
+#             distance(geom, #{center}) AS dist_street
+#      FROM tiger_streets
+#      WHERE geom && expand( #{center}::geometry, 0.003 )
+#      UNION
+#     (SELECT to_id AS label, Y(EndPoint(geom)) AS lat, X(EndPoint(geom)) AS lon, name,
+#             distance_sphere(EndPoint(geom), #{center}) AS dist_vertex,
+#             distance(geom, #{center}) AS dist_street
+#      FROM tiger_streets
+#      WHERE geom && expand( #{center}::geometry, 0.003 ) ) )
+#      ORDER BY dist_street, dist_vertex LIMIT 3
+#    SQL
+    res = conn.exec <<-SQL
+      SELECT 'new' AS label, Y('#{point}') AS lat, X('#{point}') AS lon, '' AS name,
+             0 AS dist_vertex
+      UNION
+     (SELECT from_id AS label, Y(StartPoint(geom)) AS lat, X(StartPoint(geom)) AS lon, name,
+             distance_sphere(StartPoint(geom), #{center}) AS dist_vertex
+      FROM tiger_streets
+      WHERE id = '#{line_id}'
+      UNION
+     (SELECT to_id AS label, Y(EndPoint(geom)) AS lat, X(EndPoint(geom)) AS lon, name,
+             distance_sphere(EndPoint(geom), #{center}) AS dist_vertex
+      FROM tiger_streets
+      WHERE id = '#{line_id}' ) )
+      ORDER BY dist_vertex
+    SQL
+
+    #An array of vertices
+    v = []
+    i = 0
+    #Each vertex is a hash of properties
+    if res then
+      res.each do |vertex|
+        v[i]={}
+        v[i]['label'] = "tg#{vertex[0]}"
+        v[i]['lat'] = vertex[1]
+        v[i]['lon'] = vertex[2]
+        v[i]['name'] = vertex[3]
+        v[i]['dist'] = vertex[4]
+        i += 1
+      end
+    end
+    return v
+  end
+
+  #Overrides function which is not implemented in graphserver.rb
   def get_vertex_from_coords(lat, lon)
     v = {}
     center = "GeomFromText(\'POINT(#{lon} #{lat})\',4326)"
 
     #Searches the closest street vertex in a radius of approximately 500m from the center
-#    label, location, dist = conn.exec(<<-SQL)[0]
-#    r = conn.exec(<<-SQL)[0]
-#      SELECT from_id AS label, Y(StartPoint(geom)) AS lat, X(StartPoint(geom)) AS lon, name,
-#             distance_sphere(StartPoint(geom), #{center}) AS dist
-#      FROM tiger_streets
-#      WHERE geom && expand( #{center}::geometry, 0.003 )
-#      UNION
-#        (SELECT to_id AS label, Y(EndPoint(geom)) AS lat, X(EndPoint(geom)) AS lon, name,
-#                distance_sphere(EndPoint(geom), #{center}) AS dist
-#         FROM tiger_streets
-#         WHERE geom && expand( #{center}::geometry, 0.003 ))
-#      ORDER BY dist LIMIT 1
-#    SQL
-
-    r = conn.exec(<<-SQL)[0]
+    res = conn.exec(<<-SQL)[0]
       SELECT from_id AS label, Y(StartPoint(geom)) AS lat, X(StartPoint(geom)) AS lon, name,
              distance_sphere(StartPoint(geom), #{center}) AS dist_vertex,
              distance(geom, #{center}) AS dist_street
@@ -184,13 +239,13 @@ class Graphserver
       ORDER BY dist_street, dist_vertex LIMIT 1
     SQL
 
-    if r then
-      v['label'] = "tg#{r[0]}"
-      v['lat'] = r[1]
-      v['lon'] = r[2]
-      v['name'] = r[3]
-      v['dist'] = r[4]
-      puts "label=#{v['label']}, lat=#{v['lat']}, lon=#{v['lon']}, name=#{v['name']}, dist=#{v['dist']}"
+    if res then
+      v['label'] = "tg#{res[0]}"
+      v['lat'] = res[1]
+      v['lon'] = res[2]
+      v['name'] = res[3]
+      v['dist'] = res[4]
+#      puts "label=#{v['label']}, lat=#{v['lat']}, lon=#{v['lon']}, name=#{v['name']}, dist=#{v['dist']}"
 #    else
 #      v = nil
     end

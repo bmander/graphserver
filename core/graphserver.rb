@@ -196,34 +196,65 @@ class Graphserver
 
     #Response to GET request "/shortest_path"
     @server.mount_proc( "/shortest_path" ) do |request, response|
+      #Read input parameters
       from = request.query['from']
       to = request.query['to']
       format = parse_format( request )
       init_state = parse_init_state( request )
       ret = []
 
+      #This block check input parameters and calls for the right shortest path algorithm
+      #depending on the parameters or generates Errors if these parameters are wrong
       begin
-        #Looks for coordinates in from and to parameters
+        #If input parameters are coordinates
         if from.count(',')==1 or to.count(',')==1 then
           if from.count(',')==1 and to.count(',')==1 then
+            #If both input parameters are a pair of coordinates
             coords0 = from.split(',')
             coords1 = to.split(',')
             puts "origin lat0=#{coords0[0]} lon0=#{coords0[1]}"
             puts "destination lat1=#{coords1[0]} lon1=#{coords1[1]}"
+            lat0 = coords0[0]
+            lon0 = coords0[1]
+            lat1 = coords1[0]
+            lon1 = coords1[1]
+
+            #Looks for the 2 closest vertices from the closest edge
+            #and the closest point in the edge
+            v0 = get_closest_edge_vertices(lat0, lon0)
+            v1 = get_closest_edge_vertices(lat1, lon1)
+
+            #Adds a new vertex in the closest point in the edge
+            #and in the origin point and connects them
+            @gg.add_vertex( "origin" )
+#            @gg.add_vertex( "origin-street" )
+            @gg.add_vertex( "destination" )
+#            @gg.add_vertex( "destination-street" )
+            coords01 = "#{lon0},#{lat0} #{v0[0]['lon']},#{v0[0]['lat']} #{v0[1]['lon']},#{v0[1]['lat']}"
+            coords02 = "#{lon0},#{lat0} #{v0[0]['lon']},#{v0[0]['lat']} #{v0[2]['lon']},#{v0[2]['lat']}"
+            coords11 = "#{lon1},#{lat1} #{v1[0]['lon']},#{v1[0]['lat']} #{v1[1]['lon']},#{v1[1]['lat']}"
+            coords12 = "#{lon1},#{lat1} #{v1[0]['lon']},#{v1[0]['lat']} #{v1[2]['lon']},#{v1[2]['lat']}"
+            @gg.add_edge_geom( "origin", v0[1]['label'], Link.new, coords01)
+            @gg.add_edge_geom( "origin", v0[2]['label'], Link.new, coords02)
+            @gg.add_edge_geom( v1[1]['label'], "destination", Link.new, coords11)
+            @gg.add_edge_geom( v1[2]['label'], "destination", Link.new, coords12)
+
+            #Calculates the shortest path
+            vertices, edges = @gg.shortest_path("origin", "destination", init_state )      #Throws RuntimeError if no shortest path found.
+            ret << ( format_shortest_path vertices, edges, format )
           else
+            #If only one input parameter is a pair of coordinates
             raise ArgumentError
           end
+        else
+          #If input parameters are vertex labels
+          #Checks that both from and to parameters exist, generates an exception elsewhere
+          unless @gg.get_vertex(from) and @gg.get_vertex(to) then raise ArgumentError end
 
+          #Calculates the shortest path
+          vertices, edges = @gg.shortest_path(from, to, init_state )      #Throws RuntimeError if no shortest path found.
+          ret << ( format_shortest_path vertices, edges, format )
         end
-
-        #Checks that both from and to parameters exist, generates an exception elsewhere
-        unless @gg.get_vertex(from) and @gg.get_vertex(to) then raise ArgumentError end
-
-        #Obtains the 'time' parameter from the GET request or generates it
-#        init_state = parse_init_state( request )
-#        format = parse_format( request )
-        vertices, edges = @gg.shortest_path(from, to, init_state )      #Throws RuntimeError if no shortest path found.
-        ret << ( format_shortest_path vertices, edges, format )
 
         #Catch alike sentence for RuntimeError
         rescue RuntimeError                                               #TODO: change exception type, RuntimeError is too vague.
@@ -349,21 +380,33 @@ class Graphserver
         unless lat = request.query['lat'] then raise ArgumentError end
         unless lon = request.query['lon'] then raise ArgumentError end
 
-        v = get_vertex_from_coords(lat, lon)
+        v = get_closest_edge_vertices(lat, lon)
+#        v = get_vertex_from_coords(lat, lon)
 
         if v == nil then
           ret = ["ERROR: function not implemented by any extension"]
         else
           ret = ["<?xml version='1.0'?>"]
-          ret << "<vertex>"
-          if v['label'] then
-            ret << "<label>#{v['label']}</label>"
-            ret << "<lat>#{v['lat']}</lat>"
-            ret << "<lon>#{v['lon']}</lon>"
-            ret << "<name>#{v['name']}</name>"
-            ret << "<dist>#{v['dist']}</dist>"
+          ret << "<vertices>"
+          v.each do |vv|
+            ret << "<vertex>"
+#          if v['label'] then
+#            ret << "<label>#{v['label']}</label>"
+#            ret << "<lat>#{v['lat']}</lat>"
+#            ret << "<lon>#{v['lon']}</lon>"
+#            ret << "<name>#{v['name']}</name>"
+#            ret << "<dist>#{v['dist']}</dist>"
+#          end
+            if vv['label'] then
+              ret << "<label>#{vv['label']}</label>"
+              ret << "<lat>#{vv['lat']}</lat>"
+              ret << "<lon>#{vv['lon']}</lon>"
+              ret << "<name>#{vv['name']}</name>"
+              ret << "<dist>#{vv['dist']}</dist>"
+            end
+            ret << "</vertex>"
           end
-          ret << "</vertex>"
+          ret << "</vertices>"
         end
 
         #Catch alike sentence
