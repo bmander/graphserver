@@ -182,8 +182,8 @@ class Graphserver
       ret << "outgoing_edges?label=LABEL"
       ret << "walk_edges?label=LABEL&statevar1=STV1&statevar2=STV2..."
       ret << "collapse_edges?label=LABEL&statevar1=STV1&statevar2=STV2..."
-      ret << "vertex_from_coords?lat=LAT&lon=LON"
-      ret << "vertex_from_address?add=ADDRESS"
+      ret << "vertices_from_coords?lat=LAT&lon=LON"
+      ret << "vertices_from_address?add=ADDRESS"
       ret << "dot"
       response.body = ret.join("\n")
     end
@@ -373,8 +373,8 @@ class Graphserver
       response.body = ret.join
     end
 
-    #Response to GET request "/vertex_from_coords"
-    @server.mount_proc( "/vertex_from_coords" ) do |request, response|
+    #Response to GET request "/vertices_from_coords"
+    @server.mount_proc( "/vertices_from_coords" ) do |request, response|
       begin
         #Check input parameters are present
         unless lat = request.query['lat'] then raise ArgumentError end
@@ -417,7 +417,7 @@ class Graphserver
     end
 
     #Response to GET request "/vertex_from_address"
-    @server.mount_proc( "/vertex_from_address" ) do |request, response|
+    @server.mount_proc( "/vertices_from_address" ) do |request, response|
       begin
         unless add = request.query['add'] then raise ArgumentError end
 
@@ -452,8 +452,11 @@ class Graphserver
     end
   end
 
-  #Returns a list of the nearest vertex to the input coordinates
-  def get_vertex_from_coords(lat, lon)
+  #This function looks for the vertices of the closest edge to the input coords
+  #Returns an array of 3 rows an columns named label, lat, lon, name, dist_vertex
+  #The first row is not actually a vertex, but the nearest point in the edge
+  #to the input coordinates
+  def get_closest_edge_vertices(lat, lon)
     #Override this function in the corresponding extension (tiger and osm initially)
     return nil
   end
