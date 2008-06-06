@@ -160,7 +160,7 @@ class Graphserver
           geom = "#{lon0},#{lat0} #{lon1},#{lat1}"
 #          @gg.add_edge( OSM_PREFIX+from_id, OSM_PREFIX+to_id, Street.new(name, len) )
 #          @gg.add_edge( OSM_PREFIX+from_id, OSM_PREFIX+to_id, Street.new(CGI::escape(name), len) )
-          @gg.add_edge_geom( OSM_PREFIX+from_id, OSM_PREFIX+to_id, Street.new(CGI::escape(name), len), geom)
+          @gg.add_edge_geom( OSM_PREFIX+from_id, OSM_PREFIX+to_id, Street.new(name, len), geom)
           if @debug_level==2 then
 #            puts "added Edge( fromId=#{prev_id}, toId=#{prev_id}, length=#{len} )"
             puts "added Edge( fromId=#{OSM_PREFIX+from_id}, toId=#{OSM_PREFIX+to_id}, length=#{len} )"
@@ -171,7 +171,7 @@ class Graphserver
             rgeom = "#{lon1},#{lat1} #{lon0},#{lat0}"
 #            @gg.add_edge( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new(name, len) )
 #            @gg.add_edge( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new(CGI::escape(name), len) )
-            @gg.add_edge_geom( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new(CGI::escape(name), len), rgeom)
+            @gg.add_edge_geom( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new(name, len), rgeom)
             puts "added Edge( fromId=#{OSM_PREFIX+to_id}, toId=#{OSM_PREFIX+from_id}, length=#{len} )"
           end
 
@@ -400,14 +400,14 @@ class Graphserver
       @gg.add_vertex( OSM_PREFIX+to_id )
 #      @gg.add_edge( OSM_PREFIX+from_id, OSM_PREFIX+to_id, Street.new( name, Float(length) ) )
 #      @gg.add_edge( OSM_PREFIX+from_id, OSM_PREFIX+to_id, Street.new( CGI::escape(name), Float(length) ) )
-      @gg.add_edge_geom( OSM_PREFIX+from_id, OSM_PREFIX+to_id, Street.new(CGI::escape(name), Float(length)), coords )
+      @gg.add_edge_geom( OSM_PREFIX+from_id, OSM_PREFIX+to_id, Street.new(name, Float(length)), coords )
 #      puts "adding Edge (from_id=#{from_id}, to_id=#{to_id})"
       if not directional or oneway=="false"
 #        puts "adding reverse Edge (from_id=#{to_id}, to_id=#{from_id})"
 #        @gg.add_edge( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new( name, Float(length) ) )
 #        @gg.add_edge( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new( CGI::escape(name), Float(length) ) )
 #        @gg.add_edge_geom( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new(CGI::escape(name), Float(length)), coords )
-        @gg.add_edge_geom( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new(CGI::escape(name), Float(length)), rcoords )
+        @gg.add_edge_geom( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new(name, Float(length)), rcoords )
       end
 
     end
@@ -425,11 +425,69 @@ class Graphserver
   end
 
   #Overrides function which is not implemented in graphserver.rb
+  #This function looks for the vertices of the closest edge to the input coords
+  #Returns an array of 3 rows an columns named label, lat, lon, name, dist_vertex
+  #The first row is not actually a vertex, but the nearest point in the edge
+  #to the input coordinates
+  def get_closest_edge_vertices(lat, lon)
+    center = "GeomFromText(\'POINT(#{lon} #{lat})\',4326)"
+    #Looks for the closest tiger line in the search range
+    line = conn.exec <<-SQL
+      SELECT id, geom, distance(geom, #{center}) AS dist
+      FROM osm_streets
+      WHERE geom && expand( #{center}::geometry, 0.003 )
+      ORDER BY dist
+      LIMIT 1
+    SQL
+
+    if line.num_tuples == 0 then return nil end
+
+    line_id = line[0][0]
+    line_geom = line[0][1]
+
+    #Looks for the closest street vertex in a radius of approximately 500m from the center
+    res = conn.exec <<-SQL
+      SELECT 'nearest_point_in_line' AS label, Y(line_point) AS lat, X(line_point) AS lon, name,
+             distance_sphere(line_point, #{center}) AS dist_vertex
+      FROM osm_streets,
+      (SELECT line_interpolate_point('#{line_geom}', line_locate_point('#{line_geom}', #{center})) AS line_point) AS tpoint
+      WHERE id = '#{line_id}'
+      UNION
+     (SELECT 'osm' || from_id AS label, Y(StartPoint(geom)) AS lat, X(StartPoint(geom)) AS lon, name,
+             distance_sphere(StartPoint(geom), #{center}) AS dist_vertex
+      FROM osm_streets
+      WHERE id = '#{line_id}'
+      UNION
+     (SELECT 'osm' || to_id AS label, Y(EndPoint(geom)) AS lat, X(EndPoint(geom)) AS lon, name,
+             distance_sphere(EndPoint(geom), #{center}) AS dist_vertex
+      FROM osm_streets
+      WHERE id = '#{line_id}' )
+      ORDER BY dist_vertex
+      LIMIT 2 )
+    SQL
+
+    #An array of vertices
+    v = []
+    i = 0
+    #Each vertex is a hash of properties
+    if res then
+      res.each do |vertex|
+        v[i]={}
+        v[i]['label'] = vertex[0] #Label of the vertex
+        v[i]['lat'] = vertex[1] #Latitude of the vertex
+        v[i]['lon'] = vertex[2] #Longitude of the vertex
+        v[i]['name'] = vertex[3] #Name of the closest edge containing the vertex
+        v[i]['dist'] = vertex[4] #Distance from the vertex to the input coordinates
+        i += 1
+      end
+    end
+    return v
+  end
+
+  #Overrides function which is not implemented in graphserver.rb
   def get_vertex_from_coords(lat, lon)
     v = {}
-    #center = "makepoint(#{lon}, #{lat})"
     center = "GeomFromText(\'POINT(#{lon} #{lat})\',4326)"
-#    puts "Center = #{center}"
 
     #Searches for vertex in a radius of approximately 500m from the center
 #    label, lat, lon, name, dist = conn.exec(<<-SQL)[0]

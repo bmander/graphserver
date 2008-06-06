@@ -224,23 +224,27 @@ class Graphserver
             v0 = get_closest_edge_vertices(lat0, lon0)
             v1 = get_closest_edge_vertices(lat1, lon1)
 
+            #Time stamp to differentiate requests. It's necessary as long
+            #as we don't delete the nodes after the shortest path calculation
+            ts = Time.now
+
             #Adds a new vertex in the closest point in the edge
             #and in the origin point and connects them
-            @gg.add_vertex( "origin" )
+            @gg.add_vertex( "origin_#{ts}" )
 #            @gg.add_vertex( "origin-street" )
-            @gg.add_vertex( "destination" )
+            @gg.add_vertex( "destination_#{ts}" )
 #            @gg.add_vertex( "destination-street" )
             coords01 = "#{lon0},#{lat0} #{v0[0]['lon']},#{v0[0]['lat']} #{v0[1]['lon']},#{v0[1]['lat']}"
             coords02 = "#{lon0},#{lat0} #{v0[0]['lon']},#{v0[0]['lat']} #{v0[2]['lon']},#{v0[2]['lat']}"
             coords11 = "#{lon1},#{lat1} #{v1[0]['lon']},#{v1[0]['lat']} #{v1[1]['lon']},#{v1[1]['lat']}"
             coords12 = "#{lon1},#{lat1} #{v1[0]['lon']},#{v1[0]['lat']} #{v1[2]['lon']},#{v1[2]['lat']}"
-            @gg.add_edge_geom( "origin", v0[1]['label'], Link.new, coords01)
-            @gg.add_edge_geom( "origin", v0[2]['label'], Link.new, coords02)
-            @gg.add_edge_geom( v1[1]['label'], "destination", Link.new, coords11)
-            @gg.add_edge_geom( v1[2]['label'], "destination", Link.new, coords12)
+            @gg.add_edge_geom( "origin_#{ts}", v0[1]['label'], Link.new, coords01)
+            @gg.add_edge_geom( "origin_#{ts}", v0[2]['label'], Link.new, coords02)
+            @gg.add_edge_geom( v1[1]['label'], "destination_#{ts}", Link.new, coords11)
+            @gg.add_edge_geom( v1[2]['label'], "destination_#{ts}", Link.new, coords12)
 
             #Calculates the shortest path
-            vertices, edges = @gg.shortest_path("origin", "destination", init_state )      #Throws RuntimeError if no shortest path found.
+            vertices, edges = @gg.shortest_path("origin_#{ts}", "destination_#{ts}", init_state )      #Throws RuntimeError if no shortest path found.
             ret << ( format_shortest_path vertices, edges, format )
           else
             #If only one input parameter is a pair of coordinates

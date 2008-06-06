@@ -165,12 +165,9 @@ class Graphserver
     line_id = line[0][0]
     line_geom = line[0][1]
 
-#    #Calculates nearest point in line
-#    point = conn.exec("SELECT line_interpolate_point('#{line_geom}', line_locate_point('#{line_geom}', #{center}))").getvalue(0,0)
-
     #Looks for the closest street vertex in a radius of approximately 500m from the center
     res = conn.exec <<-SQL
-      SELECT 'not_vertex' AS label, Y(line_point) AS lat, X(line_point) AS lon, name,
+      SELECT 'nearest_point_in_line' AS label, Y(line_point) AS lat, X(line_point) AS lon, name,
              distance_sphere(line_point, #{center}) AS dist_vertex
       FROM tiger_streets,
       (SELECT line_interpolate_point('#{line_geom}', line_locate_point('#{line_geom}', #{center})) AS line_point) AS tpoint
@@ -184,8 +181,9 @@ class Graphserver
      (SELECT 'tg' || to_id AS label, Y(EndPoint(geom)) AS lat, X(EndPoint(geom)) AS lon, name,
              distance_sphere(EndPoint(geom), #{center}) AS dist_vertex
       FROM tiger_streets
-      WHERE id = '#{line_id}' ) )
+      WHERE id = '#{line_id}' )
       ORDER BY dist_vertex
+      LIMIT 2 )
     SQL
 
     #An array of vertices
@@ -195,7 +193,6 @@ class Graphserver
     if res then
       res.each do |vertex|
         v[i]={}
-#        v[i]['label'] = "tg#{vertex[0]}" #Label of the vertex
         v[i]['label'] = vertex[0] #Label of the vertex
         v[i]['lat'] = vertex[1] #Latitude of the vertex
         v[i]['lon'] = vertex[2] #Longitude of the vertex
@@ -206,40 +203,5 @@ class Graphserver
     end
     return v
   end
-
-  #Overrides function which is not implemented in graphserver.rb
-#  def get_vertex_from_coords(lat, lon)
-#    v = {}
-#    center = "GeomFromText(\'POINT(#{lon} #{lat})\',4326)"
-#
-#    #Searches the closest street vertex in a radius of approximately 500m from the center
-#    res = conn.exec(<<-SQL)[0]
-#      SELECT from_id AS label, Y(StartPoint(geom)) AS lat, X(StartPoint(geom)) AS lon, name,
-#             distance_sphere(StartPoint(geom), #{center}) AS dist_vertex,
-#             distance(geom, #{center}) AS dist_street
-#      FROM tiger_streets
-#      WHERE geom && expand( #{center}::geometry, 0.003 )
-#      UNION
-#     (SELECT to_id AS label, Y(EndPoint(geom)) AS lat, X(EndPoint(geom)) AS lon, name,
-#             distance_sphere(EndPoint(geom), #{center}) AS dist_vertex,
-#             distance(geom, #{center}) AS dist_street
-#      FROM tiger_streets
-#      WHERE geom && expand( #{center}::geometry, 0.003 ))
-#      ORDER BY dist_street, dist_vertex LIMIT 1
-#    SQL
-#
-#    if res then
-#      v['label'] = "tg#{res[0]}"
-#      v['lat'] = res[1]
-#      v['lon'] = res[2]
-#      v['name'] = res[3]
-#      v['dist'] = res[4]
-##      puts "label=#{v['label']}, lat=#{v['lat']}, lon=#{v['lon']}, name=#{v['name']}, dist=#{v['dist']}"
-##    else
-##      v = nil
-#    end
-#
-#    return v
-#  end
 
 end
