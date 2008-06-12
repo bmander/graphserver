@@ -426,7 +426,7 @@ class Graphserver
 
   #Overrides function which is not implemented in graphserver.rb
   #This function looks for the vertices of the closest edge to the input coords
-  #Returns an array of 3 rows an columns named label, lat, lon, name, dist_vertex
+  #Returns an array of 3 rows an columns named label, lat, lon, name, dist
   #The first row is not actually a vertex, but the nearest point in the edge
   #to the input coordinates
   def get_closest_edge_vertices(lat, lon)

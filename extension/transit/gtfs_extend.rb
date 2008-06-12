@@ -636,6 +636,38 @@ class Graphserver
     conn.endcopy
   end
 
+  #This function looks for the closest stops to the input coords
+  #Returns an array of n_stops rows, with columns named label, lat, lon, dist
+  def get_closest_stops(lat, lon, n_stops)
+    center = "GeomFromText(\'POINT(#{lon} #{lat})\',4326)"
+    #Looks for the closest n_stops stops in a search range of approx 5000m (0.003 deg)
+    res = conn.exec <<-SQL
+      SELECT 'gtfs' || stop_id, stop_lat, stop_lon, distance(location, #{center}) AS dist
+      FROM gtf_stops
+      WHERE location && expand( #{center}::geometry, 0.03 )
+      ORDER BY dist
+      LIMIT #{n_stops}
+    SQL
+
+    if res.num_tuples == 0 then return nil end
+
+    #An array of stops
+    s = []
+    i = 0
+    #Each vertex is a hash of properties
+    if res then
+      res.each do |stop|
+#        puts "label=#{stop[0]} lat=#{stop[1]} lon=#{stop[2]} dist=#{stop[3]} "
+        s[i]={}
+        s[i]['label'] = stop[0] #Label of the stop
+        s[i]['lat'] = stop[1] #Latitude of the stop
+        s[i]['lon'] = stop[2] #Longitude of the stop
+        s[i]['dist'] = stop[3] #Distance from the stop to the input coordinates
+        i += 1
+      end
+    end
+    return s
+  end
 
   def import_gtfs_to_db! directory
     gt = GoogleTransitFeed::GoogleTransitFeed.new( directory )

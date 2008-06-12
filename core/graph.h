@@ -6,6 +6,8 @@
 #include "hashtable_gs.h"
 #include "hashtable_itr.h"
 #include "edgetypes.h"
+#include "util/list.h"
+
 
 #ifndef INFINITY
   #define INFINITY 1000000000
@@ -16,6 +18,7 @@ typedef struct Edge Edge;
 typedef struct ListNode ListNode;
 typedef struct Graph Graph;
 
+// the graph data. Major strucuts
 struct Graph {
    struct hashtable* vertices;
 };
@@ -30,14 +33,14 @@ struct prev_entry {
   long weight;
   long end_time;
 };
-
+// Vertex
 struct Vertex {
    int degree_out;
    int degree_in;
    ListNode* outgoing;
    ListNode* incoming;
    char* label;
-   State* payload;
+   State* payload; //Only use in shortpath
 } ;
 
 struct Edge {

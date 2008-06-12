@@ -1,17 +1,19 @@
 #include "graph.h"
 #include "dirfibheap.h"
-#include "list.h"
 #include <time.h>
-//Funciones del grafo
+
+#ifndef HASH_INIT
+  #define HASH_INIT 100
+#endif
 
 Graph*
 gNew() {
   Graph *this = (Graph*)malloc(sizeof(Graph));
-  this->vertices = create_hashtable_string(16); //TODO: find a better number.
+  this->vertices = create_hashtable_string(HASH_INIT); 
   return this;
 }
 /*
-	Funcion que destruye el grafo
+	Function Destroy Graph
 */
 void
 gDestroy( Graph* this, int kill_vertex_payloads, int kill_edge_payloads ) {
@@ -31,21 +33,21 @@ gDestroy( Graph* this, int kill_vertex_payloads, int kill_edge_payloads ) {
 }
 
 /*
-	Funcion que añade un vertice
+	Funtion add vertex
 */
 Vertex* 
 gAddVertex( Graph* this, char *label ) {
   Vertex* exists = gGetVertex( this, label );
   if( !exists ) {
     exists = vNew( label );
+    // hash, key, object(vertex)
     hashtable_insert_string( this->vertices, label, exists );
   }
-
   return exists;
 }
 
 /*
-	Funcion que busca un vertice
+	Funtion search vertex
 */
 Vertex*
 gGetVertex( Graph* this, char *label ) {
@@ -53,7 +55,7 @@ gGetVertex( Graph* this, char *label ) {
 }
 
 /*
-	Funcion que añade un eje
+	Function add Edge
 */
 Edge*
 gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload ) {
@@ -63,7 +65,7 @@ gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload ) {
   if(!(vtx_from && vtx_to))
     return NULL;
 
-  return vLink( vtx_from, vtx_to, payload ); 
+  return vLink( vtx_from, vtx_to, payload );  // link two vertex
 }
 
 Edge*
@@ -74,11 +76,11 @@ gAddEdgeGeom( Graph* this, char *from, char *to, EdgePayload *payload, char * da
   if(!(vtx_from && vtx_to))
     return NULL;
 
-  return vLinkGeom( vtx_from, vtx_to, payload, datageom ); 
+  return vLinkGeom( vtx_from, vtx_to, payload, datageom ); // link two vertex
 }
 
 /*
-	Funcion que devuelve todos los vertices
+	RETURN ALL VERTEX
 */
 Vertex**
 gVertices( Graph* this, long* num_vertices ) {
@@ -198,7 +200,7 @@ gShortestPath( Graph* this, char *from, char *to, State* init_state, int directi
 }
 
 /*
-	Funcion que devuelve el numero de vertices
+	Number Vertex
 */
 long
 gSize( Graph* this ) {
@@ -206,7 +208,7 @@ gSize( Graph* this ) {
 }
 
 
-// Funciones de los vertices
+// FUNCTION VERTEX
 
 Vertex *
 vNew( char* label ) {
@@ -265,18 +267,21 @@ vLink(Vertex* this, Vertex* to, EdgePayload* payload) {
 Edge*
 vLinkGeom(Vertex* this, Vertex* to, EdgePayload* payload, char* datageom) {
     //create edge object
+   
     Edge* link = eNewGeom(this, to, payload,datageom);
    // link->geom=geomNew(datageom);
 
-
+    
     ListNode* outlistnode = liNew( link );
+ 
     liInsertAfter( this->outgoing, outlistnode );
     this->degree_out++;
     
     ListNode* inlistnode = liNew( link );
+ 
     liInsertAfter( to->incoming, inlistnode );
     to->degree_in++;
-
+ 
     return link;
 }
 //the comments say it all
@@ -294,12 +299,19 @@ vSetParent( Vertex* this, Vertex* parent, EdgePayload* payload ) {
 
 Edge*
 vSetParentGeom( Vertex* this, Vertex* parent, EdgePayload* payload, char * geomdata ) {
-    //delete all incoming edges
+    
     ListNode* edges = vGetIncomingEdgeList( this );
+   
+    
     while(edges) {
+
       eDestroy( edges->data, 0 );
+
       edges = edges->next;
+
     }
+
+  
     //add incoming edge
     return vLinkGeom( parent, this, payload, geomdata);  
 }
@@ -351,11 +363,15 @@ eDestroy(Edge *this, int destroy_payload) {
     //free payload
     if(destroy_payload)
       epDestroy( this->payload ); //destroy payload object and contents
-
+    
     vRemoveOutEdgeRef( this->from, this );
+	
     vRemoveInEdgeRef( this->to, this );
+
     geomDestroy(this->geom);
+   
     free(this);
+
 }
 
 State*

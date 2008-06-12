@@ -152,7 +152,7 @@ typedef struct TripHop {
 
 struct TripHopSchedule {
   edgepayload_t type;
-  int n;
+  int n; //number hops
   TripHop* hops;
   ServiceId service_id;
   CalendarDay* calendar;

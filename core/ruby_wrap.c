@@ -1,8 +1,10 @@
 #include "ruby.h"
 #include "fibheap.h"
 #include "dirfibheap.h"
-
+#include "graph.h"
 #include <sys/time.h>
+
+//#define DEBUG 
 
 //EDGETYPE CLASSES
 VALUE cEdgePayload;
@@ -28,7 +30,7 @@ inline Vertex* unpack_v( VALUE pack ) {
 
 inline VALUE pack_v( Vertex* unpacked) {
   if(unpacked)
-    return Data_Wrap_Struct( cVertex, 0, 0, unpacked );
+    return Data_Wrap_Struct( cVertex, 0, 0, unpacked ); 
   else
     return Qnil;
 }
@@ -52,8 +54,8 @@ inline Edge* unpack_e( VALUE pack ) {
 //Ruby is not allowed to free an edge structure: that is the domain
 //of the vertex that attaches to it
 inline VALUE pack_e( Edge* unpacked) {
-  if(unpacked)
-    return Data_Wrap_Struct(cEdge, 0, 0, unpacked);
+  if(unpacked){
+    return Data_Wrap_Struct(cEdge, 0, 0, unpacked);}
   else
     return Qnil;
 }
@@ -677,6 +679,14 @@ VALUE pack_g( Graph* unpacked) {
   return Data_Wrap_Struct( cGraph, 0, 0, unpacked );
 }
 
+static void free_memory_graph(Graph * unpacked) {
+  gDestroy(unpacked,1,0);
+}
+
+VALUE pack_g_nice( Graph* unpacked) {
+  return Data_Wrap_Struct( cGraph, 0, free_memory_graph, unpacked );
+}
+
 static VALUE t_init(VALUE self)
 {
   Graph* ret = gNew();
@@ -739,25 +749,28 @@ static VALUE t_shortest_path_tree( VALUE self, VALUE from, VALUE to, VALUE init,
   Graph* gg = unpack_g( self );
 
   Graph* tree;
+ 
   if( RTEST( direction ) ) {
     //allow for 'to' to be "nil" in order to create exhaustive SPT
     if( !RTEST( to ) )
       to = rb_str_new2( "" );
-
+   
     tree = gShortestPathTree( gg, STR2CSTR( from ), STR2CSTR( to ), unpack_state( init ) );
+    
   } else {
     //allows 'from' to be "nil" to create exhaustive SPT
     if( !RTEST( from ) )
       from = rb_str_new2( "" );
-
+   
     tree = gShortestPathTreeRetro( gg, STR2CSTR( from ), STR2CSTR( to ), unpack_state( init ) );
+    
   }
 
-  return pack_g( tree );
+  return pack_g_nice( tree );
 }
 
 //For now it's a little easier to do this in Ruby
-/*static VALUE t_shortest_path( VALUE self, VALUE from, VALUE to, VALUE init, VALUE direction ) {
+static VALUE t_shortest_path( VALUE self, VALUE from, VALUE to, VALUE init, VALUE direction ) {
   Graph* gg = unpack_g( self );
 
   long nn;
@@ -774,7 +787,7 @@ static VALUE t_shortest_path_tree( VALUE self, VALUE from, VALUE to, VALUE init,
   }
 
   return ret;
-}*/
+}
 
 void Init_graph_core() {
 
@@ -861,5 +874,5 @@ void Init_graph_core() {
   rb_define_method(cGraph, "add_edge", t_add_edge, 3);
   rb_define_method(cGraph, "add_edge_geom", t_add_edge_geom, 4);
   rb_define_method(cGraph, "shortest_path_tree", t_shortest_path_tree, 4);
-//  rb_define_method(cGraph, "shortest_path", t_shortest_path, 4);
+  rb_define_method(cGraph, "shortest_path", t_shortest_path, 4);
 }

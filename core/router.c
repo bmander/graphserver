@@ -1,3 +1,5 @@
+#include <ruby.h>
+
 Graph*
 #ifndef RETRO
 gShortestPathTree( Graph* this, char *from, char *to, State* init_state ) {
@@ -22,9 +24,11 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
 #endif
 
   //Return Tree
+
   Graph* spt = gNew();
   gAddVertex( spt, origin )->payload = init_state;
   //Priority Queue
+
   dirfibheap_t q = dirfibheap_new( gSize( this ) );
   dirfibheap_insert_or_dec_key( q, gGetVertex( this, origin ), 0 );
 
@@ -32,7 +36,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
  *  CENTRAL ITERATION
  *
  */ 
-  
+ 
   while( !dirfibheap_empty( q ) ) {                  //Until the priority queue is empty:
     u = dirfibheap_extract_min( q );                 //get the lowest-weight Vertex 'u',
 
@@ -69,7 +73,6 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
         (2) find node impedance from incoming collapsed edge to outgoing collapsed edge
         (3) new_dv = eWalk( collapsed_edge, nodeWalk( incoming, outgoing, node, du ) )
       */
-
 #ifndef RETRO
       EdgePayload *collapsed = epCollapse( edge->payload, du );
       //EdgePayload* prev_collapsed = vParent( spt_u )->payload;
@@ -80,7 +83,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
       EdgePayload *collapsed = epCollapseBack( edge->payload, du );
       State *new_dv = epWalkBack( collapsed, du );
 #endif
-
+     
       // When an edge leads nowhere (as indicated by returning NULL), the iteration is over.
       if(!new_dv) {
         edges = edges->next;
@@ -93,26 +96,31 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
         edges = edges->next;
         continue;
       }
-
+       
       long new_w = new_dv->weight;
       // If the new way of getting there is better,
       if( new_w < old_w ) {
+       
         dirfibheap_insert_or_dec_key( q, v, new_w );    // rekey v in the priority queue
 
         // If this is the first time v has been reached
+	
         if( !spt_v )
           spt_v = gAddVertex( spt, v->label );        //Copy v over to the SPT
 
         spt_v->payload = new_dv;                      //Set the State of v in the SPT to the current winner
+
         if(edge->geom!=NULL) vSetParentGeom( spt_v, spt_u, collapsed, edge->geom->data);
         else vSetParent( spt_v, spt_u, collapsed );      //Make u the parent of v in the SPT
       } else {
+	
         free(new_dv); //new_dv will never be used; merge it with the infinite.
       }
+	
       edges = edges->next;
     }
-  }
-
+  } // end while
+  
   dirfibheap_delete( q );
 
   return spt;

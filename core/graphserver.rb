@@ -125,7 +125,8 @@ class Edge
 end
 
 #Un hash con las opciones por defecto
-OPTIONS = { :port => 3003 }
+#OPTIONS = { :port => 3003 }
+OPTIONS = { :port => 3003, :dbname => 'graphserver' }
 
 #Con los parametros de la linea de comandos, hacer
 ARGV.options do |opts|
@@ -135,13 +136,20 @@ ARGV.options do |opts|
 
   opts.separator ""
 
-  #Si encuentra la opcion -p o --port, se queda el valor en el
-  #elemento :port de OPTIONS, en caso contrario imprime un mensaje
+  puts "processing port"
+  #If the option -p or --port is found
   opts.on("-p", "--port=port", Integer,
           "Runs Rails on the specified port.",
           "Default: 3003") { |v| OPTIONS[:port] = v }
 
-  #Si encuentra la opcion -h o --help, muestra el mensaje de ayuda
+#  puts "processing dbname"
+#  #If the option -d or --dbname is found
+#  opts.on("-d", "--dbname=dbname", Integer,
+#          "Specifies database name.",
+#          "Default: graphserver") { |v| OPTIONS[:dbname] = v
+#                                    puts "processing dbname = #{v}" }
+
+  #If the option -h or --help is found, shows a help message
   opts.on("-h", "--help",
           "Show this help message.") { puts opts; exit }
 
@@ -184,6 +192,7 @@ class Graphserver
       ret << "collapse_edges?label=LABEL&statevar1=STV1&statevar2=STV2..."
       ret << "vertices_from_coords?lat=LAT&lon=LON"
       ret << "vertices_from_address?add=ADDRESS"
+      ret << "stops_from_coords?lat=LAT&lon=LON"
       ret << "dot"
       response.body = ret.join("\n")
     end
@@ -228,20 +237,43 @@ class Graphserver
             #as we don't delete the nodes after the shortest path calculation
             ts = Time.now
 
-            #Adds a new vertex in the closest point in the edge
-            #and in the origin point and connects them
-            @gg.add_vertex( "origin_#{ts}" )
-#            @gg.add_vertex( "origin-street" )
-            @gg.add_vertex( "destination_#{ts}" )
-#            @gg.add_vertex( "destination-street" )
-            coords01 = "#{lon0},#{lat0} #{v0[0]['lon']},#{v0[0]['lat']} #{v0[1]['lon']},#{v0[1]['lat']}"
-            coords02 = "#{lon0},#{lat0} #{v0[0]['lon']},#{v0[0]['lat']} #{v0[2]['lon']},#{v0[2]['lat']}"
-            coords11 = "#{lon1},#{lat1} #{v1[0]['lon']},#{v1[0]['lat']} #{v1[1]['lon']},#{v1[1]['lat']}"
-            coords12 = "#{lon1},#{lat1} #{v1[0]['lon']},#{v1[0]['lat']} #{v1[2]['lon']},#{v1[2]['lat']}"
-            @gg.add_edge_geom( "origin_#{ts}", v0[1]['label'], Link.new, coords01)
-            @gg.add_edge_geom( "origin_#{ts}", v0[2]['label'], Link.new, coords02)
-            @gg.add_edge_geom( v1[1]['label'], "destination_#{ts}", Link.new, coords11)
-            @gg.add_edge_geom( v1[2]['label'], "destination_#{ts}", Link.new, coords12)
+            #If vertices are returned as expected
+            if (v0 and v1) then
+              #Adds a new vertex in the closest point in the edge
+              #and in the origin point and connects them
+              @gg.add_vertex( "origin_#{ts}" )
+              @gg.add_vertex( "destination_#{ts}" )
+              coords01 = "#{lon0},#{lat0} #{v0[0]['lon']},#{v0[0]['lat']} #{v0[1]['lon']},#{v0[1]['lat']}"
+              coords02 = "#{lon0},#{lat0} #{v0[0]['lon']},#{v0[0]['lat']} #{v0[2]['lon']},#{v0[2]['lat']}"
+              coords11 = "#{lon1},#{lat1} #{v1[0]['lon']},#{v1[0]['lat']} #{v1[1]['lon']},#{v1[1]['lat']}"
+              coords12 = "#{lon1},#{lat1} #{v1[0]['lon']},#{v1[0]['lat']} #{v1[2]['lon']},#{v1[2]['lat']}"
+              @gg.add_edge_geom( "origin_#{ts}", v0[1]['label'], Link.new, coords01)
+              @gg.add_edge_geom( "origin_#{ts}", v0[2]['label'], Link.new, coords02)
+              @gg.add_edge_geom( v1[1]['label'], "destination_#{ts}", Link.new, coords11)
+              @gg.add_edge_geom( v1[2]['label'], "destination_#{ts}", Link.new, coords12)
+            else
+              #If no vertices are returned then probably the GS has not street data
+              #In that case we look for the 2 closest stops
+              s0 = get_closest_stops(lat0, lon0, 2)
+              s1 = get_closest_stops(lat1, lon1, 2)
+
+              #Adds a new vertex in the closest point in the edge
+              #and in the origin point and connects them
+              @gg.add_vertex( "origin_#{ts}" )
+              @gg.add_vertex( "destination_#{ts}" )
+              coords01 = "#{lon0},#{lat0} #{s0[0]['lon']},#{s0[0]['lat']}"
+              coords02 = "#{lon0},#{lat0} #{s0[1]['lon']},#{s0[1]['lat']}"
+              coords11 = "#{lon1},#{lat1} #{s1[0]['lon']},#{s1[0]['lat']}"
+              coords12 = "#{lon1},#{lat1} #{s1[1]['lon']},#{s1[1]['lat']}"
+#              puts "new edge( origin_#{ts}, #{s0[0]['label']})"
+#              puts "new edge( origin_#{ts}, #{s0[1]['label']})"
+#              puts "new edge( #{s1[0]['label']}, destination_#{ts})"
+#              puts "new edge( #{s1[1]['label']}, destination_#{ts})"
+              @gg.add_edge_geom( "origin_#{ts}", s0[0]['label'], Link.new, coords01)
+              @gg.add_edge_geom( "origin_#{ts}", s0[1]['label'], Link.new, coords02)
+              @gg.add_edge_geom( s1[0]['label'], "destination_#{ts}", Link.new, coords11)
+              @gg.add_edge_geom( s1[1]['label'], "destination_#{ts}", Link.new, coords12)
+            end
 
             #Calculates the shortest path
             vertices, edges = @gg.shortest_path("origin_#{ts}", "destination_#{ts}", init_state )      #Throws RuntimeError if no shortest path found.
@@ -394,13 +426,6 @@ class Graphserver
           ret << "<vertices>"
           v.each do |vv|
             ret << "<vertex>"
-#          if v['label'] then
-#            ret << "<label>#{v['label']}</label>"
-#            ret << "<lat>#{v['lat']}</lat>"
-#            ret << "<lon>#{v['lon']}</lon>"
-#            ret << "<name>#{v['name']}</name>"
-#            ret << "<dist>#{v['dist']}</dist>"
-#          end
             if vv['label'] then
               ret << "<label>#{vv['label']}</label>"
               ret << "<lat>#{vv['lat']}</lat>"
@@ -436,6 +461,40 @@ class Graphserver
       response.body = ret.join
     end
 
+    #Response to GET request "/stops_from_coords"
+    @server.mount_proc( "/stops_from_coords" ) do |request, response|
+      begin
+        #Check input parameters are present
+        unless lat = request.query['lat'] then raise ArgumentError end
+        unless lon = request.query['lon'] then raise ArgumentError end
+
+        v = get_closest_stops(lat, lon, 10)
+
+        if v == nil then
+          ret = ["ERROR: function not implemented by any extension"]
+        else
+          ret = ["<?xml version='1.0'?>"]
+          ret << "<stops>"
+          v.each do |vv|
+            ret << "<stop>"
+            if vv['label'] then
+              ret << "<label>#{vv['label']}</label>"
+              ret << "<lat>#{vv['lat']}</lat>"
+              ret << "<lon>#{vv['lon']}</lon>"
+              ret << "<dist>#{vv['dist']}</dist>"
+            end
+            ret << "</stop>"
+          end
+          ret << "</stops>"
+        end
+
+        #Catch alike sentence
+        rescue ArgumentError
+          ret = ["ERROR: Invalid parameters."]
+      end
+      response.body = ret.join
+    end
+
   end
 
   #Formats a shortest path response depending on the format parameter
@@ -457,11 +516,18 @@ class Graphserver
   end
 
   #This function looks for the vertices of the closest edge to the input coords
-  #Returns an array of 3 rows an columns named label, lat, lon, name, dist_vertex
+  #Returns an array of 3 rows, with columns named label, lat, lon, name, dist
   #The first row is not actually a vertex, but the nearest point in the edge
   #to the input coordinates
   def get_closest_edge_vertices(lat, lon)
     #Override this function in the corresponding extension (tiger and osm initially)
+    return nil
+  end
+
+  #This function looks for the closest stops to the input coords
+  #Returns an array of n_stops rows, with columns named label, lat, lon, name, dist
+  def get_closest_stops(lat, lon, n_stops)
+    #Override this function in the corresponding extension (gtfs initially)
     return nil
   end
 

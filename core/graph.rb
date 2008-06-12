@@ -1,4 +1,4 @@
-require 'graph_core'
+require '../../core/graph_core'
 
 #Sobrecarga la clase Vertex para añadir las funciones
 #inspect, edge_out y edge_in
