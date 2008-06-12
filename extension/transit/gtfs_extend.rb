@@ -314,14 +314,15 @@ class Graphserver
   #links nearby stops with a direct line-of-sight
   def link_stops_los
     search_range = 0.03 #decimal degrees lat/long around a stop to look for nearby stops
-    num_links = 30
+#    num_links = 30
+    num_links = 3 #we don't want an extremely dense graph
 #    stops = conn.exec "SELECT stop_id, location FROM gtf_stops"
     stops = conn.exec "SELECT stop_id, location, AsText(location) AS geom1 FROM gtf_stops"
 
     n = stops.num_tuples; i=0
 
     stops.each do |from_id, location, geom1|
-      @gg.add_vertex( GTFS_PREFIX+from_id )
+#      @gg.add_vertex( GTFS_PREFIX+from_id ) #Not necessary, that vertex already exists!
 
       i += 1
       if i%10==0 then $stderr.print( sprintf("\rLinked %d/%d stops (%d%%)", i, n, (i.to_f/n)*100) ) end
@@ -639,12 +640,13 @@ class Graphserver
   #This function looks for the closest stops to the input coords
   #Returns an array of n_stops rows, with columns named label, lat, lon, dist
   def get_closest_stops(lat, lon, n_stops)
+    search_range = 0.03 #decimal degrees lat/long around input coordinates to look for nearby stops
     center = "GeomFromText(\'POINT(#{lon} #{lat})\',4326)"
-    #Looks for the closest n_stops stops in a search range of approx 5000m (0.003 deg)
+    #Looks for the closest n_stops stops in a search range of approx 5000m (0.03 deg)
     res = conn.exec <<-SQL
       SELECT 'gtfs' || stop_id, stop_lat, stop_lon, distance(location, #{center}) AS dist
       FROM gtf_stops
-      WHERE location && expand( #{center}::geometry, 0.03 )
+      WHERE location && expand( #{center}::geometry, #{search_range} )
       ORDER BY dist
       LIMIT #{n_stops}
     SQL
