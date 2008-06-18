@@ -303,6 +303,7 @@ class Graphserver
     triphops.each_pair do |sched_key, sched|
       from_id, to_id, service_id = sched_key
       geom = "#{stop_hash[from_id]} #{stop_hash[to_id]}"
+#      puts "schedule = [#{sched.join(',')}]"
 #      puts "geom = #{geom}"
 #      @gg.add_edge( GTFS_PREFIX+from_id, GTFS_PREFIX+to_id, TripHopSchedule.new( service_id, sched, calendar, tz_offset ) )
       @gg.add_edge_geom( GTFS_PREFIX+from_id, GTFS_PREFIX+to_id, TripHopSchedule.new( service_id, sched, calendar, tz_offset ) ,geom)

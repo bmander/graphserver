@@ -286,51 +286,113 @@ class Graphserver
     puts "osm_streets view created"
   end
 
-  # Une tramos de calles que tienen el mismo id
-  def consolidate_lines!
-    # Solicita tramos de calles simplificables
-    res = conn.exec <<-SQL
-      SELECT *
-      FROM osm_ways
+  # Simplify the graph eliminating nodes that are not junctions
+  def simplify_graph!
+    # Nodes that are potencially eliminable (some are not but the query is simpler that way)
+    nodes = conn.exec <<-SQL
+      SELECT   t3.id FROM
+               (SELECT from_id AS id FROM osm_segments
+                UNION ALL
+                SELECT to_id AS id FROM osm_segments) AS t3
+      GROUP BY t3.id
+      HAVING   COUNT(t3.id) = 2
+    SQL
+
+#    puts "simplifiable nodes #{nodes.each {|node| puts node}}"
+
+    # OSM segments that are potencially simplifiable
+    # (some are not but we can match with the nodes query)
+    segments = conn.exec <<-SQL
+      SELECT seg_id, id, from_id, to_id, AsText(geom) AS geom
+      FROM osm_segments
       WHERE from_id IN ( SELECT from_id
                          FROM ( SELECT from_id
-                                FROM osm_ways
+                                FROM osm_segments
                                 GROUP BY from_id
                                 HAVING count(*)=1) tmp_from,
                               ( SELECT to_id
-                                FROM osm_ways
+                                FROM osm_segments
                                 GROUP BY to_id
                                 HAVING count(*)=1) tmp_to
                          WHERE tmp_from.from_id=tmp_to.to_id )
       OR to_id IN      ( SELECT from_id
                          FROM ( SELECT from_id
-                                FROM osm_ways
+                                FROM osm_segments
                                 GROUP BY from_id
                                 HAVING count(*)=1) tmp_from,
                               ( SELECT to_id
-                                FROM osm_ways
+                                FROM osm_segments
                                 GROUP BY to_id
                                 HAVING count(*)=1) tmp_to
                          WHERE tmp_from.from_id=tmp_to.to_id )
     SQL
 
-    # Returns the index of the column named 'id' of the response
-    id_n = res.fieldnum( 'id' )
+#    puts "simplifiable segments #{segments.each {|seg| puts seg}}"
 
+    # Returns the indexes of several columns of the response
+    seg_id_n = segments.fieldnum( 'seg_id' )
+    id_n = segments.fieldnum( 'id' )
+    from_id_n = segments.fieldnum( 'from_id' )
+    to_id_n = segments.fieldnum( 'to_id' )
+    coords_n = segments.fieldnum( 'geom' )
+
+    # Initialization outside the block speeds up processing
     current = nil
-    # Para cada tramo simplificable
-    res.each do |row|
+    new_seg = nil
+    prev_seg = nil
+    cur_seg = nil
+    reg_exp_1 = /(\d|-).+\w/ # A regular expression to keep only the coordinates from the AsText
+    reg_exp_2 = /,.+\w/ # A regular expression to keep only the coordinates from the AsText except the first
+    # For each simplifiable segment
+    segments.each do |seg|
+      # Rotates cur_seg and prev_seg
+      prev_seg = current
+      cur_seg = seg
+      # If at least we are on the second stretch
       if current then
-        prev_row = current
-        cur_row = row
-        # Si el to_id de la fila anterior es igual al from_id de la fila actual
-        # y ambas filas pertenecen al mismo way (mismo id)
-        if (cur_row[1] == prev_row[2] and cur_row[0] == prev_row[0]) then
-          # Borrar el registro actual
-          conn.exec "delete from osm_ways where id='#{cur_row[id_n]}'"
+        # If from_id is eliminable
+#        puts "current segment from_id = #{cur_seg[from_id_n]}"
+#        puts "#{nodes.each {|node| puts "#{cur_seg[from_id_n]} == #{node} ? #{cur_seg[from_id_n] == node[0]}"}}"
+        if (nodes.find { |node| cur_seg[from_id_n] == node[0] } and (cur_seg[id_n] == prev_seg[id_n])) then
+          puts "node #{cur_seg[from_id_n]} is not a junction"
+          puts "eliminating #{prev_seg[seg_id_n]}"
+          query = "delete from osm_segments where seg_id='#{prev_seg[seg_id_n]}'"
+          puts query
+          conn.exec query
+          puts "eliminating #{cur_seg[seg_id_n]}"
+          query = "delete from osm_segments where seg_id='#{cur_seg[seg_id_n]}'"
+          puts query
+          conn.exec query
+          puts "creating #{prev_seg[seg_id_n]}"
+          new_seg = []
+#          new_seg[seg_id_n] = "\'#{prev_seg[seg_id_n]}\'"
+#          new_seg[id_n] = "\'#{prev_seg[id_n]}\'"
+#          new_seg[from_id_n] = "\'#{prev_seg[from_id_n]}\'"
+#          new_seg[to_id_n] = "\'#{cur_seg[to_id_n]}\'"
+          new_seg[seg_id_n] = prev_seg[seg_id_n]
+          new_seg[id_n] = prev_seg[id_n]
+          new_seg[from_id_n] = prev_seg[from_id_n]
+          new_seg[to_id_n] = cur_seg[to_id_n]
+          prev_seg[coords_n] =~ reg_exp_1
+          coords_1 = $&
+          cur_seg[coords_n] =~ reg_exp_2
+          coords_2 = $&
+          new_seg[coords_n] = "LINESTRING(#{coords_1}#{coords_2})"
+#          new_seg[coords_n] = "GeomFromText(\'LINESTRING(#{coords_1}#{coords_2})\',4326)"
+#          query = "insert into osm_segments (#{segments.fields.join(',')}) VALUES (#{new_seg.join(',')})"
+          query = "insert into osm_segments (#{segments.fields.join(',')})"
+          query << " VALUES (\'#{new_seg[seg_id_n]}\',\'#{new_seg[id_n]}\',"
+          query << "\'#{new_seg[from_id_n]}\',\'#{new_seg[to_id_n]}\',"
+          query << "GeomFromText(\'#{new_seg[coords_n]}\',4326))"
+          puts query
+          conn.exec query
+          # Since the cur_seg has been eliminated, we point to new_seg
+          # It is necessary to correctly process consecutive eliminable nodes
+          cur_seg = new_seg
         end
+
       end
-      current = row
+      current = cur_seg
 #      cad22 = "insert into osm_ways (#{res.fields.join(',')}) VALUES (#{row.map do |ii| "\'"+ii.delete("\'") +"'" end.join(',')})"
     end
   end
