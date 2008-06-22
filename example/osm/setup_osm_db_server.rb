@@ -12,16 +12,7 @@ if ARGV.size < 1 then
   exit
 end
 
-DB_PARAMS = { :host => nil,
-              :port => nil,
-              :options => nil,
-              :tty => nil,
-              :dbname => 'graphserver',
-              :login => 'postgres', #database username
-              :password => 'postgres' }
-
 gs = Graphserver.new
-gs.database_params = DB_PARAMS
 
 if ix = ARGV.index("create_tables") then
   gs.remove_osm_table! #clean up first
@@ -31,5 +22,5 @@ if ix = ARGV.index("create_tables") then
 end
 
 ARGV.each do |file|
-  gs.import_osm_to_db! file, debug_level=1
+  gs.import_osm_to_db! file, debug_level=0
 end

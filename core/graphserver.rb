@@ -1,13 +1,13 @@
 require 'webrick'
 #require 'xmlrpc/server.rb'
-#Clases Vertex y Graph ademÃ¡s del graph_core y las funciones shortest_path y shortest_path_retro
+# Required to provide the core as well as functions shortest_path and shortest_path_retro
 require 'graph.rb'
+# Required to process command line parameters
 require 'optparse'
 require 'cgi'
 
-#Sobrecarga la clase Calendar para añadir la funcion to_xml
+#Overrides class Calendar to add to_xml function
 class Calendar
-  #Transforma a xml Calendar
   def to_xml
     "<calendar begin_time='#{Time.at(begin_time)}' end_time='#{Time.at(end_time)}' service_ids='#{service_ids.join(", ")}' />"
   end
@@ -15,9 +15,8 @@ end
 
 #made a different change over here
 
-#Sobrecarga la clase Link para añadir la funcion to_xml
+#Overrides class Link to add to_xml function
 class Link
-  #Transforma a xml Link
   def to_xml
     "<link/>"
   end
@@ -30,29 +29,25 @@ class Street
   end
 end
 
-#Sobrecarga la clase TripHopSchedule para añadir la funcion to_xml
+#Overrides class TripHopSchedule to add to_xml function
 class TripHopSchedule
-  #Transforma a xml TripHopSchedule
   def to_xml
     ret = ["<triphopschedule service_id='#{service_id}'>"]
     #Para cada triphop inserta su transformacion a xml
     triphops.each do |triphop|
-      #Ret es un Array, << añade un elemento al final de este
       ret << triphop.to_xml
     end
     ret << "</triphopschedule>"
 
-    #Convierte el Array a String
     return ret.join
   end
 end
 
-#Sobrecarga la clase TripHop para añadir la funcion to_xml
+#Overrides class TripHop to add to_xml function
 class TripHop
   SEC_IN_HOUR = 3600
   SEC_IN_MINUTE = 60
 
-  #Transforma a xml TripHop
   def to_xml
     s_depart = "#{sprintf("%02d", depart/SEC_IN_HOUR)}:#{sprintf("%02d", (depart%SEC_IN_HOUR)/SEC_IN_MINUTE)}:#{sprintf("%02d", depart%SEC_IN_MINUTE)}"
     s_arrive = "#{sprintf("%02d", arrive/SEC_IN_HOUR)}:#{sprintf("%02d", (arrive%SEC_IN_HOUR)/SEC_IN_MINUTE)}:#{sprintf("%02d", arrive%SEC_IN_MINUTE)}"
@@ -60,9 +55,8 @@ class TripHop
   end
 end
 
-#Sobrecarga la clase State para añadir la funcion to_xml
+#Overrides class State to add to_xml function
 class State
-  #Transforma a xml State
   def to_xml
     #Abre la cabecera del elemento state
     ret = "<state "
@@ -94,9 +88,8 @@ class State
   end
 end
 
-#Sobrecarga la clase Vertex para añadir la funcion to_xml
+#Overrides class Vertex to add to_xml function
 class Vertex
-  #Transforma a xml Vertex
   def to_xml
     ret = ["<vertex label='#{label}'>"]
     #La siguiente instruccion es una comparacion del resultado
@@ -110,10 +103,8 @@ class Vertex
   end
 end
 
-#Sobrecarga la clase Edge para añadir la funcion to_xml
+#Overrides class Edge to add to_xml function
 class Edge
-  #Transforma a xml Edge, con parametro de entrada verbose
-  #con valor por defecto true
   def to_xml verbose=true
     if geom=="" then ret = "<edge>"
     else ret = "<edge geom='#{geom}'>"
@@ -124,41 +115,56 @@ class Edge
   end
 end
 
-#Un hash con las opciones por defecto
-#OPTIONS = { :port => 3003 }
-OPTIONS = { :port => 3003, :dbname => 'graphserver' }
+# A hash with default program options
+OPTIONS = { :port => 3003 }
 
-#Con los parametros de la linea de comandos, hacer
+# A hash with default database parameters
+DB_PARAMS = { :host => nil,
+              :port => nil,
+              :options => nil,
+              :tty => nil,
+              :dbname => 'graphserver',
+              :login => 'postgres', #database username
+              :password => 'postgres' }
+
+#Process command input parameters
 ARGV.options do |opts|
-  #Obtiene el nombre del script, p.ej. graphserver.rb
+  # Gets the name of the calling script, i.e. setup_gtfs_tables
   script_name = File.basename($0)
   opts.banner = "Usage: ruby #{script_name} [options]"
 
   opts.separator ""
 
-  puts "processing port"
   #If the option -p or --port is found
   opts.on("-p", "--port=port", Integer,
           "Runs Rails on the specified port.",
           "Default: 3003") { |v| OPTIONS[:port] = v }
 
-#  puts "processing dbname"
-#  #If the option -d or --dbname is found
-#  opts.on("-d", "--dbname=dbname", Integer,
-#          "Specifies database name.",
-#          "Default: graphserver") { |v| OPTIONS[:dbname] = v
-#                                    puts "processing dbname = #{v}" }
+  #If the option -d or --dbname is found
+  opts.on("-d", "--dbname=dbname", String,
+          "Specifies database name.",
+          "Default: graphserver") { |v| DB_PARAMS[:dbname] = v }
+
+  #If the option -u or --username is found
+  opts.on("-u", "--username=username", String,
+          "Specifies database username.",
+          "Default: postgres") { |v| DB_PARAMS[:login] = v }
+
+  #If the option -w or --password is found
+  opts.on("-w", "--password=password", String,
+          "Specifies database password.",
+          "Default: postgres") { |v| DB_PARAMS[:password] = v }
 
   #If the option -h or --help is found, shows a help message
   opts.on("-h", "--help",
           "Show this help message.") { puts opts; exit }
 
-  #Ni idea!
+  # Parse parameters in order
   opts.parse!
 end
 
 class Graphserver
-  #Metodo para hacer publica la lectura de la propiedad gg
+  # Make the graph public
   attr_reader :gg
 
   #Extracts the 'time' parameter from the GET request
@@ -525,16 +531,15 @@ class Graphserver
   end
 
   #This function looks for the closest stops to the input coords
-  #Returns an array of n_stops rows, with columns named label, lat, lon, name, dist
+  # Returns an array of n_stops rows, with columns named label, lat, lon, name, dist
   def get_closest_stops(lat, lon, n_stops)
-    #Override this function in the corresponding extension (gtfs initially)
+    # Override this function in the corresponding extension (gtfs initially)
     return nil
   end
 
-  #Asigna los parametros de la base de datos
+  # Assigns the database parameters
   def database_params= params
-    #Comprueba que existe la extensiÃ³n postgres,
-    #si no existe genera un RuntimeError
+    # Check the presence of the postgres extension
     begin
       require 'postgres'
     rescue LoadError
@@ -557,14 +562,16 @@ class Graphserver
       raise
     end
 
-    #Si todo ha ido bien, signa los parametros de la base de datos
+    # If everything went ok, assigns the parameters
     @db_params = params
     return true
   end
 
-  #Conecta con la base de datos si existen los parametros de conexion
+  # Connect with the database
   def connect_to_database
-    unless @db_params then return nil end
+    # If no input parameters are defined then read the database params
+    # from the command line or the default ones
+    unless @db_params then self.database_params= DB_PARAMS end
 
     PGconn.connect( @db_params[:host],
                     @db_params[:port],
@@ -575,9 +582,9 @@ class Graphserver
                     @db_params[:password] )
   end
 
-  #may return nil if postgres isn't loaded, or the connection params aren't set
+  # May return nil if postgres isn't loaded, or the connection params aren't set
   def conn
-    #if @conn exists and is open
+    # If @conn exists and is open
     if @conn and begin @conn.status rescue PGError false end then
       return @conn
     else
@@ -585,7 +592,7 @@ class Graphserver
     end
   end
 
-  #Inicia Graphserver. Aparentemente, si el servidor cae, lo reinicia
+  # Starts graphserver, if a KILL signal is received, kills the webrick server too
   def start
     trap("INT"){ @server.shutdown }
     @server.start

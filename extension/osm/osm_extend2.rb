@@ -288,6 +288,9 @@ class Graphserver
 
   # Simplify the graph eliminating nodes that are not junctions
   def simplify_graph!
+    puts "Querying database for simplifiable nodes"
+    STDOUT.flush
+#    $stdout.flush
     # Nodes that are potencially eliminable (some are not but the query is simpler that way)
     nodes = conn.exec <<-SQL
       SELECT   t3.id FROM
@@ -298,7 +301,11 @@ class Graphserver
       HAVING   COUNT(t3.id) = 2
     SQL
 
-#    puts "simplifiable nodes #{nodes.each {|node| puts node}}"
+    count = nodes.num_tuples
+    puts "Detected #{count} potentially simplifiable nodes"
+    STDOUT.flush
+#    $stdout.flush
+    puts "Querying database for simplifiable segments"
 
     # OSM segments that are potencially simplifiable
     # (some are not but we can match with the nodes query)
@@ -327,16 +334,20 @@ class Graphserver
                          WHERE tmp_from.from_id=tmp_to.to_id )
     SQL
 
-#    puts "simplifiable segments #{segments.each {|seg| puts seg}}"
-
     # Returns the indexes of several columns of the response
     seg_id_n = segments.fieldnum( 'seg_id' )
     id_n = segments.fieldnum( 'id' )
     from_id_n = segments.fieldnum( 'from_id' )
     to_id_n = segments.fieldnum( 'to_id' )
     coords_n = segments.fieldnum( 'geom' )
+    count = segments.num_tuples
+
+    puts "Detected #{count} potentially simplifiable segments"
+    STDOUT.flush
+#    $stdout.flush
 
     # Initialization outside the block speeds up processing
+    i = 0
     current = nil
     new_seg = nil
     prev_seg = nil
@@ -354,21 +365,17 @@ class Graphserver
 #        puts "current segment from_id = #{cur_seg[from_id_n]}"
 #        puts "#{nodes.each {|node| puts "#{cur_seg[from_id_n]} == #{node} ? #{cur_seg[from_id_n] == node[0]}"}}"
         if (nodes.find { |node| cur_seg[from_id_n] == node[0] } and (cur_seg[id_n] == prev_seg[id_n])) then
-          puts "node #{cur_seg[from_id_n]} is not a junction"
-          puts "eliminating #{prev_seg[seg_id_n]}"
+#          puts "node #{cur_seg[from_id_n]} is not a junction"
+#          puts "eliminating #{prev_seg[seg_id_n]}"
           query = "delete from osm_segments where seg_id='#{prev_seg[seg_id_n]}'"
-          puts query
+#          puts query
           conn.exec query
-          puts "eliminating #{cur_seg[seg_id_n]}"
+#          puts "eliminating #{cur_seg[seg_id_n]}"
           query = "delete from osm_segments where seg_id='#{cur_seg[seg_id_n]}'"
-          puts query
+#          puts query
           conn.exec query
-          puts "creating #{prev_seg[seg_id_n]}"
+#          puts "creating #{prev_seg[seg_id_n]}"
           new_seg = []
-#          new_seg[seg_id_n] = "\'#{prev_seg[seg_id_n]}\'"
-#          new_seg[id_n] = "\'#{prev_seg[id_n]}\'"
-#          new_seg[from_id_n] = "\'#{prev_seg[from_id_n]}\'"
-#          new_seg[to_id_n] = "\'#{cur_seg[to_id_n]}\'"
           new_seg[seg_id_n] = prev_seg[seg_id_n]
           new_seg[id_n] = prev_seg[id_n]
           new_seg[from_id_n] = prev_seg[from_id_n]
@@ -378,22 +385,20 @@ class Graphserver
           cur_seg[coords_n] =~ reg_exp_2
           coords_2 = $&
           new_seg[coords_n] = "LINESTRING(#{coords_1}#{coords_2})"
-#          new_seg[coords_n] = "GeomFromText(\'LINESTRING(#{coords_1}#{coords_2})\',4326)"
-#          query = "insert into osm_segments (#{segments.fields.join(',')}) VALUES (#{new_seg.join(',')})"
           query = "insert into osm_segments (#{segments.fields.join(',')})"
           query << " VALUES (\'#{new_seg[seg_id_n]}\',\'#{new_seg[id_n]}\',"
           query << "\'#{new_seg[from_id_n]}\',\'#{new_seg[to_id_n]}\',"
           query << "GeomFromText(\'#{new_seg[coords_n]}\',4326))"
-          puts query
+#          puts query
           conn.exec query
           # Since the cur_seg has been eliminated, we point to new_seg
           # It is necessary to correctly process consecutive eliminable nodes
           cur_seg = new_seg
         end
-
       end
+      i += 1
+      if i%1000==0 then $stderr.print( sprintf("\rSimplified %d/%d osm segments (%d%%)", i, count, (i.to_f/count)*100) ) end
       current = cur_seg
-#      cad22 = "insert into osm_ways (#{res.fields.join(',')}) VALUES (#{row.map do |ii| "\'"+ii.delete("\'") +"'" end.join(',')})"
     end
   end
 
