@@ -207,6 +207,7 @@ class Graphserver
       ret = "LINESTRING("
       node_count = 0
       current = nil
+      digits = Math.log10(way.nodes.length).ceil
 
       # For each node in the way...
       way.nodes.each do |node|
@@ -222,7 +223,7 @@ class Graphserver
           geom = "LINESTRING(#{lon0} #{lat0},#{lon1} #{lat1})";
           @con.exec "COPY osm_segments (seg_id, id, from_id, to_id, geom ) FROM STDIN"
 #          @con.putline "#{way.id}-#{node_count.to_s.rjust(5,'0')}\t#{way.id}\t#{prev_id}\t#{cur_id}\tSRID=#{WGS84_LATLONG_EPSG};#{geom}\n"
-          @con.putline "#{way.id}-#{node_count}\t#{way.id}\t#{from_id}\t#{to_id}\tSRID=#{WGS84_LATLONG_EPSG};#{geom}\n"
+          @con.putline "#{way.id}-#{node_count.to_s.rjust(digits,'0')}\t#{way.id}\t#{from_id}\t#{to_id}\tSRID=#{WGS84_LATLONG_EPSG};#{geom}\n"
           @con.endcopy
           node_count += 1
         end
@@ -290,116 +291,138 @@ class Graphserver
   def simplify_graph!
     puts "Querying database for simplifiable nodes"
     STDOUT.flush
-#    $stdout.flush
-    # Nodes that are potencially eliminable (some are not but the query is simpler that way)
+
+    # Nodes that are eliminable
     nodes = conn.exec <<-SQL
-      SELECT   t3.id FROM
-               (SELECT from_id AS id FROM osm_segments
-                UNION ALL
-                SELECT to_id AS id FROM osm_segments) AS t3
-      GROUP BY t3.id
-      HAVING   COUNT(t3.id) = 2
+       SELECT   t1.to_id
+       FROM     osm_segments AS t1, osm_segments AS t2,
+               (SELECT   t3.id
+                FROM     (SELECT from_id AS id FROM osm_segments
+                          UNION ALL
+                          SELECT to_id AS id FROM osm_segments) AS t3
+                GROUP BY t3.id
+                HAVING   COUNT(t3.id) = 2) AS t4
+       WHERE    t1.id = t2.id
+       AND      t1.to_id = t4.id
+       AND      t2.from_id = t4.id
+       ORDER BY t1.seg_id
     SQL
 
-    count = nodes.num_tuples
-    puts "Detected #{count} potentially simplifiable nodes"
+    total = nodes.num_tuples
+    puts "Detected #{total} simplifiable nodes"
     STDOUT.flush
-#    $stdout.flush
-    puts "Querying database for simplifiable segments"
 
-    # OSM segments that are potencially simplifiable
-    # (some are not but we can match with the nodes query)
-    segments = conn.exec <<-SQL
-      SELECT seg_id, id, from_id, to_id, AsText(geom) AS geom
-      FROM osm_segments
-      WHERE from_id IN ( SELECT from_id
-                         FROM ( SELECT from_id
-                                FROM osm_segments
-                                GROUP BY from_id
-                                HAVING count(*)=1) tmp_from,
-                              ( SELECT to_id
-                                FROM osm_segments
-                                GROUP BY to_id
-                                HAVING count(*)=1) tmp_to
-                         WHERE tmp_from.from_id=tmp_to.to_id )
-      OR to_id IN      ( SELECT from_id
-                         FROM ( SELECT from_id
-                                FROM osm_segments
-                                GROUP BY from_id
-                                HAVING count(*)=1) tmp_from,
-                              ( SELECT to_id
-                                FROM osm_segments
-                                GROUP BY to_id
-                                HAVING count(*)=1) tmp_to
-                         WHERE tmp_from.from_id=tmp_to.to_id )
-    SQL
-
-    # Returns the indexes of several columns of the response
-    seg_id_n = segments.fieldnum( 'seg_id' )
-    id_n = segments.fieldnum( 'id' )
-    from_id_n = segments.fieldnum( 'from_id' )
-    to_id_n = segments.fieldnum( 'to_id' )
-    coords_n = segments.fieldnum( 'geom' )
-    count = segments.num_tuples
-
-    puts "Detected #{count} potentially simplifiable segments"
-    STDOUT.flush
-#    $stdout.flush
-
-    # Initialization outside the block speeds up processing
-    i = 0
-    current = nil
-    new_seg = nil
+    query = ""
+    coords = ""
+    count = 0
+    target = 1000
     prev_seg = nil
-    cur_seg = nil
+    seg0 = nil
+    seg1 = nil
+    new_seg = []
     reg_exp_1 = /(\d|-).+\w/ # A regular expression to keep only the coordinates from the AsText
-    reg_exp_2 = /,.+\w/ # A regular expression to keep only the coordinates from the AsText except the first
-    # For each simplifiable segment
-    segments.each do |seg|
-      # Rotates cur_seg and prev_seg
-      prev_seg = current
-      cur_seg = seg
-      # If at least we are on the second stretch
-      if current then
-        # If from_id is eliminable
-#        puts "current segment from_id = #{cur_seg[from_id_n]}"
-#        puts "#{nodes.each {|node| puts "#{cur_seg[from_id_n]} == #{node} ? #{cur_seg[from_id_n] == node[0]}"}}"
-        if (nodes.find { |node| cur_seg[from_id_n] == node[0] } and (cur_seg[id_n] == prev_seg[id_n])) then
-#          puts "node #{cur_seg[from_id_n]} is not a junction"
-#          puts "eliminating #{prev_seg[seg_id_n]}"
-          query = "delete from osm_segments where seg_id='#{prev_seg[seg_id_n]}'"
-#          puts query
-          conn.exec query
-#          puts "eliminating #{cur_seg[seg_id_n]}"
-          query = "delete from osm_segments where seg_id='#{cur_seg[seg_id_n]}'"
-#          puts query
-          conn.exec query
-#          puts "creating #{prev_seg[seg_id_n]}"
-          new_seg = []
-          new_seg[seg_id_n] = prev_seg[seg_id_n]
-          new_seg[id_n] = prev_seg[id_n]
-          new_seg[from_id_n] = prev_seg[from_id_n]
-          new_seg[to_id_n] = cur_seg[to_id_n]
-          prev_seg[coords_n] =~ reg_exp_1
-          coords_1 = $&
-          cur_seg[coords_n] =~ reg_exp_2
-          coords_2 = $&
-          new_seg[coords_n] = "LINESTRING(#{coords_1}#{coords_2})"
-          query = "insert into osm_segments (#{segments.fields.join(',')})"
+    reg_exp_2 = /,.+\w/ # A regular expression to keep only the coordinates from the AsText except the first tuple
+    # Indexes of the columns of the response (hardcoded to run faster)
+    seg_id_n = 0
+    id_n = 1
+    from_id_n = 2
+    to_id_n = 3
+    coords_n = 4
+
+    # Query db for segments containing the eliminable nodes
+    nodes.each do |node|
+      count += 1
+      if count%1000==0 then $stderr.print( sprintf("\rEliminated %d/%d osm nodes (%d%%)", count, total, (count.to_f/total)*100) ) end
+      segments = conn.exec <<-SQL
+        SELECT seg_id, id, from_id, to_id, AsText(geom) AS geom
+        FROM osm_segments
+        WHERE to_id = '#{node}'
+        UNION ALL
+        SELECT seg_id, id, from_id, to_id, AsText(geom) AS geom
+        FROM osm_segments
+        WHERE from_id = '#{node}'
+      SQL
+
+      # Each eliminable node should be part of only 2 segments
+      #                   seg0 node seg1
+      #                * ------> * ------> *
+
+      seg0 = segments[0]
+      seg1 = segments[1]
+      if (segments.num_tuples>2) then
+        puts "Unexpected node with more than 2 segments."
+      end
+
+      # The whole idea is to eliminate several nodes in a row creating a new segment
+      #   -Initial state (eliminable nodes 1, 2 and 3)
+      #          node0 seg0 node1 seg1 node2 seg2 node3 seg3 node4
+      #            * -------> * -------> * -------> * -------> *
+      #   -Final state (after 4 SQL deletes and 1 SQL insert)
+      #          node0                  seg0                 node4
+      #            * ----------------------------------------> *
+
+      # If it's the first node of the nodes query
+      if (!prev_seg) then
+        # Starts writing the first query
+        # Adds sentences to the query to delete segments #0 and #1
+        query << "delete from osm_segments where seg_id='#{seg0[seg_id_n]}';\n"
+        query << "delete from osm_segments where seg_id='#{seg1[seg_id_n]}';\n"
+        # Stores coordinates from segment #0 and #1
+        seg0[coords_n] =~ reg_exp_1
+        coords = $&
+        seg1[coords_n] =~ reg_exp_2
+        coords << $&
+        # Assigns seg_id, id and from_id to new segment
+        new_seg[seg_id_n] = seg0[seg_id_n]
+        new_seg[id_n] = seg0[id_n]
+        new_seg[from_id_n] = seg0[from_id_n]
+      # If it's not the first node of the nodes query
+      else
+        # If the current node follows the last node in the same segment
+        if (prev_seg[seg_id_n]==seg0[seg_id_n]) then
+          # Continues the same query
+          # Appends coordinates from segment #1
+          seg1[coords_n] =~ reg_exp_2
+          coords << $&
+          # Adds sentence to the query to delete segment #1
+          query << "delete from osm_segments where seg_id='#{seg1[seg_id_n]}';\n"
+        else
+          # Finish writing current query
+          new_seg[to_id_n] = prev_seg[to_id_n]
+          new_seg[coords_n] = "LINESTRING(#{coords})"
+          query << "insert into osm_segments (seg_id, id, from_id, to_id, geom)"
           query << " VALUES (\'#{new_seg[seg_id_n]}\',\'#{new_seg[id_n]}\',"
           query << "\'#{new_seg[from_id_n]}\',\'#{new_seg[to_id_n]}\',"
-          query << "GeomFromText(\'#{new_seg[coords_n]}\',4326))"
-#          puts query
+          query << "GeomFromText(\'#{new_seg[coords_n]}\',4326));\n"
+          # Executes query
           conn.exec query
-          # Since the cur_seg has been eliminated, we point to new_seg
-          # It is necessary to correctly process consecutive eliminable nodes
-          cur_seg = new_seg
+          # Clears query and start writing a new one
+          query = ""
+          # Adds sentences to the query to delete segments #0 and #1
+          query << "delete from osm_segments where seg_id='#{seg0[seg_id_n]}';\n"
+          query << "delete from osm_segments where seg_id='#{seg1[seg_id_n]}';\n"
+          # Stores coordinates from segment #0 and #1
+          seg0[coords_n] =~ reg_exp_1
+          coords = $&
+          seg1[coords_n] =~ reg_exp_2
+          coords << $&
+          # Assigns seg_id, id and from_id to new segment
+          new_seg[seg_id_n] = seg0[seg_id_n]
+          new_seg[id_n] = seg0[id_n]
+          new_seg[from_id_n] = seg0[from_id_n]
         end
+
       end
-      i += 1
-      if i%1000==0 then $stderr.print( sprintf("\rSimplified %d/%d osm segments (%d%%)", i, count, (i.to_f/count)*100) ) end
-      current = cur_seg
+      prev_seg = seg1
     end
+    # Finish last query
+    new_seg[to_id_n] = prev_seg[to_id_n]
+    new_seg[coords_n] = "LINESTRING(#{coords})"
+    query << "insert into osm_segments (seg_id, id, from_id, to_id, geom)"
+    query << " VALUES (\'#{new_seg[seg_id_n]}\',\'#{new_seg[id_n]}\',"
+    query << "\'#{new_seg[from_id_n]}\',\'#{new_seg[to_id_n]}\',"
+    query << "GeomFromText(\'#{new_seg[coords_n]}\',4326));\n"
+    conn.exec query
   end
 
 

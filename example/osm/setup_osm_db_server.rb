@@ -13,6 +13,7 @@ if ARGV.size < 1 then
 end
 
 gs = Graphserver.new
+t0 = Time.now
 
 if ix = ARGV.index("create_tables") then
   gs.remove_osm_table! #clean up first
@@ -24,3 +25,5 @@ end
 ARGV.each do |file|
   gs.import_osm_to_db! file, debug_level=0
 end
+t1 = Time.now
+puts "Database setup accomplished in #{t1-t0} sec"
