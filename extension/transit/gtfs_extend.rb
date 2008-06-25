@@ -393,7 +393,8 @@ class Graphserver
       );
 
       select AddGeometryColumn( 'gtf_stops', 'location', #{WGS84_LATLONG_EPSG}, 'POINT', 2 );
-      CREATE INDEX gtf_stops_location_ix ON gtf_stops USING GIST ( location GIST_GEOMETRY_OPS );
+--      CREATE INDEX gtf_stops_location_ix ON gtf_stops USING GIST ( location GIST_GEOMETRY_OPS );
+      CREATE INDEX gtf_stops_location_idx ON gtf_stops USING GIST ( location GIST_GEOMETRY_OPS );
 
       create table gtf_routes (
         route_id          text PRIMARY KEY,
@@ -417,6 +418,8 @@ class Graphserver
         shape_id      text
       );
 
+      CREATE INDEX gtf_trip_id_idx ON gtf_stop_times (trip_id, stop_sequence);
+
       create table gtf_stop_times (
         trip_id             text NOT NULL,
         arrival_time        text,
@@ -429,7 +432,8 @@ class Graphserver
         shape_dist_traveled numeric
       );
 
-      CREATE INDEX gst_trip_id_stop_sequence ON gtf_stop_times (trip_id, stop_sequence);
+--      CREATE INDEX gst_trip_id_stop_sequence ON gtf_stop_times (trip_id, stop_sequence);
+      CREATE INDEX gtf_trip_id_stop_sequence_idx ON gtf_stop_times (trip_id, stop_sequence);
 
       create table gtf_calendar (
         service_id   text PRIMARY KEY,

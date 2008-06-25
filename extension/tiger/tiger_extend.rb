@@ -3,6 +3,7 @@ require "tiger"
 class Street
   #takes an open database object; will not close it.
   def geom conn
+    # This query is no longer correct nor useful
     res = conn.exec "SELECT AsBinary( geom ) FROM streets WHERE id='#{name}'"
     return res.get_value(0, 0)
 

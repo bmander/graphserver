@@ -246,7 +246,9 @@ class Graphserver
   end
 
 
+  # Create osm tables
   def create_osm_table!
+    puts "Creating osm_ways table..."
     conn.exec <<-SQL
       CREATE TABLE osm_ways (
       id          text PRIMARY KEY,
@@ -257,6 +259,7 @@ class Graphserver
     )
     SQL
 
+    puts "Creating osm_segments table..."
     conn.exec <<-SQL
       CREATE TABLE osm_segments (
       seg_id      text PRIMARY KEY,
@@ -270,21 +273,29 @@ class Graphserver
       SELECT AddGeometryColumn( 'osm_segments', 'geom', #{WGS84_LATLONG_EPSG}, 'LINESTRING', 2 )
     SQL
 
+    # Create a view to match osm_ways and osm_segments in a single table
+    puts "Creating osm_streets view..."
     conn.exec <<-SQL
       CREATE OR REPLACE VIEW osm_streets AS
-      SELECT osm1.id, osm2.from_id, osm2.to_id, osm1.name, osm1."type", osm1.oneway, osm2.geom, osm1.file
+--      SELECT osm1.id, osm2.from_id, osm2.to_id, osm1.name, osm1."type", osm1.oneway, osm2.geom, osm1.file
+      SELECT osm2.seg_id, osm2.id, osm2.from_id, osm2.to_id, osm1.name, osm1."type", osm1.oneway, osm2.geom, osm1.file
       FROM osm_ways osm1, osm_segments osm2
       WHERE osm1.id = osm2.id;
     SQL
 
+    # Create the necessary indexes to speed up the database access
+    # These indexes are related to the most frequent and time consuming
+    # SQL 'where' clauses used in this extension
+    puts "Creating indexes..."
     conn.exec <<-SQL
-      CREATE INDEX osm_ways_id_idx ON osm_ways ( id );
+--      CREATE INDEX osm_ways_id_idx ON osm_ways ( id );
+      CREATE INDEX osm_segments_id_idx ON osm_segments ( id );
       CREATE INDEX osm_segments_seg_id_idx ON osm_segments ( seg_id );
+--      CREATE INDEX osm_segments_node_idx ON osm_segments ( from_id, to_id );
+      CREATE INDEX osm_segments_from_id_idx ON osm_segments ( from_id );
+      CREATE INDEX osm_segments_to_id_idx ON osm_segments ( to_id );
       CREATE INDEX osm_segments_geom_idx ON osm_segments USING GIST ( geom GIST_GEOMETRY_OPS );
     SQL
-    puts "osm_ways table created"
-    puts "osm_segments table created"
-    puts "osm_streets view created"
   end
 
   # Simplify the graph eliminating nodes that are not junctions
@@ -334,14 +345,20 @@ class Graphserver
     nodes.each do |node|
       count += 1
       if count%1000==0 then $stderr.print( sprintf("\rEliminated %d/%d osm nodes (%d%%)", count, total, (count.to_f/total)*100) ) end
+#      segments = conn.exec <<-SQL
+#        SELECT seg_id, id, from_id, to_id, AsText(geom) AS geom
+#        FROM osm_segments
+#        WHERE to_id = '#{node}'
+#        UNION ALL
+#        SELECT seg_id, id, from_id, to_id, AsText(geom) AS geom
+#        FROM osm_segments
+#        WHERE from_id = '#{node}'
+#      SQL
       segments = conn.exec <<-SQL
         SELECT seg_id, id, from_id, to_id, AsText(geom) AS geom
         FROM osm_segments
-        WHERE to_id = '#{node}'
-        UNION ALL
-        SELECT seg_id, id, from_id, to_id, AsText(geom) AS geom
-        FROM osm_segments
-        WHERE from_id = '#{node}'
+        WHERE to_id = '#{node}' OR from_id = '#{node}'
+        ORDER BY seg_id
       SQL
 
       # Each eliminable node should be part of only 2 segments
@@ -350,9 +367,6 @@ class Graphserver
 
       seg0 = segments[0]
       seg1 = segments[1]
-      if (segments.num_tuples>2) then
-        puts "Unexpected node with more than 2 segments."
-      end
 
       # The whole idea is to eliminate several nodes in a row creating a new segment
       #   -Initial state (eliminable nodes 1, 2 and 3)
