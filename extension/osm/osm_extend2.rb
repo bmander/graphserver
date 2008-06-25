@@ -311,6 +311,7 @@ class Graphserver
     total = nodes.num_tuples
     puts "Detected #{total} simplifiable nodes"
     STDOUT.flush
+    t0 = Time.now
 
     query = ""
     coords = ""
@@ -394,10 +395,13 @@ class Graphserver
           query << " VALUES (\'#{new_seg[seg_id_n]}\',\'#{new_seg[id_n]}\',"
           query << "\'#{new_seg[from_id_n]}\',\'#{new_seg[to_id_n]}\',"
           query << "GeomFromText(\'#{new_seg[coords_n]}\',4326));\n"
-          # Executes query
-          conn.exec query
-          # Clears query and start writing a new one
-          query = ""
+          # Executes query in blocks of 1000 or more lines
+          if (count > target) then
+            conn.exec query
+            # Clears query and start writing a new one
+            query = ""
+            target += 1000
+          end
           # Adds sentences to the query to delete segments #0 and #1
           query << "delete from osm_segments where seg_id='#{seg0[seg_id_n]}';\n"
           query << "delete from osm_segments where seg_id='#{seg1[seg_id_n]}';\n"
@@ -415,7 +419,7 @@ class Graphserver
       end
       prev_seg = seg1
     end
-    # Finish last query
+    # Finishes last query
     new_seg[to_id_n] = prev_seg[to_id_n]
     new_seg[coords_n] = "LINESTRING(#{coords})"
     query << "insert into osm_segments (seg_id, id, from_id, to_id, geom)"
@@ -423,6 +427,9 @@ class Graphserver
     query << "\'#{new_seg[from_id_n]}\',\'#{new_seg[to_id_n]}\',"
     query << "GeomFromText(\'#{new_seg[coords_n]}\',4326));\n"
     conn.exec query
+
+    t1 = Time.now
+    puts "Graph simplification accomplished in #{t1-t0} sec"
   end
 
 
@@ -580,20 +587,6 @@ class Graphserver
     center = "GeomFromText(\'POINT(#{lon} #{lat})\',4326)"
 
     #Searches for vertex in a radius of approximately 500m from the center
-#    label, lat, lon, name, dist = conn.exec(<<-SQL)[0]
-#    r = conn.exec(<<-SQL)[0]
-#      SELECT from_id AS label, Y(StartPoint(geom)) AS lat, X(StartPoint(geom)) AS lon, name,
-#             distance_sphere(StartPoint(geom), #{center}) AS dist
-#      FROM osm_streets
-#      WHERE geom && expand( #{center}::geometry, 0.003 )
-#      UNION
-#        (SELECT to_id AS label, Y(EndPoint(geom)) AS lat, X(EndPoint(geom)) AS lon, name,
-#                distance_sphere(EndPoint(geom), #{center}) AS dist
-#         FROM osm_streets
-#         WHERE geom && expand( #{center}::geometry, 0.003 ))
-#      ORDER BY dist LIMIT 1
-#    SQL
-
     r = conn.exec(<<-SQL)[0]
       SELECT from_id AS label, Y(StartPoint(geom)) AS lat, X(StartPoint(geom)) AS lon, name,
              distance_sphere(StartPoint(geom), #{center}) AS dist_vertex,
