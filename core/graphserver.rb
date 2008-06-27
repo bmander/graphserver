@@ -1,13 +1,13 @@
 require 'webrick'
 #require 'xmlrpc/server.rb'
-#Clases Vertex y Graph ademÃ¡s del graph_core y las funciones shortest_path y shortest_path_retro
-require '../../core/graph.rb'
+# Required to provide the core as well as functions shortest_path and shortest_path_retro
+require 'graph.rb'
+# Required to process command line parameters
 require 'optparse'
 require 'cgi'
 
-#Sobrecarga la clase Calendar para añadir la funcion to_xml
+#Overrides class Calendar to add to_xml function
 class Calendar
-  #Transforma a xml Calendar
   def to_xml
     "<calendar begin_time='#{Time.at(begin_time)}' end_time='#{Time.at(end_time)}' service_ids='#{service_ids.join(", ")}' />"
   end
@@ -15,9 +15,8 @@ end
 
 #made a different change over here
 
-#Sobrecarga la clase Link para añadir la funcion to_xml
+#Overrides class Link to add to_xml function
 class Link
-  #Transforma a xml Link
   def to_xml
     "<link/>"
   end
@@ -30,29 +29,25 @@ class Street
   end
 end
 
-#Sobrecarga la clase TripHopSchedule para añadir la funcion to_xml
+#Overrides class TripHopSchedule to add to_xml function
 class TripHopSchedule
-  #Transforma a xml TripHopSchedule
   def to_xml
     ret = ["<triphopschedule service_id='#{service_id}'>"]
     #Para cada triphop inserta su transformacion a xml
     triphops.each do |triphop|
-      #Ret es un Array, << añade un elemento al final de este
       ret << triphop.to_xml
     end
     ret << "</triphopschedule>"
 
-    #Convierte el Array a String
     return ret.join
   end
 end
 
-#Sobrecarga la clase TripHop para añadir la funcion to_xml
+#Overrides class TripHop to add to_xml function
 class TripHop
   SEC_IN_HOUR = 3600
   SEC_IN_MINUTE = 60
 
-  #Transforma a xml TripHop
   def to_xml
     s_depart = "#{sprintf("%02d", depart/SEC_IN_HOUR)}:#{sprintf("%02d", (depart%SEC_IN_HOUR)/SEC_IN_MINUTE)}:#{sprintf("%02d", depart%SEC_IN_MINUTE)}"
     s_arrive = "#{sprintf("%02d", arrive/SEC_IN_HOUR)}:#{sprintf("%02d", (arrive%SEC_IN_HOUR)/SEC_IN_MINUTE)}:#{sprintf("%02d", arrive%SEC_IN_MINUTE)}"
@@ -60,9 +55,8 @@ class TripHop
   end
 end
 
-#Sobrecarga la clase State para añadir la funcion to_xml
+#Overrides class State to add to_xml function
 class State
-  #Transforma a xml State
   def to_xml
     #Abre la cabecera del elemento state
     ret = "<state "
@@ -94,9 +88,8 @@ class State
   end
 end
 
-#Sobrecarga la clase Vertex para añadir la funcion to_xml
+#Overrides class Vertex to add to_xml function
 class Vertex
-  #Transforma a xml Vertex
   def to_xml
     ret = ["<vertex label='#{label}'>"]
     #La siguiente instruccion es una comparacion del resultado
@@ -110,10 +103,8 @@ class Vertex
   end
 end
 
-#Sobrecarga la clase Edge para añadir la funcion to_xml
+#Overrides class Edge to add to_xml function
 class Edge
-  #Transforma a xml Edge, con parametro de entrada verbose
-  #con valor por defecto true
   def to_xml verbose=true
     if geom=="" then ret = "<edge>"
     else ret = "<edge geom='#{geom}'>"
@@ -124,33 +115,56 @@ class Edge
   end
 end
 
-#Un hash con las opciones por defecto
+# A hash with default program options
 OPTIONS = { :port => 3003 }
 
-#Con los parametros de la linea de comandos, hacer
+# A hash with default database parameters
+DB_PARAMS = { :host => nil,
+              :port => nil,
+              :options => nil,
+              :tty => nil,
+              :dbname => 'graphserver',
+              :login => 'postgres', #database username
+              :password => 'postgres' }
+
+#Process command input parameters
 ARGV.options do |opts|
-  #Obtiene el nombre del script, p.ej. graphserver.rb
+  # Gets the name of the calling script, i.e. setup_gtfs_tables
   script_name = File.basename($0)
   opts.banner = "Usage: ruby #{script_name} [options]"
 
   opts.separator ""
 
-  #Si encuentra la opcion -p o --port, se queda el valor en el
-  #elemento :port de OPTIONS, en caso contrario imprime un mensaje
+  #If the option -p or --port is found
   opts.on("-p", "--port=port", Integer,
           "Runs Rails on the specified port.",
           "Default: 3003") { |v| OPTIONS[:port] = v }
 
-  #Si encuentra la opcion -h o --help, muestra el mensaje de ayuda
+  #If the option -d or --dbname is found
+  opts.on("-d", "--dbname=dbname", String,
+          "Specifies database name.",
+          "Default: graphserver") { |v| DB_PARAMS[:dbname] = v }
+
+  #If the option -u or --username is found
+  opts.on("-u", "--username=username", String,
+          "Specifies database username.",
+          "Default: postgres") { |v| DB_PARAMS[:login] = v }
+
+  #If the option -w or --password is found
+  opts.on("-w", "--password=password", String,
+          "Specifies database password.",
+          "Default: postgres") { |v| DB_PARAMS[:password] = v }
+
+  #If the option -h or --help is found, shows a help message
   opts.on("-h", "--help",
           "Show this help message.") { puts opts; exit }
 
-  #Ni idea!
+  # Parse parameters in order
   opts.parse!
 end
 
 class Graphserver
-  #Metodo para hacer publica la lectura de la propiedad gg
+  # Make the graph public
   attr_reader :gg
 
   #Extracts the 'time' parameter from the GET request
@@ -184,6 +198,7 @@ class Graphserver
       ret << "collapse_edges?label=LABEL&statevar1=STV1&statevar2=STV2..."
       ret << "vertices_from_coords?lat=LAT&lon=LON"
       ret << "vertices_from_address?add=ADDRESS"
+      ret << "stops_from_coords?lat=LAT&lon=LON"
       ret << "dot"
       response.body = ret.join("\n")
     end
@@ -228,20 +243,43 @@ class Graphserver
             #as we don't delete the nodes after the shortest path calculation
             ts = Time.now
 
-            #Adds a new vertex in the closest point in the edge
-            #and in the origin point and connects them
-            @gg.add_vertex( "origin_#{ts}" )
-#            @gg.add_vertex( "origin-street" )
-            @gg.add_vertex( "destination_#{ts}" )
-#            @gg.add_vertex( "destination-street" )
-            coords01 = "#{lon0},#{lat0} #{v0[0]['lon']},#{v0[0]['lat']} #{v0[1]['lon']},#{v0[1]['lat']}"
-            coords02 = "#{lon0},#{lat0} #{v0[0]['lon']},#{v0[0]['lat']} #{v0[2]['lon']},#{v0[2]['lat']}"
-            coords11 = "#{lon1},#{lat1} #{v1[0]['lon']},#{v1[0]['lat']} #{v1[1]['lon']},#{v1[1]['lat']}"
-            coords12 = "#{lon1},#{lat1} #{v1[0]['lon']},#{v1[0]['lat']} #{v1[2]['lon']},#{v1[2]['lat']}"
-            @gg.add_edge_geom( "origin_#{ts}", v0[1]['label'], Link.new, coords01)
-            @gg.add_edge_geom( "origin_#{ts}", v0[2]['label'], Link.new, coords02)
-            @gg.add_edge_geom( v1[1]['label'], "destination_#{ts}", Link.new, coords11)
-            @gg.add_edge_geom( v1[2]['label'], "destination_#{ts}", Link.new, coords12)
+            #If vertices are returned as expected
+            if (v0 and v1) then
+              #Adds a new vertex in the closest point in the edge
+              #and in the origin point and connects them
+              @gg.add_vertex( "origin_#{ts}" )
+              @gg.add_vertex( "destination_#{ts}" )
+              coords01 = "#{lon0},#{lat0} #{v0[0]['lon']},#{v0[0]['lat']} #{v0[1]['lon']},#{v0[1]['lat']}"
+              coords02 = "#{lon0},#{lat0} #{v0[0]['lon']},#{v0[0]['lat']} #{v0[2]['lon']},#{v0[2]['lat']}"
+              coords11 = "#{lon1},#{lat1} #{v1[0]['lon']},#{v1[0]['lat']} #{v1[1]['lon']},#{v1[1]['lat']}"
+              coords12 = "#{lon1},#{lat1} #{v1[0]['lon']},#{v1[0]['lat']} #{v1[2]['lon']},#{v1[2]['lat']}"
+              @gg.add_edge_geom( "origin_#{ts}", v0[1]['label'], Link.new, coords01)
+              @gg.add_edge_geom( "origin_#{ts}", v0[2]['label'], Link.new, coords02)
+              @gg.add_edge_geom( v1[1]['label'], "destination_#{ts}", Link.new, coords11)
+              @gg.add_edge_geom( v1[2]['label'], "destination_#{ts}", Link.new, coords12)
+            else
+              #If no vertices are returned then probably the GS has not street data
+              #In that case we look for the 2 closest stops
+              s0 = get_closest_stops(lat0, lon0, 2)
+              s1 = get_closest_stops(lat1, lon1, 2)
+
+              #Adds a new vertex in the closest point in the edge
+              #and in the origin point and connects them
+              @gg.add_vertex( "origin_#{ts}" )
+              @gg.add_vertex( "destination_#{ts}" )
+              coords01 = "#{lon0},#{lat0} #{s0[0]['lon']},#{s0[0]['lat']}"
+              coords02 = "#{lon0},#{lat0} #{s0[1]['lon']},#{s0[1]['lat']}"
+              coords11 = "#{lon1},#{lat1} #{s1[0]['lon']},#{s1[0]['lat']}"
+              coords12 = "#{lon1},#{lat1} #{s1[1]['lon']},#{s1[1]['lat']}"
+#              puts "new edge( origin_#{ts}, #{s0[0]['label']})"
+#              puts "new edge( origin_#{ts}, #{s0[1]['label']})"
+#              puts "new edge( #{s1[0]['label']}, destination_#{ts})"
+#              puts "new edge( #{s1[1]['label']}, destination_#{ts})"
+              @gg.add_edge_geom( "origin_#{ts}", s0[0]['label'], Link.new, coords01)
+              @gg.add_edge_geom( "origin_#{ts}", s0[1]['label'], Link.new, coords02)
+              @gg.add_edge_geom( s1[0]['label'], "destination_#{ts}", Link.new, coords11)
+              @gg.add_edge_geom( s1[1]['label'], "destination_#{ts}", Link.new, coords12)
+            end
 
             #Calculates the shortest path
             vertices, edges = @gg.shortest_path("origin_#{ts}", "destination_#{ts}", init_state )      #Throws RuntimeError if no shortest path found.
@@ -394,13 +432,6 @@ class Graphserver
           ret << "<vertices>"
           v.each do |vv|
             ret << "<vertex>"
-#          if v['label'] then
-#            ret << "<label>#{v['label']}</label>"
-#            ret << "<lat>#{v['lat']}</lat>"
-#            ret << "<lon>#{v['lon']}</lon>"
-#            ret << "<name>#{v['name']}</name>"
-#            ret << "<dist>#{v['dist']}</dist>"
-#          end
             if vv['label'] then
               ret << "<label>#{vv['label']}</label>"
               ret << "<lat>#{vv['lat']}</lat>"
@@ -436,6 +467,40 @@ class Graphserver
       response.body = ret.join
     end
 
+    #Response to GET request "/stops_from_coords"
+    @server.mount_proc( "/stops_from_coords" ) do |request, response|
+      begin
+        #Check input parameters are present
+        unless lat = request.query['lat'] then raise ArgumentError end
+        unless lon = request.query['lon'] then raise ArgumentError end
+
+        v = get_closest_stops(lat, lon, 10)
+
+        if v == nil then
+          ret = ["ERROR: function not implemented by any extension"]
+        else
+          ret = ["<?xml version='1.0'?>"]
+          ret << "<stops>"
+          v.each do |vv|
+            ret << "<stop>"
+            if vv['label'] then
+              ret << "<label>#{vv['label']}</label>"
+              ret << "<lat>#{vv['lat']}</lat>"
+              ret << "<lon>#{vv['lon']}</lon>"
+              ret << "<dist>#{vv['dist']}</dist>"
+            end
+            ret << "</stop>"
+          end
+          ret << "</stops>"
+        end
+
+        #Catch alike sentence
+        rescue ArgumentError
+          ret = ["ERROR: Invalid parameters."]
+      end
+      response.body = ret.join
+    end
+
   end
 
   #Formats a shortest path response depending on the format parameter
@@ -457,7 +522,7 @@ class Graphserver
   end
 
   #This function looks for the vertices of the closest edge to the input coords
-  #Returns an array of 3 rows an columns named label, lat, lon, name, dist_vertex
+  #Returns an array of 3 rows, with columns named label, lat, lon, name, dist
   #The first row is not actually a vertex, but the nearest point in the edge
   #to the input coordinates
   def get_closest_edge_vertices(lat, lon)
@@ -465,10 +530,16 @@ class Graphserver
     return nil
   end
 
-  #Asigna los parametros de la base de datos
+  #This function looks for the closest stops to the input coords
+  # Returns an array of n_stops rows, with columns named label, lat, lon, name, dist
+  def get_closest_stops(lat, lon, n_stops)
+    # Override this function in the corresponding extension (gtfs initially)
+    return nil
+  end
+
+  # Assigns the database parameters
   def database_params= params
-    #Comprueba que existe la extensiÃ³n postgres,
-    #si no existe genera un RuntimeError
+    # Check the presence of the postgres extension
     begin
       require 'postgres'
     rescue LoadError
@@ -491,14 +562,16 @@ class Graphserver
       raise
     end
 
-    #Si todo ha ido bien, signa los parametros de la base de datos
+    # If everything went ok, assigns the parameters
     @db_params = params
     return true
   end
 
-  #Conecta con la base de datos si existen los parametros de conexion
+  # Connect with the database
   def connect_to_database
-    unless @db_params then return nil end
+    # If no input parameters are defined then read the database params
+    # from the command line or the default ones
+    unless @db_params then self.database_params= DB_PARAMS end
 
     PGconn.connect( @db_params[:host],
                     @db_params[:port],
@@ -509,9 +582,9 @@ class Graphserver
                     @db_params[:password] )
   end
 
-  #may return nil if postgres isn't loaded, or the connection params aren't set
+  # May return nil if postgres isn't loaded, or the connection params aren't set
   def conn
-    #if @conn exists and is open
+    # If @conn exists and is open
     if @conn and begin @conn.status rescue PGError false end then
       return @conn
     else
@@ -519,7 +592,7 @@ class Graphserver
     end
   end
 
-  #Inicia Graphserver. Aparentemente, si el servidor cae, lo reinicia
+  # Starts graphserver, if a KILL signal is received, kills the webrick server too
   def start
     trap("INT"){ @server.shutdown }
     @server.start
