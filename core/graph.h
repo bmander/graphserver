@@ -6,7 +6,7 @@
 #include "hashtable_gs.h"
 #include "hashtable_itr.h"
 #include "edgetypes.h"
-#include "util/list.h"
+#include "list.h"
 
 
 #ifndef INFINITY

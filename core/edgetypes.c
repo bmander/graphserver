@@ -183,7 +183,7 @@ Link*
 linkNew() {
   Link* ret = (Link*)malloc(sizeof(Link));
   ret->type = PL_LINK;
-  ret->name = (char*)malloc(5*sizeof(char));
+  ret->name = (char*)malloc(5*sizeof(char)+1);
   strcpy(ret->name, "LINK");
 
   return ret;

@@ -6,6 +6,7 @@
   #define HASH_INIT 100
 #endif
 
+#define FREE(PTR) {free(PTR);PTR=NULL;}
 Graph*
 gNew() {
   Graph *this = (Graph*)malloc(sizeof(Graph));
@@ -25,11 +26,11 @@ gDestroy( Graph* this, int kill_vertex_payloads, int kill_edge_payloads ) {
     vDestroy( vtx, kill_vertex_payloads, kill_edge_payloads );
     next_exists = hashtable_iterator_advance( itr );
   }
-  free(itr);
+  FREE(itr);
   //destroy the table
   hashtable_destroy( this->vertices, 0 );
   //destroy the graph object itself
-  free( this );
+  FREE( this );
 }
 
 /*
@@ -229,7 +230,7 @@ vNew( char* label ) {
 void
 vDestroy(Vertex *this, int free_vertex_payload, int free_edge_payloads) {
     if( free_vertex_payload )
-      free( this->payload );
+      FREE( this->payload );
 
     //delete incoming edges
     while(this->incoming->next != NULL) {
@@ -240,11 +241,11 @@ vDestroy(Vertex *this, int free_vertex_payload, int free_edge_payloads) {
       eDestroy( this->outgoing->next->data, free_edge_payloads );
     }
     //free the list dummy-heads that remain
-    free(this->outgoing);
-    free(this->incoming);
+    FREE(this->outgoing);
+    FREE(this->incoming);
     //and finally, sweet release*/
-    free( this->label );
-    free( this );
+    FREE( this->label );
+    FREE( this );
 }
 
 
@@ -267,21 +268,21 @@ vLink(Vertex* this, Vertex* to, EdgePayload* payload) {
 Edge*
 vLinkGeom(Vertex* this, Vertex* to, EdgePayload* payload, char* datageom) {
     //create edge object
-   
+   // rb_warn("vamos a reservar menoria con enewgeom");
     Edge* link = eNewGeom(this, to, payload,datageom);
    // link->geom=geomNew(datageom);
 
-    
+   // rb_warn("vamos a crear un nuevo enlace"); 
     ListNode* outlistnode = liNew( link );
- 
+// rb_warn("vamos a insertarlo despues");
     liInsertAfter( this->outgoing, outlistnode );
     this->degree_out++;
-    
+  //  rb_warn("vamos a crear un nuevo enlace:2"); 
     ListNode* inlistnode = liNew( link );
- 
+ //rb_warn("vamos a insertarlo despues:2");
     liInsertAfter( to->incoming, inlistnode );
     to->degree_in++;
- 
+// rb_warn("no vamos de aqui ya");
     return link;
 }
 //the comments say it all
@@ -299,19 +300,19 @@ vSetParent( Vertex* this, Vertex* parent, EdgePayload* payload ) {
 
 Edge*
 vSetParentGeom( Vertex* this, Vertex* parent, EdgePayload* payload, char * geomdata ) {
-    
+  //  rb_warn("Perreo Perreo");
     ListNode* edges = vGetIncomingEdgeList( this );
-   
-    
+    //rb_warn("Miro la lista y peto");
+    //if (edges==NULL) rb_warn("mala esta la cosa");
     while(edges) {
-
+//rb_warn("-->1");
       eDestroy( edges->data, 0 );
-
+//rb_warn("-->2");
       edges = edges->next;
-
+//rb_warn("-->3");
     }
 
-  
+    //rb_warn("Añado el enlace");
     //add incoming edge
     return vLinkGeom( parent, this, payload, geomdata);  
 }
@@ -363,15 +364,15 @@ eDestroy(Edge *this, int destroy_payload) {
     //free payload
     if(destroy_payload)
       epDestroy( this->payload ); //destroy payload object and contents
-    
+    //rb_warn("vamos a borrar la salida");
     vRemoveOutEdgeRef( this->from, this );
-	
+	//rb_warn("vamos a borrar la entrada");
     vRemoveInEdgeRef( this->to, this );
-
+//rb_warn("vamos a borrar la geom");
     geomDestroy(this->geom);
-   
-    free(this);
-
+  //  rb_warn("vamos a borrar todo lo que queda");
+    FREE(this);
+//rb_warn("el pulpo se va");
 }
 
 State*
@@ -390,11 +391,15 @@ eGeom(Edge* this,char * datageom) {
 	return this;
 }
 
-// Funciones de lista
+// Functions List is correct
 
 ListNode*
 liNew(Edge *data) {
     ListNode *ret = (ListNode*)malloc(sizeof(ListNode));
+    if (!ret){ 
+	rb_warn("Brandon la cago: me quede sin memoria\n");
+	abort();
+	}
     ret->data = data;
     ret->next = NULL;
     return ret;
@@ -411,7 +416,7 @@ liRemoveAfter( ListNode *this ) {
     if( this->next ) {
       ListNode* condemned = this->next;
       this->next = this->next->next;
-      free( condemned );
+      FREE( condemned );
     }
 }
 

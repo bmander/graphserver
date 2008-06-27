@@ -19,18 +19,24 @@ VALUE cVertex;
 VALUE cEdge;
 //STATE-TYPE CLASSES
 VALUE cCalendar;
-
+int count=0;
 //UTILITY METHODS-------------------------------------------------------
 
 inline Vertex* unpack_v( VALUE pack ) {
   Vertex* unpack_ptr;
   Data_Get_Struct(pack, Vertex, unpack_ptr);
+  	#ifdef DEBUG 
+	//	rb_warning("unpack vertex (R->C): %s",unpack_ptr->label);
+  	#endif
   return unpack_ptr;
 }
 
 inline VALUE pack_v( Vertex* unpacked) {
-  if(unpacked)
-    return Data_Wrap_Struct( cVertex, 0, 0, unpacked ); 
+  if(unpacked){
+	#ifdef DEBUG 
+   		//rb_warning("pack vertex (C->R): %s",unpacked->label);
+	#endif
+    	return Data_Wrap_Struct( cVertex, 0, 0, unpacked ); }
   else
     return Qnil;
 }
@@ -38,8 +44,11 @@ inline VALUE pack_v( Vertex* unpacked) {
 //for returning references to vertices which should not delete
 //the underlying C structure when garbage collected
 inline VALUE pack_v_nice( Vertex* unpacked ) {
-  if(unpacked)
-    return Data_Wrap_Struct( cVertex, 0, 0, unpacked );
+  if(unpacked){
+	#ifdef DEBUG
+    		//rb_warn("pack vertex nice (C->R): %s",unpacked->label);
+	#endif
+    return Data_Wrap_Struct( cVertex, 0, 0, unpacked );}
   else
     return Qnil;
 }
@@ -47,6 +56,7 @@ inline VALUE pack_v_nice( Vertex* unpacked ) {
 
 inline Edge* unpack_e( VALUE pack ) {
   Edge* unpack_ptr;
+  //rb_warn("unpack edge (R->C)");
   Data_Get_Struct(pack, Edge, unpack_ptr);
   return unpack_ptr;
 }
@@ -55,6 +65,7 @@ inline Edge* unpack_e( VALUE pack ) {
 //of the vertex that attaches to it
 inline VALUE pack_e( Edge* unpacked) {
   if(unpacked){
+    //rb_warn("pack edge (C->R)");
     return Data_Wrap_Struct(cEdge, 0, 0, unpacked);}
   else
     return Qnil;
@@ -259,7 +270,7 @@ VALUE t_ths_new( VALUE class, VALUE rbservice_id, VALUE rbtriphops, VALUE rbcale
   long size = RARRAY(rbtriphops)->len;
   int* departs = (int*)malloc(size*sizeof(int));
   int* arrives = (int*)malloc(size*sizeof(int));
-  char** trip_ids = (char**)malloc(size*sizeof(char*));
+  char** trip_ids = (char**)malloc(size*sizeof(char*)+1);
 
   long i;
   for(i=0; i<size; i++) {
@@ -270,7 +281,7 @@ VALUE t_ths_new( VALUE class, VALUE rbservice_id, VALUE rbtriphops, VALUE rbcale
     
     char* tid  = STR2CSTR( rb_ary_entry( triphop, 2 ) );
     int tid_len = strlen( tid ) + 1;
-    trip_ids[i] = (char*)malloc(tid_len*sizeof(char));
+    trip_ids[i] = (char*)malloc(tid_len*sizeof(char)+1);
     memcpy( trip_ids[i], tid, tid_len );
   }
   int service_id = NUM2INT( rbservice_id );
@@ -680,13 +691,15 @@ VALUE pack_g( Graph* unpacked) {
 }
 
 static void free_memory_graph(Graph * unpacked) {
+ //libero la prueba
+   rb_warn("clean graph route");
   gDestroy(unpacked,1,0);
 }
 
 VALUE pack_g_nice( Graph* unpacked) {
+  //rb_warn("pack graph mio: C->R");
   return Data_Wrap_Struct( cGraph, 0, free_memory_graph, unpacked );
 }
-
 static VALUE t_init(VALUE self)
 {
   Graph* ret = gNew();
@@ -747,26 +760,27 @@ static VALUE t_vertices( VALUE self ) {
 
 static VALUE t_shortest_path_tree( VALUE self, VALUE from, VALUE to, VALUE init, VALUE direction ) {
   Graph* gg = unpack_g( self );
-
+  count++; 
   Graph* tree;
- 
+  rb_warn("Quetioned route: %i",count);
   if( RTEST( direction ) ) {
     //allow for 'to' to be "nil" in order to create exhaustive SPT
     if( !RTEST( to ) )
       to = rb_str_new2( "" );
-   
+   // rb_warn("entro en la la llamada");
     tree = gShortestPathTree( gg, STR2CSTR( from ), STR2CSTR( to ), unpack_state( init ) );
-    
+    //rb_warn("tamaño: %i",gSize(tree));
   } else {
     //allows 'from' to be "nil" to create exhaustive SPT
     if( !RTEST( from ) )
       from = rb_str_new2( "" );
-   
+    //rb_warn("entro en la la llamada retro");
     tree = gShortestPathTreeRetro( gg, STR2CSTR( from ), STR2CSTR( to ), unpack_state( init ) );
-    
+    rb_warn("length route: %i",gSize(tree));
   }
-
+  rb_warn("request complete number- %i - free memory",count); 
   return pack_g_nice( tree );
+
 }
 
 //For now it's a little easier to do this in Ruby
