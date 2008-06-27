@@ -418,7 +418,7 @@ class Graphserver
         shape_id      text
       );
 
-      CREATE INDEX gtf_trip_id_idx ON gtf_stop_times (trip_id, stop_sequence);
+      CREATE INDEX gtf_trip_id_idx ON gtf_trips (trip_id);
 
       create table gtf_stop_times (
         trip_id             text NOT NULL,
