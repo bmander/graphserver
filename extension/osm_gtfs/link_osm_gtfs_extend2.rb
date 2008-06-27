@@ -38,21 +38,42 @@ class Graphserver
     split = ret[0][0].to_f
     stop_coords = ret[0][1].gsub(/[()A-Z]/,'')
 
-    # Check if the splitted left segment's size is > 0 and inserts it into the database
-    if (split > 0.0) then
+    # Check if the splitted left segment's size is = 0 and inserts it into the database
+    if (split == 0.0) then
+      # Connects only with the left (shortest) side
+      l_coords = conn.exec("SELECT AsText(StartPoint('#{seg_geom}'))").getvalue(0,0)
+      l_coords = l_coords.gsub(/[()A-Z]/,'')
+      # Connects the left segment with the stop
+      coords1 = []
+      coords1 << stop_coords
+      coords1 << l_coords
+      query = "INSERT INTO osm_gtfs_links (stop_id, node_id, geom) VALUES ('#{stop_id}', '#{from_id}', GeomFromText('LINESTRING(#{coords1.join(',')})',4326))"
+      conn.exec query
+    end
+    # Check if the splitted right segment's size is = 0 and inserts it into the database
+    if (split == 1.0) then
+      # Connects only with the right (shortest) side
+      r_coords = conn.exec("SELECT AsText(EndPoint('#{seg_geom}'))").getvalue(0,0)
+      r_coords = r_coords.gsub(/[()A-Z]/,'')
+      # Connects the right segment with the stop
+      coords2 = []
+      coords2 << stop_coords
+      coords2 << r_coords
+      query = "INSERT INTO osm_gtfs_links (stop_id, node_id, geom) VALUES ('#{stop_id}', '#{to_id}', GeomFromText('LINESTRING(#{coords2.join(',')})',4326))"
+      conn.exec query
+    end
+    # If both splitted segment's size are > 0, then inserts them into the database
+    if ((split > 0.0) and (split < 1.0)) then
       l_coords = conn.exec("SELECT AsText(line_substring('#{seg_geom}', 0, #{split}))").getvalue(0,0)
       l_coords = l_coords.gsub(/[()A-Z]/,'').split(',')
+      r_coords = conn.exec("SELECT AsText(line_substring('#{seg_geom}', #{split}, 1))").getvalue(0,0)
+      r_coords = r_coords.gsub(/[()A-Z]/,'').split(',')
       # Connects the left segment with the stop and reorders it
       coords1 = []
       coords1 << stop_coords
       coords1 << l_coords.reverse
       query = "INSERT INTO osm_gtfs_links (stop_id, node_id, geom) VALUES ('#{stop_id}', '#{from_id}', GeomFromText('LINESTRING(#{coords1.join(',')})',4326))"
       conn.exec query
-    end
-    # Check if the splitted right segment's size is > 0 and inserts it into the database
-    if (split < 1.0) then
-      r_coords = conn.exec("SELECT AsText(line_substring('#{seg_geom}', #{split}, 1))").getvalue(0,0)
-      r_coords = r_coords.gsub(/[()A-Z]/,'').split(',')
       # Connects the right segment with the stop, no need to reorder in that case
       coords2 = []
       coords2 << stop_coords
@@ -78,10 +99,8 @@ class Graphserver
       count += 1
       if count%1000==0 then $stderr.print( sprintf("\rProcessed %d/%d gtfs stops (%d%%)", count, total, (count.to_f/total)*100) ) end
       if (link_stop!(stop_id, stop_geom, search_range) ) then
-#        puts "Linked stop #{stop_id}"
         stops_linked += 1
       else
-#        puts "Didn't find a node close to the stop #{stop_id}"
         stops_isolated += 1
         isolated << stop_id
       end
