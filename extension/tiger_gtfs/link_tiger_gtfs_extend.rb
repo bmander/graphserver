@@ -160,17 +160,19 @@ class Graphserver
     res.each do |stop_id, node_id, coords, rcoords|
       #In KML LineStrings have the spaces and the comas swapped with respect to postgis
       #We just substitute a space for a comma and viceversa
-      coords.gsub!(" ","|")
-      coords.gsub!(","," ")
-      coords.gsub!("|",",")
-      rcoords.gsub!(" ","|")
-      rcoords.gsub!(","," ")
-      rcoords.gsub!("|",",")
+#      coords.gsub!(" ","|")
+#      coords.gsub!(","," ")
+#      coords.gsub!("|",",")
+#      rcoords.gsub!(" ","|")
+#      rcoords.gsub!(","," ")
+#      rcoords.gsub!("|",",")
       #Also deletes the LINESTRING() envelope
-      coords.gsub!("LINESTRING(","")
-      coords.gsub!(")","")
-      rcoords.gsub!("LINESTRING(","")
-      rcoords.gsub!(")","")
+#      coords.gsub!("LINESTRING(","")
+#      coords.gsub!(")","")
+#      rcoords.gsub!("LINESTRING(","")
+#      rcoords.gsub!(")","")
+      coords.gsub!(/[ ,()A-Z]/) {|s| if (s==' ') then ',' else if (s==',') then ' ' end end}
+      rcoords.gsub!(/[ ,()A-Z]/) {|s| if (s==' ') then ',' else if (s==',') then ' ' end end}
 
 #      @gg.add_edge( GTFS_PREFIX+stop_id, TIGER_PREFIX+node_id, Link.new )
 #      @gg.add_edge( TIGER_PREFIX+node_id, GTFS_PREFIX+stop_id, Link.new )

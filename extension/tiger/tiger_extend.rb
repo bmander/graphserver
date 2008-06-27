@@ -37,17 +37,19 @@ class Graphserver
     res.each do |id, from_id, to_id, name, length, geom, rgeom|
       #In KML LineStrings have the spaces and the comas swapped with respect to postgis
       #We just substitute a space for a comma and viceversa
-      geom.gsub!(" ","|")
-      geom.gsub!(","," ")
-      geom.gsub!("|",",")
-      rgeom.gsub!(" ","|")
-      rgeom.gsub!(","," ")
-      rgeom.gsub!("|",",")
-      #Also deletes the LINESTRING() envelope
-      geom.gsub!("LINESTRING(","")
-      geom.gsub!(")","")
-      rgeom.gsub!("LINESTRING(","")
-      rgeom.gsub!(")","")
+#      geom.gsub!(" ","|")
+#      geom.gsub!(","," ")
+#      geom.gsub!("|",",")
+#      rgeom.gsub!(" ","|")
+#      rgeom.gsub!(","," ")
+#      rgeom.gsub!("|",",")
+#      #Also deletes the LINESTRING() envelope
+#      geom.gsub!("LINESTRING(","")
+#      geom.gsub!(")","")
+#      rgeom.gsub!("LINESTRING(","")
+#      rgeom.gsub!(")","")
+      geom.gsub!(/[ ,()A-Z]/) {|s| if (s==' ') then ',' else if (s==',') then ' ' end end}
+      rgeom.gsub!(/[ ,()A-Z]/) {|s| if (s==' ') then ',' else if (s==',') then ' ' end end}
       @gg.add_vertex( TIGER_PREFIX+from_id )
       @gg.add_vertex( TIGER_PREFIX+to_id )
       @gg.add_edge_geom( TIGER_PREFIX+from_id, TIGER_PREFIX+to_id, Street.new( name, Float(length) ),geom)

@@ -54,9 +54,10 @@ class Graphserver
      end
   end
 
-  # Método que devuelve el tramo de calle más próximo a una parada
+  # Returns the nearest osm segment to a stop location
   def nearest_osm_segment( stop_geom, search_range )
-     segments = conn.exec <<-SQL
+#     segments = conn.exec <<-SQL
+     segment = conn.exec <<-SQL
        SELECT seg_id, distance(geom, '#{stop_geom}') AS dist
        FROM osm_segments
        WHERE geom && expand( '#{stop_geom}'::geometry, #{search_range} )
@@ -64,12 +65,18 @@ class Graphserver
        LIMIT 1
      SQL
 
-     # Puede devolver una o ninguna respuesta
-     if segments.num_tuples == 0 then
-       return nil, nil, nil
+     # It can return zero or one response
+#     if segments.num_tuples == 0 then
+#       return nil, nil, nil
+#     else
+#       return segments[0][0..2]
+#     end
+     if segment.num_tuples == 0 then
+       return nil
      else
-       return segments[0][0..2]
+       return segment[0][0..1]
      end
+
   end
 
   # Método que selecciona el nodo de un way más próximo a una parada
@@ -151,33 +158,126 @@ class Graphserver
     conn.exec( transaction.join )
   end
 
+  # Looks for the nearest node in the nearest segment
+  # and creates the links in the osm_gtfs_links table
+  def link_stop! (stop_id, stop_geom, search_range)
+    #Looks for the nearest segment and node in segment
+#    ret = conn.exec <<-SQL
+#--      SELECT seg_id, from_id AS node_id, AsText(geom) AS seg_coords, AsText(StartPoint(geom)) AS node_coords, distance(StartPoint(geom), '#{stop_geom}') AS dist_node, distance(geom, '#{stop_geom}') AS dist_seg
+#      SELECT seg_id, from_id AS node_id, geom AS seg_geom, AsText(StartPoint(geom)) AS node_coords, distance(StartPoint(geom), '#{stop_geom}') AS dist_node, distance(geom, '#{stop_geom}') AS dist_seg
+#      FROM osm_segments
+#      WHERE geom && expand( '#{stop_geom}'::geometry, #{search_range} )
+#      UNION
+#--     (SELECT seg_id, to_id AS node_id, AsText(geom) AS seg_coords, AsText(EndPoint(geom)) AS node_coords, distance(EndPoint(geom), '#{stop_geom}') AS dist_node, distance(geom, '#{stop_geom}') AS dist_seg
+#     (SELECT seg_id, to_id AS node_id, geom AS seg_geom, AsText(EndPoint(geom)) AS node_coords, distance(EndPoint(geom), '#{stop_geom}') AS dist_node, distance(geom, '#{stop_geom}') AS dist_seg
+#      FROM osm_segments
+#      WHERE geom && expand( '#{stop_geom}'::geometry, #{search_range} ))
+#      ORDER BY dist_seg, dist_node LIMIT 1
+#    SQL
+
+    #Looks for the nearest segment
+    ret = conn.exec <<-SQL
+      SELECT seg_id, from_id, to_id, geom, distance(geom, '#{stop_geom}') AS dist
+      FROM osm_segments
+      WHERE geom && expand( '#{stop_geom}'::geometry, #{search_range} )
+      ORDER BY dist
+      LIMIT 1
+    SQL
+
+    # If no segments where found in the search range return nil
+    if ret.num_tuples == 0 then return nil end
+
+    # Extract values from the query
+    # The coordinates are filtered from the AsText clause which contains 'LINESTRING(...)'
+    seg_id = ret[0][0]
+    from_id = ret[0][1]
+    to_id = ret[0][2]
+    seg_geom = ret[0][3]
+#    seg_coords = ( (ret[0][2]).gsub(/[()A-Z]/,'') ).split(',')
+#    node_coords = (ret[0][3]).gsub(/[()A-Z]/,'')
+
+    # Splits segment in the nearest point to the stop
+    ret = conn.exec("SELECT line_locate_point('#{seg_geom}', '#{stop_geom}'), AsText('#{stop_geom}')")
+    split = ret[0][0].to_f
+    stop_coords = ret[0][1].gsub(/[()A-Z]/,'')
+    puts split
+    puts stop_coords
+
+    # Otherwise, returns the two halves
+    l_coords = conn.exec("SELECT AsText(line_substring('#{seg_geom}', 0, #{split}))").getvalue(0,0)
+    puts l_coords
+    r_coords = conn.exec("SELECT AsText(line_substring('#{seg_geom}', #{split}, 1))").getvalue(0,0)
+    puts r_coords
+    l_coords = l_coords.gsub(/[()A-Z]/,'').split(',')
+    r_coords = r_coords.gsub(/[()A-Z]/,'').split(',')
+    puts l_coords
+    puts r_coords
+
+    # Select the segment which contains the nearest nodeReorder and join the segment with the stop geom
+#    if (seg_coords[0] == node_coords) then
+#      mid_coords = seg_coords.pop
+#    else
+#      mid_coords = seg_coords.shift
+#    end
+
+    # Connects both segments with the stop and reorders if necessary
+    coords1 = []
+    coords1 << stop_coords
+    coords1 << l_coords.reverse
+    coords2 = []
+    coords2 << stop_coords
+    coords2 << r_coords
+
+    # Inserts segments into the database
+    query = "INSERT INTO osm_gtfs_links (stop_id, node_id, geom) VALUES ('#{stop_id}', '#{from_id}', GeomFromText('LINESTRING(#{coords1.join(',')})',4326))"
+    puts "query = #{query}"
+    conn.exec query
+#    conn.exec "INSERT INTO osm_gtfs_links (stop_id, node_id, geom) VALUES ('#{stop_id}', '#{from_id}', 'GeomFromText(\'#{coords1}\',4326))')"
+    conn.exec "INSERT INTO osm_gtfs_links (stop_id, node_id, geom) VALUES ('#{stop_id}', '#{to_id}', GeomFromText('LINESTRING(#{coords2.join(',')})',4326))"
+  end
+
+
   # Looks for the nearest node in the nearest segment for each stop
-  # and creates the links in the street_gtfs_links table
+  # and creates the links in the osm_gtfs_links table
   def link_osm_gtfs!
+    stops_linked = 0
+    stops_isolated = 0
     each_stop do |stop_id, stop_geom|
       # Looks for the nearest node in the nearest segment to the stop in a certain range
 #      node_id = nearest_osm_node_in_segment( stop_geom, SEARCH_RANGE )
 #      node_id, x1, y1, x2, y2 = nearest_osm_node_in_segment( stop_geom, SEARCH_RANGE )
-      node_id, location = nearest_osm_node_in_segment( stop_geom, SEARCH_RANGE )
+#      node_id, location = nearest_osm_node_in_segment( stop_geom, SEARCH_RANGE )
       # If still not found performs a simpler search in a wider range
 #      if not node_id then
 #        node_id = nearest_street_node(stop_geom, SEARCH_RANGE*10)
 #      end
-      # If found, creates the link in the table
-      if node_id then
-        geom_wkt = "MakeLine('#{stop_geom}', '#{location}')"
-        conn.exec "INSERT INTO street_gtfs_links (stop_id, node_id, geom) VALUES ('#{stop_id}', '#{node_id}', #{geom_wkt})"
+#      # If found, creates the link in the table
+#      if node_id then
+#        geom_wkt = "MakeLine('#{stop_geom}', '#{location}')"
+#        conn.exec "INSERT INTO osm_gtfs_links (stop_id, node_id, geom) VALUES ('#{stop_id}', '#{node_id}', #{geom_wkt})"
+#        puts "Linked stop #{stop_id}"
+#      else
+#        puts "Didn't find a node close to the stop #{stop_id}"
+#      end
+#    end
+      if (link_stop!(stop_id, stop_geom, SEARCH_RANGE) ) then
         puts "Linked stop #{stop_id}"
+        stops_linked += 1
       else
         puts "Didn't find a node close to the stop #{stop_id}"
+        stops_isolated += 1
       end
     end
+
     #Vacuum analyze table
-    conn.exec "VACUUM ANALYZE street_gtfs_links"
+    conn.exec "VACUUM ANALYZE osm_gtfs_links"
+    #Report linked stops
+    puts "Linked #{stops_linked}."
+    if (stops_isolated > 0) then puts "Remaining #{stops_isolated} without link." end
   end
 
   # Metodo que divide los tramos osm en los puntos más cercanos a las paradas
-  # y crea los enlaces en la tabla street_gtfs_links
+  # y crea los enlaces en la tabla osm_gtfs_links
 #  def split_osm_segments!
 #    each_stop do |stop_id, stop_geom|
 #      # busca el tramo de calle más próximo a la parada
@@ -187,7 +287,7 @@ class Graphserver
 #        left, right = split_osm_segment( seg_geom, stop_geom )
 #        if left then
 #          split_osm_segment!( seg_id, seg_id+"l", seg_id+"r", id+"-"+stop_id, left, right )
-#          conn.exec "INSERT INTO street_gtfs_links (stop_id, node_id) VALUES ('#{stop_id.delete("\'")}', '#{(id+"-"+stop_id).delete("\'")}')"
+#          conn.exec "INSERT INTO osm_gtfs_links (stop_id, node_id) VALUES ('#{stop_id.delete("\'")}', '#{(id+"-"+stop_id).delete("\'")}')"
 #        end
 #      end
 #    end
@@ -196,7 +296,7 @@ class Graphserver
   # Método que elimina la tabla de enlaces entre osm y gtfs
   def remove_link_table!
     begin
-      conn.exec "DROP TABLE street_gtfs_links"
+      conn.exec "DROP TABLE osm_gtfs_links"
     rescue
       nil
     end
@@ -206,36 +306,38 @@ class Graphserver
   def create_link_table!
     #an extremely simple join table
     conn.exec <<-SQL
-      create table street_gtfs_links (
+      create table osm_gtfs_links (
         stop_id            text NOT NULL,
         node_id            text NOT NULL
       );
 
-      select AddGeometryColumn( 'street_gtfs_links', 'geom', #{WGS84_LATLONG_EPSG}, 'LINESTRING', 2 );
+      select AddGeometryColumn( 'osm_gtfs_links', 'geom', #{WGS84_LATLONG_EPSG}, 'LINESTRING', 2 );
     SQL
   end
 
   # Carga en el grafo los enlaces entre osm y gtfs
   def load_osm_gtfs_links
-#    res = conn.exec "SELECT stop_id, node_id FROM street_gtfs_links"
-#    res = conn.exec "SELECT stop_id, node_id, AsText(geom) AS coords FROM street_gtfs_links"
-    res = conn.exec "SELECT stop_id, node_id, AsText(geom), AsText(Reverse(geom)) FROM street_gtfs_links"
+#    res = conn.exec "SELECT stop_id, node_id FROM osm_gtfs_links"
+#    res = conn.exec "SELECT stop_id, node_id, AsText(geom) AS coords FROM osm_gtfs_links"
+    res = conn.exec "SELECT stop_id, node_id, AsText(geom), AsText(Reverse(geom)) FROM osm_gtfs_links"
 
 #    res.each do |stop_id, node_id|
     res.each do |stop_id, node_id, coords, rcoords|
       #In KML LineStrings have the spaces and the comas swapped with respect to postgis
       #We just substitute a space for a comma and viceversa
-      coords.gsub!(" ","|")
-      coords.gsub!(","," ")
-      coords.gsub!("|",",")
-      rcoords.gsub!(" ","|")
-      rcoords.gsub!(","," ")
-      rcoords.gsub!("|",",")
-      #Also deletes the LINESTRING() envelope
-      coords.gsub!("LINESTRING(","")
-      coords.gsub!(")","")
-      rcoords.gsub!("LINESTRING(","")
-      rcoords.gsub!(")","")
+#      coords.gsub!(" ","|")
+#      coords.gsub!(","," ")
+#      coords.gsub!("|",",")
+#      rcoords.gsub!(" ","|")
+#      rcoords.gsub!(","," ")
+#      rcoords.gsub!("|",",")
+#      #Also deletes the LINESTRING() envelope
+#      coords.gsub!("LINESTRING(","")
+#      coords.gsub!(")","")
+#      rcoords.gsub!("LINESTRING(","")
+#      rcoords.gsub!(")","")
+      coords.gsub!(/[ ,()A-Z]/) {|s| if (s==' ') then ',' else if (s==',') then ' ' end end}
+      rcoords.gsub!(/[ ,()A-Z]/) {|s| if (s==' ') then ',' else if (s==',') then ' ' end end}
 
 #      @gg.add_edge( GTFS_PREFIX+stop_id, OSM_PREFIX+node_id, Link.new )
 #      @gg.add_edge( OSM_PREFIX+node_id, GTFS_PREFIX+stop_id, Link.new )

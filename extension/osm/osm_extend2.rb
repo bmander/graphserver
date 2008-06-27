@@ -493,17 +493,19 @@ class Graphserver
     res.each do |id, from_id, to_id, name, type, oneway, length, coords, rcoords|
       #In KML LineStrings have the spaces and the comas swapped with respect to postgis
       #We just substitute a space for a comma and viceversa
-      coords.gsub!(" ","|")
-      coords.gsub!(","," ")
-      coords.gsub!("|",",")
-      rcoords.gsub!(" ","|")
-      rcoords.gsub!(","," ")
-      rcoords.gsub!("|",",")
-      #Also deletes the LINESTRING() envelope
-      coords.gsub!("LINESTRING(","")
-      coords.gsub!(")","")
-      rcoords.gsub!("LINESTRING(","")
-      rcoords.gsub!(")","")
+#      coords.gsub!(" ","|")
+#      coords.gsub!(","," ")
+#      coords.gsub!("|",",")
+#      rcoords.gsub!(" ","|")
+#      rcoords.gsub!(","," ")
+#      rcoords.gsub!("|",",")
+#      #Also deletes the LINESTRING() envelope
+#      coords.gsub!("LINESTRING(","")
+#      coords.gsub!(")","")
+#      rcoords.gsub!("LINESTRING(","")
+#      rcoords.gsub!(")","")
+      coords.gsub!(/[ ,()A-Z]/) {|s| if (s==' ') then ',' else if (s==',') then ' ' end end}
+      rcoords.gsub!(/[ ,()A-Z]/) {|s| if (s==' ') then ',' else if (s==',') then ' ' end end}
 #      puts "adding Street (id=#{id}, name='#{name}', type=#{type}, length=#{length}, oneway=#{oneway})"
 #      @gg.add_vertex( from_id )
       @gg.add_vertex( OSM_PREFIX+from_id )
