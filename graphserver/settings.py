@@ -1,0 +1,1 @@
+GRAPHS_CORE_SO = "/home/brandon/graphserver/branches/nino/core/graph_core.so"

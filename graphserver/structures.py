@@ -1,4 +1,7 @@
-from graphserver.dll import lgs, free
+try:
+    from graphserver.dll import lgs, free
+except ImportError:
+    from dll import lgs, free #so I can run this script from the same folder
 from ctypes import string_at, byref, c_int, c_long, c_size_t, c_char_p, c_double, c_void_p
 from ctypes import Structure, pointer, cast, POINTER, addressof
 from time import asctime, gmtime
@@ -527,14 +530,21 @@ class TripHopSchedule(Structure):
 walkable(TripHopSchedule, lgs.thsWalk, lgs.thsWalkBack)
 returntype(POINTER(TripHopSchedule), [lgs.thsNew])
 
-CalendarDay._fields_ = [('begin_time', c_long),('end_time',c_long),('n_service_ids',c_int),
-            ('service_ids_ptr',POINTER(ServiceIdType)),('daylight_savings',c_int),
-            ('prev_day_ptr', POINTER(CalendarDay)),
-            ('next_day_ptr', POINTER(CalendarDay))]
+CalendarDay._fields_ = [('begin_time',      c_long),
+                        ('end_time',        c_long),
+                        ('n_service_ids',   c_int),
+                        ('service_ids_ptr', POINTER(ServiceIdType)),
+                        ('daylight_savings',c_int),
+                        ('prev_day_ptr',    POINTER(CalendarDay)),
+                        ('next_day_ptr',    POINTER(CalendarDay))]
 
-State._fields_ = [('time',c_long),('weight',c_long),('dist_walked',c_double),
-                  ('num_transfers', c_int),('prev_edge_type', EdgePayloadEnumType),
-                  ('prev_edge_name', c_char_p),('calendar_day_ptr',POINTER(CalendarDay))]
+State._fields_ = [('time',            c_long),
+                  ('weight',          c_long),
+                  ('dist_walked',     c_double),
+                  ('num_transfers',   c_int),
+                  ('prev_edge_type',  EdgePayloadEnumType),
+                  ('prev_edge_name',  c_char_p),
+                  ('calendar_day_ptr',POINTER(CalendarDay))]
 
 Edge._fields_ = [('from_ptr', POINTER(Vertex)),
                  ('to_ptr', POINTER(Vertex)),
@@ -545,11 +555,11 @@ EdgePayload._fields_ = [('type', EdgePayloadEnumType)]
 Link._fields_ = [('type', EdgePayloadEnumType), ('name',c_char_p)]
 
 Vertex._fields_ = [('degree_out', c_int),
-        ('degree_in', c_int),
-        ('outgoing_ptr', POINTER(ListNode)),
-        ('incoming_ptr', POINTER(ListNode)),
-        ('label', c_char_p),
-        ('payload_ptr', POINTER(EdgePayload))]
+                   ('degree_in', c_int),
+                   ('outgoing_ptr', POINTER(ListNode)),
+                   ('incoming_ptr', POINTER(ListNode)),
+                   ('label', c_char_p),
+                   ('payload_ptr', POINTER(EdgePayload))]
 
 ListNode._fields_ = [('data_ptr', POINTER(Edge)),
             ('next_ptr', POINTER(ListNode))]

@@ -6,10 +6,14 @@ import os
 import sys
 
 # Try the major versioned name first, falling back on the unversioned name.
-try:
-    lgs = PyDLL(os.environ['GRAPHS_CORE_SO'])
-except:
-    raise
+if 'GRAPHS_CORE_SO' in os.environ:
+    so_loc = os.environ['GRAPHS_CORE_SO']
+else:
+    import settings
+    so_loc = settings.GRAPHS_CORE_SO
+    
+lgs = PyDLL( so_loc )
+
 free = CDLL('libc.so.6').free
 
 def cleanup():
