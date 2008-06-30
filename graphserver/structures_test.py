@@ -1,7 +1,11 @@
 from structures import *
 
 class TestGraph:
-    def graph_test(self):
+    def test_basic(self):
+        g = Graph()
+        assert g
+    
+    def graph_xtestx(self):
         g = Graph()
         g.add_vertex("home")
         g.add_vertex("work")
