@@ -20,8 +20,13 @@ DB_PARAMS = { :host => nil,
 gs = Graphserver.new
 gs.database_params = DB_PARAMS
 
+if ix = ARGV.index("remove_tables") then
+  gs.remove_gtfs_tables!
+  
+  ARGV.delete_at( ix )
+end
+
 if ix = ARGV.index("create_tables") then
-  gs.remove_gtfs_tables! #clean up first
   gs.create_gtfs_tables!
 
   ARGV.delete_at( ix )

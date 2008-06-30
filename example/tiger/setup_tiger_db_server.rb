@@ -19,8 +19,13 @@ DB_PARAMS = { :host => nil,
 gs = Graphserver.new
 gs.database_params = DB_PARAMS
 
-if ix = ARGV.index("create_tables") then
+if ix = ARGV.index("remove_tables") then
   gs.remove_tiger_table! #clean up first
+
+  ARGV.delete_at( ix )
+end
+
+if ix = ARGV.index("create_tables") then
   gs.create_tiger_table!
 
   ARGV.delete_at( ix )

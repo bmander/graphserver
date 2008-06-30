@@ -14,7 +14,4 @@ DB_PARAMS = { :host => nil,
 gs = Graphserver.new
 gs.database_params = DB_PARAMS
 
-gs.remove_link_table! #clean up first
-gs.create_link_table!
 gs.split_tiger_lines!
-gs.link_street_gtfs!
