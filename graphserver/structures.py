@@ -140,17 +140,18 @@ class Graph():
         
         return Edge.from_pointer(edgesoul)
     
-    #def __del__(self):
-    #    cdelete(self, lgs.gDestroy)
+    @property
+    def vertices(self):
+        count = c_int()
+        p_va = lgs.gVertices(self.soul, byref(count))
+        verts = []
+        arr = cast(p_va, POINTER(c_void_p)) # a bit of necessary voodoo
+        for i in range(count.value):
+            v = Vertex.from_pointer(arr[i])
+            verts.append(v)
+        return verts
+
 """
-    def add_vertex(self, vertex_name):
-        lgs.gAddVertex(self.c_ref, c_char_p(vertex_name))
-    
-    def get_vertex(self, key):
-        p = cast(lgs.gGetVertex(self.c_ref, c_char_p(key)), POINTER(Vertex))
-        if p:
-            return p.contents
-        return None 
 
     @property
     def vertices(self):
@@ -528,14 +529,6 @@ class Edge():
         payloadtype = epGetType(payloadsoul)
         
         return payloadtypes[payloadtype].from_pointer( payloadsoul )
-    
-"""
-    
-    @property
-    @castpayload
-    def payload(self):
-        return self.payload_ptr
-"""
     
 #walkable(Edge, lgs.epWalk, lgs.epWalkBack)
 #collapsable(Edge, lgs.epCollapse, lgs.epCollapseBack)
