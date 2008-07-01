@@ -213,7 +213,7 @@ class Graphserver
     #Response to request GET "/keep_alive"
     @server.mount_proc( "/keep_alive" ) do |request, response|
       ret = []
-      ret << "Size of graph: #{@gg.vertices.count} vertices"
+      ret << "Size of graph: #{@gg.vertices.length} vertices"
       ret << "First vertex: #{@gg.vertices.first.label}"
       ret << "Last vertex: #{@gg.vertices.last.label}"
       response.body = ret.join
