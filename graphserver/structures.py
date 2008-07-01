@@ -177,6 +177,19 @@ class Graph():
         gg = Graph.from_pointer( sptsoul )
         
         return gg
+        
+    def shortest_path_tree_retro(self, fromv, tov, finalstate):
+        #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
+        
+        func = lgs.gShortestPathTreeRetro
+        func.restype = c_void_p
+        func.argtypes = [c_void_p, c_char_p, c_char_p, c_void_p]
+        
+        sptsoul = func( self.soul, fromv, tov, finalstate.soul )
+        
+        gg = Graph.from_pointer( sptsoul )
+        
+        return gg
 
 """
     

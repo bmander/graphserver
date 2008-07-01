@@ -64,6 +64,22 @@ class TestGraph:
         assert spt.get_vertex("home").degree_in==0
         assert spt.get_vertex("work").degree_in==1
         assert spt.get_vertex("work").degree_out==0
+        
+    def test_shortest_path_tree_retro(self):
+        g = Graph()
+        fromv = g.add_vertex("home")
+        tov = g.add_vertex("work")
+        s = Street( "helloworld", 1 )
+        e = g.add_edge("home", "work", s)
+        g.add_edge("work", "home", Street("backwards",1) )
+        
+        spt = g.shortest_path_tree_retro("home", "work", State(0))
+        assert spt
+        assert spt.__class__ == Graph
+        assert spt.get_vertex("home").degree_out==0
+        assert spt.get_vertex("home").degree_in==1
+        assert spt.get_vertex("work").degree_in==0
+        assert spt.get_vertex("work").degree_out==1
     
     def test_shortest_path(self):
         g = Graph()
