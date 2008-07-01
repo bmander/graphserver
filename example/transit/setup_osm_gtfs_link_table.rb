@@ -1,7 +1,7 @@
 $: << "../../extension/osm_gtfs"
 
 require 'graphserver.rb'
-require 'link_osm_gtfs_extend2.rb'
+require 'link_osm_gtfs_extend.rb'
 
 print "usage: ruby setup_osm_gtfs_link_table.rb SEARCH_RANGE\n"
 print "       SEARCH_RANGE: optional, search range (m) for connecting gtfs stops to osm nodes\n"

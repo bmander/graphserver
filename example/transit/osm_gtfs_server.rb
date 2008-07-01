@@ -5,8 +5,8 @@ $: << "../../extension/kml"
 
 require 'graphserver.rb'
 require 'gtfs_extend.rb'
-require 'osm_extend2.rb'
-require 'link_osm_gtfs_extend2.rb'
+require 'osm_extend.rb'
+require 'link_osm_gtfs_extend.rb'
 require 'kml_extend.rb'
 
 # At least one parameter (the osm file)

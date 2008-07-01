@@ -199,6 +199,7 @@ class Graphserver
       ret << "vertices_from_coords?lat=LAT&lon=LON"
       ret << "vertices_from_address?add=ADDRESS"
       ret << "stops_from_coords?lat=LAT&lon=LON"
+      ret << "keep_alive"
       ret << "dot"
       response.body = ret.join("\n")
     end
@@ -207,6 +208,15 @@ class Graphserver
       begin
         response.body=@gg.to_dot
       end
+    end
+
+    #Response to request GET "/keep_alive"
+    @server.mount_proc( "/keep_alive" ) do |request, response|
+      ret = []
+      ret << "Size of graph: #{@gg.vertices.count} vertices"
+      ret << "First vertex: #{@gg.vertices.first.label}"
+      ret << "Last vertex: #{@gg.vertices.last.label}"
+      response.body = ret.join
     end
 
     #Response to GET request "/shortest_path"

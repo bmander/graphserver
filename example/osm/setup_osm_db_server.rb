@@ -1,7 +1,7 @@
 $: << "../../extension/osm"
 
 require 'graphserver.rb'
-require 'osm_extend2.rb'
+require 'osm_extend.rb'
 
 # At least one parameter (the osm file)
 if ARGV.size < 1 then
