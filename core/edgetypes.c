@@ -66,6 +66,11 @@ epDestroy( EdgePayload* this ) {
   }
 }
 
+edgepayload_t
+epGetType( EdgePayload* this ) {
+    return this->type;
+}
+
 State*
 epWalk( EdgePayload* this, State* params ) {
   if( !this )
@@ -147,6 +152,11 @@ linkDestroy(Link* tokill) {
   free( tokill );
 }
 
+char*
+linkGetName(Link* this) {
+    return this->name;
+}
+
 //STREET FUNCTIONS
 Street*
 streetNew(const char *name, double length) {
@@ -163,6 +173,16 @@ void
 streetDestroy(Street* tokill) {
   free(tokill->name);
   free(tokill);
+}
+
+char*
+streetGetName(Street* this) {
+    return this->name;
+}
+
+double
+streetGetLength(Street* this) {
+    return this->length;
 }
 
 //TRIPHOP FUNCTIONS

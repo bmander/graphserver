@@ -4,41 +4,74 @@ class TestGraph:
     def test_basic(self):
         g = Graph()
         assert g
-    
-    def graph_xtestx(self):
+        
+    def test_add_vertex(self):
+        g = Graph()
+        v = g.add_vertex("home")
+        assert v.label == "home"
+        
+    def test_get_vertex(self):
         g = Graph()
         g.add_vertex("home")
-        g.add_vertex("work")
+        v = g.get_vertex("home")
+        assert v.label == "home"
+        v = g.get_vertex("bogus")
+        assert v == None
+        
+    def test_add_edge(self):
+        g = Graph()
+        fromv = g.add_vertex("home")
+        tov = g.add_vertex("work")
         s = Street( "helloworld", 1 )
         e = g.add_edge("home", "work", s)
-        assert(g.get_vertex("home").label == 'home')
-        assert(g.get_vertex("work").label == 'work')
-        assert(s.name == "helloworld")
-        assert(s.length == 1)
-        assert(isinstance(e.payload, Street))
-        assert(e.payload.name == "helloworld")
-        assert(e.from_v.label == "home")
-        assert(str(e) == 
-               """<Edge><Vertex degree_out='1' degree_in='0' label='home'/>"""
-               """<Vertex degree_out='0' degree_in='1' label='work'/></Edge>""")
-        assert(e.to_v.label == "work")
-        assert(len(g.vertices) == 2)
-        assert(g.vertices[0].label == 'home')
         
-        print g.shortest_path("home", "work", State())
+        assert e
+        assert e.from_v.label == "home"
+        assert e.to_v.label == "work"
+        assert str(e)=="<Edge><Vertex degree_out='1' degree_in='0' label='home'/><Vertex degree_out='0' degree_in='1' label='work'/></Edge>"
+    
+    def test_add_edge_effects_vertices(self):
+        g = Graph()
+        fromv = g.add_vertex("home")
+        tov = g.add_vertex("work")
+        s = Street( "helloworld", 1 )
+        e = g.add_edge("home", "work", s)
         
+        assert fromv.degree_out==1
+        assert tov.degree_in==1
+    
+    def test_vertices(self):
+        g = Graph()
+        fromv = g.add_vertex("home")
+        tov = g.add_vertex("work")
         
-        #l = Link()
+        assert g.vertices
+        assert len(g.vertices)==2
+        assert g.vertices[0].label == 'home'
+        
+    def test_shortest_path(self):
+        g = Graph()
+        fromv = g.add_vertex("home")
+        tov = g.add_vertex("work")
+        s = Street( "helloworld", 1 )
+        e = g.add_edge("home", "work", s)
+        
+        sp = g.shortest_path("home", "work", State())
+        assert sp
+        
+    def test_add_link(self):
+        g = Graph()
+        fromv = g.add_vertex("home")
+        tov = g.add_vertex("work")
+        s = Street( "helloworld", 1 )
+        e = g.add_edge("home", "work", s)
+        
+        assert e.payload
+        assert e.payload.__class__ == Street
+        
         x = g.add_edge("work", "home", Link())
-        assert(x.payload.name == "LINK")
-        print x.payload
-        
-        
-        print "Okay... dumping the vertices"
-        for v in g.vertices:
-            print v    
-        
-        assert(g)
+        assert x.payload
+        assert x.payload.name == "LINK"
 
 
 class TestTriphopSchedule:
@@ -64,29 +97,47 @@ class TestTriphop:
 
 class TestStreet:
     def street_test(self):
-        x = lgs.streetNew(c_char_p("foo"), c_double(1.2)).contents
-        print "API %s" % x
-        x = Street("mystreet", 1.1)
-        print "%s" % x
+        s = Street("mystreet", 1.1)
+        assert s.name == "mystreet"
+        assert s.length == 1.1
+        assert s.to_xml() == "<street name='mystreet' length='1.100000' />"
+        
+class TestLink:
+    def link_test(self):
+        l = Link()
+        assert l
+        
+    def name_test(self):
+        l = Link()
+        assert l.name == "LINK"
 
 class TestListNode:
     def list_node_test(self):
         l = ListNode()
-        
-class TestEdge:
-    def edge_test(self):
-        ep = EdgePayload()
-        e = Edge(Vertex("home"),Vertex("work"), ep)
-        print e
 
 class TestVertex:
-    def vertex_test(self):
+    def test_basic(self):
+        v=Vertex("home")
+        assert v
+        
+    def test_label(self):
+        v=Vertex("home")
+        print v.label
+        assert v.label == "home"
+    
+    def test_incoming(self):
+        v=Vertex("home")
+        print v.degree_in
+        assert v.degree_in == 0
+        
+    def test_outgoing(self):
+        v=Vertex("home")
+        print v.degree_out
+        assert v.degree_out == 0
+        
+    def test_prettyprint(self):
         v = Vertex("home")
-        v.payload_ptr = pointer(EdgePayload(1))
-        assert(v.label == "home")
-        assert(len(v.incoming) == 0)
-        assert(len(v.outgoing) == 0)
-        print v
+        assert v.to_xml() == "<Vertex degree_out='0' degree_in='0' label='home'/>"
 
 class TestCalendar:
     def calendar_test(self):
@@ -105,3 +156,7 @@ class TestCalendar:
         assert(addressof(c.next.rewind())== addressof(c))
         
         return c
+        
+if __name__=='__main__':
+    import nose
+    nose.main()

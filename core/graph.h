@@ -113,6 +113,15 @@ vRemoveOutEdgeRef( Vertex* this, Edge* todie );
 void
 vRemoveInEdgeRef( Vertex* this, Edge* todie );
 
+char*
+vGetLabel( Vertex* this );
+
+int
+vDegreeOut( Vertex* this );
+
+int
+vDegreeIn( Vertex* this );
+
 //EDGE FUNCTIONS
 
 Edge*
@@ -129,6 +138,15 @@ eWalk(Edge *this, State* params) ;
 
 State*
 eWalkBack(Edge *this, State *params) ;
+
+Vertex*
+eGetFrom(Edge *this);
+
+Vertex*
+eGetTo(Edge *this);
+
+EdgePayload*
+eGetPayload(Edge *this);
 
 //LIST FUNCTIONS
 

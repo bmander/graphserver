@@ -84,15 +84,65 @@ Class Definitions
 
 """
 
-class Graph(Structure):
-    _fields_ = [('vertices_hash_ptr', c_void_p)]
+class Graph():
+    #_fields_ = [('vertices_hash_ptr', c_void_p)]
 
-    def __new__(cls):
-        return lgs.gNew().contents
-    
+    #def __new__(cls):
+    #    gNew = lgs.gNew
+    #    gNew.restype=c_void_p
+    #    
+    #    return lgs.gNew().contents
+        
+    def __init__(self):
+        gNew = lgs.gNew
+        gNew.restype=c_void_p
+        
+        self.soul = gNew()
+        
     def __del__(self):
-        cdelete(self, lgs.gDestroy)
+        #void gDestroy( Graph* this, int free_vertex_payloads, int free_edge_payloads );
+        
+        gDestroy = lgs.gDestroy
+        gDestroy.argtypes=[c_void_p,c_int,c_int]
+        
+        gDestroy(self.soul, 1, 1)
     
+    def add_vertex(self, label):
+        #Vertex* gAddVertex( Graph* this, char *label );
+
+        gAddVertex = lgs.gAddVertex
+        gAddVertex.restype=c_void_p
+        gAddVertex.argtypes=[c_void_p,c_char_p]
+        
+        vertexsoul = gAddVertex(self.soul, label)
+        
+        return Vertex.from_pointer(vertexsoul)
+        
+    def get_vertex(self, label):
+        #Vertex* gGetVertex( Graph* this, char *label ) {
+        
+        gGetVertex = lgs.gGetVertex
+        gGetVertex.restype=c_void_p
+        gGetVertex.argtypes=[c_void_p,c_char_p]
+        
+        vertexsoul = gGetVertex(self.soul, label)
+        
+        return Vertex.from_pointer(vertexsoul)
+        
+    def add_edge( self, fromv, tov, payload ):
+        #Edge* gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload );
+        
+        gAddEdge = lgs.gAddEdge
+        gAddEdge.restype=c_void_p
+        gAddEdge.argtypes=[c_void_p, c_char_p, c_char_p, c_void_p]
+        
+        edgesoul = gAddEdge( self.soul, fromv, tov, payload.soul )
+        
+        return Edge.from_pointer(edgesoul)
+    
+    #def __del__(self):
+    #    cdelete(self, lgs.gDestroy)
+"""
     def add_vertex(self, vertex_name):
         lgs.gAddVertex(self.c_ref, c_char_p(vertex_name))
     
@@ -190,9 +240,9 @@ class Graph(Structure):
         for e in self.edges:
             ret += "    %s -> %s;\n" % (e.from_v.label, e.to_v.label)
         return ret + "}"
+"""
 
-returntype(POINTER(Graph), [lgs.gNew, lgs.gShortestPathTree, lgs.gShortestPathTreeRetro])
-
+#returntype(POINTER(Graph), [lgs.gNew, lgs.gShortestPathTree, lgs.gShortestPathTreeRetro])
 
 class CalendarDay(Structure):   
     def __new__(self, begin_time, end_time, service_ids, daylight_savings):
@@ -306,19 +356,66 @@ class State(Structure):
 returntype(POINTER(State), [lgs.stateDup, lgs.stateNew])
     
 
-class Vertex(Structure):    
-    def __new__(self, label):
-        v = lgs.vNew(c_char_p(label)).contents
-        return v
+class Vertex():
+    def __init__(self,label=None):
+        if label:
+            vNew = lgs.vNew
+            vNew.restype =c_void_p
+            vNew.argtypes=[c_char_p]
+            
+            self.soul = vNew(label)
+        
+    def __del__(self):
+        #void vDestroy(Vertex* this, int free_vertex_payload, int free_edge_payloads) ;
+        
+        vDestroy = lgs.vDestroy
+        vDestroy.argtypes=[c_void_p,c_int,c_int]
+        
+        vDestroy(self.soul, 1, 1)
+        
+    @classmethod
+    def from_pointer(cls, ptr):
+        if ptr is None:
+            return None
+        
+        ret = Vertex()
+        ret.soul = ptr
+        return ret
     
-    def __init__(self, label):
-        pass
+    @property
+    def label(self):
+        # char* vGetLabel( Vertex* this ) {
+        vGetLabel = lgs.vGetLabel
+        vGetLabel.restype=c_char_p
+        vGetLabel.argtypes=[c_void_p]
+        
+        return vGetLabel(self.soul)
+        
+    @property
+    def degree_in(self):
+        # char* vGetLabel( Vertex* this ) {
+        vDegreeIn = lgs.vDegreeIn
+        vDegreeIn.restype=c_int
+        vDegreeIn.argtypes=[c_void_p]
+        
+        return vDegreeIn(self.soul)
+        
+    @property
+    def degree_out(self):
+        # char* vDegreeOut( Vertex* this ) {
+        vDegreeOut = lgs.vDegreeOut
+        vDegreeOut.restype=c_int
+        vDegreeOut.argtypes=[c_void_p]
+        
+        return vDegreeOut(self.soul)
+    
+    def to_xml(self):
+        return "<Vertex degree_out='%s' degree_in='%s' label='%s'/>" % (self.degree_out, self.degree_in, self.label)
     
     def __str__(self):
         return self.to_xml()
     
-    def to_xml(self):
-        return "<Vertex degree_out='%s' degree_in='%s' label='%s'/>" % (self.degree_out, self.degree_in, self.label)
+""" things not implemented after I moved over to the "soul" model
 
     @property
     def outgoing(self):
@@ -327,6 +424,12 @@ class Vertex(Structure):
     @property
     def incoming(self):
         return self._edges(lgs.vGetIncomingEdgeList)
+
+    def get_outgoing_edge(self,i):
+        return self._edges(lgs.vGetOutgoingEdgeList, i)
+        
+    def get_incoming_edge(self,i):
+        return self._edges(lgs.vGetIncomingEdgeList, i)
 
     def _edges(self, method, index = -1):
         e = []
@@ -349,12 +452,6 @@ class Vertex(Structure):
             return e
         return None
 
-    def get_outgoing_edge(self,i):
-        return self._edges(lgs.vGetOutgoingEdgeList, i)
-        
-    def get_incoming_edge(self,i):
-        return self._edges(lgs.vGetIncomingEdgeList, i)
-    
     @property
     @castpayload
     def payload(self):
@@ -362,38 +459,88 @@ class Vertex(Structure):
     
     def walk(self, state):
         return cast(lgs.eWalk(self, state), State)
+"""
 
 #cdelete(Vertex, lgs.vDestroy)
-returntype(POINTER(Vertex), [lgs.vNew])
+#returntype(POINTER(Vertex), [lgs.vNew])
 
-class Edge(Structure):
-    def __new__(cls, from_v, to_v, payload):
-        return lgs.eNew(byref(from_v), byref(to_v), byref(payload)).contents
+class Edge():
+    #def __new__(cls, from_v, to_v, payload):
+    #    return lgs.eNew(byref(from_v), byref(to_v), byref(payload)).contents
     
-    def __init__(self, from_v, to_v, payload):
-        pass 
+    def __init__(self, from_v=None, to_v=None, payload=None):
+        #Edge* eNew(Vertex* from, Vertex* to, EdgePayload* payload);
+        
+        if from_v is not None and to_v is not None and payload is not None:
+            eNew = lgs.eNew
+            eNew.restype =c_void_p
+            eNew.argtypes=[c_void_p, c_void_p, c_void_p]
+            
+            self.soul = eNew(from_v.soul, to_v.soul, payload.soul)
+
     
     def __str__(self):
         return "<Edge>%s%s</Edge>" % (self.from_v, self.to_v)
-    
+
+    @classmethod
+    def from_pointer(cls, ptr):
+        if ptr is None:
+            return None
+        
+        ret = Edge()
+        ret.soul = ptr
+        return ret
+        
     @property
     def from_v(self):
-        return self.from_ptr.contents
-    
+        eGetFrom = lgs.eGetFrom
+        eGetFrom.restype=c_void_p
+        eGetFrom.argtypes=[c_void_p]
+        
+        vertexsoul = eGetFrom(self.soul)
+        
+        return Vertex.from_pointer(vertexsoul)
+        
     @property
     def to_v(self):
-        return self.to_ptr.contents
+        eGetTo = lgs.eGetTo
+        eGetTo.restype=c_void_p
+        eGetTo.argtypes=[c_void_p]
+        
+        vertexsoul = eGetTo(self.soul)
+        
+        return Vertex.from_pointer(vertexsoul)
+        
+    @property
+    def payload(self):
+        payloadtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,5:None}
+        
+        eGetPayload = lgs.eGetPayload
+        eGetPayload.restype=c_void_p
+        eGetPayload.argtypes=[c_void_p]
+        
+        payloadsoul = eGetPayload(self.soul)
+        
+        epGetType = lgs.epGetType
+        epGetType.restype=c_int
+        epGetType.argtypes=[c_void_p]
+        
+        payloadtype = epGetType(payloadsoul)
+        
+        return payloadtypes[payloadtype].from_pointer( payloadsoul )
     
+"""
     
     @property
     @castpayload
     def payload(self):
         return self.payload_ptr
+"""
     
-walkable(Edge, lgs.epWalk, lgs.epWalkBack)
-collapsable(Edge, lgs.epCollapse, lgs.epCollapseBack)
+#walkable(Edge, lgs.epWalk, lgs.epWalkBack)
+#collapsable(Edge, lgs.epCollapse, lgs.epCollapseBack)
 
-returntype(POINTER(Edge), [lgs.eNew])
+#returntype(POINTER(Edge), [lgs.eNew])
 
 
 class ListNode(Structure):
@@ -424,7 +571,32 @@ collapsable(EdgePayload, lgs.epCollapse, lgs.epCollapseBack)
 #cdelete(EdgePayload, lgs.epDestroy)
 
     
-class Link(Structure):
+class Link():
+    def __init__(self):
+        linkNew = lgs.linkNew
+        linkNew.restype=c_void_p
+        linkNew.argtypes=[]
+        
+        self.soul = linkNew()
+        
+    @property
+    def name(self):
+        linkGetName = lgs.linkGetName
+        linkGetName.restype=c_char_p
+        linkGetName.argtypes=[c_void_p]
+        
+        return linkGetName(self.soul)
+        
+    @classmethod
+    def from_pointer(cls, ptr):
+        if ptr is None:
+            return None
+        
+        ret = Link()
+        ret.soul = ptr
+        return ret
+    
+    """
     def __new__(cls):
         return lgs.linkNew().contents
 
@@ -433,27 +605,56 @@ class Link(Structure):
 
     def to_xml(self):
         return "<link name='%s' type='%s'/>" % (self.name, self.type)
+    """
     
-walkable(Link, lgs.linkWalk, lgs.linkWalkBack)
+#walkable(Link, lgs.linkWalk, lgs.linkWalkBack)
 #cdelete(Link, lgs.linkDestroy)
-returntype(POINTER(Link), [lgs.linkNew])
+#returntype(POINTER(Link), [lgs.linkNew])
 
-class Street(Structure):
-    def __new__(cls,name,l):
-        return lgs.streetNew(c_char_p(name), c_double(l)).contents
-
-    def __init__(self, name, length):
-        pass
-
+class Street():
+    def __init__(self,name=None,length=None):
+        if name and length:
+            streetNew = lgs.streetNew
+            streetNew.restype=c_void_p
+            streetNew.argtypes=[c_char_p, c_double]
+            
+            self.soul = streetNew(name,length)
+        
+    #there will be no delete function, because Street is designed to be taken by Graph and deleted alongside it
+    
+    @property
+    def name(self):
+        streetGetName = lgs.streetGetName
+        streetGetName.restype=c_char_p
+        streetGetName.argtypes=[c_void_p]
+        
+        return streetGetName( self.soul )
+        
+    @property
+    def length(self):
+        streetGetLength = lgs.streetGetLength
+        streetGetLength.restype=c_double
+        streetGetLength.argtypes=[c_void_p]
+        
+        return streetGetLength( self.soul )
+    
     def __str__(self):
         return self.to_xml()
-
+    
     def to_xml(self):
         return "<street name='%s' length='%f' />" % (self.name, self.length)
+    
+    @classmethod
+    def from_pointer(cls, ptr):
+        if ptr is None:
+            return None
+        
+        ret = Street()
+        ret.soul = ptr
+        return ret
 
-
-walkable(Street, lgs.streetWalk, lgs.streetWalkBack)
-returntype(POINTER(Street), [lgs.streetNew])
+#walkable(Street, lgs.streetWalk, lgs.streetWalkBack)
+#returntype(POINTER(Street), [lgs.streetNew])
 
 
 class TripHop(Structure):
@@ -545,9 +746,9 @@ State._fields_ = [('time',            c_long),
                   ('prev_edge_name',  c_char_p),
                   ('calendar_day_ptr',POINTER(CalendarDay))]
 
-Edge._fields_ = [('from_ptr', POINTER(Vertex)),
-                 ('to_ptr', POINTER(Vertex)),
-                 ('payload_ptr', POINTER(EdgePayload))]
+#Edge._fields_ = [('from_ptr', POINTER(Vertex)),
+#                 ('to_ptr', POINTER(Vertex)),
+#                 ('payload_ptr', POINTER(EdgePayload))]
 
 EdgePayload._fields_ = [('type', EdgePayloadEnumType)]
 
@@ -560,8 +761,8 @@ Vertex._fields_ = [('degree_out', c_int),
                    ('label', c_char_p),
                    ('payload_ptr', POINTER(EdgePayload))]
 
-ListNode._fields_ = [('data_ptr', POINTER(Edge)),
-                     ('next_ptr', POINTER(ListNode))]
+#ListNode._fields_ = [('data_ptr', POINTER(Edge)),
+#                     ('next_ptr', POINTER(ListNode))]
 
 Street._fields_ = [('type',   EdgePayloadEnumType),
                    ('name',   c_char_p),

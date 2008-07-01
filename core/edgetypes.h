@@ -47,6 +47,9 @@ epNew( );
 void
 epDestroy( EdgePayload* this );
 
+edgepayload_t
+epGetType( EdgePayload* this );
+
 State*
 epWalk( EdgePayload* this, State* param );
 
@@ -78,6 +81,9 @@ linkWalk(Link* this, State* param);
 inline State*
 linkWalkBack(Link* this, State* param);
 
+char*
+linkGetName(Link* this);
+
 //---------------DECLARATIONS FOR STREET  CLASS---------------------
 
 typedef struct Street {
@@ -97,6 +103,12 @@ streetWalk(Street* this, State* params);
 
 inline State*
 streetWalkBack(Street* this, State* params);
+
+char*
+streetGetName(Street* this);
+
+double
+streetGetLength(Street* this);
 
 //---------------DECLARATIONS FOR TRIPHOPSCHEDULE and TRIPHOP  CLASSES---------------------
 
