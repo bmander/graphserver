@@ -2,7 +2,8 @@
 #include "dirfibheap.h"
 
 //GRAPH FUNCTIONS
-
+	
+	
 Graph*
 gNew() {
   Graph *this = (Graph*)malloc(sizeof(Graph));
@@ -15,7 +16,7 @@ void
 gDestroy( Graph* this, int kill_vertex_payloads, int kill_edge_payloads ) {
   //destroy each vertex contained within
   struct hashtable_itr *itr = hashtable_iterator(this->vertices);
-  int next_exists=1;
+  int next_exists = hashtable_count(this->vertices);
   while(itr && next_exists) {
     Vertex* vtx = hashtable_iterator_value( itr );
     vDestroy( vtx, kill_vertex_payloads, kill_edge_payloads );
