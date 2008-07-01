@@ -9,6 +9,13 @@ from time import time as now
 
 MEMTRACE = True
 
+import copy
+def instantiate(cls):
+    """instantiates a class without calling the constructor"""
+    ret = copy._EmptyClass()
+    ret.__class__ = cls
+    return ret
+
 """
 
 These classes map C structs to Python Ctypes Structures.
@@ -99,6 +106,13 @@ class Graph():
         
         self.soul = gNew()
         
+    @classmethod
+    def from_pointer(cls, ptr):
+        ret = instantiate(Graph)
+        ret.soul = ptr
+        
+        return ret
+        
     def __del__(self):
         #void gDestroy( Graph* this, int free_vertex_payloads, int free_edge_payloads );
         
@@ -150,19 +164,21 @@ class Graph():
             v = Vertex.from_pointer(arr[i])
             verts.append(v)
         return verts
+        
+    def shortest_path_tree(self, fromv, tov, initstate):
+        #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
+        
+        func = lgs.gShortestPathTree
+        func.restype = c_void_p
+        func.argtypes = [c_void_p, c_char_p, c_char_p, c_void_p]
+        
+        sptsoul = func( self.soul, fromv, tov, initstate.soul )
+        
+        gg = Graph.from_pointer( sptsoul )
+        
+        return gg
 
 """
-
-    @property
-    def vertices(self):
-        count = c_int()
-        p_va = lgs.gVertices(self.c_ref, byref(count))
-        verts = []
-        arr = cast(p_va, POINTER(c_void_p)) # a bit of necessary voodoo
-        for i in range(count.value):
-            v = cast(arr[i], POINTER(Vertex)).contents
-            verts.append(v)
-        return verts
     
     @property
     def edges(self):
@@ -173,13 +189,6 @@ class Graph():
             for e in o:
                 edges.append(e)
         return edges
-
-    
-    def add_edge(self, from_key, to_key, payload):
-        e = lgs.gAddEdge(self.c_ref, c_char_p(from_key), c_char_p(to_key), byref(payload))
-        e = cast(e, POINTER(Edge)).contents
-        assert(addressof(e.payload) == addressof(payload))
-        return e
     
     def shortest_path_tree(self, from_key, to_key, init, direction=True):
         if direction:
@@ -314,23 +323,22 @@ returntype(POINTER(CalendarDay), [lgs.calFastForward, lgs.calRewind, lgs.calDayO
                                   lgs.calDayOfOrBefore, lgs.calAppendDay, lgs.calNew])
 
 
-class State(Structure):
-    def __new__(self, time=None, 
-                 weight=None, 
-                 dist_walked=None,
-                 num_transfers=None):
-        if not time:
-            time = int(now())
-        return lgs.stateNew(c_long(time)).contents
+class State():
     
-    def __init__(self, time=None, 
-                 weight=None, 
-                 dist_walked=None,
-                 num_transfers=None):
-        pass
+    def __init__(self, time=None):
+        if time is not None:
+            func = lgs.stateNew
+            func.restype = c_void_p
+            func.argtypes=[c_long]
+            
+            self.soul = func(time)
     
     def clone(self):
-        return lgs.stateDup(byref(self))
+        func = lgs.stateDup
+        func.restype = c_void_p
+        func.argtypes = [c_void_p]
+        
+        return self.from_pointer( func(self.soul) )
     
     @property
     def calendar_day(self):
@@ -353,8 +361,89 @@ class State(Structure):
         if self.calendar_day_ptr:
             ret += self.calendar_day
         return ret + "</state>"
+        
+    @classmethod
+    def from_pointer(cls, ptr):
+        if ptr is None:
+            return None
+        
+        ret = State()
+        ret.soul = ptr
+        return ret
+        
+    @property
+    def time(self):
+        #long stateGetTime( State* this );
+        
+        func = lgs.stateGetTime
+        func.restype = c_long
+        func.argtypes = [c_void_p]
+        
+        return func(self.soul)
+
+    @property
+    def weight(self):
+        #long stateGetWeight( State* this);
+        
+        func = lgs.stateGetWeight
+        func.restype = c_long
+        func.argtypes = [c_void_p]
+        
+        return func(self.soul)
+        
+    @property
+    def dist_walked(self):
+        #double stateGetDistWalked( State* this );
+        
+        func = lgs.stateGetDistWalked
+        func.restype = c_double
+        func.argtypes = [c_void_p]
+        
+        return func(self.soul)
+
+    @property
+    def num_transfers(self):
+        #int stateGetNumTransfers( State* this );
+        
+        func = lgs.stateGetNumTransfers
+        func.restype = c_int
+        func.argtypes = [c_void_p]
+        
+        return func(self.soul)
+
+    @property
+    def prev_edge_type(self):
+        #edgepayload_t stateGetPrevEdgeType( State* this );
+        
+        func = lgs.stateGetPrevEdgeType
+        func.restype = c_int
+        func.argtypes = [c_void_p]
+        
+        return func(self.soul)
+
+    @property
+    def prev_edge_name(self):
+        #char* stateGetPrevEdgeName( State* this );
+        
+        func = lgs.stateGetPrevEdgeName
+        func.restype = c_char_p
+        func.argtypes = [c_void_p]
+        
+        return func(self.soul)
+
+    @property
+    def calendar_day(self):
+        #CalendarDay* stateCalendarDay( State* this );
+        
+        func = lgs.stateCalendarDay
+        func.restype = c_void_p
+        func.argtypes = [c_void_p]
+        
+        calendardaysoul = func(self.soul)
+        
+        return CalendarDay.from_pointer( calendardaysoul )
     
-returntype(POINTER(State), [lgs.stateDup, lgs.stateNew])
+#returntype(POINTER(State), [lgs.stateDup, lgs.stateNew])
     
 
 class Vertex():
@@ -559,7 +648,7 @@ class EdgePayload(Structure):
         return "<abstractedgepayload type='%s'/>" % self.type
 
 
-walkable(EdgePayload, lgs.epWalk, lgs.epWalkBack)
+#walkable(EdgePayload, lgs.epWalk, lgs.epWalkBack)
 collapsable(EdgePayload, lgs.epCollapse, lgs.epCollapseBack)
 #cdelete(EdgePayload, lgs.epDestroy)
 
@@ -674,7 +763,7 @@ class TripHop(Structure):
                         int(self.arrive/self.SEC_IN_HOUR), int(self.arrive%self.SEC_IN_HOUR/self.SEC_IN_MINUTE),
                         self.transit, self.trip_id)
     
-walkable(TripHop, lgs.triphopWalk, lgs.triphopWalkBack)
+#walkable(TripHop, lgs.triphopWalk, lgs.triphopWalkBack)
     
 class TripHopSchedule(Structure):
     def __new__(cls, hops, service_id, calendar, timezone_offset):
@@ -720,7 +809,7 @@ class TripHopSchedule(Structure):
         return ret
 
 
-walkable(TripHopSchedule, lgs.thsWalk, lgs.thsWalkBack)
+#walkable(TripHopSchedule, lgs.thsWalk, lgs.thsWalkBack)
 returntype(POINTER(TripHopSchedule), [lgs.thsNew])
 
 CalendarDay._fields_ = [('begin_time',      c_long),

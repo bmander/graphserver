@@ -48,7 +48,23 @@ class TestGraph:
         assert g.vertices
         assert len(g.vertices)==2
         assert g.vertices[0].label == 'home'
+    
+    def test_shortest_path_tree(self):
+        g = Graph()
+        fromv = g.add_vertex("home")
+        tov = g.add_vertex("work")
+        s = Street( "helloworld", 1 )
+        e = g.add_edge("home", "work", s)
+        g.add_edge("work", "home", Street("backwards",1) )
         
+        spt = g.shortest_path_tree("home", "work", State(0))
+        assert spt
+        assert spt.__class__ == Graph
+        assert spt.get_vertex("home").degree_out==1
+        assert spt.get_vertex("home").degree_in==0
+        assert spt.get_vertex("work").degree_in==1
+        assert spt.get_vertex("work").degree_out==0
+    
     def test_shortest_path(self):
         g = Graph()
         fromv = g.add_vertex("home")
@@ -101,7 +117,18 @@ class TestStreet:
         assert s.name == "mystreet"
         assert s.length == 1.1
         assert s.to_xml() == "<street name='mystreet' length='1.100000' />"
-        
+
+class TestState:
+    def test_basic(self):
+        s = State(0)
+        assert s.time == 0
+        assert s.weight == 0
+        assert s.dist_walked == 0
+        assert s.num_transfers == 0
+        assert s.prev_edge_name == None
+        assert s.prev_edge_type == 5
+        assert s.calendar_day == None
+
 class TestLink:
     def link_test(self):
         l = Link()

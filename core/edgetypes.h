@@ -27,13 +27,34 @@ typedef struct State {
 } State;
 
 State*
-stateNew();
+stateNew(long time);
 
 void
-stateDestroy();
+stateDestroy( State* this);
 
 State*
 stateDup( State* this );
+
+long
+stateGetTime( State* this ) { return this->time; }
+
+long
+stateGetWeight( State* this) { return this->weight; }
+
+double
+stateGetDistWalked( State* this ) { return this->dist_walked; }
+
+int
+stateGetNumTransfers( State* this ) { return this->num_transfers; }
+
+edgepayload_t
+stateGetPrevEdgeType( State* this ) { return this->prev_edge_type; }
+
+char*
+stateGetPrevEdgeName( State* this ) { return this->prev_edge_name; }
+
+CalendarDay*
+stateCalendarDay( State* this ) { return this->calendar_day; }
 
 //---------------DECLARATIONS FOR EDGEPAYLOAD CLASS---------------------
 
