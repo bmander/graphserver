@@ -133,3 +133,37 @@ calPrintDay( CalendarDay* this ) {
   }
   printf( "]\n" );
 }
+
+long
+calBeginTime( CalendarDay* this ) {
+	return this->begin_time;
+}
+
+long
+calEndTime( CalendarDay* this ) {
+	return this->end_time;	
+}
+
+ServiceId*
+calServiceIds( CalendarDay* this, int* count ) {
+	*count = this->n_service_ids;
+	return this->service_ids;
+}
+
+int 
+calDaylightSavings( CalendarDay* this ) {
+	return this->daylight_savings;	
+}
+
+CalendarDay*
+calNextDay(CalendarDay* this) {
+	return this->next_day;
+}
+
+CalendarDay*
+calPreviousDay(CalendarDay* this) {
+	return this->prev_day;
+}
+
+void
+calPrint( CalendarDay* this );
