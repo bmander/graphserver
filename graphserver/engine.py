@@ -17,11 +17,11 @@ class XMLGraphEngine(object):
         gg = Graph()
         self.gg = gg
 
-    def shortest_path(self, from_v, to_v, **init_state_params):
+    def shortest_path(self, from_v, to_v, inittime):
         ret = []
         if not self.gg.get_vertex(from_v) and self.gg.get_vertex(to_v):
             raise
-        init_state = State(**init_state_params)
+        init_state = State(inittime)
         #print init_state
         try:
             #Throws RuntimeError if no shortest path found.
@@ -29,8 +29,9 @@ class XMLGraphEngine(object):
             ret = "<?xml version='1.0'?><route>"
             for i in range(len(edges)):
                 ret += vertices[i].to_xml()
-                ret += edge[i].to_xml()
-                ret += vertices[-1].to_xml() + "</route>"
+                ret += edges[i].to_xml()
+            ret += vertices[-1].to_xml()
+            ret += "</route>"
             return ret
         # TODO
         #except ArgumentError, e:

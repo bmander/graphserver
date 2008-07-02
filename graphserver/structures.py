@@ -321,7 +321,10 @@ class Edge(CShadow, Walkable):
         self.soul = self._cnew(from_v.soul, to_v.soul, payload.soul)
     
     def __str__(self):
-        return "<Edge>%s%s</Edge>" % (self.from_v, self.to_v)
+        return self.to_xml()
+        
+    def to_xml(self):
+        return "<Edge>%s</Edge>" % (self.payload)
         
     @property
     def from_v(self):
@@ -388,7 +391,7 @@ class Link(EdgePayload):
         self.soul = self._cnew()
 
     def to_xml(self):
-        return "<link name='%s'/>" % (self.name)
+        return "<Link name='%s'/>" % (self.name)
     
 class Street(EdgePayload):
     length = cproperty(lgs.streetGetLength, c_double)
@@ -401,7 +404,7 @@ class Street(EdgePayload):
     # to be taken by Graph and deleted alongside it
     
     def to_xml(self):
-        return "<street name='%s' length='%f' />" % (self.name, self.length)
+        return "<Street name='%s' length='%f' />" % (self.name, self.length)
 
 
 class TripHop(EdgePayload):
@@ -418,7 +421,7 @@ class TripHop(EdgePayload):
     SEC_IN_MINUTE = 60
 
     def to_xml(self):
-        return "<triphop depart='%02d:%02d' arrive='%02d:%02d' transit='%s' trip_id='%s' />" % \
+        return "<TripHop depart='%02d:%02d' arrive='%02d:%02d' transit='%s' trip_id='%s' />" % \
                         (int(self.depart/self.SEC_IN_HOUR), int(self.depart%self.SEC_IN_HOUR/self.SEC_IN_MINUTE),
                         int(self.arrive/self.SEC_IN_HOUR), int(self.arrive%self.SEC_IN_HOUR/self.SEC_IN_MINUTE),
                         self.transit, self.trip_id)
@@ -452,11 +455,11 @@ class TripHopSchedule(EdgePayload):
         return hops
     
     def to_xml(self):
-        ret = "<triphopschedule service_id='%s'>" % self.service_id
+        ret = "<TripHopSchedule service_id='%s'>" % self.service_id
         for triphop in self.triphops:
           ret += triphop.to_xml()
 
-        ret += "</triphopschedule>"
+        ret += "</TripHopSchedule>"
         return ret
         
     def collapse(self, state):

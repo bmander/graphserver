@@ -38,7 +38,7 @@ class TestGraph:
         assert e
         assert e.from_v.label == "home"
         assert e.to_v.label == "work"
-        assert str(e)=="<Edge><Vertex degree_out='1' degree_in='0' label='home'/><Vertex degree_out='0' degree_in='1' label='work'/></Edge>"
+        assert str(e)=="<Edge><Street name='helloworld' length='1.000000' /></Edge>"
     
     def test_add_edge_effects_vertices(self):
         g = Graph()
@@ -251,14 +251,14 @@ class TestStreet:
         s = Street("mystreet", 1.1)
         assert s.name == "mystreet"
         assert s.length == 1.1
-        assert s.to_xml() == "<street name='mystreet' length='1.100000' />"
+        assert s.to_xml() == "<Street name='mystreet' length='1.100000' />"
         
     def street_test_big_length(self):
         s = Street("longstreet", 240000)
         assert s.name == "longstreet"
         assert s.length == 240000
 
-        assert s.to_xml() == "<street name='longstreet' length='240000.000000' />"
+        assert s.to_xml() == "<Street name='longstreet' length='240000.000000' />"
         
     def test_walk(self):
         s = Street("longstreet", 2)
@@ -274,7 +274,7 @@ class TestLink:
     def link_test(self):
         l = Link()
         assert l
-        assert str(l)=="<link name='LINK'/>"
+        assert str(l)=="<Link name='LINK'/>"
         
     def name_test(self):
         l = Link()
@@ -310,7 +310,7 @@ class TestTriphopSchedule:
                                
         assert(ths.triphops[0].trip_id == 'Foo to Bar')
         assert(len(ths.triphops) == 2)
-        assert str(ths)=="<triphopschedule service_id='1'><triphop depart='00:00' arrive='01:00' transit='3600' trip_id='Foo to Bar' /><triphop depart='01:00' arrive='02:00' transit='3600' trip_id='Bar to Cow' /></triphopschedule>"
+        assert str(ths)=="<TripHopSchedule service_id='1'><TripHop depart='00:00' arrive='01:00' transit='3600' trip_id='Foo to Bar' /><TripHop depart='01:00' arrive='02:00' transit='3600' trip_id='Bar to Cow' /></TripHopSchedule>"
         
     def test_walk(self):
         rawhops = [(0,     1*3600,'Foo to Bar'),
