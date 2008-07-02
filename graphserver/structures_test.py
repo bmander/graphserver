@@ -1,5 +1,16 @@
 from structures import *
 
+tracecount = {}
+
+def trace():
+    import sys
+    return 
+    caller = inspect.stack()[1][3]
+    if caller not in tracecount:
+        tracecount[caller] = -1
+    tracecount[caller] = tracecount[caller] + 1
+    print sys.stderr, "--TRACE-- %s, step %s" % (caller, tracecount[caller])
+
 class TestGraph:
     def test_basic(self):
         g = Graph()
@@ -17,14 +28,12 @@ class TestGraph:
         assert v.label == "home"
         v = g.get_vertex("bogus")
         assert v == None
-        
     def test_add_edge(self):
         g = Graph()
         fromv = g.add_vertex("home")
         tov = g.add_vertex("work")
         s = Street( "helloworld", 1 )
         e = g.add_edge("home", "work", s)
-        
         assert e
         assert e.from_v.label == "home"
         assert e.to_v.label == "work"
@@ -104,7 +113,6 @@ class TestGraph:
         x = g.add_edge("work", "home", Link())
         assert x.payload
         assert x.payload.name == "LINK"
-
 
 class TestTriphopSchedule:
     def triphop_schedule_test(self):
@@ -194,9 +202,9 @@ class TestCalendar:
         assert(c.next.service_ids == [3,4,5])
         print c.next
         assert(c.previous == None)
-        assert(addressof(c.next.previous)== addressof(c))
-        assert(addressof(c.fast_forward())== addressof(c.next))
-        assert(addressof(c.next.rewind())== addressof(c))
+        assert(c.next.previous.soul == c.soul)
+        assert(c.fast_forward().soul == c.next.soul)
+        assert(c.next.rewind().soul == c.soul)
         
         return c
         

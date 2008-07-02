@@ -59,7 +59,7 @@ def castpayload(func):
         if not p:
             return None
         #print "Type = %s" % p.contents.type
-        typ = EdgePayloadEnumTypes[p.contents.type]
+        typ = EdgePayloadEnumTypes[p.contents.type]    
         if not typ:
             return None
         return cast(p, POINTER(typ)).contents
@@ -76,6 +76,19 @@ def cdelete(self, delf):
 def returntype(type, methods):
     for m in methods:
         m.restype = type
+        
+def cproperty(cfunc, restype):
+    cfunc.restype = restype
+    cfunc.argtypes = [c_void_p]
+    def prop(self):
+        return cfunc(c_void_p(self.soul))
+    return property(prop)
+
+def ccast(func, cls):
+    func.restype = c_void_p
+    def _cast(self, *args):
+        return cls.from_pointer(func(*args))
+    return _cast
 
 """
 
@@ -92,19 +105,14 @@ Class Definitions
 """
 
 class Graph():
-    #_fields_ = [('vertices_hash_ptr', c_void_p)]
-
-    #def __new__(cls):
-    #    gNew = lgs.gNew
-    #    gNew.restype=c_void_p
-    #    
-    #    return lgs.gNew().contents
-        
+    _cnew = lgs.gNew
+    _cdel = lgs.gDestroy
+    _cadd_vertex = lgs.gAddVertex
+    _cget_vertex = lgs.gGetVertex
+    _cadd_edge = lgs.gAddEdge
+    
     def __init__(self):
-        gNew = lgs.gNew
-        gNew.restype=c_void_p
-        
-        self.soul = gNew()
+        self.soul = self._cnew()
         
     @classmethod
     def from_pointer(cls, ptr):
@@ -115,44 +123,19 @@ class Graph():
         
     def __del__(self):
         #void gDestroy( Graph* this, int free_vertex_payloads, int free_edge_payloads );
-        
-        gDestroy = lgs.gDestroy
-        gDestroy.argtypes=[c_void_p,c_int,c_int]
-        
-        gDestroy(self.soul, 1, 1)
+        self._cdel(self.soul, 1, 1)
     
     def add_vertex(self, label):
         #Vertex* gAddVertex( Graph* this, char *label );
-
-        gAddVertex = lgs.gAddVertex
-        gAddVertex.restype=c_void_p
-        gAddVertex.argtypes=[c_void_p,c_char_p]
-        
-        vertexsoul = gAddVertex(self.soul, label)
-        
-        return Vertex.from_pointer(vertexsoul)
+        return self._cadd_vertex(self.soul, label)
         
     def get_vertex(self, label):
         #Vertex* gGetVertex( Graph* this, char *label ) {
-        
-        gGetVertex = lgs.gGetVertex
-        gGetVertex.restype=c_void_p
-        gGetVertex.argtypes=[c_void_p,c_char_p]
-        
-        vertexsoul = gGetVertex(self.soul, label)
-        
-        return Vertex.from_pointer(vertexsoul)
+        return self._cget_vertex(self.soul, label)
         
     def add_edge( self, fromv, tov, payload ):
         #Edge* gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload );
-        
-        gAddEdge = lgs.gAddEdge
-        gAddEdge.restype=c_void_p
-        gAddEdge.argtypes=[c_void_p, c_char_p, c_char_p, c_void_p]
-        
-        edgesoul = gAddEdge( self.soul, fromv, tov, payload.soul )
-        
-        return Edge.from_pointer(edgesoul)
+        return self._cadd_edge( self.soul, fromv, tov, payload.soul )
     
     @property
     def vertices(self):
@@ -164,34 +147,6 @@ class Graph():
             v = Vertex.from_pointer(arr[i])
             verts.append(v)
         return verts
-        
-    def shortest_path_tree(self, fromv, tov, initstate):
-        #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
-        
-        func = lgs.gShortestPathTree
-        func.restype = c_void_p
-        func.argtypes = [c_void_p, c_char_p, c_char_p, c_void_p]
-        
-        sptsoul = func( self.soul, fromv, tov, initstate.soul )
-        
-        gg = Graph.from_pointer( sptsoul )
-        
-        return gg
-        
-    def shortest_path_tree_retro(self, fromv, tov, finalstate):
-        #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
-        
-        func = lgs.gShortestPathTreeRetro
-        func.restype = c_void_p
-        func.argtypes = [c_void_p, c_char_p, c_char_p, c_void_p]
-        
-        sptsoul = func( self.soul, fromv, tov, finalstate.soul )
-        
-        gg = Graph.from_pointer( sptsoul )
-        
-        return gg
-
-"""
     
     @property
     def edges(self):
@@ -201,8 +156,16 @@ class Graph():
             if not o: continue
             for e in o:
                 edges.append(e)
-        return edges
+        return edges    
     
+    def shortest_path_tree(self, fromv, tov, initstate):
+        #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )        
+        return self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul )
+        
+    def shortest_path_tree_retro(self, fromv, tov, finalstate):
+        #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
+        return self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul )
+    """
     def shortest_path_tree(self, from_key, to_key, init, direction=True):
         if direction:
             if not to_key:
@@ -213,12 +176,12 @@ class Graph():
                 from_key = ""
             tree = lgs.gShortestPathTreeRetro(self.c_ref, c_char_p(from_key), c_char_p(to_key), byref(init))
         return tree.contents
-    
+    """
     def shortest_path(self, from_v, to_v, init_state):
         path_vertices = []
         path_edges    = []
    
-        spt = self.shortest_path_tree( from_v, to_v, init_state, True )
+        spt = self.shortest_path_tree( from_v, to_v, init_state)
         curr = spt.get_vertex( to_v )
     
         print spt.to_dot()
@@ -254,75 +217,74 @@ class Graph():
 
         return path_vertices, path_edges
 
-    @property
-    def c_ref(self):
-        return byref(self)
-
     def to_dot(self):
         ret = "digraph G {"
         for e in self.edges:
             ret += "    %s -> %s;\n" % (e.from_v.label, e.to_v.label)
         return ret + "}"
-"""
 
-#returntype(POINTER(Graph), [lgs.gNew, lgs.gShortestPathTree, lgs.gShortestPathTreeRetro])
 
-class CalendarDay(Structure):   
-    def __new__(self, begin_time, end_time, service_ids, daylight_savings):
-        n, sids = CalendarDay._py2c_service_ids(service_ids)
-        return lgs.calNew(c_long(begin_time), c_long(end_time), 
-                           c_int(n), sids, c_int(daylight_savings)).contents
+class CalendarDay():   
+
+    begin_time = cproperty(lgs.calBeginTime, c_long)
+    end_time = cproperty(lgs.calEndTime, c_long)
+    daylight_savings = cproperty(lgs.calDaylightSavings, c_int)
     
+
     def __init__(self, begin_time, end_time, service_ids, daylight_savings):
-        pass
+        n, sids = CalendarDay._py2c_service_ids(service_ids)
+        self.soul = self._cnew(begin_time, end_time, n, sids, daylight_savings)
         
     def append_day(self, begin_time, end_time, service_ids, daylight_savings):
         n, sids = self._py2c_service_ids(service_ids)
-        return lgs.calAppendDay(self.c_ref, c_long(begin_time), c_long(end_time), 
-                                     c_int(n), sids, c_int(daylight_savings))
+        return self._cappend_day(self.soul, begin_time, end_time, n, sids, daylight_savings)
     
     @property
     def service_ids(self):
+        count = c_int()
+        ptr = lgs.calServiceIds(self.soul, byref(count))
+        ptr = cast(ptr, POINTER(ServiceIdType))
         ids = []
-        for i in range(self.n_service_ids):
-            ids.append(self.service_ids_ptr[i])
+        for i in range(count.value):
+            ids.append(ptr[i])
         return ids
     
     @property
     def previous(self):
-        if self.prev_day_ptr:
-            return self.prev_day_ptr.contents
-        return None
+        return self._cprev(self.soul)
 
     @property
     def next(self):
-        if self.next_day_ptr:
-            return self.next_day_ptr.contents
-        else: return None
+        return self._cnext(self.soul)
 
     def rewind(self):
-        return lgs.calRewind(self.c_ref).contents
+        return self._crewind(self.soul)
         
     def fast_forward(self):
-        return lgs.calFastForward(self.c_ref).contents
+        return self._cfast_forward(self.soul)
     
     def day_of_or_after(self, time):
-        return lgs.calDayOfOrAfter(self.c_ref, c_long(time))
+        return self._cday_of_or_after(self.soul, time)
         
     def day_of_or_before(self, time):
-        return lgs.calDayOfOrBefore(self.c_ref, c_long(time))
+        return self._cday_of_or_before(self.soul, time)
     
     def __str__(self):
         return self.to_xml()
-
+    
     def to_xml(self):
         return "<calendar begin_time='%s' end_time='%s' service_ids='%s'/>" % \
             (asctime(gmtime(self.begin_time)), asctime(gmtime(self.end_time)), 
              ",".join(map(str, self.service_ids)))
     
-    @property
-    def c_ref(self):
-        return byref(self)
+    @classmethod
+    def from_pointer(cls, ptr):
+        if ptr is None:
+            return None
+        
+        ret = instantiate(CalendarDay)
+        ret.soul = ptr
+        return ret
     
     @staticmethod
     def _py2c_service_ids(service_ids):
@@ -332,26 +294,20 @@ class CalendarDay(Structure):
             asids[i] = ServiceIdType(service_ids[i])
         return (ns, asids)
 
-returntype(POINTER(CalendarDay), [lgs.calFastForward, lgs.calRewind, lgs.calDayOfOrAfter, 
-                                  lgs.calDayOfOrBefore, lgs.calAppendDay, lgs.calNew])
 
 
 class State():
     
     def __init__(self, time=None):
-        if time is not None:
-            func = lgs.stateNew
-            func.restype = c_void_p
-            func.argtypes=[c_long]
-            
-            self.soul = func(time)
+        if time is None:
+            time = now()
+        self.soul = self._cnew(long(time))
+    
+    def __copy__(self):
+        return self._ccopy(self.soul)
     
     def clone(self):
-        func = lgs.stateDup
-        func.restype = c_void_p
-        func.argtypes = [c_void_p]
-        
-        return self.from_pointer( func(self.soul) )
+        return self.__copy__()
     
     @property
     def calendar_day(self):
@@ -380,7 +336,7 @@ class State():
         if ptr is None:
             return None
         
-        ret = State()
+        ret = instantiate(State)
         ret.soul = ptr
         return ret
         
@@ -460,6 +416,9 @@ class State():
     
 
 class Vertex():
+    
+    label = cproperty(lgs.vGetLabel, c_char_p)
+    
     def __init__(self,label=None):
         if label:
             vNew = lgs.vNew
@@ -486,15 +445,6 @@ class Vertex():
         return ret
     
     @property
-    def label(self):
-        # char* vGetLabel( Vertex* this ) {
-        vGetLabel = lgs.vGetLabel
-        vGetLabel.restype=c_char_p
-        vGetLabel.argtypes=[c_void_p]
-        
-        return vGetLabel(self.soul)
-        
-    @property
     def degree_in(self):
         # char* vGetLabel( Vertex* this ) {
         vDegreeIn = lgs.vDegreeIn
@@ -517,43 +467,43 @@ class Vertex():
     
     def __str__(self):
         return self.to_xml()
-    
-""" things not implemented after I moved over to the "soul" model
+
 
     @property
     def outgoing(self):
-        return self._edges(lgs.vGetOutgoingEdgeList)
+        return self._edges(self._coutgoing_edges)
         
     @property
     def incoming(self):
-        return self._edges(lgs.vGetIncomingEdgeList)
-
-    def get_outgoing_edge(self,i):
-        return self._edges(lgs.vGetOutgoingEdgeList, i)
-        
-    def get_incoming_edge(self,i):
-        return self._edges(lgs.vGetIncomingEdgeList, i)
+        return self._edges(self._cincoming_edges)
 
     def _edges(self, method, index = -1):
         e = []
-        edges = method(byref(self))
-        if not edges: 
+        node = method(self.soul)
+        if not node: 
             if index == -1:
                 return e
             else: 
                 print "return none1"
                 return None
-        edges = edges.contents
         i = 0
-        while edges:
+        while node:
             if index != -1 and i == index:
-                return edges.data
-            e.append(edges.data)
-            edges = edges.next
+                return node.data
+            e.append(node.data)
+            node = node.next
             i = i+1
         if index == -1:
             return e
         return None
+
+    def get_outgoing_edge(self,i):
+        return self._edges(self._coutgoing_edges, i)
+        
+    def get_incoming_edge(self,i):
+        return self._edges(self._cincoming_edges, i)
+
+""" things not implemented after I moved over to the "soul" model
 
     @property
     @castpayload
@@ -638,20 +588,24 @@ class Edge():
 #returntype(POINTER(Edge), [lgs.eNew])
 
 
-class ListNode(Structure):
+class ListNode():
     @property
     def data(self):
-        if self.data_ptr:
-            return self.data_ptr.contents
-        else: return None
+        return self._cdata(self.soul)
     
     @property
     def next(self):
-        if self.next_ptr:
-            return self.next_ptr.contents
-        else: return None
+        return self._cnext(self.soul)
+        
+    @classmethod
+    def from_pointer(cls, ptr):
+        if ptr is None:
+            return None
+        
+        ret = ListNode()
+        ret.soul = ptr
+        return ret
 
-returntype(POINTER(ListNode), [lgs.vGetIncomingEdgeList, lgs.vGetOutgoingEdgeList])
     
 class EdgePayload(Structure):
     def __str__(self):
@@ -798,7 +752,7 @@ class TripHopSchedule(Structure):
             raise "Unknown hops initializing type."
             
         return lgs.thsNew(departs, arrives, trip_ids, n, 
-                    ServiceIdType(service_id), byref(calendar), c_int(timezone_offset) ).contents
+                    ServiceIdType(service_id), calendar.soul, c_int(timezone_offset) ).contents
 
     def __init__(self, hops, service_id, calendar, timezone_offset):
         pass
@@ -825,39 +779,38 @@ class TripHopSchedule(Structure):
 #walkable(TripHopSchedule, lgs.thsWalk, lgs.thsWalkBack)
 returntype(POINTER(TripHopSchedule), [lgs.thsNew])
 
-CalendarDay._fields_ = [('begin_time',      c_long),
-                        ('end_time',        c_long),
-                        ('n_service_ids',   c_int),
-                        ('service_ids_ptr', POINTER(ServiceIdType)),
-                        ('daylight_savings',c_int),
-                        ('prev_day_ptr',    POINTER(CalendarDay)),
-                        ('next_day_ptr',    POINTER(CalendarDay))]
 
-State._fields_ = [('time',            c_long),
-                  ('weight',          c_long),
-                  ('dist_walked',     c_double),
-                  ('num_transfers',   c_int),
-                  ('prev_edge_type',  EdgePayloadEnumType),
-                  ('prev_edge_name',  c_char_p),
-                  ('calendar_day_ptr',POINTER(CalendarDay))]
+Graph._cnew = lgs.gNew
+Graph._cdel = lgs.gDestroy
+Graph._cadd_vertex = ccast(lgs.gAddVertex, Vertex)
+Graph._cget_vertex = ccast(lgs.gGetVertex, Vertex)
+Graph._cadd_edge = ccast(lgs.gAddEdge, Edge)
+Graph._cshortest_path_tree = ccast(lgs.gShortestPathTree, Graph)
+Graph._cshortest_path_tree_retro = ccast(lgs.gShortestPathTreeRetro, Graph)
 
-#Edge._fields_ = [('from_ptr', POINTER(Vertex)),
-#                 ('to_ptr', POINTER(Vertex)),
-#                 ('payload_ptr', POINTER(EdgePayload))]
+Vertex._coutgoing_edges = ccast(lgs.vGetOutgoingEdgeList, ListNode)
+Vertex._cincoming_edges = ccast(lgs.vGetIncomingEdgeList, ListNode)
+
+CalendarDay._cnew = lgs.calNew
+CalendarDay._cappend_day = ccast(lgs.calAppendDay, CalendarDay)
+CalendarDay._crewind = ccast(lgs.calRewind, CalendarDay)
+CalendarDay._cfast_forward = ccast(lgs.calFastForward, CalendarDay)
+CalendarDay._cday_of_or_after = ccast(lgs.calDayOfOrAfter, CalendarDay)
+CalendarDay._cday_of_or_before = ccast(lgs.calDayOfOrBefore, CalendarDay)
+CalendarDay._cnext = ccast(lgs.calNextDay, CalendarDay)
+CalendarDay._cprev = ccast(lgs.calPreviousDay, CalendarDay)
+
+State._cnew = lgs.stateNew
+State._ccopy = ccast(lgs.stateDup, State)
+
+ListNode._cdata = ccast(lgs.liGetData, Edge)
+ListNode._cnext = ccast(lgs.liGetNext, ListNode)
+
 
 EdgePayload._fields_ = [('type', EdgePayloadEnumType)]
 
 Link._fields_ = [('type', EdgePayloadEnumType), ('name',c_char_p)]
 
-Vertex._fields_ = [('degree_out', c_int),
-                   ('degree_in', c_int),
-                   ('outgoing_ptr', POINTER(ListNode)),
-                   ('incoming_ptr', POINTER(ListNode)),
-                   ('label', c_char_p),
-                   ('payload_ptr', POINTER(EdgePayload))]
-
-#ListNode._fields_ = [('data_ptr', POINTER(Edge)),
-#                     ('next_ptr', POINTER(ListNode))]
 
 Street._fields_ = [('type',   EdgePayloadEnumType),
                    ('name',   c_char_p),
