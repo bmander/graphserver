@@ -540,20 +540,29 @@ class ListNode():
         return ret
 
     
-class EdgePayload(Structure):
+class EdgePayload():
     def __str__(self):
         return self.to_xml()
 
     def to_xml(self):
         return "<abstractedgepayload type='%s'/>" % self.type
+        
+    @classmethod
+    def from_pointer(cls, ptr):
+        if ptr is None:
+            return None
+            
+        ret = instantiate(cls)
+        ret.soul = ptr
+        return ret
 
 
 #walkable(EdgePayload, lgs.epWalk, lgs.epWalkBack)
-collapsable(EdgePayload, lgs.epCollapse, lgs.epCollapseBack)
+#collapsable(EdgePayload, lgs.epCollapse, lgs.epCollapseBack)
 #cdelete(EdgePayload, lgs.epDestroy)
 
     
-class Link():
+class Link(EdgePayload):
     name = cproperty(lgs.linkGetName, c_char_p)
     
     def __init__(self):
@@ -562,18 +571,6 @@ class Link():
         linkNew.argtypes=[]
         
         self.soul = linkNew()
-        
-    @classmethod
-    def from_pointer(cls, ptr):
-        if ptr is None:
-            return None
-        
-        ret = instantiate(Link)
-        ret.soul = ptr
-        return ret
-
-    def __str__(self):
-        return self.to_xml()
 
     def to_xml(self):
         return "<link name='%s'/>" % (self.name)
@@ -582,7 +579,7 @@ class Link():
 #cdelete(Link, lgs.linkDestroy)
 #returntype(POINTER(Link), [lgs.linkNew])
 
-class Street():
+class Street(EdgePayload):
     length = cproperty(lgs.streetGetLength, c_double)
     name   = cproperty(lgs.streetGetName, c_char_p)
     
@@ -596,38 +593,17 @@ class Street():
         
     #there will be no delete function, because Street is designed to be taken by Graph and deleted alongside it
     
-    def __str__(self):
-        return self.to_xml()
-    
     def to_xml(self):
         return "<street name='%s' length='%f' />" % (self.name, self.length)
-    
-    @classmethod
-    def from_pointer(cls, ptr):
-        if ptr is None:
-            return None
-        
-        ret = instantiate(Street)
-        ret.soul = ptr
-        return ret
 
 #walkable(Street, lgs.streetWalk, lgs.streetWalkBack)
 #returntype(POINTER(Street), [lgs.streetNew])
 
 
-class TripHop():
+class TripHop(EdgePayload):
 
     def __init__():
         pass
-    
-    @classmethod
-    def from_pointer(cls, ptr):
-        if ptr is None:
-            return None
-            
-        ret = instantiate(TripHop)
-        ret.soul = ptr
-        return ret
         
     depart = cproperty( lgs.triphopDepart, c_int )
     arrive = cproperty( lgs.triphopArrive, c_int )
@@ -636,9 +612,6 @@ class TripHop():
 
     SEC_IN_HOUR = 3600
     SEC_IN_MINUTE = 60
-    
-    def __str__(self):
-        return self.to_xml()
 
     def to_xml(self):
         return "<triphop depart='%02d:%02d' arrive='%02d:%02d' transit='%s' trip_id='%s' />" % \
@@ -648,7 +621,7 @@ class TripHop():
     
 #walkable(TripHop, lgs.triphopWalk, lgs.triphopWalkBack)
     
-class TripHopSchedule():
+class TripHopSchedule(EdgePayload):
     def __init__(self, hops, service_id, calendar, timezone_offset):
         #TripHopSchedule* thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, int timezone_offset );
         
@@ -662,15 +635,6 @@ class TripHopSchedule():
             trip_ids[i] = c_char_p(hops[i][2])
             
         self.soul = lgs.thsNew(departs, arrives, trip_ids, n, ServiceIdType(service_id), calendar.soul, c_int(timezone_offset) )
-    
-    @classmethod
-    def from_pointer(cls, ptr):
-        if ptr is None:
-            return None
-            
-        ret = instantiate(TripHopSchedule)
-        ret.soul = ptr
-        return ret
     
     n = cproperty(lgs.thsGetN, c_int)
     service_id = cproperty(lgs.thsGetServiceId, c_int)
@@ -690,9 +654,6 @@ class TripHopSchedule():
         for i in range(self.n):
             hops.append( self.triphop( i ) )
         return hops
-        
-    def __str__(self):
-        return self.to_xml()
     
     def to_xml(self):
         ret = "<triphopschedule service_id='%s'>" % self.service_id
