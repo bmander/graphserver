@@ -510,6 +510,17 @@ class EdgePayload():
         ret.soul = ptr
         return ret
         
+    def walk(self, state):
+        #State* epWalk( EdgePayload* this, State* param );
+        func = lgs.epWalk
+        func.restype = c_void_p
+        func.argtypes = [c_void_p, c_void_p]
+        
+        statesoul = func(self.soul, state.soul)
+        
+        return State.from_pointer( statesoul )
+        
+        
 
 #walkable(EdgePayload, lgs.epWalk, lgs.epWalkBack)
 #collapsable(EdgePayload, lgs.epCollapse, lgs.epCollapseBack)

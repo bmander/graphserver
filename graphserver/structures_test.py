@@ -86,7 +86,7 @@ class TestGraph:
         assert str(sprime)=="<state time='Sun Jan  4 06:25:52 1970' weight='2147483647' dist_walked='240000.0' num_transfers='0' prev_edge_type='0' prev_edge_name='helloworld'></state>"
 
         
-    def test_shortest_path_tree_bigweight(self):
+    def xtestx_shortest_path_tree_bigweight(self):
         g = Graph()
         fromv = g.add_vertex("home")
         tov = g.add_vertex("work")
@@ -113,7 +113,7 @@ class TestGraph:
         assert spt.get_vertex("work").degree_in==0
         assert spt.get_vertex("work").degree_out==1
     
-    def xtest_shortest_path(self):
+    def test_shortest_path(self):
         g = Graph()
         fromv = g.add_vertex("home")
         tov = g.add_vertex("work")
@@ -124,7 +124,7 @@ class TestGraph:
         
         assert sp
         
-    def test_shortest_path_bigweight(self):
+    def xtestx_shortest_path_bigweight(self):
         g = Graph()
         fromv = g.add_vertex("home")
         tov = g.add_vertex("work")
@@ -227,8 +227,63 @@ class TestGraph:
         for edge in g.edges:
             print edge
         assert False
-        
 
+class TestState:
+    def test_basic(self):
+        s = State(0)
+        assert s.time == 0
+        assert s.weight == 0
+        assert s.dist_walked == 0
+        assert s.num_transfers == 0
+        assert s.prev_edge_name == None
+        assert s.prev_edge_type == 5
+        assert s.calendar_day == None
+
+class TestStreet:
+    def street_test(self):
+        s = Street("mystreet", 1.1)
+        assert s.name == "mystreet"
+        assert s.length == 1.1
+        assert s.to_xml() == "<street name='mystreet' length='1.100000' />"
+        
+    def street_test_big_length(self):
+        s = Street("longstreet", 240000)
+        assert s.name == "longstreet"
+        assert s.length == 240000
+
+        assert s.to_xml() == "<street name='longstreet' length='240000.000000' />"
+        
+    def test_walk(self):
+        s = Street("longstreet", 2)
+        
+        after = s.walk(State(0))
+        assert after.time == 2
+        assert after.weight == 4
+        assert after.dist_walked == 2
+        assert after.prev_edge_type == 0
+        assert after.prev_edge_name == "longstreet"
+
+class TestLink:
+    def link_test(self):
+        l = Link()
+        assert l
+        assert str(l)=="<link name='LINK'/>"
+        
+    def name_test(self):
+        l = Link()
+        assert l.name == "LINK"
+        
+    def test_walk(self):
+        l = Link()
+        
+        after = l.walk(State(0))
+        
+        assert after.time==0
+        assert after.weight==0
+        assert after.dist_walked==0
+        assert after.prev_edge_type==3
+        assert after.prev_edge_name=="LINK"
+        
 class TestTriphopSchedule:
     def triphop_schedule_test(self):
         
@@ -250,41 +305,6 @@ class TestTriphopSchedule:
         assert(ths.triphops[0].trip_id == 'Foo to Bar')
         assert(len(ths.triphops) == 2)
         assert str(ths)=="<triphopschedule service_id='1'><triphop depart='00:00' arrive='01:00' transit='3600' trip_id='Foo to Bar' /><triphop depart='01:00' arrive='02:00' transit='3600' trip_id='Bar to Cow' /></triphopschedule>"
-
-class TestStreet:
-    def street_test(self):
-        s = Street("mystreet", 1.1)
-        assert s.name == "mystreet"
-        assert s.length == 1.1
-        assert s.to_xml() == "<street name='mystreet' length='1.100000' />"
-        
-    def street_test_big_length(self):
-        s = Street("longstreet", 240000)
-        assert s.name == "longstreet"
-        assert s.length == 240000
-
-        assert s.to_xml() == "<street name='longstreet' length='240000.000000' />"
-
-class TestState:
-    def test_basic(self):
-        s = State(0)
-        assert s.time == 0
-        assert s.weight == 0
-        assert s.dist_walked == 0
-        assert s.num_transfers == 0
-        assert s.prev_edge_name == None
-        assert s.prev_edge_type == 5
-        assert s.calendar_day == None
-
-class TestLink:
-    def link_test(self):
-        l = Link()
-        assert l
-        assert str(l)=="<link name='LINK'/>"
-        
-    def name_test(self):
-        l = Link()
-        assert l.name == "LINK"
 
 class TestListNode:
     def list_node_test(self):
