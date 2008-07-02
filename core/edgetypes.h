@@ -36,25 +36,25 @@ State*
 stateDup( State* this );
 
 long
-stateGetTime( State* this ) { return this->time; }
+stateGetTime( State* this );
 
 long
-stateGetWeight( State* this) { return this->weight; }
+stateGetWeight( State* this);
 
 double
-stateGetDistWalked( State* this ) { return this->dist_walked; }
+stateGetDistWalked( State* this );
 
 int
-stateGetNumTransfers( State* this ) { return this->num_transfers; }
+stateGetNumTransfers( State* this );
 
 edgepayload_t
-stateGetPrevEdgeType( State* this ) { return this->prev_edge_type; }
+stateGetPrevEdgeType( State* this );
 
 char*
-stateGetPrevEdgeName( State* this ) { return this->prev_edge_name; }
+stateGetPrevEdgeName( State* this );
 
 CalendarDay*
-stateCalendarDay( State* this ) { return this->calendar_day; }
+stateCalendarDay( State* this );
 
 //---------------DECLARATIONS FOR EDGEPAYLOAD CLASS---------------------
 

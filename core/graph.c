@@ -368,3 +368,14 @@ liRemoveRef( ListNode *dummyhead, Edge *data ) {
       curr = prev->next;
     }
 }
+
+Edge*
+liGetData( ListNode *this ) {
+	return this->data;
+}
+	
+ListNode*
+liGetNext( ListNode *this ) {
+	return this->next;
+}
+

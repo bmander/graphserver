@@ -162,4 +162,10 @@ liRemoveAfter( ListNode *this ) ;
 void
 liRemoveRef( ListNode *dummyhead, Edge* data );
 
+Edge*
+liGetData( ListNode *this );
+
+ListNode*
+liGetNext( ListNode *this );
+
 #endif
