@@ -114,21 +114,17 @@ class Graph(CShadow):
         spt = self.shortest_path_tree( from_v, to_v, init_state)
         curr = spt.get_vertex( to_v )
     
-        print spt.to_dot()
+        path_vertices.append( curr )
         
-        #if the end node wasn't found
-        if not curr:
-            raise Exception("Node not found.") # TODO
-
-        path_vertices.append(curr)
-        incoming = curr.get_incoming_edge(0)
-        while incoming:
-            path_edges.append(incoming)
-            curr = incoming.from_v
-            path_vertices.append(curr)
-            incoming = curr.get_incoming_edge(0)
-
-        return path_vertices.reverse(), path_edges.reverse()
+        while curr.label != from_v:
+            edge_in = curr.incoming[0]
+            path_edges.append( edge_in )
+            curr = edge_in.from_v
+            path_vertices.append( curr )
+    
+        path_vertices.reverse()
+        path_edges.reverse()
+        return (path_vertices, path_edges)
     
     def shortest_path_retro(from_v, to_v, final_state):
         path_vertices = []

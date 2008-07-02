@@ -229,6 +229,11 @@ class TestGraph:
         spt = g.shortest_path_tree( "Seattle", "Portland", State(0) )
         
         assert spt.get_vertex( "Portland" ).incoming[0].from_v.incoming[0].from_v.incoming[0].from_v.label == "Seattle"
+        
+        vertices, edges = g.shortest_path( "Seattle", "Portland", State(0) )
+        
+        assert [v.label for v in vertices] == ['Seattle', 'Seattle-busstop', 'Portland-busstop', 'Portland']
+        assert [e.payload.__class__ for e in edges] == [Link, TripHop, Link]
 
 class TestState:
     def test_basic(self):
