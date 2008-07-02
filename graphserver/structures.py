@@ -177,6 +177,7 @@ class Graph():
             tree = lgs.gShortestPathTreeRetro(self.c_ref, c_char_p(from_key), c_char_p(to_key), byref(init))
         return tree.contents
     """
+
     def shortest_path(self, from_v, to_v, init_state):
         path_vertices = []
         path_edges    = []
@@ -521,15 +522,14 @@ class Edge():
     #def __new__(cls, from_v, to_v, payload):
     #    return lgs.eNew(byref(from_v), byref(to_v), byref(payload)).contents
     
-    def __init__(self, from_v=None, to_v=None, payload=None):
+    def __init__(self, from_v, to_v, payload):
         #Edge* eNew(Vertex* from, Vertex* to, EdgePayload* payload);
         
-        if from_v is not None and to_v is not None and payload is not None:
-            eNew = lgs.eNew
-            eNew.restype =c_void_p
-            eNew.argtypes=[c_void_p, c_void_p, c_void_p]
-            
-            self.soul = eNew(from_v.soul, to_v.soul, payload.soul)
+        eNew = lgs.eNew
+        eNew.restype =c_void_p
+        eNew.argtypes=[c_void_p, c_void_p, c_void_p]
+        
+        self.soul = eNew(from_v.soul, to_v.soul, payload.soul)
 
     
     def __str__(self):
@@ -540,7 +540,7 @@ class Edge():
         if ptr is None:
             return None
         
-        ret = Edge()
+        ret = instantiate(Edge)
         ret.soul = ptr
         return ret
         
@@ -602,7 +602,7 @@ class ListNode():
         if ptr is None:
             return None
         
-        ret = ListNode()
+        ret = instantiate(ListNode)
         ret.soul = ptr
         return ret
 
@@ -641,7 +641,7 @@ class Link():
         if ptr is None:
             return None
         
-        ret = Link()
+        ret = instantiate(Link)
         ret.soul = ptr
         return ret
     
@@ -661,7 +661,7 @@ class Link():
 #returntype(POINTER(Link), [lgs.linkNew])
 
 class Street():
-    def __init__(self,name=None,length=None):
+    def __init__(self,name,length):
         if name and length:
             streetNew = lgs.streetNew
             streetNew.restype=c_void_p
@@ -698,7 +698,7 @@ class Street():
         if ptr is None:
             return None
         
-        ret = Street()
+        ret = instantiate(Street)
         ret.soul = ptr
         return ret
 

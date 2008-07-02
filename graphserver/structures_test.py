@@ -98,6 +98,7 @@ class TestGraph:
         e = g.add_edge("home", "work", s)
         
         sp = g.shortest_path("home", "work", State())
+        
         assert sp
         
     def test_add_link(self):
