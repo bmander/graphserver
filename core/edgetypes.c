@@ -277,10 +277,14 @@ thsPrintHops(TripHopSchedule* this) {
 
 void
 thsDestroy(TripHopSchedule* this) {
-  int i;
-
-  free(this->hops);
-  free(this);
+	/* Possible leak with unfreed trip_id
+    int i;
+  	for(i=0; i<this->n; i++) {
+  		triphopDestroy(this->hops[i]);
+  	}
+  	*/
+  	free(this->hops);
+  	free(this);
 }
 
 void

@@ -93,10 +93,10 @@ thsWalkBack(TripHopSchedule* this, State* params) {
     long wait;
     TripHop* hop;
 #ifndef ROUTE_REVERSE
-    if( hop = thsGetNextHop(this, adjusted_time) )
+    if( (hop = thsGetNextHop(this, adjusted_time)) )
       wait = (hop->depart - adjusted_time);
 #else
-    if( hop = thsGetLastHop(this, adjusted_time) )
+    if( (hop = thsGetLastHop(this, adjusted_time)) )
       wait = (adjusted_time - hop->arrive);
 #endif
     else {
@@ -219,7 +219,6 @@ thsCollapseBack(TripHopSchedule* this, State* params) {
 
     long adjusted_time = thsSecondsSinceMidnight( this, params );
 
-    TripHop* hop;
 #ifndef ROUTE_REVERSE
     return thsGetNextHop(this, adjusted_time);
 #else

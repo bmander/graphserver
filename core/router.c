@@ -56,7 +56,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
 #endif
 
       long old_w;
-      if( spt_v = gGetVertex( spt, v->label ) ) {        //get the SPT Vertex corresponding to 'v'
+      if( (spt_v = gGetVertex( spt, v->label )) ) {        //get the SPT Vertex corresponding to 'v'
         dv = (State*)spt_v->payload;                     //and its State 'dv'
         old_w = dv->weight;
       } else {
