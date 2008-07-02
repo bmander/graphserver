@@ -122,6 +122,9 @@ vDegreeOut( Vertex* this );
 int
 vDegreeIn( Vertex* this );
 
+State*
+vPayload( Vertex* this );
+
 //EDGE FUNCTIONS
 
 Edge*
