@@ -4,6 +4,8 @@
 #define MAX_WALK 1200         //in meters; he better part of a mile
 #define WALKING_OVERAGE 0.1   //hassle/second/meter
 #define WALKING_RELUCTANCE 2  //hassle/second
+#define ABSOLUTE_MAX_WALK 100000 //meters. 100 km. prevents overflow
+#define MAX_LONG 2147483647
 /*#define WALKING_SPEED 0.85    //meters per second
 #define MIN_TRANSFER_TIME 0 //five minutes
 #define TRANSFER_PENALTY 0    //rough measure of how bad a close transfer is
@@ -50,7 +52,10 @@ streetWalkBack(Street* this, State* params) {
     ret->calendar_day = params->calendar_day->prev_day;
   }
 #endif
-  ret->weight         += delta_w;
+  if (end_dist > ABSOLUTE_MAX_WALK) //TODO profile this to see if it's worth it
+    ret->weight = MAX_LONG;
+  else
+    ret->weight       += delta_w;
   ret->dist_walked    = end_dist;
   ret->prev_edge_type = PL_STREET;
   ret->prev_edge_name = this->name;

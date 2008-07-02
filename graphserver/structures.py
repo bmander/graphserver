@@ -355,13 +355,12 @@ class Vertex():
     
     label = cproperty(lgs.vGetLabel, c_char_p)
     
-    def __init__(self,label=None):
-        if label:
-            vNew = lgs.vNew
-            vNew.restype =c_void_p
-            vNew.argtypes=[c_char_p]
-            
-            self.soul = vNew(label)
+    def __init__(self,label):
+        vNew = lgs.vNew
+        vNew.restype =c_void_p
+        vNew.argtypes=[c_char_p]
+        
+        self.soul = vNew(label)
         
     def __del__(self):
         #void vDestroy(Vertex* this, int free_vertex_payload, int free_edge_payloads) ;
@@ -376,7 +375,7 @@ class Vertex():
         if ptr is None:
             return None
         
-        ret = Vertex()
+        ret = instantiate(Vertex)
         ret.soul = ptr
         return ret
     
