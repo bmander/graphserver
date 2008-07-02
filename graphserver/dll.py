@@ -19,6 +19,13 @@ lgs = PyDLL( so_loc )
 
 free = CDLL('libc.so.6').free
 
+import copy
+def instantiate(cls):
+    """instantiates a class without calling the constructor"""
+    ret = copy._EmptyClass()
+    ret.__class__ = cls
+    return ret
+
 def cleanup():
     #lgeos.finishGEOS()
     pass

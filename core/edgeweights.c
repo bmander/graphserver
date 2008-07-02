@@ -69,7 +69,7 @@ thsWalk(TripHopSchedule* this, State* params) {
 #else
 thsWalkBack(TripHopSchedule* this, State* params) {
 #endif
-
+    
     // if the params->calendar_day is NULL, use the params->time to find the calendar_day
     // the calendar_day is actually a denormalization of the params->time
     // this way, the user doesn't need to worry about it
@@ -138,7 +138,7 @@ thsWalkBack(TripHopSchedule* this, State* params) {
     ret->dist_walked    = 0;
     ret->prev_edge_type = PL_TRIPHOPSCHED;
     ret->prev_edge_name = hop->trip_id;
-
+    
     return ret;
 }
 

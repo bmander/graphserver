@@ -83,6 +83,8 @@ class TestGraph:
         
         sprime = e.walk(State(0))
         
+        print sprime
+        
         assert str(sprime)=="<state time='Sun Jan  4 06:25:52 1970' weight='2147483647' dist_walked='240000.0' num_transfers='0' prev_edge_type='0' prev_edge_name='helloworld'></state>"
 
         
@@ -305,7 +307,7 @@ class TestTriphopSchedule:
         assert(len(ths.triphops) == 2)
         assert str(ths)=="<triphopschedule service_id='1'><triphop depart='00:00' arrive='01:00' transit='3600' trip_id='Foo to Bar' /><triphop depart='01:00' arrive='02:00' transit='3600' trip_id='Bar to Cow' /></triphopschedule>"
         
-    def test_walk(self):
+    def xtestx_walk(self):
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
         cal = CalendarDay(0, 1*3600*24, [1,2], 0)
@@ -317,6 +319,20 @@ class TestTriphopSchedule:
         
         print s
         assert False
+        
+    def test_collapse(self):
+        rawhops = [(0,     1*3600,'Foo to Bar'),
+                   (1*3600,2*3600,'Bar to Cow')]
+        cal = CalendarDay(0, 1*3600*24, [1,2], 0)
+        # using a tuple
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0)
+        
+        th = ths.collapse(State(0))
+        
+        assert th.depart == 0
+        assert th.arrive == 3600
+        assert th.transit == 3600
+        assert th.trip_id == "Foo to Bar"
 
 class TestListNode:
     def list_node_test(self):

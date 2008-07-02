@@ -1,8 +1,8 @@
 try:
-    from graphserver.dll import lgs, free, cproperty, ccast, CShadow
+    from graphserver.dll import lgs, free, cproperty, ccast, CShadow, instantiate
 except ImportError:
     #so I can run this script from the same folder
-    from dll import lgs, free,cproperty, ccast, CShadow
+    from dll import lgs, free,cproperty, ccast, CShadow, instantiate
 from ctypes import string_at, byref, c_int, c_long, c_size_t, c_char_p, c_double, c_void_p
 from ctypes import Structure, pointer, cast, POINTER, addressof
 from time import asctime, gmtime
@@ -10,12 +10,7 @@ from time import time as now
 
 MEMTRACE = True
 
-import copy
-def instantiate(cls):
-    """instantiates a class without calling the constructor"""
-    ret = copy._EmptyClass()
-    ret.__class__ = cls
-    return ret
+
 
 """
 
@@ -361,7 +356,8 @@ class Edge(CShadow, Walkable):
         
     def walk(self, state):
         #State* eWalk(Edge *this, State* params) ;
-        return self._cwalk(self.soul, state.soul)
+        statesoul = self._cwalk(self.soul, state.soul)
+        return State.from_pointer( statesoul )
     
 #collapsable(Edge, lgs.epCollapse, lgs.epCollapseBack)
 
@@ -481,6 +477,15 @@ class TripHopSchedule(EdgePayload):
 
         ret += "</triphopschedule>"
         return ret
+        
+    def collapse(self, state):
+        func = lgs.thsCollapse
+        func.restype = c_void_p
+        func.argtypes = [c_void_p, c_void_p]
+        
+        triphopsoul = func(self.soul, state.soul)
+        
+        return TripHop.from_pointer( triphopsoul )
 
 
 Graph._cnew = lgs.gNew
