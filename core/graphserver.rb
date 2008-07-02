@@ -192,6 +192,7 @@ class Graphserver
       #Presents all possible requests to graphserver
       ret = ["Graphserver Web API"]
       ret << "shortest_path?from=FROM&to=TO"
+      ret << "shortest_path?from=LAT0,LON0&to=LAT1,LON1"
       ret << "all_vertex_labels"
       ret << "outgoing_edges?label=LABEL"
       ret << "walk_edges?label=LABEL&statevar1=STV1&statevar2=STV2..."
@@ -216,7 +217,7 @@ class Graphserver
       ret << "Size of graph: #{@gg.vertices.length} vertices"
       ret << "First vertex: #{@gg.vertices.first.label}"
       ret << "Last vertex: #{@gg.vertices.last.label}"
-      response.body = ret.join
+      response.body = ret.join("\n")
     end
 
     #Response to GET request "/shortest_path"
@@ -237,8 +238,8 @@ class Graphserver
             #If both input parameters are a pair of coordinates
             coords0 = from.split(',')
             coords1 = to.split(',')
-            puts "origin lat0=#{coords0[0]} lon0=#{coords0[1]}"
-            puts "destination lat1=#{coords1[0]} lon1=#{coords1[1]}"
+#            puts "origin lat0=#{coords0[0]} lon0=#{coords0[1]}"
+#            puts "destination lat1=#{coords1[0]} lon1=#{coords1[1]}"
             lat0 = coords0[0]
             lon0 = coords0[1]
             lat1 = coords1[0]
@@ -281,10 +282,6 @@ class Graphserver
               coords02 = "#{lon0},#{lat0} #{s0[1]['lon']},#{s0[1]['lat']}"
               coords11 = "#{lon1},#{lat1} #{s1[0]['lon']},#{s1[0]['lat']}"
               coords12 = "#{lon1},#{lat1} #{s1[1]['lon']},#{s1[1]['lat']}"
-#              puts "new edge( origin_#{ts}, #{s0[0]['label']})"
-#              puts "new edge( origin_#{ts}, #{s0[1]['label']})"
-#              puts "new edge( #{s1[0]['label']}, destination_#{ts})"
-#              puts "new edge( #{s1[1]['label']}, destination_#{ts})"
               @gg.add_edge_geom( "origin_#{ts}", s0[0]['label'], Link.new, coords01)
               @gg.add_edge_geom( "origin_#{ts}", s0[1]['label'], Link.new, coords02)
               @gg.add_edge_geom( s1[0]['label'], "destination_#{ts}", Link.new, coords11)

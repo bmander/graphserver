@@ -1,10 +1,8 @@
 #include "ruby.h"
 #include "fibheap.h"
 #include "dirfibheap.h"
-#include "graph.h"
-#include <sys/time.h>
 
-//#define DEBUG 
+#include <sys/time.h>
 
 //EDGETYPE CLASSES
 VALUE cEdgePayload;
@@ -19,24 +17,18 @@ VALUE cVertex;
 VALUE cEdge;
 //STATE-TYPE CLASSES
 VALUE cCalendar;
-int count=0;
+
 //UTILITY METHODS-------------------------------------------------------
 
 inline Vertex* unpack_v( VALUE pack ) {
   Vertex* unpack_ptr;
   Data_Get_Struct(pack, Vertex, unpack_ptr);
-  	#ifdef DEBUG 
-	//	rb_warning("unpack vertex (R->C): %s",unpack_ptr->label);
-  	#endif
   return unpack_ptr;
 }
 
 inline VALUE pack_v( Vertex* unpacked) {
-  if(unpacked){
-	#ifdef DEBUG 
-   		//rb_warning("pack vertex (C->R): %s",unpacked->label);
-	#endif
-    	return Data_Wrap_Struct( cVertex, 0, 0, unpacked ); }
+  if(unpacked)
+    return Data_Wrap_Struct( cVertex, 0, 0, unpacked );
   else
     return Qnil;
 }
@@ -44,11 +36,8 @@ inline VALUE pack_v( Vertex* unpacked) {
 //for returning references to vertices which should not delete
 //the underlying C structure when garbage collected
 inline VALUE pack_v_nice( Vertex* unpacked ) {
-  if(unpacked){
-	#ifdef DEBUG
-    		//rb_warn("pack vertex nice (C->R): %s",unpacked->label);
-	#endif
-    return Data_Wrap_Struct( cVertex, 0, 0, unpacked );}
+  if(unpacked)
+    return Data_Wrap_Struct( cVertex, 0, 0, unpacked );
   else
     return Qnil;
 }
@@ -56,7 +45,6 @@ inline VALUE pack_v_nice( Vertex* unpacked ) {
 
 inline Edge* unpack_e( VALUE pack ) {
   Edge* unpack_ptr;
-  //rb_warn("unpack edge (R->C)");
   Data_Get_Struct(pack, Edge, unpack_ptr);
   return unpack_ptr;
 }
@@ -65,7 +53,6 @@ inline Edge* unpack_e( VALUE pack ) {
 //of the vertex that attaches to it
 inline VALUE pack_e( Edge* unpacked) {
   if(unpacked){
-    //rb_warn("pack edge (C->R)");
     return Data_Wrap_Struct(cEdge, 0, 0, unpacked);}
   else
     return Qnil;
@@ -188,7 +175,7 @@ VALUE t_ep_collapse( VALUE self, VALUE rbstate ) {
 
   EdgePayload* ret = epCollapse( ep, state );
 
-  return pack_ep_as_children( ret ); 
+  return pack_ep_as_children( ret );
 }
 
 //LINK METHODS----------------------------------------------------------
@@ -255,9 +242,8 @@ VALUE t_street_walk_back( VALUE self, VALUE rbstate ) {
 
 VALUE t_street_inspect( VALUE self ) {
   Street* street = unpack_street( self );
-  char *ret;
 
-  ret=(char *)malloc(sizeof(char)*512);
+  char ret[512];
   sprintf( ret, "#<Street:%p name=\"%s\" length=%f>", street, street->name, street->length );
 
   return rb_str_new2( ret );
@@ -278,7 +264,7 @@ VALUE t_ths_new( VALUE class, VALUE rbservice_id, VALUE rbtriphops, VALUE rbcale
 
     departs[i] = NUM2INT(rb_ary_entry(triphop, 0));
     arrives[i] = NUM2INT(rb_ary_entry(triphop, 1));
-    
+
     char* tid  = STR2CSTR( rb_ary_entry( triphop, 2 ) );
     int tid_len = strlen( tid ) + 1;
     trip_ids[i] = (char*)malloc(tid_len*sizeof(char)+1);
@@ -371,7 +357,7 @@ VALUE t_triphop_walk_back( VALUE self, VALUE rbstate ) {
 
 VALUE t_triphop_depart( VALUE self ) {
   TripHop* th = unpack_triphop( self );
-  
+
   return INT2NUM( th->depart );
 }
 
@@ -398,9 +384,9 @@ VALUE t_triphop_trip_id( VALUE self ) {
 
 VALUE t_cal_new( VALUE class ) {
   VALUE ret = Data_Wrap_Struct( cCalendar, 0, 0, NULL );
- 
+
   rb_obj_call_init( ret, 0, 0 );
- 
+
   return ret;
 }
 
@@ -419,7 +405,7 @@ VALUE t_cal_append_day( VALUE self, VALUE begin_time, VALUE end_time, VALUE serv
   free( c_service_ids );
 
   DATA_PTR( self ) = ret;
-  return self; 
+  return self;
 }
 
 VALUE t_cal_inspect( VALUE self ) {
@@ -436,7 +422,7 @@ VALUE t_cal_inspect( VALUE self ) {
 
 VALUE t_cal_begin_time( VALUE self ) {
   CalendarDay* this = unpack_cal( self );
-  
+
   return INT2NUM( this->begin_time );
 }
 
@@ -453,7 +439,7 @@ VALUE t_cal_service_ids( VALUE self ) {
 
   int i;
   for(i=0; i<this->n_service_ids; i++) {
-    rb_ary_push( ret, INT2NUM( this->service_ids[i] ) );   
+    rb_ary_push( ret, INT2NUM( this->service_ids[i] ) );
   }
 
   return ret;
@@ -468,7 +454,7 @@ VALUE t_cal_previous( VALUE self ) {
     return Qnil;
 
   DATA_PTR( self ) = prev_day;
-  return self; 
+  return self;
 }
 
 VALUE t_cal_next( VALUE self ) {
@@ -514,9 +500,9 @@ VALUE t_state_new( VALUE class, VALUE rbtime ) {
   long time = NUM2LONG( rb_funcall( rbtime, rb_intern( "to_i" ), 0 ) );
 
   VALUE ret = pack_state( stateNew( time ) );
- 
+
   rb_obj_call_init( ret, 0, 0 );
- 
+
   return ret;
 }
 
@@ -690,16 +676,6 @@ VALUE pack_g( Graph* unpacked) {
   return Data_Wrap_Struct( cGraph, 0, 0, unpacked );
 }
 
-static void free_memory_graph(Graph * unpacked) {
- //libero la prueba
-   rb_warn("clean graph route");
-  gDestroy(unpacked,1,0);
-}
-
-VALUE pack_g_nice( Graph* unpacked) {
-  //rb_warn("pack graph mio: C->R");
-  return Data_Wrap_Struct( cGraph, 0, free_memory_graph, unpacked );
-}
 static VALUE t_init(VALUE self)
 {
   Graph* ret = gNew();
@@ -710,7 +686,7 @@ static VALUE t_init(VALUE self)
 static VALUE t_add_vertex(VALUE self, VALUE key)
 {
   Graph* gg = unpack_g( self );
-  
+
   Vertex* vv = gAddVertex( gg, STR2CSTR( key ) );
 
   return pack_v( vv );
@@ -760,31 +736,27 @@ static VALUE t_vertices( VALUE self ) {
 
 static VALUE t_shortest_path_tree( VALUE self, VALUE from, VALUE to, VALUE init, VALUE direction ) {
   Graph* gg = unpack_g( self );
-  count++; 
+
   Graph* tree;
-  rb_warn("Quetioned route: %i",count);
   if( RTEST( direction ) ) {
     //allow for 'to' to be "nil" in order to create exhaustive SPT
     if( !RTEST( to ) )
       to = rb_str_new2( "" );
-   // rb_warn("entro en la la llamada");
+
     tree = gShortestPathTree( gg, STR2CSTR( from ), STR2CSTR( to ), unpack_state( init ) );
-    //rb_warn("tamaño: %i",gSize(tree));
   } else {
     //allows 'from' to be "nil" to create exhaustive SPT
     if( !RTEST( from ) )
       from = rb_str_new2( "" );
-    //rb_warn("entro en la la llamada retro");
-    tree = gShortestPathTreeRetro( gg, STR2CSTR( from ), STR2CSTR( to ), unpack_state( init ) );
-    rb_warn("length route: %i",gSize(tree));
-  }
-  rb_warn("request complete number- %i - free memory",count); 
-  return pack_g_nice( tree );
 
+    tree = gShortestPathTreeRetro( gg, STR2CSTR( from ), STR2CSTR( to ), unpack_state( init ) );
+  }
+
+  return pack_g( tree );
 }
 
 //For now it's a little easier to do this in Ruby
-static VALUE t_shortest_path( VALUE self, VALUE from, VALUE to, VALUE init, VALUE direction ) {
+/*static VALUE t_shortest_path( VALUE self, VALUE from, VALUE to, VALUE init, VALUE direction ) {
   Graph* gg = unpack_g( self );
 
   long nn;
@@ -801,7 +773,7 @@ static VALUE t_shortest_path( VALUE self, VALUE from, VALUE to, VALUE init, VALU
   }
 
   return ret;
-}
+}*/
 
 void Init_graph_core() {
 
@@ -822,7 +794,6 @@ void Init_graph_core() {
   rb_define_method( cStreet, "walk_back", t_street_walk_back, 1 );
   rb_define_method( cStreet, "inspect", t_street_inspect, 0 );
 
-
   cTripHopSchedule = rb_define_class("TripHopSchedule", cEdgePayload);
   rb_define_singleton_method( cTripHopSchedule, "new", t_ths_new, 4 );
   rb_define_method( cTripHopSchedule, "walk", t_ths_walk, 1 );
@@ -830,7 +801,7 @@ void Init_graph_core() {
   rb_define_method( cTripHopSchedule, "inspect", t_ths_inspect, 0 );
   rb_define_method( cTripHopSchedule, "triphops", t_ths_triphops, 0 );
   rb_define_method( cTripHopSchedule, "service_id", t_ths_service_id, 0);
-  
+
   cTripHop = rb_define_class( "TripHop", cEdgePayload) ;
   rb_define_method( cTripHop, "walk", t_triphop_walk, 1 );
   rb_define_method( cTripHop, "walk_back", t_triphop_walk_back, 1 );
@@ -888,5 +859,5 @@ void Init_graph_core() {
   rb_define_method(cGraph, "add_edge", t_add_edge, 3);
   rb_define_method(cGraph, "add_edge_geom", t_add_edge_geom, 4);
   rb_define_method(cGraph, "shortest_path_tree", t_shortest_path_tree, 4);
-  rb_define_method(cGraph, "shortest_path", t_shortest_path, 4);
+//  rb_define_method(cGraph, "shortest_path", t_shortest_path, 4);
 }
