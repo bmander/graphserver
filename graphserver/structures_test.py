@@ -28,6 +28,7 @@ class TestGraph:
         assert v.label == "home"
         v = g.get_vertex("bogus")
         assert v == None
+        
     def test_add_edge(self):
         g = Graph()
         fromv = g.add_vertex("home")

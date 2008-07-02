@@ -8,9 +8,6 @@ from ctypes import Structure, pointer, cast, POINTER, addressof
 from time import asctime, gmtime
 from time import time as now
 
-MEMTRACE = True
-
-
 
 """
 
@@ -18,20 +15,12 @@ These classes map C structs to Python Ctypes Structures.
 
 """
 
-def collapsable(cls, collapsef, collapse_backf):
-    collapsef.restype = POINTER(cls)
-    collapse_backf.restype = POINTER(cls)
-    cls._ccollapse = collapsef
-    cls._ccollapse_back = collapse_backf
-        
+class Collapsable():
     def collapse(self):
-        return self._ccollapse(self, state)
+        return self._collapse_type.from_pointer(self._ccollapse(self, state))
     
     def collapse_back(self):
-        return lgs._ccollapse_back(self, state)
-    
-    cls.collapse = collapse
-    cls.collapse_back = collapse_back
+        return self._collapse_type.from_pointer(self._ccollapse_back(self, state))
 
 class Walkable():
     """ Implements the walkable interface. """
@@ -41,12 +30,14 @@ class Walkable():
     def walk_back(self, state):
         return State.from_pointer(self._cwalk_back(self.soul, state.soul))
 
-"""
 
-Type Definitions
 
 """
-EdgePayloadEnumType = c_int
+
+CType Definitions
+
+"""
+
 ServiceIdType = c_int
 
 """
@@ -56,12 +47,6 @@ Class Definitions
 """
 
 class Graph(CShadow):
-    _cnew = lgs.gNew
-    _cdel = lgs.gDestroy
-    _cadd_vertex = lgs.gAddVertex
-    _cget_vertex = lgs.gGetVertex
-    _cadd_edge = lgs.gAddEdge
-    
     def __init__(self):
         self.soul = self._cnew()
         
@@ -487,7 +472,6 @@ class TripHopSchedule(EdgePayload):
         
         return TripHop.from_pointer( triphopsoul )
 
-
 Graph._cnew = lgs.gNew
 Graph._cdel = lgs.gDestroy
 Graph._cadd_vertex = ccast(lgs.gAddVertex, Vertex)
@@ -514,6 +498,9 @@ EdgePayload._subtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,5:None}
 EdgePayload._cget_type = lgs.epGetType
 EdgePayload._cwalk = lgs.epWalk
 EdgePayload._cwalk_back = lgs.epWalkBack
+EdgePayload._ccollapse = lgs.epCollapse
+EdgePayload._ccollapse_back = lgs.epCollapseBack
+EdgePayload._collapse_type = EdgePayload
 
 CalendarDay._cnew = lgs.calNew
 CalendarDay._cappend_day = ccast(lgs.calAppendDay, CalendarDay)
@@ -533,6 +520,9 @@ ListNode._cnext = ccast(lgs.liGetNext, ListNode)
 TripHopSchedule._chop = ccast(lgs.thsGetHop, TripHop)
 TripHopSchedule._cwalk = lgs.thsWalk
 TripHopSchedule._cwalk_back = lgs.thsWalkBack
+TripHopSchedule._ccollapse = lgs.thsCollapse
+TripHopSchedule._ccollapse_back = lgs.thsCollapseBack
+TripHopSchedule._collapse_type = TripHop
 
 Street._cnew = lgs.streetNew
 Street._cwalk = lgs.streetWalk

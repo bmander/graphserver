@@ -112,6 +112,8 @@ pycapi(lgs.eWalkBack, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.epGetType, c_int, [c_void_p])
 pycapi(lgs.epWalk, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.epWalkBack, c_void_p, [c_void_p, c_void_p])
+pycapi(lgs.epCollapse, c_void_p, [c_void_p, c_void_p])
+pycapi(lgs.epCollapseBack, c_void_p, [c_void_p, c_void_p])
 
 #LINKNODE API
 pycapi(lgs.linkNew, c_void_p)
@@ -128,6 +130,8 @@ pycapi(lgs.thsNew, c_void_p) # args are dynamic, and not specified
 pycapi(lgs.thsGetHop, c_void_p, [c_void_p, c_int])
 pycapi(lgs.thsWalk, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.thsWalkBack, c_void_p, [c_void_p, c_void_p])
+pycapi(lgs.thsCollapse, c_void_p, [c_void_p, c_void_p])
+pycapi(lgs.thsCollapseBack, c_void_p, [c_void_p, c_void_p])
 
 #TRIPHOP API
 pycapi(lgs.triphopWalk, c_void_p, [c_void_p, c_void_p])
