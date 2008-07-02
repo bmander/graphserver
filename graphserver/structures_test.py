@@ -74,17 +74,29 @@ class TestGraph:
         assert spt.get_vertex("work").degree_in==1
         assert spt.get_vertex("work").degree_out==0
         
+    def test_walk_longstreet(self):
+        g = Graph()
+        fromv = g.add_vertex("home")
+        tov = g.add_vertex("work")
+        s = Street( "helloworld", 240000 )
+        e = g.add_edge("home", "work", s)
+        
+        sprime = e.walk(State(0))
+        
+        assert str(sprime)=="<state time='Sun Jan  4 06:25:52 1970' weight='2147483647' dist_walked='240000.0' num_transfers='0' prev_edge_type='0' prev_edge_name='helloworld'></state>"
+
+        
     def test_shortest_path_tree_bigweight(self):
         g = Graph()
         fromv = g.add_vertex("home")
         tov = g.add_vertex("work")
-        s = Street( "helloworld", 135698 ) #one less causes no problems
+        s = Street( "helloworld", 240000 )
         e = g.add_edge("home", "work", s)
         
         spt = g.shortest_path_tree("home", "work", State(0))
         
-        assert spt
-        
+        assert spt.get_vertex("home").degree_out == 1
+            
     def test_shortest_path_tree_retro(self):
         g = Graph()
         fromv = g.add_vertex("home")
@@ -101,7 +113,7 @@ class TestGraph:
         assert spt.get_vertex("work").degree_in==0
         assert spt.get_vertex("work").degree_out==1
     
-    def test_shortest_path(self):
+    def xtest_shortest_path(self):
         g = Graph()
         fromv = g.add_vertex("home")
         tov = g.add_vertex("work")
@@ -112,7 +124,7 @@ class TestGraph:
         
         assert sp
         
-    def xtest_shortest_path_bigweight(self):
+    def test_shortest_path_bigweight(self):
         g = Graph()
         fromv = g.add_vertex("home")
         tov = g.add_vertex("work")

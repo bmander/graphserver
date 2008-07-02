@@ -327,7 +327,7 @@ class State():
                self.num_transfers,
                self.prev_edge_type,
                self.prev_edge_name)
-        if self.calendar_day_ptr:
+        if self.calendar_day:
             ret += self.calendar_day
         return ret + "</state>"
     
@@ -514,6 +514,17 @@ class Edge():
         payloadtype = epGetType(payloadsoul)
         
         return payloadtypes[payloadtype].from_pointer( payloadsoul )
+        
+    def walk(self, state):
+        #State* eWalk(Edge *this, State* params) ;
+        
+        func = lgs.eWalk
+        func.restype = c_void_p
+        func.argtypes = [c_void_p, c_void_p]
+        
+        statesoul = func( self.soul, state.soul )
+        
+        return State.from_pointer( statesoul )
     
 #walkable(Edge, lgs.epWalk, lgs.epWalkBack)
 #collapsable(Edge, lgs.epCollapse, lgs.epCollapseBack)
@@ -555,7 +566,7 @@ class EdgePayload():
         ret = instantiate(cls)
         ret.soul = ptr
         return ret
-
+        
 
 #walkable(EdgePayload, lgs.epWalk, lgs.epWalkBack)
 #collapsable(EdgePayload, lgs.epCollapse, lgs.epCollapseBack)
