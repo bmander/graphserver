@@ -308,7 +308,7 @@ class TestTriphopSchedule:
         assert(len(ths.triphops) == 2)
         assert str(ths)=="<triphopschedule service_id='1'><triphop depart='00:00' arrive='01:00' transit='3600' trip_id='Foo to Bar' /><triphop depart='01:00' arrive='02:00' transit='3600' trip_id='Bar to Cow' /></triphopschedule>"
         
-    def xtestx_walk(self):
+    def test_walk(self):
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
         cal = CalendarDay(0, 1*3600*24, [1,2], 0)
@@ -318,8 +318,13 @@ class TestTriphopSchedule:
         
         s = ths.walk(State(0))
         
-        print s
-        assert False
+        assert s.time == 3600
+        assert s.weight == 3600
+        assert s.dist_walked == 0.0
+        assert s.num_transfers == 1
+        assert s.prev_edge_type == 2
+        assert s.prev_edge_name == "Foo to Bar"
+        assert str(s) == "<state time='Thu Jan  1 01:00:00 1970' weight='3600' dist_walked='0.0' num_transfers='1' prev_edge_type='2' prev_edge_name='Foo to Bar'><calendar begin_time='Thu Jan  1 00:00:00 1970' end_time='Fri Jan  2 00:00:00 1970' service_ids='1,2'/></state>"
         
     def test_collapse(self):
         rawhops = [(0,     1*3600,'Foo to Bar'),

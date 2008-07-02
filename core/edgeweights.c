@@ -70,74 +70,19 @@ thsWalk(TripHopSchedule* this, State* params) {
 thsWalkBack(TripHopSchedule* this, State* params) {
 #endif
     
-    // if the params->calendar_day is NULL, use the params->time to find the calendar_day
-    // the calendar_day is actually a denormalization of the params->time
-    // this way, the user doesn't need to worry about it
-    CalendarDay* calendar_day = params->calendar_day;
-    if( !calendar_day )
+    TripHop* th;
 #ifndef ROUTE_REVERSE
-      calendar_day = calDayOfOrAfter( this->calendar, params->time );
+    th = thsCollapse(this, params);
 #else
-      calendar_day = calDayOfOrBefore( this->calendar, params->time );
+    th = thsCollapseBack(this, params);
 #endif
-
-    // if the schedule never runs
-    // or if the schedule does not run on this day
-    // this link goes nowhere
-    if( !calendar_day ||
-        !calDayHasServiceId( calendar_day, this->service_id) ||
-        this->n == 0 ) {
-      return NULL;
-    }
-
-    State* ret = stateDup( params );
-    ret->calendar_day = calendar_day;
-
-    long adjusted_time = thsSecondsSinceMidnight( this, params );
-
-    long wait;
-    TripHop* hop;
+    
+    State* ret;
 #ifndef ROUTE_REVERSE
-    if( (hop = thsGetNextHop(this, adjusted_time)) )
-      wait = (hop->depart - adjusted_time);
+    ret = triphopWalk(th, params);
 #else
-    if( (hop = thsGetLastHop(this, adjusted_time)) )
-      wait = (adjusted_time - hop->arrive);
+    ret = triphopWalkBack(th, params);
 #endif
-    else {
-      return NULL;
-    }
-
-    long transfer_penalty=0;
-    //if this is a transfer
-    if( params->prev_edge_type != PL_TRIPHOPSCHED ||    //the last edge wasn't a bus
-        !params->prev_edge_name                   ||    //it was a bus, but the trip_id was NULL
-        strcmp( params->prev_edge_name, hop->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
-
-      //add a weight penalty to the transfer under some conditions
-      if( wait < MIN_TRANSFER_TIME && 
-          params->num_transfers > 0)
-        transfer_penalty = (MIN_TRANSFER_TIME-wait)*TRANSFER_PENALTY;
-      //transfer_penalty = 1000; //penalty of making a transfer; flat rate.
-
-      ret->num_transfers += 1;
-    }
-
-#ifndef ROUTE_REVRSE
-    ret->time           += wait + hop->transit;
-    if( ret->time >= calendar_day->end_time) {
-      ret->calendar_day = calendar_day->next_day;
-    }
-#else
-    ret->time           -= wait - hop->transit;
-    if( ret->time < calendar_day->begin_time) {
-      ret->calendar_day = calendar_day->prev_day;
-    }
-#endif
-    ret->weight         += wait + hop->transit + transfer_penalty;
-    ret->dist_walked    = 0;
-    ret->prev_edge_type = PL_TRIPHOPSCHED;
-    ret->prev_edge_name = hop->trip_id;
     
     return ret;
 }

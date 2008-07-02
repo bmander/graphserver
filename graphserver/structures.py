@@ -243,7 +243,7 @@ class State(CShadow):
                self.prev_edge_type,
                self.prev_edge_name)
         if self.calendar_day:
-            ret += self.calendar_day
+            ret += self.calendar_day.to_xml()
         return ret + "</state>"
         
     time           = cproperty(lgs.stateGetTime, c_long)
