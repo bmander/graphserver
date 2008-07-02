@@ -282,6 +282,11 @@ vDegreeIn( Vertex* this ) {
     return this->degree_in;
 }
 
+State*
+vPayload( Vertex* this ) {
+	return this->payload;
+}
+
 // EDGE FUNCTIONS
 
 Edge*
