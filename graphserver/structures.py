@@ -77,11 +77,16 @@ def returntype(type, methods):
     for m in methods:
         m.restype = type
         
-def cproperty(cfunc, restype):
+def cproperty(cfunc, restype, ptrclass=None):
+    """if restype is c_null_p, specify a class to convert the pointer into"""
+    
     cfunc.restype = restype
     cfunc.argtypes = [c_void_p]
     def prop(self):
-        return cfunc(c_void_p(self.soul))
+        ret = cfunc( c_void_p( self.soul ) )
+        if ptrclass:
+            ret = ptrclass.from_pointer(ret)
+        return ret
     return property(prop)
 
 def ccast(func, cls):
@@ -310,12 +315,6 @@ class State():
     def clone(self):
         return self.__copy__()
     
-    @property
-    def calendar_day(self):
-        if self.calendar_day_ptr:
-            return self.calendar_day_ptr.contents
-        return None
-    
     def __str__(self):
         return self.to_xml()
 
@@ -331,7 +330,7 @@ class State():
         if self.calendar_day_ptr:
             ret += self.calendar_day
         return ret + "</state>"
-        
+    
     @classmethod
     def from_pointer(cls, ptr):
         if ptr is None:
@@ -340,78 +339,14 @@ class State():
         ret = instantiate(State)
         ret.soul = ptr
         return ret
-        
-    @property
-    def time(self):
-        #long stateGetTime( State* this );
-        
-        func = lgs.stateGetTime
-        func.restype = c_long
-        func.argtypes = [c_void_p]
-        
-        return func(self.soul)
-
-    @property
-    def weight(self):
-        #long stateGetWeight( State* this);
-        
-        func = lgs.stateGetWeight
-        func.restype = c_long
-        func.argtypes = [c_void_p]
-        
-        return func(self.soul)
-        
-    @property
-    def dist_walked(self):
-        #double stateGetDistWalked( State* this );
-        
-        func = lgs.stateGetDistWalked
-        func.restype = c_double
-        func.argtypes = [c_void_p]
-        
-        return func(self.soul)
-
-    @property
-    def num_transfers(self):
-        #int stateGetNumTransfers( State* this );
-        
-        func = lgs.stateGetNumTransfers
-        func.restype = c_int
-        func.argtypes = [c_void_p]
-        
-        return func(self.soul)
-
-    @property
-    def prev_edge_type(self):
-        #edgepayload_t stateGetPrevEdgeType( State* this );
-        
-        func = lgs.stateGetPrevEdgeType
-        func.restype = c_int
-        func.argtypes = [c_void_p]
-        
-        return func(self.soul)
-
-    @property
-    def prev_edge_name(self):
-        #char* stateGetPrevEdgeName( State* this );
-        
-        func = lgs.stateGetPrevEdgeName
-        func.restype = c_char_p
-        func.argtypes = [c_void_p]
-        
-        return func(self.soul)
-
-    @property
-    def calendar_day(self):
-        #CalendarDay* stateCalendarDay( State* this );
-        
-        func = lgs.stateCalendarDay
-        func.restype = c_void_p
-        func.argtypes = [c_void_p]
-        
-        calendardaysoul = func(self.soul)
-        
-        return CalendarDay.from_pointer( calendardaysoul )
+    
+    time           = cproperty(lgs.stateGetTime, c_long)
+    weight         = cproperty(lgs.stateGetWeight, c_long)
+    dist_walked    = cproperty(lgs.stateGetDistWalked, c_double)
+    num_transfers  = cproperty(lgs.stateGetNumTransfers, c_int)
+    prev_edge_type = cproperty(lgs.stateGetPrevEdgeType, c_int)
+    prev_edge_name = cproperty(lgs.stateGetPrevEdgeName, c_char_p)
+    calendar_day   = cproperty(lgs.stateCalendarDay, c_void_p, CalendarDay)
     
 #returntype(POINTER(State), [lgs.stateDup, lgs.stateNew])
     
@@ -519,8 +454,6 @@ class Vertex():
 #returntype(POINTER(Vertex), [lgs.vNew])
 
 class Edge():
-    #def __new__(cls, from_v, to_v, payload):
-    #    return lgs.eNew(byref(from_v), byref(to_v), byref(payload)).contents
     
     def __init__(self, from_v, to_v, payload):
         #Edge* eNew(Vertex* from, Vertex* to, EdgePayload* payload);
@@ -621,20 +554,14 @@ collapsable(EdgePayload, lgs.epCollapse, lgs.epCollapseBack)
 
     
 class Link():
+    name = cproperty(lgs.linkGetName, c_char_p)
+    
     def __init__(self):
         linkNew = lgs.linkNew
         linkNew.restype=c_void_p
         linkNew.argtypes=[]
         
         self.soul = linkNew()
-        
-    @property
-    def name(self):
-        linkGetName = lgs.linkGetName
-        linkGetName.restype=c_char_p
-        linkGetName.argtypes=[c_void_p]
-        
-        return linkGetName(self.soul)
         
     @classmethod
     def from_pointer(cls, ptr):
@@ -661,6 +588,9 @@ class Link():
 #returntype(POINTER(Link), [lgs.linkNew])
 
 class Street():
+    length = cproperty(lgs.streetGetLength, c_double)
+    name   = cproperty(lgs.streetGetName, c_char_p)
+    
     def __init__(self,name,length):
         if name and length:
             streetNew = lgs.streetNew
@@ -670,22 +600,6 @@ class Street():
             self.soul = streetNew(name,length)
         
     #there will be no delete function, because Street is designed to be taken by Graph and deleted alongside it
-    
-    @property
-    def name(self):
-        streetGetName = lgs.streetGetName
-        streetGetName.restype=c_char_p
-        streetGetName.argtypes=[c_void_p]
-        
-        return streetGetName( self.soul )
-        
-    @property
-    def length(self):
-        streetGetLength = lgs.streetGetLength
-        streetGetLength.restype=c_double
-        streetGetLength.argtypes=[c_void_p]
-        
-        return streetGetLength( self.soul )
     
     def __str__(self):
         return self.to_xml()
