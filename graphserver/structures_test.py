@@ -289,7 +289,6 @@ class TestTriphopSchedule:
         
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
-        
         # using a tuple
         ths = TripHopSchedule(rawhops, 1, CalendarDay(0, 1*3600*24, [1,2], 0), 0)
         
@@ -305,6 +304,19 @@ class TestTriphopSchedule:
         assert(ths.triphops[0].trip_id == 'Foo to Bar')
         assert(len(ths.triphops) == 2)
         assert str(ths)=="<triphopschedule service_id='1'><triphop depart='00:00' arrive='01:00' transit='3600' trip_id='Foo to Bar' /><triphop depart='01:00' arrive='02:00' transit='3600' trip_id='Bar to Cow' /></triphopschedule>"
+        
+    def test_walk(self):
+        rawhops = [(0,     1*3600,'Foo to Bar'),
+                   (1*3600,2*3600,'Bar to Cow')]
+        cal = CalendarDay(0, 1*3600*24, [1,2], 0)
+        
+        # using a tuple
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0)
+        
+        s = ths.walk(State(0))
+        
+        print s
+        assert False
 
 class TestListNode:
     def list_node_test(self):
