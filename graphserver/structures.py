@@ -64,19 +64,7 @@ def castpayload(func):
             return None
         return cast(p, POINTER(typ)).contents
     return meth
-
-
-def cdelete(self, delf):
-    try:
-        if MEMTRACE:
-            print "Freeing %s" % self
-        delf(byref(self))
-    except: pass
-
-def returntype(type, methods):
-    for m in methods:
-        m.restype = type
-        
+       
 def cproperty(cfunc, restype, ptrclass=None):
     """if restype is c_null_p, specify a class to convert the pointer into"""
     
@@ -90,6 +78,8 @@ def cproperty(cfunc, restype, ptrclass=None):
     return property(prop)
 
 def ccast(func, cls):
+    """Wraps a function to casts the result of a function (assumed c_void_p)
+       into an object using the class's from_pointer method."""
     func.restype = c_void_p
     def _cast(self, *args):
         return cls.from_pointer(func(*args))
@@ -347,28 +337,21 @@ class State():
     prev_edge_type = cproperty(lgs.stateGetPrevEdgeType, c_int)
     prev_edge_name = cproperty(lgs.stateGetPrevEdgeName, c_char_p)
     calendar_day   = cproperty(lgs.stateCalendarDay, c_void_p, CalendarDay)
-    
-#returntype(POINTER(State), [lgs.stateDup, lgs.stateNew])
-    
+        
 
 class Vertex():
     
     label = cproperty(lgs.vGetLabel, c_char_p)
+    degree_in = cproperty(lgs.vDegreeIn, c_int)
+    degree_out = cproperty(lgs.vDegreeOut, c_int)
     
     def __init__(self,label):
-        vNew = lgs.vNew
-        vNew.restype =c_void_p
-        vNew.argtypes=[c_char_p]
-        
-        self.soul = vNew(label)
+        self.soul = self._cnew(label)
         
     def __del__(self):
         #void vDestroy(Vertex* this, int free_vertex_payload, int free_edge_payloads) ;
-        
-        vDestroy = lgs.vDestroy
-        vDestroy.argtypes=[c_void_p,c_int,c_int]
-        
-        vDestroy(self.soul, 1, 1)
+        # TODO - support parameterization?
+        self._cdel(self.soul, 1, 1)
         
     @classmethod
     def from_pointer(cls, ptr):
@@ -378,25 +361,7 @@ class Vertex():
         ret = instantiate(Vertex)
         ret.soul = ptr
         return ret
-    
-    @property
-    def degree_in(self):
-        # char* vGetLabel( Vertex* this ) {
-        vDegreeIn = lgs.vDegreeIn
-        vDegreeIn.restype=c_int
-        vDegreeIn.argtypes=[c_void_p]
         
-        return vDegreeIn(self.soul)
-        
-    @property
-    def degree_out(self):
-        # char* vDegreeOut( Vertex* this ) {
-        vDegreeOut = lgs.vDegreeOut
-        vDegreeOut.restype=c_int
-        vDegreeOut.argtypes=[c_void_p]
-        
-        return vDegreeOut(self.soul)
-    
     def to_xml(self):
         return "<Vertex degree_out='%s' degree_in='%s' label='%s'/>" % (self.degree_out, self.degree_in, self.label)
     
@@ -449,20 +414,12 @@ class Vertex():
         return cast(lgs.eWalk(self, state), State)
 """
 
-#cdelete(Vertex, lgs.vDestroy)
-#returntype(POINTER(Vertex), [lgs.vNew])
 
 class Edge():
     
     def __init__(self, from_v, to_v, payload):
         #Edge* eNew(Vertex* from, Vertex* to, EdgePayload* payload);
-        
-        eNew = lgs.eNew
-        eNew.restype =c_void_p
-        eNew.argtypes=[c_void_p, c_void_p, c_void_p]
-        
-        self.soul = eNew(from_v.soul, to_v.soul, payload.soul)
-
+        self.soul = self._cnew(from_v.soul, to_v.soul, payload.soul)
     
     def __str__(self):
         return "<Edge>%s%s</Edge>" % (self.from_v, self.to_v)
@@ -478,23 +435,11 @@ class Edge():
         
     @property
     def from_v(self):
-        eGetFrom = lgs.eGetFrom
-        eGetFrom.restype=c_void_p
-        eGetFrom.argtypes=[c_void_p]
-        
-        vertexsoul = eGetFrom(self.soul)
-        
-        return Vertex.from_pointer(vertexsoul)
+        return self._cfrom_v(self.soul)
         
     @property
     def to_v(self):
-        eGetTo = lgs.eGetTo
-        eGetTo.restype=c_void_p
-        eGetTo.argtypes=[c_void_p]
-        
-        vertexsoul = eGetTo(self.soul)
-        
-        return Vertex.from_pointer(vertexsoul)
+        return self._cto_v(self.soul)
         
     @property
     def payload(self):
@@ -528,7 +473,6 @@ class Edge():
 #walkable(Edge, lgs.epWalk, lgs.epWalkBack)
 #collapsable(Edge, lgs.epCollapse, lgs.epCollapseBack)
 
-#returntype(POINTER(Edge), [lgs.eNew])
 
 
 class ListNode():
@@ -569,7 +513,6 @@ class EdgePayload():
 
 #walkable(EdgePayload, lgs.epWalk, lgs.epWalkBack)
 #collapsable(EdgePayload, lgs.epCollapse, lgs.epCollapseBack)
-#cdelete(EdgePayload, lgs.epDestroy)
 
     
 class Link(EdgePayload):
@@ -586,8 +529,6 @@ class Link(EdgePayload):
         return "<link name='%s'/>" % (self.name)
     
 #walkable(Link, lgs.linkWalk, lgs.linkWalkBack)
-#cdelete(Link, lgs.linkDestroy)
-#returntype(POINTER(Link), [lgs.linkNew])
 
 class Street(EdgePayload):
     length = cproperty(lgs.streetGetLength, c_double)
@@ -607,7 +548,6 @@ class Street(EdgePayload):
         return "<street name='%s' length='%f' />" % (self.name, self.length)
 
 #walkable(Street, lgs.streetWalk, lgs.streetWalkBack)
-#returntype(POINTER(Street), [lgs.streetNew])
 
 
 class TripHop(EdgePayload):
@@ -650,13 +590,7 @@ class TripHopSchedule(EdgePayload):
     service_id = cproperty(lgs.thsGetServiceId, c_int)
     
     def triphop(self, i):
-        func = lgs.thsGetHop
-        func.restype = c_void_p
-        func.argtypes = [c_void_p, c_int]
-        
-        hopsoul = func(self.soul, i)
-        
-        return TripHop.from_pointer( hopsoul )
+        return self._chop(self.soul, i)
     
     @property
     def triphops(self):
@@ -674,10 +608,6 @@ class TripHopSchedule(EdgePayload):
         return ret
 
 
-#walkable(TripHopSchedule, lgs.thsWalk, lgs.thsWalkBack)
-#returntype(POINTER(TripHopSchedule), [lgs.thsNew])
-
-
 Graph._cnew = lgs.gNew
 Graph._cdel = lgs.gDestroy
 Graph._cadd_vertex = ccast(lgs.gAddVertex, Vertex)
@@ -686,8 +616,14 @@ Graph._cadd_edge = ccast(lgs.gAddEdge, Edge)
 Graph._cshortest_path_tree = ccast(lgs.gShortestPathTree, Graph)
 Graph._cshortest_path_tree_retro = ccast(lgs.gShortestPathTreeRetro, Graph)
 
+Vertex._cnew = lgs.vNew
+Vertex._cdel = lgs.vDestroy
 Vertex._coutgoing_edges = ccast(lgs.vGetOutgoingEdgeList, ListNode)
 Vertex._cincoming_edges = ccast(lgs.vGetIncomingEdgeList, ListNode)
+
+Edge._cnew = lgs.eNew
+Edge._cfrom_v = ccast(lgs.eGetFrom, Vertex)
+Edge._cto_v = ccast(lgs.eGetTo, Vertex)
 
 CalendarDay._cnew = lgs.calNew
 CalendarDay._cappend_day = ccast(lgs.calAppendDay, CalendarDay)
@@ -704,6 +640,7 @@ State._ccopy = ccast(lgs.stateDup, State)
 ListNode._cdata = ccast(lgs.liGetData, Edge)
 ListNode._cnext = ccast(lgs.liGetNext, ListNode)
 
+TripHopSchedule._chop = ccast(lgs.thsGetHop, TripHop)
 
 EdgePayload._fields_ = [('type', EdgePayloadEnumType)]
 

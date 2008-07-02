@@ -56,6 +56,20 @@ pycapi(lgs.stateNew, c_void_p, [c_long])
 pycapi(lgs.stateDup, c_void_p)
 
 #VERTEX API
+pycapi(lgs.vNew, c_void_p, [c_char_p])
+pycapi(lgs.vDestroy, c_void_p, [c_void_p,c_int,c_int])
+pycapi(lgs.vDegreeIn, c_int, [c_void_p])
+pycapi(lgs.vDegreeOut, c_int, [c_void_p])
+
 pycapi(lgs.vGetOutgoingEdgeList, c_void_p, [c_void_p])
 pycapi(lgs.vGetIncomingEdgeList, c_void_p, [c_void_p])
+
+#EDGE API
+pycapi(lgs.eNew, c_void_p, [c_void_p, c_void_p, c_void_p])
+pycapi(lgs.eGetFrom, c_void_p, [c_void_p])
+pycapi(lgs.eGetTo, c_void_p, [c_void_p])
+
+# TRIPHOPSCHEDULE
+pycapi(lgs.thsNew, c_void_p) # args are dynamic, and not specified
+pycapi(lgs.thsGetHop, c_void_p, [c_void_p, c_int])
 
