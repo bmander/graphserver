@@ -1,7 +1,8 @@
 try:
-    from graphserver.dll import lgs, free
+    from graphserver.dll import lgs, free, cproperty, ccast, CShadow
 except ImportError:
-    from dll import lgs, free #so I can run this script from the same folder
+    #so I can run this script from the same folder
+    from dll import lgs, free,cproperty, ccast, CShadow
 from ctypes import string_at, byref, c_int, c_long, c_size_t, c_char_p, c_double, c_void_p
 from ctypes import Structure, pointer, cast, POINTER, addressof
 from time import asctime, gmtime
@@ -22,22 +23,6 @@ These classes map C structs to Python Ctypes Structures.
 
 """
 
-def walkable(cls, walkf, walk_backf):
-    walkf.restype = POINTER(State)
-    walk_backf.restype = POINTER(State)
-    cls._cwalk = walkf
-    cls._cwalk_back = walk_backf
-    
-    def walk(self, state):
-        return self._cwalk(self, state).contents
-    
-    def walk_back(self, state):
-        return self._cwalk_back(self, state).contents
-    
-    cls.walk = walk
-    cls.walk_back = walk_back
-       
-    
 def collapsable(cls, collapsef, collapse_backf):
     collapsef.restype = POINTER(cls)
     collapse_backf.restype = POINTER(cls)
@@ -52,38 +37,14 @@ def collapsable(cls, collapsef, collapse_backf):
     
     cls.collapse = collapse
     cls.collapse_back = collapse_back
-    
-def castpayload(func):
-    def meth(self):
-        p = func(self)
-        if not p:
-            return None
-        #print "Type = %s" % p.contents.type
-        typ = EdgePayloadEnumTypes[p.contents.type]    
-        if not typ:
-            return None
-        return cast(p, POINTER(typ)).contents
-    return meth
-       
-def cproperty(cfunc, restype, ptrclass=None):
-    """if restype is c_null_p, specify a class to convert the pointer into"""
-    
-    cfunc.restype = restype
-    cfunc.argtypes = [c_void_p]
-    def prop(self):
-        ret = cfunc( c_void_p( self.soul ) )
-        if ptrclass:
-            ret = ptrclass.from_pointer(ret)
-        return ret
-    return property(prop)
 
-def ccast(func, cls):
-    """Wraps a function to casts the result of a function (assumed c_void_p)
-       into an object using the class's from_pointer method."""
-    func.restype = c_void_p
-    def _cast(self, *args):
-        return cls.from_pointer(func(*args))
-    return _cast
+class Walkable():
+    """ Implements the walkable interface. """
+    def walk(self, state):
+        return State.from_pointer(self._cwalk(self.soul, state.soul))
+        
+    def walk_back(self, state):
+        return State.from_pointer(self._cwalk_back(self.soul, state.soul))
 
 """
 
@@ -99,7 +60,7 @@ Class Definitions
 
 """
 
-class Graph():
+class Graph(CShadow):
     _cnew = lgs.gNew
     _cdel = lgs.gDestroy
     _cadd_vertex = lgs.gAddVertex
@@ -108,13 +69,6 @@ class Graph():
     
     def __init__(self):
         self.soul = self._cnew()
-        
-    @classmethod
-    def from_pointer(cls, ptr):
-        ret = instantiate(Graph)
-        ret.soul = ptr
-        
-        return ret
         
     def __del__(self):
         #void gDestroy( Graph* this, int free_vertex_payloads, int free_edge_payloads );
@@ -220,7 +174,7 @@ class Graph():
         return ret + "}"
 
 
-class CalendarDay():   
+class CalendarDay(CShadow):   
 
     begin_time = cproperty(lgs.calBeginTime, c_long)
     end_time = cproperty(lgs.calEndTime, c_long)
@@ -272,16 +226,7 @@ class CalendarDay():
         return "<calendar begin_time='%s' end_time='%s' service_ids='%s'/>" % \
             (asctime(gmtime(self.begin_time)), asctime(gmtime(self.end_time)), 
              ",".join(map(str, self.service_ids)))
-    
-    @classmethod
-    def from_pointer(cls, ptr):
-        if ptr is None:
-            return None
         
-        ret = instantiate(CalendarDay)
-        ret.soul = ptr
-        return ret
-    
     @staticmethod
     def _py2c_service_ids(service_ids):
         ns = len(service_ids)
@@ -292,7 +237,7 @@ class CalendarDay():
 
 
 
-class State():
+class State(CShadow):
     
     def __init__(self, time=None):
         if time is None:
@@ -320,16 +265,7 @@ class State():
         if self.calendar_day:
             ret += self.calendar_day
         return ret + "</state>"
-    
-    @classmethod
-    def from_pointer(cls, ptr):
-        if ptr is None:
-            return None
         
-        ret = instantiate(State)
-        ret.soul = ptr
-        return ret
-    
     time           = cproperty(lgs.stateGetTime, c_long)
     weight         = cproperty(lgs.stateGetWeight, c_long)
     dist_walked    = cproperty(lgs.stateGetDistWalked, c_double)
@@ -339,7 +275,7 @@ class State():
     calendar_day   = cproperty(lgs.stateCalendarDay, c_void_p, CalendarDay)
         
 
-class Vertex():
+class Vertex(CShadow):
     
     label = cproperty(lgs.vGetLabel, c_char_p)
     degree_in = cproperty(lgs.vDegreeIn, c_int)
@@ -352,22 +288,12 @@ class Vertex():
         #void vDestroy(Vertex* this, int free_vertex_payload, int free_edge_payloads) ;
         # TODO - support parameterization?
         self._cdel(self.soul, 1, 1)
-        
-    @classmethod
-    def from_pointer(cls, ptr):
-        if ptr is None:
-            return None
-        
-        ret = instantiate(Vertex)
-        ret.soul = ptr
-        return ret
-        
+    
     def to_xml(self):
         return "<Vertex degree_out='%s' degree_in='%s' label='%s'/>" % (self.degree_out, self.degree_in, self.label)
     
     def __str__(self):
         return self.to_xml()
-
 
     @property
     def outgoing(self):
@@ -376,6 +302,10 @@ class Vertex():
     @property
     def incoming(self):
         return self._edges(self._cincoming_edges)
+    
+    @property
+    def payload(self):
+        return self._cpayload(self.soul)
 
     def _edges(self, method, index = -1):
         e = []
@@ -404,34 +334,18 @@ class Vertex():
         return self._edges(self._cincoming_edges, i)
 
 """ things not implemented after I moved over to the "soul" model
-
-    @property
-    @castpayload
-    def payload(self):
-        return self.payload_ptr
     
     def walk(self, state):
-        return cast(lgs.eWalk(self, state), State)
+        return cast(lgs.vWalk(self, state), State)
 """
 
-
-class Edge():
-    
+class Edge(CShadow, Walkable):
     def __init__(self, from_v, to_v, payload):
         #Edge* eNew(Vertex* from, Vertex* to, EdgePayload* payload);
         self.soul = self._cnew(from_v.soul, to_v.soul, payload.soul)
     
     def __str__(self):
         return "<Edge>%s%s</Edge>" % (self.from_v, self.to_v)
-
-    @classmethod
-    def from_pointer(cls, ptr):
-        if ptr is None:
-            return None
-        
-        ret = instantiate(Edge)
-        ret.soul = ptr
-        return ret
         
     @property
     def from_v(self):
@@ -443,39 +357,17 @@ class Edge():
         
     @property
     def payload(self):
-        payloadtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,5:None}
-        
-        eGetPayload = lgs.eGetPayload
-        eGetPayload.restype=c_void_p
-        eGetPayload.argtypes=[c_void_p]
-        
-        payloadsoul = eGetPayload(self.soul)
-        
-        epGetType = lgs.epGetType
-        epGetType.restype=c_int
-        epGetType.argtypes=[c_void_p]
-        
-        payloadtype = epGetType(payloadsoul)
-        
-        return payloadtypes[payloadtype].from_pointer( payloadsoul )
+        return self._cpayload(self.soul)
         
     def walk(self, state):
         #State* eWalk(Edge *this, State* params) ;
-        
-        func = lgs.eWalk
-        func.restype = c_void_p
-        func.argtypes = [c_void_p, c_void_p]
-        
-        statesoul = func( self.soul, state.soul )
-        
-        return State.from_pointer( statesoul )
+        return self._cwalk(self.soul, state.soul)
     
-#walkable(Edge, lgs.epWalk, lgs.epWalkBack)
 #collapsable(Edge, lgs.epCollapse, lgs.epCollapseBack)
 
 
 
-class ListNode():
+class ListNode(CShadow):
     @property
     def data(self):
         return self._cdata(self.soul)
@@ -483,46 +375,32 @@ class ListNode():
     @property
     def next(self):
         return self._cnext(self.soul)
-        
-    @classmethod
-    def from_pointer(cls, ptr):
-        if ptr is None:
-            return None
-        
-        ret = instantiate(ListNode)
-        ret.soul = ptr
-        return ret
 
+            
+class EdgePayload(CShadow, Walkable):
+    def __init__(self):
+        if self.__class__ == EdgePayload:
+            raise "EdgePayload is an abstract type."
     
-class EdgePayload():
     def __str__(self):
         return self.to_xml()
 
     def to_xml(self):
         return "<abstractedgepayload type='%s'/>" % self.type
-        
+    
+    type = cproperty(lgs.epGetType, c_int)
+    
     @classmethod
     def from_pointer(cls, ptr):
+        """ Overrides the default behavior to return the appropriate subtype."""
         if ptr is None:
             return None
-            
-        ret = instantiate(cls)
+        
+        payloadtype = EdgePayload._cget_type(ptr)
+        ret = instantiate(EdgePayload._subtypes[payloadtype])
         ret.soul = ptr
         return ret
         
-    def walk(self, state):
-        #State* epWalk( EdgePayload* this, State* param );
-        func = lgs.epWalk
-        func.restype = c_void_p
-        func.argtypes = [c_void_p, c_void_p]
-        
-        statesoul = func(self.soul, state.soul)
-        
-        return State.from_pointer( statesoul )
-        
-        
-
-#walkable(EdgePayload, lgs.epWalk, lgs.epWalkBack)
 #collapsable(EdgePayload, lgs.epCollapse, lgs.epCollapseBack)
 
     
@@ -530,35 +408,23 @@ class Link(EdgePayload):
     name = cproperty(lgs.linkGetName, c_char_p)
     
     def __init__(self):
-        linkNew = lgs.linkNew
-        linkNew.restype=c_void_p
-        linkNew.argtypes=[]
-        
-        self.soul = linkNew()
+        self.soul = self._cnew()
 
     def to_xml(self):
         return "<link name='%s'/>" % (self.name)
     
-#walkable(Link, lgs.linkWalk, lgs.linkWalkBack)
-
 class Street(EdgePayload):
     length = cproperty(lgs.streetGetLength, c_double)
     name   = cproperty(lgs.streetGetName, c_char_p)
     
     def __init__(self,name,length):
-        if name and length:
-            streetNew = lgs.streetNew
-            streetNew.restype=c_void_p
-            streetNew.argtypes=[c_char_p, c_double]
-            
-            self.soul = streetNew(name,length)
+        self.soul = self._cnew(name, length)
         
-    #there will be no delete function, because Street is designed to be taken by Graph and deleted alongside it
+    # there will be no delete function, because Street is designed 
+    # to be taken by Graph and deleted alongside it
     
     def to_xml(self):
         return "<street name='%s' length='%f' />" % (self.name, self.length)
-
-#walkable(Street, lgs.streetWalk, lgs.streetWalkBack)
 
 
 class TripHop(EdgePayload):
@@ -579,8 +445,6 @@ class TripHop(EdgePayload):
                         (int(self.depart/self.SEC_IN_HOUR), int(self.depart%self.SEC_IN_HOUR/self.SEC_IN_MINUTE),
                         int(self.arrive/self.SEC_IN_HOUR), int(self.arrive%self.SEC_IN_HOUR/self.SEC_IN_MINUTE),
                         self.transit, self.trip_id)
-    
-#walkable(TripHop, lgs.triphopWalk, lgs.triphopWalkBack)
     
 class TripHopSchedule(EdgePayload):
     def __init__(self, hops, service_id, calendar, timezone_offset):
@@ -631,10 +495,20 @@ Vertex._cnew = lgs.vNew
 Vertex._cdel = lgs.vDestroy
 Vertex._coutgoing_edges = ccast(lgs.vGetOutgoingEdgeList, ListNode)
 Vertex._cincoming_edges = ccast(lgs.vGetIncomingEdgeList, ListNode)
+Vertex._cpayload = ccast(lgs.vPayload, State)
 
 Edge._cnew = lgs.eNew
 Edge._cfrom_v = ccast(lgs.eGetFrom, Vertex)
 Edge._cto_v = ccast(lgs.eGetTo, Vertex)
+Edge._cpayload = ccast(lgs.eGetPayload, EdgePayload)
+Edge._cwalk = lgs.eWalk
+Edge._cwalk_back = lgs.eWalkBack
+
+
+EdgePayload._subtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,5:None}
+EdgePayload._cget_type = lgs.epGetType
+EdgePayload._cwalk = lgs.epWalk
+EdgePayload._cwalk_back = lgs.epWalkBack
 
 CalendarDay._cnew = lgs.calNew
 CalendarDay._cappend_day = ccast(lgs.calAppendDay, CalendarDay)
@@ -652,36 +526,13 @@ ListNode._cdata = ccast(lgs.liGetData, Edge)
 ListNode._cnext = ccast(lgs.liGetNext, ListNode)
 
 TripHopSchedule._chop = ccast(lgs.thsGetHop, TripHop)
+TripHopSchedule._cwalk = lgs.thsWalk
+TripHopSchedule._cwalk_back = lgs.thsWalkBack
 
-EdgePayload._fields_ = [('type', EdgePayloadEnumType)]
+Street._cnew = lgs.streetNew
+Street._cwalk = lgs.streetWalk
+Street._cwalk_back = lgs.streetWalkBack
 
-Link._fields_ = [('type', EdgePayloadEnumType), ('name',c_char_p)]
-
-
-Street._fields_ = [('type',   EdgePayloadEnumType),
-                   ('name',   c_char_p),
-                   ('length', c_double)]
-
-#TripHopSchedule._fields_ = [('type',            c_int),
-#                            ('n',               c_int),
-#                            ('hops_ptr',        POINTER(TripHop)),
-#                            ('service_id',      c_int),
-#                            ('calendar',        c_void_p),
-#                            ('timezone_offset', c_int)]
-
-# placed here to allow the forward declaration of TripHopSchedule
-#TripHop._fields_ = [('type',         EdgePayloadEnumType),
-#                    ('depart',       c_int),
-#                   ('arrive',       c_int),
-#                    ('transit',      c_int),
-#                    ('trip_id',      c_char_p),
-#                    ('schedule_ptr', POINTER(TripHopSchedule))]
-
-EdgePayloadEnumTypes = [Street,
-                        TripHopSchedule,
-                        TripHop,
-                        Link,
-                        None, #ruby value in the code...
-                        None]
-
-TripHop._TYPE = EdgePayloadEnumTypes.index(TripHop)
+Link._cnew = lgs.linkNew
+Link._cwalk = lgs.linkWalk
+Link._cwalk_back = lgs.linkWalkBack
