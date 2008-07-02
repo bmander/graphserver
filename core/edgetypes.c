@@ -290,6 +290,33 @@ triphopDestroy(TripHop* tokill) {
   free(tokill);
 }
 
+int
+thsGetN(TripHopSchedule* this) {
+    return this->n;
+}
+
+ServiceId
+thsGetServiceId(TripHopSchedule* this) {
+    return this->service_id;
+}
+
+int
+triphopDepart( TripHop* this ) { return this->depart; }
+
+int
+triphopArrive( TripHop* this ) { return this->arrive; }
+
+int
+triphopTransit( TripHop* this ) { return this->transit; }
+
+char *
+triphopTripId( TripHop* this ) { return this->trip_id; }
+
+TripHop*
+thsGetHop(TripHopSchedule* this, int i) { return &this->hops[i]; }
+
+
+
 #undef ROUTE_REVERSE
 #include "edgeweights.c"
 #define ROUTE_REVERSE

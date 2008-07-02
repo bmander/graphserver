@@ -74,6 +74,17 @@ class TestGraph:
         assert spt.get_vertex("work").degree_in==1
         assert spt.get_vertex("work").degree_out==0
         
+    def test_shortest_path_tree_bigweight(self):
+        g = Graph()
+        fromv = g.add_vertex("home")
+        tov = g.add_vertex("work")
+        s = Street( "helloworld", 135698 ) #one less causes no problems
+        e = g.add_edge("home", "work", s)
+        
+        spt = g.shortest_path_tree("home", "work", State(0))
+        
+        assert spt
+        
     def test_shortest_path_tree_retro(self):
         g = Graph()
         fromv = g.add_vertex("home")
@@ -101,6 +112,17 @@ class TestGraph:
         
         assert sp
         
+    def xtest_shortest_path_bigweight(self):
+        g = Graph()
+        fromv = g.add_vertex("home")
+        tov = g.add_vertex("work")
+        s = Street( "helloworld", 240000 )
+        e = g.add_edge("home", "work", s)
+        
+        sp = g.shortest_path("home", "work", State())
+        
+        assert sp
+        
     def test_add_link(self):
         g = Graph()
         fromv = g.add_vertex("home")
@@ -114,27 +136,108 @@ class TestGraph:
         x = g.add_edge("work", "home", Link())
         assert x.payload
         assert x.payload.name == "LINK"
+        
+    def xtestx_hello_world(self):
+        g = Graph()
+        
+        def load_scheduled_data(gg):
+
+            #====Create a Calendar Object====
+            # Why no params?
+            # calendar = CalendarDay()
+    
+            day_begin = 0               #In unix time - Midnight UTC, January 1st 1970
+            day_end = 86400             #Also unix time - Midnight UTC, January 2nd 1970
+            service_ids = [0]           #One bus service type runs this day, called "0"
+            daylight_savings_offset = 0 #The daylight savings time offset for this day is 0 seconds
+            calendar = CalendarDay(day_begin, day_end, service_ids, daylight_savings_offset)
+            # Why append?
+            #calendar.append_day( day_begin, day_end, service_ids, daylight_savings_offset )
+
+            #====Create a schedule array====
+            #A schedule is an array of three-element arrays in the form [depart, arrive, trip_id].
+            #The "depart" and "arrive" elements are expressed in seconds-since-midnight in the service day in question.
+            #It is possible for depart and arrive to both be larger than 86400 (24 hours)
+
+            sched = [(10, 20, "A"),  #departs at 10 seconds, arrives 10 seconds later, called "A"
+                     (15, 30, "B"),
+                     (400, 430, "C")]
+
+            #====Create TripHopSchedule object====
+            #A TripHopSchedule represents the unevaluated weight of an edge containing schedule information
+
+            service_id = 0   #The service type for this day is "0". Service_ids are integers, but stand in for "weekday" or "saturday" etc.
+            tz_offset = 0    #The timezone offset in seconds. US West coast is -28800 (-8 hours) for instance.
+            ths = TripHopSchedule( sched, service_id, calendar, tz_offset )
+
+            # add the pertinent vertices to the ExampleServer's member variable Graph object:
+
+            gg.add_vertex( "Seattle-busstop" )
+            gg.add_vertex( "Portland-busstop" )
+
+            # now connect the vertices with an edge
+
+            gg.add_edge( "Seattle-busstop", "Portland-busstop", ths )
+
+        def load_street_data(gg):
+
+            #Street-style data is simpler
+            
+            gg.add_vertex( "Seattle" )
+            gg.add_vertex( "Portland" )
+
+            # street edges are one-way by default, and given length in feet
+
+            gg.add_edge( "Seattle", "Portland", Street( "I-5", 240000 ) )
+            gg.add_edge( "Portland", "Seattle", Street( "I-5", 250000 ) ) #say the return trip is longer, for some reason
+
+  
+
+        def load_links(gg):
+
+            #You can link two vertices together as if they're in the same place
+
+            #They're one-way
+            
+            gg.add_edge( "Seattle", "Seattle-busstop", Link() )
+            gg.add_edge( "Seattle-busstop", "Seattle", Link() )
+
+            gg.add_edge( "Portland", "Portland-busstop", Link() )
+            gg.add_edge( "Portland-busstop", "Portland", Street( "a-street-payload", 1.11) )
+
+
+        #load_scheduled_data(g)
+        load_street_data(g)
+        #load_links(g)
+        
+        path = g.shortest_path( "Seattle", "Portland", State() )
+        
+        for edge in g.edges:
+            print edge
+        assert False
+        
 
 class TestTriphopSchedule:
     def triphop_schedule_test(self):
-        hops = [TripHop(1, 0, 1*3600, 1, "Foo to Bar", schedule=None), 
-                               TripHop(1, 1*3600, 2*3600, 1, "Bar to Cow", schedule=None)]
         
-        # using hop objects
-        ths = TripHopSchedule(hops, 1, CalendarDay(0, 1*3600*24, [1,2], 0), 0)
-        assert(len(ths.triphops) == 2)
-        assert(ths.triphops[0].trip_id == 'Foo to Bar')
+        rawhops = [(0,     1*3600,'Foo to Bar'),
+                   (1*3600,2*3600,'Bar to Cow')]
+        
         # using a tuple
-        ths = TripHopSchedule([(0,1*3600,'Foo to Bar'),
-                               (1*3600,2*3600,'Bar to Cow')], 1, CalendarDay(0, 1*3600*24, [1,2], 0), 0)
+        ths = TripHopSchedule(rawhops, 1, CalendarDay(0, 1*3600*24, [1,2], 0), 0)
+        
+        h1 = ths.triphops[0]
+        assert h1.depart == 0
+        assert h1.arrive == 1*3600
+        assert h1.trip_id == "Foo to Bar"
+        h2 = ths.triphops[1]
+        assert h2.depart == 1*3600
+        assert h2.arrive == 2*3600
+        assert h2.trip_id == "Bar to Cow"
+                               
         assert(ths.triphops[0].trip_id == 'Foo to Bar')
         assert(len(ths.triphops) == 2)
-        print ths
-
-class TestTriphop:
-    def triphop_test(self):
-        th = TripHop(1, 0, 1*3600, 1, "Foo to Bar", schedule=None)
-        print th
+        assert str(ths)=="<triphopschedule service_id='1'><triphop depart='00:00' arrive='01:00' transit='3600' trip_id='Foo to Bar' /><triphop depart='01:00' arrive='02:00' transit='3600' trip_id='Bar to Cow' /></triphopschedule>"
 
 class TestStreet:
     def street_test(self):
@@ -142,6 +245,13 @@ class TestStreet:
         assert s.name == "mystreet"
         assert s.length == 1.1
         assert s.to_xml() == "<street name='mystreet' length='1.100000' />"
+        
+    def street_test_big_length(self):
+        s = Street("longstreet", 240000)
+        assert s.name == "longstreet"
+        assert s.length == 240000
+
+        assert s.to_xml() == "<street name='longstreet' length='240000.000000' />"
 
 class TestState:
     def test_basic(self):
@@ -158,6 +268,7 @@ class TestLink:
     def link_test(self):
         l = Link()
         assert l
+        assert str(l)=="<link name='LINK'/>"
         
     def name_test(self):
         l = Link()

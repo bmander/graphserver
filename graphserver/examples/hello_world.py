@@ -1,5 +1,11 @@
-from graphserver.engine import XMLGraphEngine
-from graphserver.structures import TripHopSchedule, CalendarDay, Street, Link
+try:
+    from graphserver.engine import XMLGraphEngine
+    from graphserver.structures import TripHopSchedule, CalendarDay, Street, Link
+except ImportError:
+    import sys
+    sys.path.append("..")
+    from engine import XMLGraphEngine
+    from structures import TripHopSchedule, CalendarDay, Street, Link
 
 class HelloWorldEngine(XMLGraphEngine):
 
@@ -96,4 +102,4 @@ if __name__ == '__main__':
     pretty("outgoing_edges?label=Seattle", h.outgoing_edges("Seattle"))
     # no method exists:
     #pretty("eval_edges?label=Seattle", h.eval_edges("Seattle"))
-    pretty("/shortest_path?from=Seattle&to=Portland", h.shortest_path("Seattle","Portland"))
+    pretty("/shortest_path?from=Seattle&to=Portland", h.shortest_path("Seattle","Portland",State()))

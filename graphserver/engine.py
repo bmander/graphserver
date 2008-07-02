@@ -1,4 +1,7 @@
-from graphserver.structures import Graph, State
+try:
+    from graphserver.structures import Graph, State
+except ImportError:
+    from structures import Graph, State
 import time
 
 class XMLGraphEngine(object):

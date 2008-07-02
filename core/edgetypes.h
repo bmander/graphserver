@@ -169,6 +169,19 @@ thsDestroy(TripHopSchedule* this);
 void
 triphopDestroy( TripHop* this);
 
+int
+triphopDepart( TripHop* this );
+
+int
+triphopArrive( TripHop* this );
+
+int
+triphopTransit( TripHop* this );
+
+char *
+triphopTripId( TripHop* this );
+
+
 inline State*
 thsWalk(TripHopSchedule* this, State* params);
 
@@ -196,5 +209,14 @@ thsGetNextHop(TripHopSchedule* this, long time);
 
 inline TripHop*
 thsGetLastHop(TripHopSchedule* this, long time);
+
+int
+thsGetN(TripHopSchedule* this);
+
+ServiceId
+thsGetServiceId(TripHopSchedule* this);
+
+TripHop*
+thsGetHop(TripHopSchedule* this, int i);
 
 #endif

@@ -58,3 +58,4 @@ pycapi(lgs.stateDup, c_void_p)
 #VERTEX API
 pycapi(lgs.vGetOutgoingEdgeList, c_void_p, [c_void_p])
 pycapi(lgs.vGetIncomingEdgeList, c_void_p, [c_void_p])
+

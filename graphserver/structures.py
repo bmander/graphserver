@@ -194,7 +194,7 @@ class Graph():
         
         #if the end node wasn't found
         if not curr:
-            raise "Node not found." # TODO
+            raise Exception("Node not found.") # TODO
 
         path_vertices.append(curr)
         incoming = curr.get_incoming_edge(0)
@@ -571,17 +571,12 @@ class Link():
         ret = instantiate(Link)
         ret.soul = ptr
         return ret
-    
-    """
-    def __new__(cls):
-        return lgs.linkNew().contents
 
     def __str__(self):
         return self.to_xml()
 
     def to_xml(self):
-        return "<link name='%s' type='%s'/>" % (self.name, self.type)
-    """
+        return "<link name='%s'/>" % (self.name)
     
 #walkable(Link, lgs.linkWalk, lgs.linkWalkBack)
 #cdelete(Link, lgs.linkDestroy)
@@ -620,17 +615,24 @@ class Street():
 #returntype(POINTER(Street), [lgs.streetNew])
 
 
-class TripHop(Structure):
-    _TYPE = 0 # set later
-    def __init__(self, type, depart, arrive, transit, trip_id, schedule=None):
-        self.type = self._TYPE
-        self.depart = c_int(depart)
-        self.arrive = c_int(arrive)
-        self.transit = c_int(arrive - depart)
-        self.trip_id = c_char_p(trip_id)
-        if schedule:
-            self.schedule = pointer(schedule)
+class TripHop():
 
+    def __init__():
+        pass
+    
+    @classmethod
+    def from_pointer(cls, ptr):
+        if ptr is None:
+            return None
+            
+        ret = instantiate(TripHop)
+        ret.soul = ptr
+        return ret
+        
+    depart = cproperty( lgs.triphopDepart, c_int )
+    arrive = cproperty( lgs.triphopArrive, c_int )
+    transit = cproperty( lgs.triphopTransit, c_int )
+    trip_id = cproperty( lgs.triphopTripId, c_char_p )
 
     SEC_IN_HOUR = 3600
     SEC_IN_MINUTE = 60
@@ -646,36 +648,47 @@ class TripHop(Structure):
     
 #walkable(TripHop, lgs.triphopWalk, lgs.triphopWalkBack)
     
-class TripHopSchedule(Structure):
-    def __new__(cls, hops, service_id, calendar, timezone_offset):
+class TripHopSchedule():
+    def __init__(self, hops, service_id, calendar, timezone_offset):
+        #TripHopSchedule* thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, int timezone_offset );
+        
         n = len(hops)
         departs = (c_int * n)()
         arrives = (c_int * n)()
         trip_ids = (c_char_p * n)()
-        if isinstance(hops[0], TripHop):
-            for i in range(n):
-                departs[i] = hops[i].depart
-                arrives[i] = hops[i].arrive
-                trip_ids[i] = hops[i].trip_id
-        elif isinstance(hops[0], (tuple,list)):
-            for i in range(n):
-                departs[i] = hops[i][0]
-                arrives[i] = hops[i][1]
-                trip_ids[i] = c_char_p(hops[i][2])
-        else:
-            raise "Unknown hops initializing type."
+        for i in range(n):
+            departs[i] = hops[i][0]
+            arrives[i] = hops[i][1]
+            trip_ids[i] = c_char_p(hops[i][2])
             
-        return lgs.thsNew(departs, arrives, trip_ids, n, 
-                    ServiceIdType(service_id), calendar.soul, c_int(timezone_offset) ).contents
-
-    def __init__(self, hops, service_id, calendar, timezone_offset):
-        pass
+        self.soul = lgs.thsNew(departs, arrives, trip_ids, n, ServiceIdType(service_id), calendar.soul, c_int(timezone_offset) )
+    
+    @classmethod
+    def from_pointer(cls, ptr):
+        if ptr is None:
+            return None
+            
+        ret = instantiate(TripHopSchedule)
+        ret.soul = ptr
+        return ret
+    
+    n = cproperty(lgs.thsGetN, c_int)
+    service_id = cproperty(lgs.thsGetServiceId, c_int)
+    
+    def triphop(self, i):
+        func = lgs.thsGetHop
+        func.restype = c_void_p
+        func.argtypes = [c_void_p, c_int]
+        
+        hopsoul = func(self.soul, i)
+        
+        return TripHop.from_pointer( hopsoul )
     
     @property
     def triphops(self):
         hops = []
         for i in range(self.n):
-            hops.append(self.hops_ptr[i])
+            hops.append( self.triphop( i ) )
         return hops
         
     def __str__(self):
@@ -691,7 +704,7 @@ class TripHopSchedule(Structure):
 
 
 #walkable(TripHopSchedule, lgs.thsWalk, lgs.thsWalkBack)
-returntype(POINTER(TripHopSchedule), [lgs.thsNew])
+#returntype(POINTER(TripHopSchedule), [lgs.thsNew])
 
 
 Graph._cnew = lgs.gNew
@@ -730,20 +743,20 @@ Street._fields_ = [('type',   EdgePayloadEnumType),
                    ('name',   c_char_p),
                    ('length', c_double)]
 
-TripHopSchedule._fields_ = [('type',            c_int),
-                            ('n',               c_int),
-                            ('hops_ptr',        POINTER(TripHop)),
-                            ('service_id',      c_int),
-                            ('calendar',        c_void_p),
-                            ('timezone_offset', c_int)]
+#TripHopSchedule._fields_ = [('type',            c_int),
+#                            ('n',               c_int),
+#                            ('hops_ptr',        POINTER(TripHop)),
+#                            ('service_id',      c_int),
+#                            ('calendar',        c_void_p),
+#                            ('timezone_offset', c_int)]
 
 # placed here to allow the forward declaration of TripHopSchedule
-TripHop._fields_ = [('type',         EdgePayloadEnumType),
-                    ('depart',       c_int),
-                    ('arrive',       c_int),
-                    ('transit',      c_int),
-                    ('trip_id',      c_char_p),
-                    ('schedule_ptr', POINTER(TripHopSchedule))]
+#TripHop._fields_ = [('type',         EdgePayloadEnumType),
+#                    ('depart',       c_int),
+#                   ('arrive',       c_int),
+#                    ('transit',      c_int),
+#                    ('trip_id',      c_char_p),
+#                    ('schedule_ptr', POINTER(TripHopSchedule))]
 
 EdgePayloadEnumTypes = [Street,
                         TripHopSchedule,
