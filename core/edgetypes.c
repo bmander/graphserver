@@ -51,6 +51,20 @@ stateGetPrevEdgeName( State* this ) { return this->prev_edge_name; }
 CalendarDay*
 stateCalendarDay( State* this ) { return this->calendar_day; }
 
+void
+stateSetTime( State* this, long time ) { this->time = time; }
+
+void
+stateSetWeight( State* this, long weight ) { this->weight = weight; }
+
+void
+stateSetDistWalked( State* this, double dist ) { this->dist_walked = dist; }
+
+void
+stateSetNumTransfers( State* this, int n) { this->num_transfers = n; }
+
+void
+stateSetCalendarDay( State* this,  CalendarDay* cal ) { this->calendar_day = cal; }
 
 //--------------------EDGEPAYLOAD FUNCTIONS-------------------
 
@@ -83,6 +97,9 @@ epDestroy( EdgePayload* this ) {
     case PL_LINK:
       linkDestroy( (Link*)this );
       break;
+    case PL_EXTERNVALUE:
+      pypDestroy( (PyPayload*)this );
+      break;
     default:
       free( this );
   }
@@ -107,6 +124,11 @@ epWalk( EdgePayload* this, State* params ) {
       return triphopWalk((TripHop*)this, params );
     case PL_LINK:
       return linkWalk((Link*)this, params);
+#ifdef SUPPORT_PYTHON
+    case PL_EXTERNVALUE:
+      return pypWalk( (PyPayload*)this, params );
+      break;
+#endif
     default:
       return NULL;
   }
@@ -126,6 +148,9 @@ epWalkBack( EdgePayload* this, State* params ) {
       return triphopWalkBack( (TripHop*)this, params );
     case PL_LINK:
       return linkWalkBack( (Link*)this, params );
+    case PL_EXTERNVALUE:
+      return pypWalkBack( (PyPayload*)this, params );
+      break;
     default:
       return NULL;
   }
@@ -159,7 +184,7 @@ epCollapseBack( EdgePayload* this, State* params ) {
 
 //LINK FUNCTIONS
 Link*
-linkNew() {
+linkNew( void ) {
   Link* ret = (Link*)malloc(sizeof(Link));
   ret->type = PL_LINK;
   ret->name = (char*)malloc(5*sizeof(char));
@@ -319,7 +344,34 @@ triphopTripId( TripHop* this ) { return this->trip_id; }
 TripHop*
 thsGetHop(TripHopSchedule* this, int i) { return &this->hops[i]; }
 
+PyPayload*
+pypNew(PyObject* obj, char* name) {
+	PyPayload* ret = (PyPayload*)malloc(sizeof(PyPayload));
+	ret->type = PL_EXTERNVALUE;
+	Py_INCREF(obj);
+	ret->pyobject = obj;
+	ret->name = (char*)malloc((strlen(name)+1)*sizeof(char));
+	strcpy(ret->name, name);	
+	return ret;
+}
 
+void
+pypDestroy( PyPayload* this ) {
+	Py_DECREF(this->pyobject);
+	free( this->name );
+	free( this );
+}
+
+char*
+pypName( PyPayload* this ) {
+	return this->name;	
+}
+
+PyObject*
+pypObject( PyPayload* this ) {
+	Py_INCREF(this->pyobject);
+	return this->pyobject;	
+}
 
 #undef ROUTE_REVERSE
 #include "edgeweights.c"

@@ -270,6 +270,61 @@ class TestStreet:
         assert after.prev_edge_type == 0
         assert after.prev_edge_name == "longstreet"
 
+class TestPyPayload:
+    def test_basic(self):
+        e = NoOpPyPayload()
+        p = PyPayload(e,"apypayload")
+        assert p.name == "apypayload"
+        assert p.object
+        assert e == p.object
+        print "%s" % p.object
+        print p
+        
+    def test_cast(self):
+        g = Graph()
+        
+        g.add_vertex( "Seattle" )
+        g.add_vertex( "Portland" )
+
+        e = NoOpPyPayload()
+        p = PyPayload(e,"apypayload")
+        
+        ed = g.add_edge( "Seattle", "Portland", p )
+        print p, ed.payload
+        assert ed.payload.name == p.name
+        assert ed.payload.object == p.object
+
+    def test_walk(self):
+        class IncTimePayload:
+            def walk(self, state):
+                state.time = state.time + 1
+            
+            def walk_back(self, state):
+                state.time = state.time - 1
+        
+        e = IncTimePayload()
+        p = PyPayload(e,"incpayload")
+        s = State(0)
+        print s
+        s = p.walk(s)
+        print s
+        assert s.time == 1
+        """
+        
+        g = Graph()
+        
+        g.add_vertex( "Seattle" )
+        g.add_vertex( "Portland" )
+
+        e = IncTimePayload()
+        p = PyPayload(e,"incpayload")
+        
+        ed = g.add_edge( "Seattle", "Portland", p )
+        """
+        
+        
+            
+
 class TestLink:
     def link_test(self):
         l = Link()

@@ -1,7 +1,7 @@
 
 import atexit
 from ctypes import cdll, CDLL, pydll, PyDLL, CFUNCTYPE
-from ctypes import string_at, byref, c_int, c_long, c_size_t, c_char_p, c_double, c_void_p
+from ctypes import string_at, byref, c_int, c_long, c_size_t, c_char_p, c_double, c_void_p, py_object
 from ctypes import Structure, pointer, cast, POINTER, addressof
 
 from ctypes.util import find_library
@@ -49,17 +49,33 @@ def pycapi(func, rettype, cargs=None):
     if cargs:
         func.argtypes = cargs
 
-def cproperty(cfunc, restype, ptrclass=None):
+def cproperty(cfunc, restype, ptrclass=None, setter=None):
     """if restype is c_null_p, specify a class to convert the pointer into"""
     
     cfunc.restype = restype
     cfunc.argtypes = [c_void_p]
-    def prop(self):
-        ret = cfunc( c_void_p( self.soul ) )
-        if ptrclass:
-            ret = ptrclass.from_pointer(ret)
-        return ret
-    return property(prop)
+    if ptrclass:
+        def prop(self):
+            ret = cfunc( c_void_p( self.soul ) )
+            return ptrclass.from_pointer(ret)
+    else:
+        def prop(self):
+            return  cfunc( c_void_p( self.soul ) )
+    if not setter:
+        return property(prop)
+    
+    setter.restype.argtypes = [c_void_p, restype]
+    if ptrclass:        
+        def set(self, arg):
+            if arg:
+                setter(self.soul, arg.soul)
+            else:
+                setter(self.soul, None)
+    else:
+        def set(self, arg):
+            setter(self.soul, arg)
+    
+    return property(prop, set)
 
 def ccast(func, cls):
     """Wraps a function to casts the result of a function (assumed c_void_p)
@@ -114,6 +130,12 @@ pycapi(lgs.epWalk, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.epWalkBack, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.epCollapse, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.epCollapseBack, c_void_p, [c_void_p, c_void_p])
+
+#PYPAYLOAD API
+pycapi(lgs.pypNew, c_void_p, [py_object, c_void_p])
+pycapi(lgs.pypWalk, c_void_p, [c_void_p, c_void_p])
+pycapi(lgs.pypWalkBack, c_void_p, [c_void_p, c_void_p])
+
 
 #LINKNODE API
 pycapi(lgs.linkNew, c_void_p)

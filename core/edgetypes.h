@@ -10,9 +10,10 @@ typedef enum {
   PL_TRIPHOPSCHED,
   PL_TRIPHOP,
   PL_LINK,
-  PL_RUBYVALUE,
+  PL_EXTERNVALUE,
   PL_NONE,
 } edgepayload_t;
+
 
 //---------------DECLARATIONS FOR STATE CLASS---------------------
 
@@ -56,6 +57,18 @@ stateGetPrevEdgeName( State* this );
 CalendarDay*
 stateCalendarDay( State* this );
 
+void
+stateSetTime( State* this, long time );
+
+void
+stateSetWeight( State* this, long weight );
+
+void
+stateSetDistWalked( State* this, double dist );
+
+void
+stateSetNumTransfers( State* this, int n);
+
 //---------------DECLARATIONS FOR EDGEPAYLOAD CLASS---------------------
 
 typedef struct EdgePayload {
@@ -63,7 +76,7 @@ typedef struct EdgePayload {
 } EdgePayload;
 
 EdgePayload*
-epNew( );
+epNew( edgepayload_t type, void* payload );
 
 void
 epDestroy( EdgePayload* this );
@@ -91,7 +104,7 @@ typedef struct Link {
 } Link;
 
 Link*
-linkNew();
+linkNew( void );
 
 void
 linkDestroy(Link* tokill);
@@ -218,5 +231,35 @@ thsGetServiceId(TripHopSchedule* this);
 
 TripHop*
 thsGetHop(TripHopSchedule* this, int i);
+
+#define SUPPORT_PYTHON 1
+
+//#ifdef SUPPORT_PYTHON
+#include <Python.h>
+
+typedef struct PyPayload {
+  edgepayload_t type;
+  char* name;
+  PyObject* pyobject;
+} PyPayload;
+
+PyPayload*
+pypNew(PyObject* obj, char* name); 
+
+void
+pypDestroy( PyPayload* this );
+
+char*
+pypName( PyPayload* this );
+
+PyObject*
+pypObject( PyPayload* this );
+
+State*
+pypWalk(PyPayload *this, State *params);
+
+State*
+pypWalkBack(PyPayload *this, State *params);
+//#endif
 
 #endif

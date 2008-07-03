@@ -3,7 +3,7 @@ try:
 except ImportError:
     #so I can run this script from the same folder
     from dll import lgs, free,cproperty, ccast, CShadow, instantiate
-from ctypes import string_at, byref, c_int, c_long, c_size_t, c_char_p, c_double, c_void_p
+from ctypes import string_at, byref, c_int, c_long, c_size_t, c_char_p, c_double, c_void_p, py_object
 from ctypes import Structure, pointer, cast, POINTER, addressof
 from time import asctime, gmtime
 from time import time as now
@@ -25,6 +25,7 @@ class Collapsable():
 class Walkable():
     """ Implements the walkable interface. """
     def walk(self, state):
+        print "Walking %s" % self._cwalk.__name__
         return State.from_pointer(self._cwalk(self.soul, state.soul))
         
     def walk_back(self, state):
@@ -242,7 +243,7 @@ class State(CShadow):
             ret += self.calendar_day.to_xml()
         return ret + "</state>"
         
-    time           = cproperty(lgs.stateGetTime, c_long)
+    time           = cproperty(lgs.stateGetTime, c_long, setter=lgs.stateSetTime)
     weight         = cproperty(lgs.stateGetWeight, c_long)
     dist_walked    = cproperty(lgs.stateGetDistWalked, c_double)
     num_transfers  = cproperty(lgs.stateGetNumTransfers, c_int)
@@ -381,7 +382,51 @@ class EdgePayload(CShadow, Walkable):
         ret.soul = ptr
         return ret
         
-#collapsable(EdgePayload, lgs.epCollapse, lgs.epCollapseBack)
+class PyPayload(EdgePayload):
+    def __init__(self, obj, name):
+        self.soul = lgs.pypNew(obj, name)
+        
+    def __del__(self):
+        #self._cdel(self.soul)
+        pass
+
+    object = cproperty(lgs.pypObject, py_object)
+    name = cproperty(lgs.pypName, c_char_p)
+    
+    """ Internal methods. """
+    def _walk(self, obj, ptr):
+        return obj.walk(State.from_pointer(ptr))
+    
+    def _walk_back(self, ptr):
+        return obj.walk_back(State.from_pointer(ptr))
+
+    """
+    def walk(self, state):
+        return self._cwalk
+        s = state.clone()
+        self.object.walk(state.clone())
+    
+    def walk_back(self, state):
+        s = state.clone()
+        self.object.walk_back(s)
+        return s
+    """
+    def __str__(self):
+        return self.to_xml()
+
+    def to_xml(self):
+        return "<pypayload name='%s' class='%s'/>" % \
+            (self.name, self.object.__class__.__name__)
+    
+class NoOpPyPayload():
+    """ Dummy class."""
+    def walk(self, state):
+        print "%s walking..." % self.name
+        
+    def walk_back(self, state):
+        print "%s walking back..." % self.name
+
+    
 
     
 class Link(EdgePayload):
@@ -493,13 +538,18 @@ Edge._cwalk = lgs.eWalk
 Edge._cwalk_back = lgs.eWalkBack
 
 
-EdgePayload._subtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,5:None}
+EdgePayload._subtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,4:PyPayload,5:None}
 EdgePayload._cget_type = lgs.epGetType
 EdgePayload._cwalk = lgs.epWalk
 EdgePayload._cwalk_back = lgs.epWalkBack
 EdgePayload._ccollapse = lgs.epCollapse
 EdgePayload._ccollapse_back = lgs.epCollapseBack
 EdgePayload._collapse_type = EdgePayload
+
+PyPayload._cnew = lgs.pypNew
+PyPayload._cdel = lgs.pypDestroy
+PyPayload._cwalk = lgs.pypWalk
+PyPayload._cwalk_back = lgs.pypWalkBack
 
 CalendarDay._cnew = lgs.calNew
 CalendarDay._cappend_day = ccast(lgs.calAppendDay, CalendarDay)

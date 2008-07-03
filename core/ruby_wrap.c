@@ -160,7 +160,7 @@ inline VALUE pack_ep_as_children( EdgePayload* unpacked ) {
       return pack_triphop( (TripHop*)unpacked );
     case PL_LINK:
       return pack_link( (Link*)unpacked );
-    case PL_RUBYVALUE:
+    case PL_EXTERNVALUE:
       return (VALUE)unpacked;
     default:
       return Qnil;

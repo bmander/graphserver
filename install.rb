@@ -8,7 +8,7 @@ def build_makefile build_dir
   require "extconf.rb"
 
   # Modify ruby extension Makefile
-  makefile = File.read "Makefile"
+  makefile = File.read "Makefile.in"
   makefile.gsub!( "edgeweights.o", "" )
   makefile.gsub!( "edgeweights.c", "" )
   makefile.gsub!( "router.o", "" )
