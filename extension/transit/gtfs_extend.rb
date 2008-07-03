@@ -1,10 +1,9 @@
 require 'google_transit_feed'
 
 require 'rubygems'
-require_gem 'tzinfo'
-include TZInfo
+require 'tzinfo'
 
-class Graphserver
+class Graphserver    
   WGS84_LATLONG_EPSG = 4326
   GTFS_PREFIX = "gtfs"
   SECONDS_IN_DAY = 86400
@@ -238,7 +237,7 @@ class Graphserver
         agency_name        text NOT NULL,
         agency_url         text NOT NULL,
         agency_timezone    text NOT NULL,
-	agency_lang	   text	
+        agency_lang        text
       );
 
       create table gtf_stops (
@@ -249,7 +248,7 @@ class Graphserver
         stop_lon         numeric,
         zone_id          numeric,
         stop_url         text,
-	stop_code	 text
+        stop_code        text
       );
 
       select AddGeometryColumn( 'gtf_stops', 'location', #{WGS84_LATLONG_EPSG}, 'POINT', 2 );
@@ -373,19 +372,19 @@ class Graphserver
     return nil if not gtf_file or gtf_file.header.empty?
     print "Importing #{table_name}.txt file\n"
 
-    conn.exec "COPY #{table_name} ( #{gtf_file.header.join(",")} ) FROM STDIN"
+    conn.exec "COPY #{table_name} ( #{gtf_file.format.join(",")} ) FROM STDIN"
 
-    fsize = gtf_file.data.size
     count=0
 
-    gtf_file.data.each do |row|
-      row = Array.new( gtf_file.header.size ) do |i|
+    gtf_file.each_line do |row|
+      row = Array.new( gtf_file.format.size ) do |i|
         if row[i] and not row[i].empty? then row[i] else "\\N" end
       end
       conn.putline(row.join("\t") + "\n")
 
       if (count%5000)==0 then
-        print "#{(Float(count)/fsize)*100}%\n"
+        print "\r#{count}"
+        STDOUT.flush
       end
       count += 1
     end
@@ -397,12 +396,12 @@ class Graphserver
     return nil if not stops_file or stops_file.header.empty?
     print "Importing stops.txt file\n"
 
-    stop_lat_index = stops_file.header.index("stop_lat")
-    stop_lon_index = stops_file.header.index("stop_lon")
+    stop_lat_index = stops_file.format.index("stop_lat")
+    stop_lon_index = stops_file.format.index("stop_lon")
 
-    conn.exec "COPY gtf_stops ( #{stops_file.header.join(",")}, location ) FROM STDIN"
-    header_len = stops_file.header.length
-    stops_file.data.each do |row|
+    conn.exec "COPY gtf_stops ( #{stops_file.format.join(",")}, location ) FROM STDIN"
+    header_len = stops_file.format.length
+    stops_file.each_line do |row|
       shape_wkt = "SRID=#{WGS84_LATLONG_EPSG};POINT(#{row[stop_lon_index]} #{row[stop_lat_index]})"
       row += [""] * (header_len - row.length) if row.length != header_len #added this to parse trimet
       row.collect! do |item| if item.empty? then "\\N" else item end end
@@ -416,18 +415,28 @@ class Graphserver
     return nil if not shapes_file or shapes_file.header.empty?
     print "Importing shapes.txt file\n"
 
+    print "Sorting shapes...\n"
     shapes = {}
-    shapes_file.data.each do |shape_id, lat, lon, sequence|
+    i=0
+    shapes_file.each_line do |shape_id, lat, lon, sequence|
+      i += 1
+      if i%5000==0 then print "\r#{i}"; STDOUT.flush end
       shapes[shape_id] ||= []
       shapes[shape_id][sequence.to_i-1] = [lat, lon]
     end
+    print "\ndone\n"
 
     conn.exec "COPY gtf_shapes ( shape_id, shape ) FROM STDIN"
 
+    i = 0
     shapes.each_pair do |shape_id, shape|
+      i += 1
+      if i%5000==0 then p i end
       shape_wkt = "SRID=#{WGS84_LATLONG_EPSG};LINESTRING( " + shape.collect do |point| "#{point[0]} #{point[1]}" end.join(",") + ")"
       conn.putline "#{shape_id}\t#{shape_wkt}\n"
     end
+    print "\n"
+
 
     conn.endcopy
   end

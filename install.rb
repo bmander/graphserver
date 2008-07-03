@@ -35,7 +35,7 @@ end
 def install build_dir, script_install_dir
 
   # Execute modified ruby extension Makefile, and install resulting files
-  print `make -c #{build_dir} install`
+  print `make -C #{build_dir} install`
   print "installing to: #{script_install_dir}\n"
   print `cp #{build_dir}/graphserver.rb #{script_install_dir}`
   print `cp #{build_dir}/graph.rb #{script_install_dir}`
