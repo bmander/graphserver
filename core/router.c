@@ -112,7 +112,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
           count++;
           }
 
-        if(count%10000 & count>0)
+        if(count%10000)
           fprintf(stdout, "Shortest path tree size: %d\n",count);
 
         spt_v->payload = new_dv;                      //Set the State of v in the SPT to the current winner
