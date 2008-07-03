@@ -13,6 +13,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
   Vertex *u, *v;
   Vertex *spt_u, *spt_v;
   State *du, *dv;
+  int count = 1;
 
   //Goal Variables
 #ifndef RETRO
@@ -35,7 +36,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
 /*
  *  CENTRAL ITERATION
  *
- */ 
+ */
 //  rb_warn("inicio iteracion");
   while( !dirfibheap_empty( q ) ) {                  //Until the priority queue is empty:
     u = dirfibheap_extract_min( q );                 //get the lowest-weight Vertex 'u',
@@ -67,7 +68,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
         dv = NULL;                                       //which may not exist yet
         old_w = INFINITY;
       }
-    
+
       /*TODO: proposed edge evaluation procedure:
         (1) collapse edge using du
         (2) find node impedance from incoming collapsed edge to outgoing collapsed edge
@@ -106,8 +107,13 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
 
         // If this is the first time v has been reached
 //	rb_warn("A52");
-        if( !spt_v )
+        if( !spt_v ) {
           spt_v = gAddVertex( spt, v->label );        //Copy v over to the SPT
+          count++;
+          }
+
+//        if(count%10000 & count>0)
+//          fprintf(stderr, "Shortest path tree size: %d\n",count);
 
         spt_v->payload = new_dv;                      //Set the State of v in the SPT to the current winner
 //	rb_warn("A53");
@@ -124,5 +130,6 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
  //  rb_warn("me piro");
   dirfibheap_delete( q );
 
+  fprintf(stderr, "Final shortest path tree size: %d\n",count);
   return spt;
 }

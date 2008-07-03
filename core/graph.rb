@@ -1,7 +1,6 @@
 require '../../core/graph_core'
 
-#Sobrecarga la clase Vertex para añadir las funciones
-#inspect, edge_out y edge_in
+# Overrides Vertex to add the methods inspect, edge_out and edge_in
 class Vertex
   def inspect
     ret = "#<Vertex label=\"#{label}\" degree_in=#{degree_in} degree_out=#{degree_out}"
@@ -33,8 +32,7 @@ class Vertex
   end
 end
 
-#Sobrecarga la clase Graph para aÃ±adir las funciones
-#edges, shortest_path, shortest_path_retro y to_dot
+# Overrides Graph to add the methods edges, shortest_path, shortest_path_retro and to_dot
 class Graph
   #Construye un array con todos los enlaces (edges) y devuelve su valor
   def edges
@@ -47,8 +45,8 @@ class Graph
     edges
   end
 
-  #Calcula el camino mas corto entre dos vertices tomando
-  #init_state como la hora de partida
+  # Computes the shortest path between two vertices
+  # using init_state as departure time
   def shortest_path from, to, init_state
     path_vertices = []
     path_edges    = []
@@ -71,8 +69,8 @@ class Graph
     return path_vertices.reverse, path_edges.reverse
   end
 
-  #Calcula el camino mas corto entre dos vertices tomando
-  #final_state como la hora de llegada
+  # Computes the shortest path between two vertices
+  # using init_state as arrival time
   def shortest_path_retro from, to, final_state
     path_vertices = []
     path_edges    = []
@@ -91,8 +89,7 @@ class Graph
     return path_vertices, path_edges
   end
 
-  #Devuelve una representacion del grafo en forma de lista de enlaces
-  #escribiendo "nodo_origen -> nodo_destino"
+  # Returns a representation of the graph as a list of links
   def to_dot
     accum = []
     accum << "digraph G {"
