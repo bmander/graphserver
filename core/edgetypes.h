@@ -27,13 +27,34 @@ typedef struct State {
 } State;
 
 State*
-stateNew();
+stateNew(long time);
 
 void
-stateDestroy();
+stateDestroy( State* this);
 
 State*
 stateDup( State* this );
+
+long
+stateGetTime( State* this );
+
+long
+stateGetWeight( State* this);
+
+double
+stateGetDistWalked( State* this );
+
+int
+stateGetNumTransfers( State* this );
+
+edgepayload_t
+stateGetPrevEdgeType( State* this );
+
+char*
+stateGetPrevEdgeName( State* this );
+
+CalendarDay*
+stateCalendarDay( State* this );
 
 //---------------DECLARATIONS FOR EDGEPAYLOAD CLASS---------------------
 
@@ -46,6 +67,9 @@ epNew( );
 
 void
 epDestroy( EdgePayload* this );
+
+edgepayload_t
+epGetType( EdgePayload* this );
 
 State*
 epWalk( EdgePayload* this, State* param );
@@ -78,6 +102,9 @@ linkWalk(Link* this, State* param);
 inline State*
 linkWalkBack(Link* this, State* param);
 
+char*
+linkGetName(Link* this);
+
 //---------------DECLARATIONS FOR STREET  CLASS---------------------
 
 typedef struct Street {
@@ -97,6 +124,12 @@ streetWalk(Street* this, State* params);
 
 inline State*
 streetWalkBack(Street* this, State* params);
+
+char*
+streetGetName(Street* this);
+
+double
+streetGetLength(Street* this);
 
 //---------------DECLARATIONS FOR TRIPHOPSCHEDULE and TRIPHOP  CLASSES---------------------
 
@@ -133,6 +166,22 @@ thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id
 void
 thsDestroy(TripHopSchedule* this);
 
+void
+triphopDestroy( TripHop* this);
+
+int
+triphopDepart( TripHop* this );
+
+int
+triphopArrive( TripHop* this );
+
+int
+triphopTransit( TripHop* this );
+
+char *
+triphopTripId( TripHop* this );
+
+
 inline State*
 thsWalk(TripHopSchedule* this, State* params);
 
@@ -160,5 +209,14 @@ thsGetNextHop(TripHopSchedule* this, long time);
 
 inline TripHop*
 thsGetLastHop(TripHopSchedule* this, long time);
+
+int
+thsGetN(TripHopSchedule* this);
+
+ServiceId
+thsGetServiceId(TripHopSchedule* this);
+
+TripHop*
+thsGetHop(TripHopSchedule* this, int i);
 
 #endif

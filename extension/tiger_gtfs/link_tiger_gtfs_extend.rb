@@ -46,8 +46,10 @@ class Graphserver
   #tzid : endpoint-id joining the new split line
   #left : WKB of the lefthand line
   #right : WKB of he righthand line
+
   def split_tiger_line! tlid, tlid_l, tlid_r, tzid, left, right
-    res = conn.exec("SELECT * FROM tiger_streets WHERE id = #{tlid}")
+
+    res = conn.exec("SELECT * FROM tiger_streets WHERE id = '#{tlid}'")
     nid = res.fieldnum( 'id' )
     nto_id = res.fieldnum( 'to_id' )
     nfrom_id = res.fieldnum( 'from_id' )
@@ -65,18 +67,21 @@ class Graphserver
     rightrow[ ngeom ] = right
 
     transaction = ["BEGIN;"]
-    transaction << "DELETE FROM tiger_streets WHERE id = #{tlid};"
+    transaction << "DELETE FROM tiger_streets WHERE id = '#{tlid}';"
     transaction << "INSERT INTO tiger_streets (#{res.fields.join(',')}) VALUES (#{leftrow.map do |x| if x then "'"+x+"'" else '' end end.join(",")});"
     transaction << "INSERT INTO tiger_streets (#{res.fields.join(',')}) VALUES (#{rightrow.map do |x| if x then "'"+x+"'" else '' end end.join(",")});"
     transaction << "COMMIT;"
-
-    p transaction.join
  
     conn.exec( transaction.join )
   end
+  print "\n"  
 
   def split_tiger_lines!
+    i=0
     each_stop do |stop_id, stop_geom|
+      i+=1
+      print "\r#{i}"
+      STDOUT.flush
       line_id, line_geom = nearest_tiger_line( stop_geom, SEARCH_RANGE )
       if line_id then
         left, right = split_tiger_line( line_geom, stop_geom )
@@ -85,10 +90,11 @@ class Graphserver
         end
       end
     end
+    print "\n"
   end
 
   def nearest_street_node stop_geom
-    point, dist = conn.exec(<<-SQL)[0]
+    query = <<-SQL
       SELECT from_id AS point, 
              distance_sphere(StartPoint(geom), '#{stop_geom}') AS dist
       FROM tiger_streets
@@ -100,6 +106,8 @@ class Graphserver
          WHERE geom && expand( '#{stop_geom}'::geometry, #{SEARCH_RANGE}))
       ORDER BY dist LIMIT 1
     SQL
+    
+    point, dist = conn.exec(query)[0]
 
     return point
   end
@@ -123,12 +131,17 @@ class Graphserver
   end
 
   def link_street_gtfs!
+    i =0
     each_stop do |stop_id, stop_geom|
+      i += 1
       if node_id = nearest_street_node( stop_geom ) then
-        p node_id
-        conn.exec "INSERT INTO street_gtfs_links (stop_id, node_id) VALUES (#{stop_id}, #{node_id})"
+        print "\r#{i}\tlink #{node_id}<->#{stop_id}"
+        STDOUT.flush
+        query = "INSERT INTO street_gtfs_links (stop_id, node_id) VALUES (#{stop_id}, #{node_id})"
+        conn.exec query
       end
     end
+    print "\n"
   end
 
   def load_tiger_gtfs_links
