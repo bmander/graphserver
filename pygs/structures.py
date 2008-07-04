@@ -222,17 +222,31 @@ class State(CShadow):
         if time is None:
             time = now()
         self.soul = self._cnew(long(time))
+        
+    def destroy(self):
+        self.check_destroyed()
+        
+        self._cdel(self.soul)
+        self.soul = None
     
     def __copy__(self):
+        self.check_destroyed()
+        
         return self._ccopy(self.soul)
     
     def clone(self):
+        self.check_destroyed()
+        
         return self.__copy__()
     
     def __str__(self):
+        self.check_destroyed()
+        
         return self.to_xml()
 
     def to_xml(self):
+        self.check_destroyed()
+        
         ret = "<state time='%s' weight='%s' dist_walked='%s' " \
               "num_transfers='%s' prev_edge_type='%s' prev_edge_name='%s'>" % \
               (asctime(gmtime(self.time)),
@@ -514,6 +528,7 @@ CalendarDay._cnext = ccast(lgs.calNextDay, CalendarDay)
 CalendarDay._cprev = ccast(lgs.calPreviousDay, CalendarDay)
 
 State._cnew = lgs.stateNew
+State._cdel = lgs.stateDestroy
 State._ccopy = ccast(lgs.stateDup, State)
 
 ListNode._cdata = ccast(lgs.liGetData, Edge)

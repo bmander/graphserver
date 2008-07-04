@@ -12,13 +12,13 @@ for i in xrange(1000000):
 print get_mem_usage()
 """
 
-def test_state_delete():
+def test_state_destroy():
     mperc, m0 = get_mem_usage()
 
     g = Graph()
     for i in xrange(1000000):
         s = State(0)
-        del s
+        s.destroy()
         
     mperc, m1 = get_mem_usage()
     

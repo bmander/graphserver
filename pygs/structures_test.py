@@ -93,8 +93,10 @@ class TestGraph:
         assert spt.__class__ == Graph
         assert spt.get_vertex("home").degree_out==1
         assert spt.get_vertex("home").degree_in==0
+        assert spt.get_vertex("home").payload.weight==0
         assert spt.get_vertex("work").degree_in==1
         assert spt.get_vertex("work").degree_out==0
+        assert spt.get_vertex("work").payload.weight==2
         
     def test_shortst_path_tree_link(self):
         g = Graph()
@@ -351,6 +353,26 @@ class TestState:
         assert s.prev_edge_name == None
         assert s.prev_edge_type == 5
         assert s.calendar_day == None
+        
+    def test_destroy(self):
+        s = State()
+        
+        s.destroy() #did we segfault?
+        
+    def test_clone(self):
+        s = State(0)
+        
+        s2 = s.clone()
+        
+        s.destroy()
+        
+        assert s2.time == 0
+        assert s2.weight == 0
+        assert s2.dist_walked == 0
+        assert s2.num_transfers == 0
+        assert s2.prev_edge_name == None
+        assert s2.prev_edge_type == 5
+        assert s2.calendar_day == None
 
 class TestStreet:
     def street_test(self):
