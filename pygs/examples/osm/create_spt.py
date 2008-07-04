@@ -13,7 +13,7 @@ def get_osm_xml( left, bottom, right, top ):
 def main():
     #print get_osm_xml( -122.33, 47.66, -122.31, 47.68 )
 
-    osmdata = open("map.osm").read()
+    osmdata = open("smaller.osm").read()
             
     print "read osm file"
     osm = OSM(osmdata)
@@ -29,7 +29,7 @@ def main():
             g.add_edge( str(way.fromv), str(way.tov), Street( wayid, way.length ) )
             g.add_edge( str(way.tov), str(way.fromv), Street( wayid, way.length ) )
         
-    random_vertex_label = "53122137"
+    random_vertex_label = "53217079"
     
     print "find shortest path tree"
     t0 = time.time()
@@ -39,7 +39,7 @@ def main():
     
     fp = open("points.txt", "w")
     for edge in spt.edges:
-        weight = edge.to_v.payload.weight
+        weight = edge.from_v.payload.weight
         points = osm.ways[ edge.payload.name ].get_projected_points()
         
         fp.write( "%d:"%weight+",".join( [" ".join([str(c) for c in p]) for p in points] ) + "\n" )
