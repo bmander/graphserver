@@ -196,24 +196,25 @@ vNew( char* label ) {
 
 void
 vDestroy(Vertex *this, int free_vertex_payload, int free_edge_payloads) {
-    //if( free_vertex_payload )
-    //  free( this->payload );
+    if( free_vertex_payload )
+      free( this->payload );
 
     
     //delete incoming edges
-    //while(this->incoming->next != NULL) {
-    //  eDestroy( this->incoming->next->data, free_edge_payloads );
-   // }
+    while(this->incoming->next != NULL) {
+      eDestroy( this->incoming->next->data, free_edge_payloads );
+    }
     //delete outgoing edges
-    //while(this->outgoing->next != NULL) {
-    //  eDestroy( this->outgoing->next->data, free_edge_payloads );
-   // }
+    while(this->outgoing->next != NULL) {
+      eDestroy( this->outgoing->next->data, free_edge_payloads );
+    }
     //free the list dummy-heads that remain
-    //free(this->outgoing);
-    //free(this->incoming);
+    free(this->outgoing);
+    free(this->incoming);
+    
     //and finally, sweet release*/
-    //free( this->label );
-    //free( this );
+    free( this->label );
+    free( this );
 }
 
 
