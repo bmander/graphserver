@@ -53,24 +53,38 @@ class Graph(CShadow):
     def __init__(self):
         self.soul = self._cnew()
         
-    def __del__(self):
+    def destroy(self, free_vertex_payloads=1, free_edge_payloads=1):
         #void gDestroy( Graph* this, int free_vertex_payloads, int free_edge_payloads );
-        self._cdel(self.soul, 1, 1)
+        self.check_destroyed()
+        
+        self._cdel(self.soul, free_vertex_payloads, free_edge_payloads)
+        self.soul = None
     
+    def destroy_as_spt(self):
+        self.destroy(1, 0) #destroy the vertex State instances, but not the edge EdgePayload instances, as they're owned by the parent graph
+        
     def add_vertex(self, label):
         #Vertex* gAddVertex( Graph* this, char *label );
+        self.check_destroyed()
+        
         return self._cadd_vertex(self.soul, label)
         
     def get_vertex(self, label):
-        #Vertex* gGetVertex( Graph* this, char *label ) {
+        #Vertex* gGetVertex( Graph* this, char *label );
+        self.check_destroyed()
+        
         return self._cget_vertex(self.soul, label)
         
     def add_edge( self, fromv, tov, payload ):
         #Edge* gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload );
+        self.check_destroyed()
+        
         return self._cadd_edge( self.soul, fromv, tov, payload.soul )
     
     @property
     def vertices(self):
+        self.check_destroyed()
+        
         count = c_int()
         p_va = lgs.gVertices(self.soul, byref(count))
         verts = []
@@ -82,6 +96,8 @@ class Graph(CShadow):
     
     @property
     def edges(self):
+        self.check_destroyed()
+        
         edges = []
         for vertex in self.vertices:
             o = vertex.outgoing
@@ -91,11 +107,15 @@ class Graph(CShadow):
         return edges    
     
     def shortest_path_tree(self, fromv, tov, initstate):
-        #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )        
+        #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
+        self.check_destroyed()
+
         return self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul )
         
     def shortest_path_tree_retro(self, fromv, tov, finalstate):
         #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
+        self.check_destroyed()
+        
         return self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul )
     """
     def shortest_path_tree(self, from_key, to_key, init, direction=True):
@@ -111,6 +131,8 @@ class Graph(CShadow):
     """
 
     def shortest_path(self, from_v, to_v, init_state):
+        self.check_destroyed()
+        
         path_vertices = []
         path_edges    = []
    
@@ -130,6 +152,8 @@ class Graph(CShadow):
         return (path_vertices, path_edges)
     
     def shortest_path_retro(from_v, to_v, final_state):
+        self.check_destroyed()
+        
         path_vertices = []
         path_edges    = []
           
@@ -147,6 +171,8 @@ class Graph(CShadow):
         return path_vertices, path_edges
 
     def to_dot(self):
+        self.check_destroyed()
+        
         ret = "digraph G {"
         for e in self.edges:
             ret += "    %s -> %s;\n" % (e.from_v.label, e.to_v.label)
@@ -277,30 +303,39 @@ class Vertex(CShadow):
     def __init__(self,label):
         self.soul = self._cnew(label)
         
-    def __del__(self):
+    def destroy(self):
         #void vDestroy(Vertex* this, int free_vertex_payload, int free_edge_payloads) ;
         # TODO - support parameterization?
+        
+        self.check_destroyed()
         self._cdel(self.soul, 1, 1)
+        self.soul = None
     
     def to_xml(self):
+        self.check_destroyed()
         return "<Vertex degree_out='%s' degree_in='%s' label='%s'/>" % (self.degree_out, self.degree_in, self.label)
     
     def __str__(self):
+        self.check_destroyed()
         return self.to_xml()
 
     @property
     def outgoing(self):
+        self.check_destroyed()
         return self._edges(self._coutgoing_edges)
         
     @property
     def incoming(self):
+        self.check_destroyed()
         return self._edges(self._cincoming_edges)
     
     @property
     def payload(self):
+        self.check_destroyed()
         return self._cpayload(self.soul)
 
     def _edges(self, method, index = -1):
+        self.check_destroyed()
         e = []
         node = method(self.soul)
         if not node: 
@@ -321,9 +356,11 @@ class Vertex(CShadow):
         return None
 
     def get_outgoing_edge(self,i):
+        self.check_destroyed()
         return self._edges(self._coutgoing_edges, i)
         
     def get_incoming_edge(self,i):
+        self.check_destroyed()
         return self._edges(self._cincoming_edges, i)
 
 """ things not implemented after I moved over to the "soul" model
