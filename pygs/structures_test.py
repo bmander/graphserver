@@ -359,6 +359,18 @@ class TestState:
         
         s.destroy() #did we segfault?
         
+        try:
+            print s.time
+            assert False #should have popped exception by now
+        except:
+            pass
+        
+        try:
+            s.destroy()
+            assert False
+        except:
+            pass
+        
     def test_clone(self):
         s = State(0)
         
