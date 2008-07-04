@@ -28,10 +28,14 @@ class TestGraph:
         g = Graph()
         assert g
         
+        g.destroy()
+        
     def test_add_vertex(self):
         g = Graph()
         v = g.add_vertex("home")
         assert v.label == "home"
+        
+        g.destroy()
         
     def test_double_add_vertex(self):
         g = Graph()
@@ -42,16 +46,22 @@ class TestGraph:
         assert g.size == 1
         assert v.label == "double"
         
+        g.destroy()
+        
     def test_get_vertex(self):
         g = Graph()
+        
         g.add_vertex("home")
         v = g.get_vertex("home")
         assert v.label == "home"
         v = g.get_vertex("bogus")
         assert v == None
         
+        g.destroy()
+        
     def test_add_edge(self):
         g = Graph()
+        
         fromv = g.add_vertex("home")
         tov = g.add_vertex("work")
         s = Street( "helloworld", 1 )
@@ -60,9 +70,12 @@ class TestGraph:
         assert e.from_v.label == "home"
         assert e.to_v.label == "work"
         assert str(e)=="<Edge><Street name='helloworld' length='1.000000' /></Edge>"
+        
+        g.destroy()
     
     def test_add_edge_effects_vertices(self):
         g = Graph()
+        
         fromv = g.add_vertex("home")
         tov = g.add_vertex("work")
         s = Street( "helloworld", 1 )
@@ -70,18 +83,24 @@ class TestGraph:
         
         assert fromv.degree_out==1
         assert tov.degree_in==1
+        
+        g.destroy()
     
     def test_vertices(self):
         g = Graph()
+        
         fromv = g.add_vertex("home")
         tov = g.add_vertex("work")
         
         assert g.vertices
         assert len(g.vertices)==2
         assert g.vertices[0].label == 'home'
+        
+        g.destroy()
     
     def test_shortest_path_tree(self):
         g = Graph()
+        
         fromv = g.add_vertex("home")
         tov = g.add_vertex("work")
         s = Street( "helloworld", 1 )
@@ -98,8 +117,12 @@ class TestGraph:
         assert spt.get_vertex("work").degree_out==0
         assert spt.get_vertex("work").payload.weight==2
         
+        spt.destroy_as_spt()
+        g.destroy()
+        
     def test_shortst_path_tree_link(self):
         g = Graph()
+        
         g.add_vertex("home")
         g.add_vertex("work")
         g.add_edge("home", "work", Link() )
@@ -114,6 +137,9 @@ class TestGraph:
         assert spt.get_vertex("home").degree_in==0
         assert spt.get_vertex("work").degree_in==1
         assert spt.get_vertex("work").degree_out==0
+        
+        spt.destroy_as_spt()
+        g.destroy()
         
     def test_shortst_path_tree_triphopschedule(self):
         g = Graph()
@@ -137,8 +163,12 @@ class TestGraph:
         assert spt.get_vertex("work").degree_in==1
         assert spt.get_vertex("work").degree_out==0
         
+        spt.destroy_as_spt()
+        g.destroy()
+        
     def test_walk_longstreet(self):
         g = Graph()
+        
         fromv = g.add_vertex("home")
         tov = g.add_vertex("work")
         s = Street( "helloworld", 240000 )
@@ -150,6 +180,7 @@ class TestGraph:
         
         assert str(sprime)=="<state time='Sun Jan  4 06:25:52 1970' weight='2147483647' dist_walked='240000.0' num_transfers='0' prev_edge_type='0' prev_edge_name='helloworld'></state>"
 
+        g.destroy()
         
     def xtestx_shortest_path_tree_bigweight(self):
         g = Graph()
@@ -161,6 +192,9 @@ class TestGraph:
         spt = g.shortest_path_tree("home", "work", State(0))
         
         assert spt.get_vertex("home").degree_out == 1
+        
+        spt.destroy_as_spt()
+        g.destroy()
             
     def test_shortest_path_tree_retro(self):
         g = Graph()
@@ -177,6 +211,9 @@ class TestGraph:
         assert spt.get_vertex("home").degree_in==1
         assert spt.get_vertex("work").degree_in==0
         assert spt.get_vertex("work").degree_out==1
+        
+        spt.destroy_as_spt()
+        g.destroy()
     
     def test_shortest_path(self):
         g = Graph()
@@ -202,6 +239,7 @@ class TestGraph:
         
     def test_add_link(self):
         g = Graph()
+        
         fromv = g.add_vertex("home")
         tov = g.add_vertex("work")
         s = Street( "helloworld", 1 )
@@ -213,6 +251,8 @@ class TestGraph:
         x = g.add_edge("work", "home", Link())
         assert x.payload
         assert x.payload.name == "LINK"
+        
+        g.destroy()
     
     def test_hello_world(self):
         g = Graph()
@@ -237,9 +277,11 @@ class TestGraph:
         
         spt = g.shortest_path_tree( "Seattle", "Seattle-busstop", State(0) )
         assert spt.get_vertex("Seattle-busstop").incoming[0].payload.__class__ == Link
+        spt.destroy_as_spt()
         
         spt = g.shortest_path_tree( "Seattle-busstop", "Portland", State(0) )
         assert spt.get_vertex("Portland").incoming[0].payload.__class__ == Street
+        spt.destroy_as_spt()
         
         cal = CalendarDay(0, 86400, [1,2], 0)
         rawhops = [(10,     20,'A'),
@@ -257,6 +299,10 @@ class TestGraph:
         
         assert [v.label for v in vertices] == ['Seattle', 'Seattle-busstop', 'Portland-busstop', 'Portland']
         assert [e.payload.__class__ for e in edges] == [Link, TripHop, Link]
+        
+        spt.destroy_as_spt()
+        g.destroy()
+        
 
 import csv
 import time
@@ -300,7 +346,7 @@ class TestGraphStress:
                    "53103049","53178033"] #twenty random node ids in the given graph
         for nodeid in nodeids:
             t0 = time.time()
-            g.shortest_path_tree( nodeid, 'bogus', State(0) )
+            spt = g.shortest_path_tree( nodeid, 'bogus', State(0) )
             t1 = time.time()
             runtimes.append( t1-t0 )
             
@@ -329,7 +375,7 @@ class TestGraphStress:
         changes = []
         for i in range(40):
             spt = g.shortest_path_tree( nodeids[ randint(0,len(nodeids)-1) ], "bogus", State(0) )
-            del spt
+            spt.destroy_as_spt()
             
             thispercent, thisblock = get_mem_usage()
             
@@ -490,6 +536,16 @@ class TestVertex:
     def test_basic(self):
         v=Vertex("home")
         assert v
+        
+    def test_destroy(self): #mostly just check that it doesn't segfault. the stress test will check if it works or not.
+        v=Vertex("home")
+        v.destroy()
+        
+        try:
+            v.label
+            assert False #pop exception by now
+        except:
+            pass
         
     def test_label(self):
         v=Vertex("home")
