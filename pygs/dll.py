@@ -79,6 +79,7 @@ pycapi(lgs.gAddEdge, c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p])
 pycapi(lgs.gVertices, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.gShortestPathTree,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p])
 pycapi(lgs.gShortestPathTreeRetro,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p])
+pycapi(lgs.gSize,c_void_p, [c_long])
 
 # CALENDAR API 
 pycapi(lgs.calNew, c_void_p, [c_long, c_long, c_int, c_void_p, c_int])

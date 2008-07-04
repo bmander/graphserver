@@ -47,6 +47,9 @@ Class Definitions
 """
 
 class Graph(CShadow):
+    
+    size = cproperty(lgs.gSize, c_long)
+    
     def __init__(self):
         self.soul = self._cnew()
         

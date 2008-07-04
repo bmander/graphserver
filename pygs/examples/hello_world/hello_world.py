@@ -3,7 +3,7 @@ try:
     from graphserver.structures import TripHopSchedule, CalendarDay, Street, Link, State
 except ImportError:
     import sys
-    sys.path.append("..")
+    sys.path.append("../..")
     from engine import XMLGraphEngine
     from structures import TripHopSchedule, CalendarDay, Street, Link, State
 

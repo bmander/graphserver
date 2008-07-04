@@ -21,6 +21,15 @@ class TestGraph:
         v = g.add_vertex("home")
         assert v.label == "home"
         
+    def test_double_add_vertex(self):
+        g = Graph()
+        v = g.add_vertex("double")
+        assert v.label == "double"
+        print g.size == 1
+        v = g.add_vertex("double")
+        assert g.size == 1
+        assert v.label == "double"
+        
     def test_get_vertex(self):
         g = Graph()
         g.add_vertex("home")
@@ -234,6 +243,58 @@ class TestGraph:
         
         assert [v.label for v in vertices] == ['Seattle', 'Seattle-busstop', 'Portland-busstop', 'Portland']
         assert [e.payload.__class__ for e in edges] == [Link, TripHop, Link]
+
+import csv
+import time
+from random import randint
+class TestGraphStress:
+    def load_performance_test(self):
+        g = Graph()
+        
+        reader = csv.reader(open("map.csv"))
+        
+        t0 = time.time()
+        for wayid, fromv, tov, length in reader:
+            g.add_vertex( fromv )
+            g.add_vertex( tov )
+            g.add_edge( fromv, tov, Street( wayid, float(length) ) )
+        t1 = time.time()
+        dt = t1-t0
+        
+        limit = 0.8
+        print "Graph loaded in %f s; limit %f s"%(dt,limit)
+        assert dt <= limit
+        
+    def spt_performance_test(self):
+        g = Graph()
+        
+        reader = csv.reader(open("map.csv"))
+        
+        for wayid, fromv, tov, length in reader:
+            g.add_vertex( fromv )
+            g.add_vertex( tov )
+            g.add_edge( fromv, tov, Street( wayid, float(length) ) )
+            
+        runtimes = []
+        
+        nodeids = ["53204010","53116165","53157403",
+                   "30279744","67539645","53217469",
+                   "152264675","53062837","53190677",
+                   "53108368","91264868","53145350",
+                   "53156103","53139148","108423294",
+                   "53114499","53110306","53132736",
+                   "53103049","53178033"] #twenty random node ids in the given graph
+        for nodeid in nodeids:
+            t0 = time.time()
+            g.shortest_path_tree( nodeid, 'bogus', State(0) )
+            t1 = time.time()
+            runtimes.append( t1-t0 )
+            
+        average = sum(runtimes)/len(runtimes)
+        
+        limit = 0.031
+        print "average runtime is %f s; limit %f s"%(average,limit)
+        assert average < limit
 
 class TestState:
     def test_basic(self):
