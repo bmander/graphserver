@@ -10,6 +10,18 @@ def trace():
         tracecount[caller] = -1
     tracecount[caller] = tracecount[caller] + 1
     print sys.stderr, "--TRACE-- %s, step %s" % (caller, tracecount[caller])
+    
+import os
+import sys
+
+def get_mem_usage():
+    """returns percentage and vsz mem usage of this script"""
+    pid = os.getpid()
+    psout = os.popen( "ps -p %s u"%pid ).read()
+    
+    parsed_psout = psout.split("\n")[1].split()
+    
+    return float(parsed_psout[3]), int( parsed_psout[4] )
 
 class TestGraph:
     def test_basic(self):
@@ -295,6 +307,39 @@ class TestGraphStress:
         limit = 0.031
         print "average runtime is %f s; limit %f s"%(average,limit)
         assert average < limit
+        
+    def stress_test(self):
+        g = Graph()
+        
+        reader = csv.reader(open("map.csv"))
+        
+        nodeids = {}
+        for wayid, fromv, tov, length in reader:
+            nodeids[fromv] = True
+            nodeids[tov] = True
+            
+            g.add_vertex( fromv )
+            g.add_vertex( tov )
+            g.add_edge( fromv, tov, Street( wayid, float(length) ) )
+        nodeids = nodeids.keys()
+        
+        mempercent, memblock = get_mem_usage()
+        changes = []
+        for i in range(40):
+            spt = g.shortest_path_tree( nodeids[ randint(0,len(nodeids)-1) ], "bogus", State(0) )
+            del spt
+            
+            thispercent, thisblock = get_mem_usage()
+            
+            #print "last iteration memory usage: %d"%memblock
+            #print "this iteration memory usage: %d"%thisblock
+            #print "---"
+            print thispercent, thisblock
+            changes.append( cmp(memblock, thisblock) )
+            
+            memblock = thisblock
+            
+        assert 1 in changes
 
 class TestState:
     def test_basic(self):
