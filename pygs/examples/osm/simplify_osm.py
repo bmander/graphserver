@@ -4,6 +4,11 @@ data = open("map.osm").read()
 
 osm = OSM( data )
 
+fp = open("nodes.csv", "w")
+for nodeid in osm.nodes.keys():
+    fp.write( "%s\n"%nodeid )
+fp.close()
+
 fp = open("map.csv", "w")
 
 for wayid, way in osm.ways.iteritems():
