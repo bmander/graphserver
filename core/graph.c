@@ -240,8 +240,9 @@ vSetParent( Vertex* this, Vertex* parent, EdgePayload* payload ) {
     //delete all incoming edges
     ListNode* edges = vGetIncomingEdgeList( this );
     while(edges) {
+      ListNode* nextnode = edges->next;
       eDestroy( edges->data, 0 );
-      edges = edges->next;
+      edges = nextnode;
     }
 
     //add incoming edge
