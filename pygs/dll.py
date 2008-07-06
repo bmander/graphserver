@@ -125,16 +125,19 @@ pycapi(lgs.epCollapseBack, c_void_p, [c_void_p, c_void_p])
 
 #LINKNODE API
 pycapi(lgs.linkNew, c_void_p)
+pycapi(lgs.linkDestroy, c_void_p)
 pycapi(lgs.linkWalk, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.linkWalkBack, c_void_p, [c_void_p, c_void_p])
 
 #STREET API
 pycapi(lgs.streetNew, c_void_p, [c_char_p, c_double])
+pycapi(lgs.streetDestroy, c_void_p)
 pycapi(lgs.streetWalk, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.streetWalkBack, c_void_p, [c_void_p, c_void_p])
 
 #TRIPHOPSCHEDULE API
 pycapi(lgs.thsNew, c_void_p) # args are dynamic, and not specified
+pycapi(lgs.thsDestroy, c_void_p)
 pycapi(lgs.thsGetHop, c_void_p, [c_void_p, c_int])
 pycapi(lgs.thsWalk, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.thsWalkBack, c_void_p, [c_void_p, c_void_p])

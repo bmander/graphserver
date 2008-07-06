@@ -443,8 +443,19 @@ class Link(EdgePayload):
     
     def __init__(self):
         self.soul = self._cnew()
+        
+    # there should be no delete function, because this edgepayload is designed 
+    # to be taken by Graph and deleted alongside it. However, here's a wrapper of the xDestroy() function
+    # for performing stress tests from python.
+    def destroy(self):
+        self.check_destroyed()
+        
+        self._cdel(self.soul)
+        self.soul = None
 
     def to_xml(self):
+        self.check_destroyed()
+        
         return "<Link name='%s'/>" % (self.name)
     
 class Street(EdgePayload):
@@ -454,17 +465,22 @@ class Street(EdgePayload):
     def __init__(self,name,length):
         self.soul = self._cnew(name, length)
         
-    # there will be no delete function, because Street is designed 
-    # to be taken by Graph and deleted alongside it
+    # there should be no delete function, because Street is designed 
+    # to be taken by Graph and deleted alongside it. However, here's a wrapper of the streetDestroy() function
+    # for performing stress tests from python.
+    def destroy(self): 
+        self.check_destroyed()
+        
+        self._cdel(self.soul)
+        self.soul = None
     
     def to_xml(self):
+        self.check_destroyed()
+        
         return "<Street name='%s' length='%f' />" % (self.name, self.length)
 
 
 class TripHop(EdgePayload):
-
-    def __init__():
-        pass
         
     depart = cproperty( lgs.triphopDepart, c_int )
     arrive = cproperty( lgs.triphopArrive, c_int )
@@ -498,17 +514,29 @@ class TripHopSchedule(EdgePayload):
     n = cproperty(lgs.thsGetN, c_int)
     service_id = cproperty(lgs.thsGetServiceId, c_int)
     
+    def destroy(self):
+        self.check_destroyed()
+        
+        self._cdel(self.soul)
+        self.soul = None
+    
     def triphop(self, i):
+        self.check_destroyed()
+        
         return self._chop(self.soul, i)
     
     @property
     def triphops(self):
+        self.check_destroyed()
+        
         hops = []
         for i in range(self.n):
             hops.append( self.triphop( i ) )
         return hops
     
     def to_xml(self):
+        self.check_destroyed()
+        
         ret = "<TripHopSchedule service_id='%s'>" % self.service_id
         for triphop in self.triphops:
           ret += triphop.to_xml()
@@ -517,6 +545,8 @@ class TripHopSchedule(EdgePayload):
         return ret
         
     def collapse(self, state):
+        self.check_destroyed()
+        
         func = lgs.thsCollapse
         func.restype = c_void_p
         func.argtypes = [c_void_p, c_void_p]
@@ -571,6 +601,7 @@ State._ccopy = ccast(lgs.stateDup, State)
 ListNode._cdata = ccast(lgs.liGetData, Edge)
 ListNode._cnext = ccast(lgs.liGetNext, ListNode)
 
+TripHopSchedule._cdel = lgs.thsDestroy
 TripHopSchedule._chop = ccast(lgs.thsGetHop, TripHop)
 TripHopSchedule._cwalk = lgs.thsWalk
 TripHopSchedule._cwalk_back = lgs.thsWalkBack
@@ -579,9 +610,11 @@ TripHopSchedule._ccollapse_back = lgs.thsCollapseBack
 TripHopSchedule._collapse_type = TripHop
 
 Street._cnew = lgs.streetNew
+Street._cdel = lgs.streetDestroy
 Street._cwalk = lgs.streetWalk
 Street._cwalk_back = lgs.streetWalkBack
 
 Link._cnew = lgs.linkNew
+Link._cdel = lgs.linkDestroy
 Link._cwalk = lgs.linkWalk
 Link._cwalk_back = lgs.linkWalkBack
