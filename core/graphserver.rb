@@ -430,7 +430,6 @@ class Graphserver
         unless lon = request.query['lon'] then raise ArgumentError end
 
         v = get_closest_edge_vertices(lat, lon)
-#        v = get_vertex_from_coords(lat, lon)
 
         if v == nil then
           ret = ["ERROR: function not implemented by any extension"]
@@ -458,14 +457,32 @@ class Graphserver
       response.body = ret.join
     end
 
-    #Response to GET request "/vertex_from_address"
+    #Response to GET request "/vertices_from_address"
     @server.mount_proc( "/vertices_from_address" ) do |request, response|
       begin
         unless add = request.query['add'] then raise ArgumentError end
 
-        ret = ["<?xml version='1.0'?>"]
-        ret << "<vertex>"
-        ret << "</vertex>"
+        v = get_vertices_from_address(add)
+
+        if v == nil then
+          ret = ["<?xml version='1.0'?>","<vertices>","</vertices>"]
+        else
+          ret = ["<?xml version='1.0'?>"]
+          ret << "<vertices>"
+          v.each do |vv|
+            ret << "<vertex>"
+            if vv['label'] then
+              ret << "<label>#{vv['label']}</label>"
+              ret << "<lat>#{vv['lat']}</lat>"
+              ret << "<lon>#{vv['lon']}</lon>"
+              ret << "<name>#{vv['name']}</name>"
+              ret << "<dist>#{vv['dist']}</dist>"
+              ret << "<place>#{vv['place']}</place>"
+            end
+            ret << "</vertex>"
+          end
+          ret << "</vertices>"
+        end
 
         #Catch alike sentence
         rescue ArgumentError
@@ -533,6 +550,11 @@ class Graphserver
   #The first row is not actually a vertex, but the nearest point in the edge
   #to the input coordinates
   def get_closest_edge_vertices(lat, lon)
+    #Override this function in the corresponding extension (tiger and osm initially)
+    return nil
+  end
+
+  def get_vertices_from_address(address)
     #Override this function in the corresponding extension (tiger and osm initially)
     return nil
   end

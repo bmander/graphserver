@@ -593,36 +593,56 @@ class Graphserver
   end
 
   #Overrides function which is not implemented in graphserver.rb
-  def get_vertex_from_coords(lat, lon)
-    v = {}
-    center = "GeomFromText(\'POINT(#{lon} #{lat})\',4326)"
+  def get_vertices_from_address(address)
+    # Good but too slow query
+#      SELECT t1.id, t1.name,
+#            (SELECT seg_id FROM osm_segments AS t2 WHERE t1.id=t2.id ORDER BY seg_id LIMIT 1) AS seg_id,
+#            (SELECT distance_sphere(StartPoint(t2.geom), t3.location) AS dist FROM osm_segments AS t2, osm_places AS t3 WHERE t1.id=t2.id ORDER BY dist LIMIT 1) AS dist_place,
+#            (SELECT name FROM (SELECT t3.name, distance_sphere(StartPoint(t2.geom), t3.location) AS dist FROM osm_segments AS t2, osm_places AS t3 WHERE t1.id=t2.id ORDER BY dist LIMIT 1) AS dist_place) AS place
+#      FROM osm_ways AS t1
+#      WHERE LOWER(name) LIKE '%#{address.downcase}%'
+#      ORDER BY dist_place
+#      LIMIT 20
 
-    #Searches for vertex in a radius of approximately 500m from the center
-    r = conn.exec(<<-SQL)[0]
-      SELECT from_id AS label, Y(StartPoint(geom)) AS lat, X(StartPoint(geom)) AS lon, name,
-             distance_sphere(StartPoint(geom), #{center}) AS dist_vertex,
-             distance(geom, #{center}) AS dist_street
-      FROM osm_streets
-      WHERE geom && expand( #{center}::geometry, 0.003 )
-      UNION
-     (SELECT to_id AS label, Y(EndPoint(geom)) AS lat, X(EndPoint(geom)) AS lon, name,
-             distance_sphere(EndPoint(geom), #{center}) AS dist_vertex,
-             distance(geom, #{center}) AS dist_street
-      FROM osm_streets
-      WHERE geom && expand( #{center}::geometry, 0.003 ))
-      ORDER BY dist_street, dist_vertex LIMIT 1
+    # If address is too short the db queries wouldn't have sense
+    if address.length < 3 then return nil end
+
+    # Query db for ways that match the address
+    ways = conn.exec <<-SQL
+      SELECT name, id
+      FROM osm_ways
+      WHERE LOWER(name) LIKE '%#{address.downcase}%'
+      ORDER BY name
+      LIMIT 10
     SQL
 
-    if r then
-#      puts "label=#{label}, lat=#{lat}, lon=#{lon}, name=#{name}, dist=#{dist}"
-      v['label'] = "osm#{r[0]}"
-      v['lat'] = r[1]
-      v['lon'] = r[2]
-      v['name'] = r[3]
-      v['dist'] = r[4]
-      puts "label=#{v['label']}, lat=#{v['lat']}, lon=#{v['lon']}, name=#{v['name']}, dist=#{v['dist']}"
-#    else
-#      v = nil
+    if ways.num_tuples == 0 then return nil end
+
+    # An array of vertices
+    v = []
+    i = 0
+
+    # Query db for the nearest place to each matched way
+    ways.each do |name, id|
+      vertex = conn.exec(<<-SQL)[0]
+        SELECT 'osm' || t1.from_id AS label,
+               Y(StartPoint(t1.geom)) AS lat, X(StartPoint(t1.geom)) AS lon,
+               distance_sphere(StartPoint(t1.geom), t2.location) AS dist_place, t2.name
+        FROM osm_segments AS t1, osm_places AS t2
+        WHERE t1.id = '#{id}'
+        ORDER BY dist_place
+        LIMIT 1
+      SQL
+
+      v[i]={}
+      v[i]['label'] = vertex[0] #Label of the vertex
+      v[i]['lat'] = vertex[1] #Latitude of the vertex
+      v[i]['lon'] = vertex[2] #Longitude of the vertex
+      v[i]['name'] = name #Name of the closest edge to the vertex
+      v[i]['dist'] = vertex[3] #Distance from the vertex to the nearest place
+      v[i]['place'] = vertex[4] #Name of the nearest place
+      i += 1
+#      puts "label=#{v['label']}, lat=#{v['lat']}, lon=#{v['lon']}, name=#{v['name']}, dist=#{v['dist']}, place=#{v['place']}"
     end
 
     return v
