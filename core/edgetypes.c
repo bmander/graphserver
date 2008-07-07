@@ -30,6 +30,28 @@ stateDestroy(State* this) {
   free( this );
 }
 
+long
+stateGetTime( State* this ) { return this->time; }
+
+long
+stateGetWeight( State* this) { return this->weight; }
+
+double
+stateGetDistWalked( State* this ) { return this->dist_walked; }
+
+int
+stateGetNumTransfers( State* this ) { return this->num_transfers; }
+
+edgepayload_t
+stateGetPrevEdgeType( State* this ) { return this->prev_edge_type; }
+
+char*
+stateGetPrevEdgeName( State* this ) { return this->prev_edge_name; }
+
+CalendarDay*
+stateCalendarDay( State* this ) { return this->calendar_day; }
+
+
 //--------------------EDGEPAYLOAD FUNCTIONS-------------------
 
 EdgePayload*
@@ -64,6 +86,11 @@ epDestroy( EdgePayload* this ) {
     default:
       free( this );
   }
+}
+
+edgepayload_t
+epGetType( EdgePayload* this ) {
+    return this->type;
 }
 
 State*
@@ -147,6 +174,11 @@ linkDestroy(Link* tokill) {
   free( tokill );
 }
 
+char*
+linkGetName(Link* this) {
+    return this->name;
+}
+
 //STREET FUNCTIONS
 Street*
 streetNew(const char *name, double length) {
@@ -163,6 +195,16 @@ void
 streetDestroy(Street* tokill) {
   free(tokill->name);
   free(tokill);
+}
+
+char*
+streetGetName(Street* this) {
+    return this->name;
+}
+
+double
+streetGetLength(Street* this) {
+    return this->length;
 }
 
 //TRIPHOP FUNCTIONS
@@ -235,11 +277,49 @@ thsPrintHops(TripHopSchedule* this) {
 
 void
 thsDestroy(TripHopSchedule* this) {
-  int i;
-
-  free(this->hops);
-  free(this);
+	// Possible leak with unfreed trip_id
+    /*int i;
+  	for(i=0; i<this->n; i++) {
+        free( this->hops[i].trip_id );
+  	}*/
+  	
+  	free(this->hops);
+  	free(this);
 }
+
+void
+
+triphopDestroy(TripHop* tokill) {
+  free(tokill->trip_id);
+  free(tokill);
+}
+
+int
+thsGetN(TripHopSchedule* this) {
+    return this->n;
+}
+
+ServiceId
+thsGetServiceId(TripHopSchedule* this) {
+    return this->service_id;
+}
+
+int
+triphopDepart( TripHop* this ) { return this->depart; }
+
+int
+triphopArrive( TripHop* this ) { return this->arrive; }
+
+int
+triphopTransit( TripHop* this ) { return this->transit; }
+
+char *
+triphopTripId( TripHop* this ) { return this->trip_id; }
+
+TripHop*
+thsGetHop(TripHopSchedule* this, int i) { return &this->hops[i]; }
+
+
 
 #undef ROUTE_REVERSE
 #include "edgeweights.c"

@@ -2,7 +2,8 @@
 #include "dirfibheap.h"
 
 //GRAPH FUNCTIONS
-
+	
+	
 Graph*
 gNew() {
   Graph *this = (Graph*)malloc(sizeof(Graph));
@@ -13,19 +14,23 @@ gNew() {
 
 void
 gDestroy( Graph* this, int kill_vertex_payloads, int kill_edge_payloads ) {
+
   //destroy each vertex contained within
   struct hashtable_itr *itr = hashtable_iterator(this->vertices);
-  int next_exists=1;
+  int next_exists = hashtable_count(this->vertices);
+
   while(itr && next_exists) {
     Vertex* vtx = hashtable_iterator_value( itr );
     vDestroy( vtx, kill_vertex_payloads, kill_edge_payloads );
     next_exists = hashtable_iterator_advance( itr );
   }
+
   free(itr);
   //destroy the table
   hashtable_destroy( this->vertices, 0 );
   //destroy the graph object itself
   free( this );
+
 }
 
 Vertex* 
@@ -194,6 +199,7 @@ vDestroy(Vertex *this, int free_vertex_payload, int free_edge_payloads) {
     if( free_vertex_payload )
       free( this->payload );
 
+    
     //delete incoming edges
     while(this->incoming->next != NULL) {
       eDestroy( this->incoming->next->data, free_edge_payloads );
@@ -205,6 +211,7 @@ vDestroy(Vertex *this, int free_vertex_payload, int free_edge_payloads) {
     //free the list dummy-heads that remain
     free(this->outgoing);
     free(this->incoming);
+    
     //and finally, sweet release*/
     free( this->label );
     free( this );
@@ -233,8 +240,9 @@ vSetParent( Vertex* this, Vertex* parent, EdgePayload* payload ) {
     //delete all incoming edges
     ListNode* edges = vGetIncomingEdgeList( this );
     while(edges) {
+      ListNode* nextnode = edges->next;
       eDestroy( edges->data, 0 );
-      edges = edges->next;
+      edges = nextnode;
     }
 
     //add incoming edge
@@ -259,6 +267,26 @@ vRemoveOutEdgeRef( Vertex* this, Edge* todie ) {
 void
 vRemoveInEdgeRef( Vertex* this, Edge* todie ) {
     liRemoveRef( this->incoming, todie );
+}
+
+char*
+vGetLabel( Vertex* this ) {
+    return this->label;
+}
+
+int
+vDegreeOut( Vertex* this ) {
+    return this->degree_out;
+}
+
+int
+vDegreeIn( Vertex* this ) {
+    return this->degree_in;
+}
+
+State*
+vPayload( Vertex* this ) {
+	return this->payload;
 }
 
 // EDGE FUNCTIONS
@@ -291,6 +319,21 @@ eWalk(Edge *this, State* params) {
 State*
 eWalkBack(Edge *this, State* params) {
   return epWalkBack( this->payload, params );
+}
+
+Vertex*
+eGetFrom(Edge *this) {
+  return this->from;
+}
+
+Vertex*
+eGetTo(Edge *this) {
+  return this->to;
+}
+
+EdgePayload*
+eGetPayload(Edge *this) {
+  return this->payload;
 }
 
 // LIST FUNCTIONS
@@ -332,3 +375,14 @@ liRemoveRef( ListNode *dummyhead, Edge *data ) {
       curr = prev->next;
     }
 }
+
+Edge*
+liGetData( ListNode *this ) {
+	return this->data;
+}
+	
+ListNode*
+liGetNext( ListNode *this ) {
+	return this->next;
+}
+

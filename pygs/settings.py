@@ -1,0 +1,1 @@
+GRAPHS_CORE_SO = "/home/brandon/graphserver/trunk/core/graph_core.so"

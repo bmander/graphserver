@@ -46,6 +46,24 @@ calDayOfOrAfter( CalendarDay* this, long time );
 CalendarDay*
 calDayOfOrBefore( CalendarDay* this, long time );
 
+long
+calBeginTime( CalendarDay* this );
+
+long
+calEndTime( CalendarDay* this );
+
+ServiceId*
+calServiceIds( CalendarDay* this, int* count );
+
+int 
+calDaylightSavings( CalendarDay* this );
+
+CalendarDay*
+calNextDay(CalendarDay* this);
+
+CalendarDay*
+calPreviousDay(CalendarDay* this);
+
 void
 calPrint( CalendarDay* this );
 

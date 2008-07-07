@@ -97,14 +97,18 @@ class Graphserver
   end
 
   def import_tiger_to_db! directory
-    tiger_line = TigerLine::TigerLine.new( directory )
+    tiger_line = TigerLine::Dataset.new( directory )
     tiger_line.read
 
     conn.exec "COPY tiger_streets (id, from_id, to_id, name, type, file, geom ) FROM STDIN"
     name = nil
     tiger_line.each_feature do |feature|
       if feature.cfcc =~ /A\d\d/ then  #if the feature is a type of road
-        name = "#{feature.fedirp} #{feature.fename} #{feature.fetype} #{feature.fedirs}".strip
+        if not feature.names.length==0 then
+            name = "#{feature.names[0][:fedirp]} #{feature.names[0][:fename]} #{feature.names[0][:fetype]} #{feature.names[0][:fedirs]}".strip
+        else
+            name = ""
+        end
         conn.putline "#{feature.tlid}\t#{feature.tzids}\t#{feature.tzide}\t#{name}\t#{feature.cfcc}\t#{tiger_line.filename_base}\tSRID=#{WGS84_LATLONG_EPSG};#{feature.line_wkt}\n"
       end
     end

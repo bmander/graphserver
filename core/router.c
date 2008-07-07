@@ -56,7 +56,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
 #endif
 
       long old_w;
-      if( spt_v = gGetVertex( spt, v->label ) ) {        //get the SPT Vertex corresponding to 'v'
+      if( (spt_v = gGetVertex( spt, v->label )) ) {        //get the SPT Vertex corresponding to 'v'
         dv = (State*)spt_v->payload;                     //and its State 'dv'
         old_w = dv->weight;
       } else {
@@ -103,6 +103,8 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
         if( !spt_v )
           spt_v = gAddVertex( spt, v->label );        //Copy v over to the SPT
 
+        if(spt_v->payload)
+            free(spt_v->payload);
         spt_v->payload = new_dv;                      //Set the State of v in the SPT to the current winner
 
         vSetParent( spt_v, spt_u, collapsed );      //Make u the parent of v in the SPT
