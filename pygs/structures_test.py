@@ -343,6 +343,28 @@ class TestGraph:
         vertices, edges = g.shortest_path( vSandPointWay, vAirportWay, State(0) )
         assert( False not in [l==r for l,r in zip( [v.label for v in vertices], idealVertices )] )
         assert( False not in [l==r for l,r in zip( [e.payload.name for e in edges], idealEdges )] )
+            
+    def xtestx_gratuitous_loop(self): #don't actually run with the test suite
+        g = Graph()
+        
+        reader = csv.reader(open("map.csv"))
+        
+        for wayid, fromv, tov, length in reader:
+            g.add_vertex( fromv )
+            g.add_vertex( tov )
+            g.add_edge( fromv, tov, Street( wayid, float(length) ) )
+            
+        v85thStreet = "53184534"
+        vBeaconAve = "53072051"
+        
+        n = 10
+        t0 = time.time()
+        for i in range(n):
+            spt = g.shortest_path_tree( v85thStreet, "bogus", State(0) )
+            spt.destroy_as_spt()
+        t1 = time.time()
+        
+        print "executed %d iterations in %s seconds"%(n,(t1-t0))
         
 
 import csv
@@ -653,5 +675,5 @@ class TestCalendar:
 
 if __name__=='__main__':
     mod = TestGraph()
-    mod.test_get_route()
+    mod.xtestx_gratuitous_loop()
 
