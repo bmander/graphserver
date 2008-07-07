@@ -12,11 +12,9 @@ def get_osm_xml( left, bottom, right, top ):
 
 def main():
     #print get_osm_xml( -122.33, 47.66, -122.31, 47.68 )
-
-    osmdata = open("smaller.osm").read()
-            
+ 
     print "read osm file"
-    osm = OSM(osmdata)
+    osm = OSM("map.osm")
 
     print "load vertices into graph file"
     g = Graph()
@@ -26,8 +24,17 @@ def main():
     print "load edges into graph file"
     for wayid, way in osm.ways.iteritems():
         if 'highway' in way.tags:
-            g.add_edge( str(way.fromv), str(way.tov), Street( wayid, way.length ) )
-            g.add_edge( str(way.tov), str(way.fromv), Street( wayid, way.length ) )
+            len = way.length(osm.nodes)
+            
+            if way.tags['highway']=='cycleway':
+                len = len/3
+            elif way.tags['highway']=='motorway':
+                len = len*100
+            elif way.tags['highway']=='footway':
+                len = len/2
+            
+            g.add_edge( str(way.fromv), str(way.tov), Street( wayid, len ) )
+            g.add_edge( str(way.tov), str(way.fromv), Street( wayid, len ) )
         
     random_vertex_label = "53217079"
     
@@ -39,10 +46,12 @@ def main():
     
     fp = open("points.txt", "w")
     for edge in spt.edges:
-        weight = edge.from_v.payload.weight
-        points = osm.ways[ edge.payload.name ].get_projected_points()
+        osmway = osm.ways[ edge.payload.name ]
+        weight = edge.to_v.payload.weight
+        points = osmway.get_projected_points(osm.nodes)
+        length = osmway.length(osm.nodes)
         
-        fp.write( "%d:"%weight+",".join( [" ".join([str(c) for c in p]) for p in points] ) + "\n" )
+        fp.write( "%s:%s:%f:%d:"%(edge.from_v.label,edge.to_v.label,length,weight)+",".join( [" ".join([str(c) for c in p]) for p in points] ) + "\n" )
     fp.close()
         
 if __name__=='__main__':
