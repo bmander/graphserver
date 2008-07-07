@@ -702,6 +702,14 @@ static VALUE t_add_edge(VALUE self, VALUE key_from, VALUE key_to, VALUE rbpayloa
   return pack_e( ee );
 }
 
+static VALUE t_get_size(VALUE self) {
+    Graph* gg = unpack_g( self );
+    
+    long size = gSize( gg );
+    
+    return LONG2NUM( size );
+}
+
 static VALUE t_vertices( VALUE self ) {
   Graph* gg = unpack_g( self );
   long nn;
@@ -840,5 +848,6 @@ void Init_graph_core() {
   rb_define_method(cGraph, "vertices", t_vertices, 0);
   rb_define_method(cGraph, "add_edge", t_add_edge, 3);
   rb_define_method(cGraph, "shortest_path_tree", t_shortest_path_tree, 4);
+  rb_define_method(cGraph, "size", t_get_size, 0);
 //  rb_define_method(cGraph, "shortest_path", t_shortest_path, 4);
 }
