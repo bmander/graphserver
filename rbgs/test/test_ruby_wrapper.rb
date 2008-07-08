@@ -1,4 +1,5 @@
-load '../graphserver.rb'
+$: << ".."
+load 'graphserver.rb'
 require 'test/unit'
 
 def create_ths
