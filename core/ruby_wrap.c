@@ -564,6 +564,12 @@ VALUE t_state_dup( VALUE self ) {
 //GRAPH CORE OBJECTS====================================================
 //VERTEX METHODS--------------------------------------------------------
 
+VALUE t_v_new( VALUE self, VALUE label ) {
+    Vertex* vv = vNew( STR2CSTR(label) );
+    
+    return pack_v( vv );
+}
+
 VALUE t_v_each_incoming( VALUE self ) {
   Vertex* vv = unpack_v( self );
   ListNode* edges = vGetIncomingEdgeList( vv ); //head node is a dummy
@@ -827,6 +833,7 @@ void Init_graph_core() {
 
   //GRAPH CORE OBJECTS
   cVertex = rb_define_class("Vertex", rb_cObject);
+  rb_define_singleton_method( cVertex, "new", t_v_new, 1);
   rb_define_method(cVertex, "each_incoming", t_v_each_incoming, 0);
   rb_define_method(cVertex, "each_outgoing", t_v_each_outgoing, 0);
   rb_define_method(cVertex, "payload", t_v_get_payload, 0);
