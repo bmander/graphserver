@@ -2,8 +2,8 @@ require 'graph'
 
 p gg = Graph.create
 
-p a = gg.add_vertex( "a", "a" )
-p b = gg.add_vertex( "b", "b" )
+p a = gg.add_vertex( "a" )
+p b = gg.add_vertex( "b" )
 
 efail = gg.add_triphop_schedule("a", "b", [])
 
