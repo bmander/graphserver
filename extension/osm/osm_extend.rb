@@ -47,6 +47,7 @@ class Graphserver
       @con = connection
       @file = file
       @debug_level = debug_level.to_i
+      @count = 0
 
       #graphserver-specific variables
       @nodes = {}
@@ -236,6 +237,9 @@ class Graphserver
         ret << ","
         current = node
       end
+
+      @count += 1
+      if @count%1000==0 then $stderr.print( sprintf("\rProcessed %d osm ways", @count ) ) end
 
       ret[ret.size-1] =")"
       if @debug_level==2 then
@@ -594,24 +598,24 @@ class Graphserver
 
   #Overrides function which is not implemented in graphserver.rb
   def get_vertices_from_address(address)
-    # Good but too slow query
-#      SELECT t1.id, t1.name,
-#            (SELECT seg_id FROM osm_segments AS t2 WHERE t1.id=t2.id ORDER BY seg_id LIMIT 1) AS seg_id,
-#            (SELECT distance_sphere(StartPoint(t2.geom), t3.location) AS dist FROM osm_segments AS t2, osm_places AS t3 WHERE t1.id=t2.id ORDER BY dist LIMIT 1) AS dist_place,
-#            (SELECT name FROM (SELECT t3.name, distance_sphere(StartPoint(t2.geom), t3.location) AS dist FROM osm_segments AS t2, osm_places AS t3 WHERE t1.id=t2.id ORDER BY dist LIMIT 1) AS dist_place) AS place
-#      FROM osm_ways AS t1
-#      WHERE LOWER(name) LIKE '%#{address.downcase}%'
-#      ORDER BY dist_place
-#      LIMIT 20
+    # If there's a comma in the address string, separate direction and place
+    if address.count(',') > 0 then
+      address = address.split(',')
+      add_dir = address[0]
+      add_place = address[1]
+    else
+      add_dir = address
+      add_place = nil
+    end
 
-    # If address is too short the db queries wouldn't have sense
-    if address.length < 3 then return nil end
+    # If the direction field is too short the db queries wouldn't have sense
+    if add_dir.length < 3 then return nil end
 
     # Query db for ways that match the address
     ways = conn.exec <<-SQL
       SELECT name, id
       FROM osm_ways
-      WHERE LOWER(name) LIKE '%#{address.downcase}%'
+      WHERE LOWER(name) LIKE '%#{add_dir.downcase}%'
       ORDER BY name
       LIMIT 10
     SQL
@@ -634,15 +638,17 @@ class Graphserver
         LIMIT 1
       SQL
 
-      v[i]={}
-      v[i]['label'] = vertex[0] #Label of the vertex
-      v[i]['lat'] = vertex[1] #Latitude of the vertex
-      v[i]['lon'] = vertex[2] #Longitude of the vertex
-      v[i]['name'] = name #Name of the closest edge to the vertex
-      v[i]['dist'] = vertex[3] #Distance from the vertex to the nearest place
-      v[i]['place'] = vertex[4] #Name of the nearest place
-      i += 1
-#      puts "label=#{v['label']}, lat=#{v['lat']}, lon=#{v['lon']}, name=#{v['name']}, dist=#{v['dist']}, place=#{v['place']}"
+      # If no place was specified or the given place matches the nearest place
+      if add_place == nil or add_place.downcase == vertex[4].downcase then
+        v[i]={}
+        v[i]['label'] = vertex[0] #Label of the vertex
+        v[i]['lat'] = vertex[1] #Latitude of the vertex
+        v[i]['lon'] = vertex[2] #Longitude of the vertex
+        v[i]['name'] = name #Name of the closest edge to the vertex
+        v[i]['dist'] = vertex[3] #Distance from the vertex to the nearest place
+        v[i]['place'] = vertex[4] #Name of the nearest place
+        i += 1
+      end
     end
 
     return v
