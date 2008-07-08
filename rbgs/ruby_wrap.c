@@ -1,6 +1,6 @@
 #include "ruby.h"
-#include "fibheap.h"
-#include "dirfibheap.h"
+#include "graphserver/fibheap.h"
+#include "graphserver/dirfibheap.h"
 
 #include <sys/time.h>
 

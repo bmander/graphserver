@@ -1,4 +1,4 @@
-require 'graphserver.rb'
+require '../graphserver.rb'
 require 'test/unit'
 
 def create_ths

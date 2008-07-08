@@ -1,4 +1,4 @@
-require 'graph_core'
+require 'Graphserver'
 
 class Vertex
   def inspect
