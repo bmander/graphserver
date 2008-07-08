@@ -32,4 +32,16 @@ hashtable_utility: hashtable_utility.c hashtable_utility.h
 hashtable: hashtable.c hashtable.h
 	cc -I. -g -fno-strict-aliasing -O2 -fPIC -Wall -c hashtable.c
 
-
+install:
+	cp libgraphserver.so /usr/lib
+	mkdir -p /usr/include/graphserver
+	cp fibheap.h /usr/include/graphserver
+	cp dirfibheap.h /usr/include/graphserver
+	cp graph.h /usr/include/graphserver
+	cp hashtable_gs.h /usr/include/graphserver
+	cp hashtable_itr.h /usr/include/graphserver
+	cp edgetypes.h /usr/include/graphserver
+	cp hashtable.h /usr/include/graphserver
+	cp hashtable_utility.h /usr/include/graphserver
+	cp hashtable_private.h /usr/include/graphserver
+	cp statetypes.h /usr/include/graphserver
