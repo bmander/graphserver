@@ -772,7 +772,7 @@ static VALUE t_shortest_path_tree( VALUE self, VALUE from, VALUE to, VALUE init,
   return ret;
 }*/
 
-void Init_graph_core() {
+void Init_Graphserver() {
 
   //EDGETYPE OBJECTS
   cEdgePayload = rb_define_class( "EdgePayload", rb_cObject );
