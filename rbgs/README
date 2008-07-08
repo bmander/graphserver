@@ -1,0 +1,12 @@
+Create the ruby extension makefile
+
+$ ruby extconf.rb
+
+Make it
+
+$ make
+
+Test it
+
+$ cd test
+$ ruby test_ruby-wrapper
