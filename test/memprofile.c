@@ -1,5 +1,5 @@
 #include "stdio.h"
-#include "../../graph.h"
+#include "../graph.h"
 #include <valgrind/callgrind.h>
 
 int main() {
