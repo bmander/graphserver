@@ -47,7 +47,8 @@ class Graphserver
       @con = connection
       @file = file
       @debug_level = debug_level.to_i
-      @count = 0
+      @ncount = 0
+      @wcount = 0
 
       #graphserver-specific variables
       @nodes = {}
@@ -128,6 +129,10 @@ class Graphserver
         @con.putline "#{node.id}\t#{type}\t#{name}\tSRID=#{WGS84_LATLONG_EPSG};#{geom}\n"
         @con.endcopy
       end
+
+      @ncount += 1
+      if @ncount%100==0 then $stderr.print( sprintf("\rProcessed %d osm nodes", @ncount ) ) end
+      STDOUT.flush
     end
 
 
@@ -238,8 +243,9 @@ class Graphserver
         current = node
       end
 
-      @count += 1
-      if @count%1000==0 then $stderr.print( sprintf("\rProcessed %d osm ways", @count ) ) end
+      @wcount += 1
+      if @wcount%100==0 then $stderr.print( sprintf("\rProcessed %d osm ways", @wcount ) ) end
+      STDOUT.flush
 
       ret[ret.size-1] =")"
       if @debug_level==2 then

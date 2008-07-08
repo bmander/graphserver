@@ -26,4 +26,4 @@ ARGV.each do |file|
   gs.import_osm_to_db! file, debug_level=0
 end
 t1 = Time.now
-puts "Database setup accomplished in #{t1-t0} sec"
+puts "\nDatabase setup accomplished in #{t1-t0} sec"
