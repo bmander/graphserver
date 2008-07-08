@@ -141,7 +141,7 @@ class TestGraph:
         spt.destroy_as_spt()
         g.destroy()
         
-    def test_shortst_path_tree_triphopschedule(self):
+    def test_shortest_path_tree_triphopschedule(self):
         g = Graph()
         g.add_vertex("home")
         g.add_vertex("work")
@@ -485,7 +485,7 @@ class TestState:
         
         s2 = s.clone()
         
-        s.destroy()
+        s.clone()
         
         assert s2.time == 0
         assert s2.weight == 0

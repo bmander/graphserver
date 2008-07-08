@@ -1,1 +1,1 @@
-GRAPHS_CORE_SO = "/home/brandon/graphserver/trunk/core/graph_core.so"
+GRAPHS_CORE_SO = "/home/brandon/graphserver/trunk/core/libgraphserver.so"
