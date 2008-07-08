@@ -1,10 +1,10 @@
 try:
-    from graphserver.dll import lgs, free, cproperty, ccast, CShadow, instantiate
+    from graphserver.dll import lgs, free, cproperty, ccast, CShadow, instantiate, PayloadMethodTypes
 except ImportError:
     #so I can run this script from the same folder
-    from dll import lgs, free,cproperty, ccast, CShadow, instantiate
+    from dll import lgs, free,cproperty, ccast, CShadow, instantiate, PayloadMethodTypes
 from ctypes import string_at, byref, c_int, c_long, c_size_t, c_char_p, c_double, c_void_p, py_object
-from ctypes import Structure, pointer, cast, POINTER, addressof
+from ctypes import Structure, pointer, cast, POINTER, addressof, CFUNCTYPE
 from time import asctime, gmtime
 from time import time as now
 
@@ -377,57 +377,66 @@ class EdgePayload(CShadow, Walkable):
         if ptr is None:
             return None
         
-        payloadtype = EdgePayload._cget_type(ptr)
-        ret = instantiate(EdgePayload._subtypes[payloadtype])
+        # TODO support custom types
+        payloadtype = EdgePayload._subtypes[EdgePayload._cget_type(ptr)]
+        if payloadtype is PyPayloadBase:
+            return lgs.cpSoul(ptr)
+        ret = instantiate(payloadtype)
         ret.soul = ptr
         return ret
-        
-class PyPayload(EdgePayload):
-    def __init__(self, obj, name):
-        self.soul = lgs.pypNew(obj, name)
-        
-    def __del__(self):
-        #self._cdel(self.soul)
-        pass
 
-    object = cproperty(lgs.pypObject, py_object)
-    name = cproperty(lgs.pypName, c_char_p)
+class PyPayloadBase(EdgePayload):
+    _cmethods = None
+    _objects = []
     
-    """ Internal methods. """
-    def _walk(self, obj, ptr):
-        return obj.walk(State.from_pointer(ptr))
+    def __init__(self):
+        assert self._cmethods
+        self.soul = lgs.cpNew(py_object(self),self._cmethods)
+        self._objects.append(self)
     
-    def _walk_back(self, ptr):
-        return obj.walk_back(State.from_pointer(ptr))
-
-    """
-    def walk(self, state):
-        return self._cwalk
-        s = state.clone()
-        self.object.walk(state.clone())
-    
-    def walk_back(self, state):
-        s = state.clone()
-        self.object.walk_back(s)
-        return s
-    """
-    def __str__(self):
-        return self.to_xml()
-
     def to_xml(self):
-        return "<pypayload name='%s' class='%s'/>" % \
-            (self.name, self.object.__class__.__name__)
+        return "<pypayload type='%s' class='%s'/>" % (self.type, self.__class__.__name__)
     
-class NoOpPyPayload():
+    def _walk(self, stateptr):
+        print "_walk %s state ptr" % stateptr
+        self.walk(State.from_pointer(stateptr))
+    
+    def walk(self, state):
+        print "%s walking..." % self
+            
+    def __free__(self):
+        print "Freeing %s..." % self
+        self._objects.remove(self)
+        
+def walkme(obj, stateptr):
+    print "_walk %s state ptr" % stateptr
+    return None
+
+
+wmp = CFUNCTYPE(c_void_p, py_object, c_void_p)(PyPayloadBase._walk)
+PyPayloadBase._cmethods = \
+    lgs.defineCustomPayloadType(PayloadMethodTypes.destroy(PyPayloadBase.__free__),
+                                wmp, #CFUNCTYPE(c_void_p, c_void_p, c_void_p)(walkme), #PayloadMethodTypes.walk(walkme),
+                                None, #PayloadMethodTypes.walk_back(PyPayloadBase._walk_back),
+                                None, #PayloadMethodTypes.collapse(PyPayloadBase._collapse),
+                                None) #PayloadMethodTypes.collapse_back(PyPayloadBase._collapse_back)
+assert(PyPayloadBase._cmethods)
+    
+class NoOpPyPayload(PyPayloadBase):
+    def __init__(self, num):
+        self.num = num
+        PyPayloadBase.__init__(self)
+    
     """ Dummy class."""
     def walk(self, state):
-        print "%s walking..." % self.name
+        print "%s walking..." % self
         
     def walk_back(self, state):
-        print "%s walking back..." % self.name
-
-    
-
+        print "%s walking back..." % self
+        
+        
+    def to_xml(self):
+        return "<NoOpPyPayload type='%s' num='%s'/>" % (self.type, self.num)
     
 class Link(EdgePayload):
     name = cproperty(lgs.linkGetName, c_char_p)
@@ -538,7 +547,7 @@ Edge._cwalk = lgs.eWalk
 Edge._cwalk_back = lgs.eWalkBack
 
 
-EdgePayload._subtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,4:PyPayload,5:None}
+EdgePayload._subtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,4:PyPayloadBase,5:None}
 EdgePayload._cget_type = lgs.epGetType
 EdgePayload._cwalk = lgs.epWalk
 EdgePayload._cwalk_back = lgs.epWalkBack
@@ -546,10 +555,13 @@ EdgePayload._ccollapse = lgs.epCollapse
 EdgePayload._ccollapse_back = lgs.epCollapseBack
 EdgePayload._collapse_type = EdgePayload
 
-PyPayload._cnew = lgs.pypNew
-PyPayload._cdel = lgs.pypDestroy
-PyPayload._cwalk = lgs.pypWalk
-PyPayload._cwalk_back = lgs.pypWalkBack
+"""
+PyPayloadWrapper._cnew = lgs.pypNew
+PyPayloadWrapper._cdel = lgs.pypDestroy
+PyPayloadWrapper._cwalk = lgs.pypWalk
+PyPayloadWrapper._cwalk_back = lgs.pypWalkBack
+"""
+
 
 CalendarDay._cnew = lgs.calNew
 CalendarDay._cappend_day = ccast(lgs.calAppendDay, CalendarDay)

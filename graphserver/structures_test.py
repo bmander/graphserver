@@ -4,7 +4,6 @@ tracecount = {}
 
 def trace():
     import sys
-    return 
     caller = inspect.stack()[1][3]
     if caller not in tracecount:
         tracecount[caller] = -1
@@ -271,31 +270,62 @@ class TestStreet:
         assert after.prev_edge_name == "longstreet"
 
 class TestPyPayload:
-    def test_basic(self):
-        e = NoOpPyPayload()
-        p = PyPayload(e,"apypayload")
-        assert p.name == "apypayload"
-        assert p.object
-        assert e == p.object
-        print "%s" % p.object
-        print p
-        
-    def test_cast(self):
+    def _minimal_graph(self):
         g = Graph()
         
         g.add_vertex( "Seattle" )
         g.add_vertex( "Portland" )
-
-        e = NoOpPyPayload()
-        p = PyPayload(e,"apypayload")
+        return g
+    
+    def test_basic(self):
+        p = NoOpPyPayload(1.1)
         
-        ed = g.add_edge( "Seattle", "Portland", p )
-        print p, ed.payload
-        assert ed.payload.name == p.name
-        assert ed.payload.object == p.object
-
+    def test_cast(self):
+        g = self._minimal_graph()
+        e = NoOpPyPayload(1.2)
+        
+        ed = g.add_edge( "Seattle", "Portland", e )
+        #print ed.payload
+        ep = ed.payload # uses EdgePayload.from_pointer internally.
+        assert e == ep
+        assert e == ed.payload
+        assert ep.num == 1.2
+    
+        
+    
     def test_walk(self):
-        class IncTimePayload:
+        class IncTimePayload(PyPayloadBase):
+            def walk(self, state):
+                state.time = state.time + 1
+            
+            def walk_back(self, state):
+                state.time = state.time - 1
+        g = self._minimal_graph()
+        
+        ed = g.add_edge( "Seattle", "Portland", IncTimePayload())
+        assert(isinstance(ed.payload,IncTimePayload))
+        s = State(0)
+        assert s.time == 0
+        ed.walk(s)
+        
+        
+    def xtestx_xtestx_walk(self):
+        from graphserver.dll import lgs
+        class Foo():
+            def test_walk(self, s):
+                print "Test walking %s" % s
+            def __str__(self):
+                print "F!!!!!"
+                return "f"
+            
+        foo = py_object([1])
+        print "foo %s" % foo
+        #lgs.testWalk(foo, State(0).soul, 1)
+        lgs.callStr(foo)
+        assert False
+
+    def xtest_walk(self):
+        class IncTimePayload(PyPayloadInterface):
             def walk(self, state):
                 state.time = state.time + 1
             
@@ -303,12 +333,15 @@ class TestPyPayload:
                 state.time = state.time - 1
         
         e = IncTimePayload()
-        p = PyPayload(e,"incpayload")
+        p = PyPayloadWrapper(e,"incpayload")
         s = State(0)
-        print s
+        assert s.time == 0
+        #print s
+        return
         s = p.walk(s)
-        print s
+        #print s
         assert s.time == 1
+        assert e
         """
         
         g = Graph()

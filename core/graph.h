@@ -38,18 +38,18 @@ struct Vertex {
    ListNode* incoming;
    char* label;
    State* payload;
-} ;
+};
 
 struct Edge {
   Vertex* from;
   Vertex* to;
   EdgePayload* payload;
-} ;
+};
 
 struct ListNode {
    Edge* data;
    ListNode* next;
-} ;
+};
 
 //GRAPH FUNCTIONS
 

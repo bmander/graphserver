@@ -98,7 +98,7 @@ epDestroy( EdgePayload* this ) {
       linkDestroy( (Link*)this );
       break;
     case PL_EXTERNVALUE:
-      pypDestroy( (PyPayload*)this );
+      cpDestroy( (CustomPayload*)this );
       break;
     default:
       free( this );
@@ -124,11 +124,9 @@ epWalk( EdgePayload* this, State* params ) {
       return triphopWalk((TripHop*)this, params );
     case PL_LINK:
       return linkWalk((Link*)this, params);
-#ifdef SUPPORT_PYTHON
     case PL_EXTERNVALUE:
-      return pypWalk( (PyPayload*)this, params );
+      return cpWalk( (CustomPayload*)this, params );
       break;
-#endif
     default:
       return NULL;
   }
@@ -149,7 +147,7 @@ epWalkBack( EdgePayload* this, State* params ) {
     case PL_LINK:
       return linkWalkBack( (Link*)this, params );
     case PL_EXTERNVALUE:
-      return pypWalkBack( (PyPayload*)this, params );
+      return cpWalkBack( (CustomPayload*)this, params );
       break;
     default:
       return NULL;
@@ -161,6 +159,8 @@ epCollapse( EdgePayload* this, State* params ) {
   switch( this->type ) {
     case PL_TRIPHOPSCHED:
       return (EdgePayload*)thsCollapse( (TripHopSchedule*)this, params) ;
+    case PL_EXTERNVALUE:
+      return (EdgePayload*)cpCollapse( (CustomPayload*)this, params );
     default:
       return (EdgePayload*)this;
   }
@@ -171,6 +171,8 @@ epCollapseBack( EdgePayload* this, State* params ) {
   switch( this->type ) {
     case PL_TRIPHOPSCHED:
       return (EdgePayload*)thsCollapseBack( (TripHopSchedule*)this, params);
+    case PL_EXTERNVALUE:
+      return (EdgePayload*)cpCollapseBack( (CustomPayload*)this, params );
     default:
       return (EdgePayload*)this;
   }
@@ -344,33 +346,75 @@ triphopTripId( TripHop* this ) { return this->trip_id; }
 TripHop*
 thsGetHop(TripHopSchedule* this, int i) { return &this->hops[i]; }
 
-PyPayload*
-pypNew(PyObject* obj, char* name) {
-	PyPayload* ret = (PyPayload*)malloc(sizeof(PyPayload));
-	ret->type = PL_EXTERNVALUE;
-	Py_INCREF(obj);
-	ret->pyobject = obj;
-	ret->name = (char*)malloc((strlen(name)+1)*sizeof(char));
-	strcpy(ret->name, name);	
-	return ret;
+
+// CUSTOM Payload Functions
+
+PayloadMethods*
+defineCustomPayloadType(void (*destroy)(void*),
+						State* (*walk)(void*,State*),
+						State* (*walkback)(void*,State*),
+						EdgePayload* (*collapse)(void*,State*),
+						EdgePayload* (*collapseBack)(void*,State*)) {
+	PayloadMethods* this = (PayloadMethods*)malloc(sizeof(PayloadMethods));
+	this->destroy = destroy;
+	this->walk = walk;
+	this->walkBack = walkback;
+	this->collapse = collapse;
+	this->collapseBack = collapseBack;
+	return this;
+}
+
+void 
+undefineCustomPayloadType( PayloadMethods* this ) {
+	free(this);	
+}
+
+CustomPayload*
+cpNew( void* soul, PayloadMethods* methods ) {
+	CustomPayload* this = (CustomPayload*)malloc(sizeof(CustomPayload));
+	this->type = PL_EXTERNVALUE;
+	this->soul = soul;
+	this->methods = methods;
+	return this;
 }
 
 void
-pypDestroy( PyPayload* this ) {
-	Py_DECREF(this->pyobject);
-	free( this->name );
+cpDestroy( CustomPayload* this ) {
+	this->methods->destroy(this->soul);
 	free( this );
 }
 
-char*
-pypName( PyPayload* this ) {
-	return this->name;	
+void*
+cpSoul( CustomPayload* this ) {
+	return this->soul;
 }
 
-PyObject*
-pypObject( PyPayload* this ) {
-	Py_INCREF(this->pyobject);
-	return this->pyobject;	
+PayloadMethods*
+cpMethods( CustomPayload* this ) {
+	return this->methods;
+}
+
+State*
+cpWalk(CustomPayload* this, State* params) {
+	return this->methods->walk(this->soul, params);	
+}
+State*
+cpWalkBack(CustomPayload* this, State* params) {
+	return this->methods->walkBack(this->soul, params);	
+}
+
+EdgePayload*
+cpCollapse(CustomPayload* this, State* params) {
+	if (this->methods->collapse)
+		return this->methods->collapse(this->soul, params);
+	return (EdgePayload*)this;	
+}
+
+EdgePayload*
+cpCollapseBack(CustomPayload* this, State* params) {
+	if (this->methods->collapseBack)
+		return this->methods->collapseBack(this->soul, params);
+	return (EdgePayload*)this;	
 }
 
 #undef ROUTE_REVERSE

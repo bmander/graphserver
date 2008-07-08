@@ -228,31 +228,3 @@ inline TripHop* thsGetLastHop(TripHopSchedule* this, long time) {
     return &(this->hops[low]);
 #endif
 }
-
-inline State*
-#ifndef ROUTE_REVERSE
-pypWalk(PyPayload* this, State* params) {
-#else
-pypWalkBack(PyPayload* this, State* params) {
-#endif
-	State* ret = stateDup( params );
-    ret->prev_edge_type = PL_EXTERNVALUE;
-    ret->prev_edge_name = this->name;
-    printf("Calling methods...1\n");
-	PyInt_Check(this->pyobject);    
-    printf("Calling methods...2\n");
-    PyObject* s = PyInt_FromLong((long)params);
-    Py_INCREF(s); 
-#ifndef ROUTE_REVERSE
-	PyObject* r = PyObject_CallMethod(this->pyobject, "_walk_back", "O", s);
-#else
-	PyObject* r = PyObject_CallMethod(this->pyobject, "_walk", "O", s);
-#endif
-    Py_DECREF(s); 
-	if (r) {
-		Py_DECREF(r);
-	} else {
-		PyErr_Print();	
-	}
-  	return ret;
-}

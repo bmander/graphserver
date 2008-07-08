@@ -232,34 +232,55 @@ thsGetServiceId(TripHopSchedule* this);
 TripHop*
 thsGetHop(TripHopSchedule* this, int i);
 
-#define SUPPORT_PYTHON 1
 
-//#ifdef SUPPORT_PYTHON
-#include <Python.h>
+typedef struct PayloadMethods {
+	void (*destroy)(void*);
+	State* (*walk)(void*,State*);
+	State* (*walkBack)(void*,State*);
+	EdgePayload* (*collapse)(void*,State*);
+	EdgePayload* (*collapseBack)(void*,State*);
+	//char* (*to_str)(void*);
+} PayloadMethods;
 
-typedef struct PyPayload {
+typedef struct CustomPayload {
   edgepayload_t type;
-  char* name;
-  PyObject* pyobject;
-} PyPayload;
+  void* soul;
+  PayloadMethods* methods;
+} CustomPayload;
 
-PyPayload*
-pypNew(PyObject* obj, char* name); 
+PayloadMethods*
+defineCustomPayloadType(void (*destroy)(void*),
+						State* (*walk)(void*,State*),
+						State* (*walkback)(void*,State*),
+						EdgePayload* (*collapse)(void*,State*),
+						EdgePayload* (*collapseBack)(void*,State*));
+					
+
+void 
+undefineCustomPayloadType( PayloadMethods* this );
+
+CustomPayload*
+cpNew( void* soul, PayloadMethods* methods );
 
 void
-pypDestroy( PyPayload* this );
+cpDestroy( CustomPayload* this );
 
-char*
-pypName( PyPayload* this );
+void*
+cpSoul( CustomPayload* this );
 
-PyObject*
-pypObject( PyPayload* this );
-
-State*
-pypWalk(PyPayload *this, State *params);
+PayloadMethods*
+cpMethods( CustomPayload* this );
 
 State*
-pypWalkBack(PyPayload *this, State *params);
-//#endif
+cpWalk(CustomPayload* this, State* params);
+
+State*
+cpWalkBack(CustomPayload* this, State* params);
+
+EdgePayload*
+cpCollapse(CustomPayload* this, State* params);
+
+EdgePayload*
+cpCollapseBack(CustomPayload* this, State* params);
 
 #endif

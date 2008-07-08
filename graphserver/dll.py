@@ -131,12 +131,6 @@ pycapi(lgs.epWalkBack, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.epCollapse, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.epCollapseBack, c_void_p, [c_void_p, c_void_p])
 
-#PYPAYLOAD API
-pycapi(lgs.pypNew, c_void_p, [py_object, c_void_p])
-pycapi(lgs.pypWalk, c_void_p, [c_void_p, c_void_p])
-pycapi(lgs.pypWalkBack, c_void_p, [c_void_p, c_void_p])
-
-
 #LINKNODE API
 pycapi(lgs.linkNew, c_void_p)
 pycapi(lgs.linkWalk, c_void_p, [c_void_p, c_void_p])
@@ -158,3 +152,22 @@ pycapi(lgs.thsCollapseBack, c_void_p, [c_void_p, c_void_p])
 #TRIPHOP API
 pycapi(lgs.triphopWalk, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.triphopWalkBack, c_void_p, [c_void_p, c_void_p])
+
+#CUSTOM TYPE API
+class PayloadMethodTypes:
+    destroy = CFUNCTYPE(c_void_p, c_void_p)
+    walk = CFUNCTYPE(c_void_p, py_object, c_void_p)
+    walk_back = CFUNCTYPE(c_void_p, py_object, c_void_p)
+    collapse = CFUNCTYPE(c_void_p, py_object, c_void_p)
+    collapse_back = CFUNCTYPE(c_void_p, py_object, c_void_p)
+    
+pycapi(lgs.cpSoul, py_object, [c_void_p])
+lgs.defineCustomPayloadType.restype = c_void_p
+"""
+pycapi(lgs.defineCustomPayloadType, 
+       c_void_p, [PayloadMethodTypes.destroy, 
+                  PayloadMethodTypes.walk,
+                  PayloadMethodTypes.walk_back,
+                  PayloadMethodTypes.collapse,
+                  PayloadMethodTypes.collapse_back])
+"""
