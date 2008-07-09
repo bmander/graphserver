@@ -57,6 +57,10 @@ class Graphserver
       #some class variables to avoid memory leaking caused by local data
       @query = ""
       @qcount = 0
+      @type = ""
+      @name = ""
+      @geom = ""
+
     end
 
     # Subclass listener
@@ -145,12 +149,12 @@ class Graphserver
       @nodes[node.id] = [node.lat, node.lon]
       # If the node is a place
       if node.tags['place'] then
-        type = "#{node.tags['place']}"
-        name = "#{node.tags['name'] || 'Unnamed'}".gsub(/'/,"''") #Substitute ' by '' for SQL queries
-        geom = "SRID=#{WGS84_LATLONG_EPSG};POINT(#{node.lon} #{node.lat})"
+        @type = "#{node.tags['place']}"
+        @name = "#{node.tags['name'] || 'Unnamed'}".gsub(/'/,"''") #Substitute ' by '' for SQL queries
+        @geom = "SRID=#{WGS84_LATLONG_EPSG};POINT(#{node.lon} #{node.lat})"
         # Import place to the DB
         @query << "insert into osm_places (id, type, name, location)"
-        @query << " VALUES (\'#{node.id}\',\'#{type}\',\'#{name}\',\'#{geom}\');\n"
+        @query << " VALUES (\'#{node.id}\',\'#{@type}\',\'#{@name}\',\'#{@geom}\');\n"
         @qcount += 1
       end
     end
@@ -221,8 +225,8 @@ class Graphserver
     # Processes an OSM way in order to load the osm data to the database
     def handle_way_db way
 
-      name = "#{way.tags['name'] || 'Unnamed'}".gsub(/'/,"''") #Substitute ' by '' for SQL queries
-      type = "#{way.tags['highway']}"
+      @name = "#{way.tags['name'] || 'Unnamed'}".gsub(/'/,"''") #Substitute ' by '' for SQL queries
+      @type = "#{way.tags['highway']}"
       #type = "#{way.tags['highway'] || way.tags['railway'] || way.tags['aerialway'] || way.tags['route'] || "Other"}"
       # If the oneway tag is not set or it is set to none, set oneway to false
       if not way.tags['oneway'] or way.tags['oneway']=='false' or way.tags['oneway']=='no' then
@@ -236,7 +240,7 @@ class Graphserver
 #      @conn.putline "#{way.id}\t#{name}\t#{type}\t#{oneway}\t#{@file}\n"
 #      @conn.endcopy
       @query << "insert into osm_ways (id, name, type, oneway, file)"
-      @query << " VALUES (\'#{way.id}\',\'#{name}\',\'#{type}\',\'#{oneway}\',\'#{@file}\');\n"
+      @query << " VALUES (\'#{way.id}\',\'#{@name}\',\'#{@type}\',\'#{oneway}\',\'#{@file}\');\n"
       @qcount += 1
 
       ret = "LINESTRING("
@@ -256,13 +260,13 @@ class Graphserver
           lon1 = @nodes[to_id][1].to_s
           # Import street in regular sense to the DB
 #          geom = "LINESTRING(#{lon0} #{lat0},#{lon1} #{lat1})"
-          geom = "SRID=#{WGS84_LATLONG_EPSG};LINESTRING(#{lon0} #{lat0},#{lon1} #{lat1})"
+          @geom = "SRID=#{WGS84_LATLONG_EPSG};LINESTRING(#{lon0} #{lat0},#{lon1} #{lat1})"
 #          @conn.exec "COPY osm_segments (seg_id, id, from_id, to_id, geom ) FROM STDIN"
 #          @conn.putline "#{way.id}-#{node_count.to_s.rjust(digits,'0')}\t#{way.id}\t#{from_id}\t#{to_id}\tSRID=#{WGS84_LATLONG_EPSG};#{geom}\n"
 #          @conn.endcopy
           @query << "insert into osm_segments (seg_id, id, from_id, to_id, geom )"
           @query << " VALUES (\'#{way.id}\',\'#{node_count.to_s.rjust(digits,'0')}\',"
-          @query << " VALUES (\'#{way.id}\',\'#{from_id}\',\'#{to_id}\',\'#{geom}\');\n"
+          @query << " VALUES (\'#{way.id}\',\'#{from_id}\',\'#{to_id}\',\'#{@geom}\');\n"
           @qcount += 1
           node_count += 1
         end
