@@ -53,6 +53,10 @@ class Graphserver
       @nodes = {}
       @gg = graph
       @conn = connection
+
+      #some class variables to avoid memory leaking caused by local data
+      @query = ""
+      @qcount = 0
     end
 
     # Subclass listener
@@ -77,7 +81,7 @@ class Graphserver
     # Subclass listener
     # A method that processes the end of an xml tag (i.e. </node>)
     def tag_end name
-
+      # Check the tag name
       case name
         when 'node'
           if @gg then
@@ -86,8 +90,10 @@ class Graphserver
             handle_node_db @curr_obj
           end
           @ncount += 1
-          if @ncount%100==0 then $stderr.print( sprintf("\rProcessed %d osm nodes", @ncount ) ) end
-          STDOUT.flush
+          if @ncount%1000==0 then
+            $stderr.print( sprintf("\rProcessed %d osm nodes", @ncount ) )
+            STDOUT.flush
+          end
         when 'way'
           # We only process walking/driving navigable ways
           if @curr_obj.tags['highway'] then
@@ -103,8 +109,20 @@ class Graphserver
             end
           end
           @wcount += 1
-          if @wcount%100==0 then $stderr.print( sprintf("\rProcessed %d osm ways", @wcount ) ) end
-          STDOUT.flush
+          if @wcount%100==0 then
+            $stderr.print( sprintf("\rProcessed %d osm ways", @wcount ) )
+            STDOUT.flush
+          end
+        when 'osm'
+          # End of file. Perform last query
+          @conn.exec @query
+      end
+
+      # Check if @query stores a sufficient number of operations to query the db
+      if @qcount>=100 then
+        @conn.exec @query
+        @query = ""
+        @qcount = 0
       end
 
     end
@@ -127,16 +145,13 @@ class Graphserver
       @nodes[node.id] = [node.lat, node.lon]
       # If the node is a place
       if node.tags['place'] then
-#        type = "#{node.tags['place']}"
-#        name = "#{node.tags['name'] || 'Unnamed'}"
-#        # Import place to the DB
-#        geom = "POINT(#{node.lon} #{node.lat})"
-#        @conn.exec "COPY osm_places (id, type, name, location ) FROM STDIN"
-#        @conn.putline "#{node.id}\t#{type}\t#{name}\tSRID=#{WGS84_LATLONG_EPSG};#{geom}\n"
-#        @conn.endcopy
-        @conn.exec "COPY osm_places (id, type, name, location ) FROM STDIN"
-        @conn.putline "#{node.id}\t#{node.tags['place']}\t#{node.tags['name'] || 'Unnamed'}\tSRID=#{WGS84_LATLONG_EPSG};POINT(#{node.lon} #{node.lat})\n"
-        @conn.endcopy
+        type = "#{node.tags['place']}"
+        name = "#{node.tags['name'] || 'Unnamed'}".gsub(/'/,"''") #Substitute ' by '' for SQL queries
+        geom = "SRID=#{WGS84_LATLONG_EPSG};POINT(#{node.lon} #{node.lat})"
+        # Import place to the DB
+        @query << "insert into osm_places (id, type, name, location)"
+        @query << " VALUES (\'#{node.id}\',\'#{type}\',\'#{name}\',\'#{geom}\');\n"
+        @qcount += 1
       end
     end
 
@@ -206,7 +221,7 @@ class Graphserver
     # Processes an OSM way in order to load the osm data to the database
     def handle_way_db way
 
-      name = "#{way.tags['name'] || 'Unnamed'}"
+      name = "#{way.tags['name'] || 'Unnamed'}".gsub(/'/,"''") #Substitute ' by '' for SQL queries
       type = "#{way.tags['highway']}"
       #type = "#{way.tags['highway'] || way.tags['railway'] || way.tags['aerialway'] || way.tags['route'] || "Other"}"
       # If the oneway tag is not set or it is set to none, set oneway to false
@@ -217,9 +232,12 @@ class Graphserver
       end
 
       # Puts the street in the osm_ways table
-      @conn.exec "COPY osm_ways (id, name, type, oneway, file) FROM STDIN"
-      @conn.putline "#{way.id}\t#{name}\t#{type}\t#{oneway}\t#{@file}\n"
-      @conn.endcopy
+#      @conn.exec "COPY osm_ways (id, name, type, oneway, file) FROM STDIN"
+#      @conn.putline "#{way.id}\t#{name}\t#{type}\t#{oneway}\t#{@file}\n"
+#      @conn.endcopy
+      @query << "insert into osm_ways (id, name, type, oneway, file)"
+      @query << " VALUES (\'#{way.id}\',\'#{name}\',\'#{type}\',\'#{oneway}\',\'#{@file}\');\n"
+      @qcount += 1
 
       ret = "LINESTRING("
       node_count = 0
@@ -237,10 +255,15 @@ class Graphserver
           lat1 = @nodes[to_id][0].to_s
           lon1 = @nodes[to_id][1].to_s
           # Import street in regular sense to the DB
-          geom = "LINESTRING(#{lon0} #{lat0},#{lon1} #{lat1})"
-          @conn.exec "COPY osm_segments (seg_id, id, from_id, to_id, geom ) FROM STDIN"
-          @conn.putline "#{way.id}-#{node_count.to_s.rjust(digits,'0')}\t#{way.id}\t#{from_id}\t#{to_id}\tSRID=#{WGS84_LATLONG_EPSG};#{geom}\n"
-          @conn.endcopy
+#          geom = "LINESTRING(#{lon0} #{lat0},#{lon1} #{lat1})"
+          geom = "SRID=#{WGS84_LATLONG_EPSG};LINESTRING(#{lon0} #{lat0},#{lon1} #{lat1})"
+#          @conn.exec "COPY osm_segments (seg_id, id, from_id, to_id, geom ) FROM STDIN"
+#          @conn.putline "#{way.id}-#{node_count.to_s.rjust(digits,'0')}\t#{way.id}\t#{from_id}\t#{to_id}\tSRID=#{WGS84_LATLONG_EPSG};#{geom}\n"
+#          @conn.endcopy
+          @query << "insert into osm_segments (seg_id, id, from_id, to_id, geom )"
+          @query << " VALUES (\'#{way.id}\',\'#{node_count.to_s.rjust(digits,'0')}\',"
+          @query << " VALUES (\'#{way.id}\',\'#{from_id}\',\'#{to_id}\',\'#{geom}\');\n"
+          @qcount += 1
           node_count += 1
         end
         ret <<  "#{@nodes[node][1]} #{@nodes[node][0]}"
