@@ -17,24 +17,23 @@ else:
     
 lgs = PyDLL( so_loc )
 
-free = CDLL('libc.so.6').free
+class _EmptyClass(object):
+    pass
 
-import copy
 def instantiate(cls):
     """instantiates a class without calling the constructor"""
-    ret = copy._EmptyClass()
+    ret = _EmptyClass()
     ret.__class__ = cls
     return ret
 
 def cleanup():
-    #lgeos.finishGEOS()
+    """ Perform any necessary cleanup when the library is unloaded."""
     pass
 
 atexit.register(cleanup)
 
-#lgeos.initGEOS(notice_h, error_h)
-
-class CShadow():
+class CShadow(object):
+    """ Base class for all objects that shadow a C structure."""
     @classmethod
     def from_pointer(cls, ptr):
         if ptr is None:
@@ -45,13 +44,15 @@ class CShadow():
         return ret
 
 def pycapi(func, rettype, cargs=None):
+    """Convenience function for setting arguments and return types."""
     func.restype = rettype
     if cargs:
         func.argtypes = cargs
 
-def cproperty(cfunc, restype, ptrclass=None, setter=None):
-    """if restype is c_null_p, specify a class to convert the pointer into"""
-    
+
+def caccessor(cfunc, restype, ptrclass=None):
+    """Wraps a C data accessor in a python function.
+       If a ptrclass is provided, the result will be converted to by the class' from_pointer method."""
     cfunc.restype = restype
     cfunc.argtypes = [c_void_p]
     if ptrclass:
@@ -60,22 +61,27 @@ def cproperty(cfunc, restype, ptrclass=None, setter=None):
             return ptrclass.from_pointer(ret)
     else:
         def prop(self):
-            return  cfunc( c_void_p( self.soul ) )
-    if not setter:
-        return property(prop)
-    
-    setter.restype.argtypes = [c_void_p, restype]
-    if ptrclass:        
-        def set(self, arg):
-            if arg:
-                setter(self.soul, arg.soul)
-            else:
-                setter(self.soul, None)
+            return cfunc( c_void_p( self.soul ) )
+    return prop
+
+def cmutator(cfunc, argtype, ptrclass=None):
+    """Wraps a C data mutator in a python function.  
+       If a ptrclass is provided, the soul of the argument will be used."""
+    cfunc.argtypes = [c_void_p, argtype]
+    if ptrclass:
+        def propset(self, arg):
+            cfunc( self.soul, arg.soul )
     else:
-        def set(self, arg):
-            setter(self.soul, arg)
-    
-    return property(prop, set)
+        def propset(self, arg):
+            cfunc( self.soul, arg )
+    return propset
+
+def cproperty(cfunc, restype, ptrclass=None, setter=None):
+    """if restype is c_null_p, specify a class to convert the pointer into"""
+    if not setter:
+        return property(caccessor(cfunc, restype, ptrclass))
+    return property(caccessor(cfunc, restype, ptrclass),
+                    cmutator(setter, restype, ptrclass))
 
 def ccast(func, cls):
     """Wraps a function to casts the result of a function (assumed c_void_p)
@@ -155,6 +161,7 @@ pycapi(lgs.triphopWalkBack, c_void_p, [c_void_p, c_void_p])
 
 #CUSTOM TYPE API
 class PayloadMethodTypes:
+    """ Enumerates the ctypes of the function pointers."""
     destroy = CFUNCTYPE(c_void_p, c_void_p)
     walk = CFUNCTYPE(c_void_p, py_object, c_void_p)
     walk_back = CFUNCTYPE(c_void_p, py_object, c_void_p)
@@ -162,12 +169,5 @@ class PayloadMethodTypes:
     collapse_back = CFUNCTYPE(c_void_p, py_object, c_void_p)
     
 pycapi(lgs.cpSoul, py_object, [c_void_p])
+# args are not specified to allow for None
 lgs.defineCustomPayloadType.restype = c_void_p
-"""
-pycapi(lgs.defineCustomPayloadType, 
-       c_void_p, [PayloadMethodTypes.destroy, 
-                  PayloadMethodTypes.walk,
-                  PayloadMethodTypes.walk_back,
-                  PayloadMethodTypes.collapse,
-                  PayloadMethodTypes.collapse_back])
-"""

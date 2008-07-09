@@ -285,78 +285,61 @@ class TestPyPayload:
         e = NoOpPyPayload(1.2)
         
         ed = g.add_edge( "Seattle", "Portland", e )
-        #print ed.payload
+        print ed.payload
+        assert e == ed.payload
         ep = ed.payload # uses EdgePayload.from_pointer internally.
         assert e == ep
-        assert e == ed.payload
         assert ep.num == 1.2
     
         
     
     def test_walk(self):
-        class IncTimePayload(PyPayloadBase):
-            def walk(self, state):
-                state.time = state.time + 1
+        class IncTimePayload(GenericPyPayload):
+            def walk_impl(self, state):
+                state.time = state.time + 10
+                state.weight = 5
+                return state
             
-            def walk_back(self, state):
-                state.time = state.time - 1
+            def walk_back_impl(self, state):
+                state.time = state.time - 10
+                state.weight = 0
+                return state
+            
+            def collapse(self, state):
+                return Link()
+            
         g = self._minimal_graph()
-        
         ed = g.add_edge( "Seattle", "Portland", IncTimePayload())
         assert(isinstance(ed.payload,IncTimePayload))
-        s = State(0)
-        assert s.time == 0
-        ed.walk(s)
-        
-        
-    def xtestx_xtestx_walk(self):
-        from graphserver.dll import lgs
-        class Foo():
-            def test_walk(self, s):
-                print "Test walking %s" % s
-            def __str__(self):
-                print "F!!!!!"
-                return "f"
-            
-        foo = py_object([1])
-        print "foo %s" % foo
-        #lgs.testWalk(foo, State(0).soul, 1)
-        lgs.callStr(foo)
-        assert False
-
-    def xtest_walk(self):
-        class IncTimePayload(PyPayloadInterface):
-            def walk(self, state):
-                state.time = state.time + 1
-            
-            def walk_back(self, state):
-                state.time = state.time - 1
-        
-        e = IncTimePayload()
-        p = PyPayloadWrapper(e,"incpayload")
-        s = State(0)
-        assert s.time == 0
-        #print s
-        return
-        s = p.walk(s)
-        #print s
+        s = State(1)
         assert s.time == 1
-        assert e
-        """
+        s1 = ed.walk(s)
+        assert s1
+        assert s.time == 1
+        assert s1.soul != s.soul
+        assert s1.time == 11
+        assert s1.weight == 5
+        s2 = ed.walk_back(s1)
+        assert s2
+        assert s2.time == 1
+        assert s2.weight == 0
         
-        g = Graph()
-        
-        g.add_vertex( "Seattle" )
-        g.add_vertex( "Portland" )
+    def test_failures(self):
+        class ExceptionRaiser(GenericPyPayload):
+            def bad_stuff(self, state):
+                raise "I am designed to fail."
+            walk_impl = bad_stuff
+            walk_back_impl = bad_stuff
+            collapse_impl = bad_stuff
+            collapse_back_impl = bad_stuff
 
-        e = IncTimePayload()
-        p = PyPayload(e,"incpayload")
-        
-        ed = g.add_edge( "Seattle", "Portland", p )
-        """
-        
-        
-            
+        g = self._minimal_graph()
+        ed = g.add_edge( "Seattle", "Portland", ExceptionRaiser())
+        ed.walk(State(0))  
+        ed.walk_back(State(0))
+        ed.payload.collapse(State(0))
+        ed.payload.collapse_back(State(0))
+
 
 class TestLink:
     def link_test(self):

@@ -69,6 +69,12 @@ stateSetDistWalked( State* this, double dist );
 void
 stateSetNumTransfers( State* this, int n);
 
+void
+stateSetPrevEdgeType( State* this, edgepayload_t );
+
+void
+stateSetPrevEdgeName( State* this, char* name );
+
 //---------------DECLARATIONS FOR EDGEPAYLOAD CLASS---------------------
 
 typedef struct EdgePayload {

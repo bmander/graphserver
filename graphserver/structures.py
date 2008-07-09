@@ -1,10 +1,11 @@
 try:
-    from graphserver.dll import lgs, free, cproperty, ccast, CShadow, instantiate, PayloadMethodTypes
+    from graphserver.dll import lgs, cproperty, ccast, CShadow, instantiate, PayloadMethodTypes
 except ImportError:
     #so I can run this script from the same folder
-    from dll import lgs, free,cproperty, ccast, CShadow, instantiate, PayloadMethodTypes
+    from dll import lgs, cproperty, ccast, CShadow, instantiate, PayloadMethodTypes
 from ctypes import string_at, byref, c_int, c_long, c_size_t, c_char_p, c_double, c_void_p, py_object
 from ctypes import Structure, pointer, cast, POINTER, addressof, CFUNCTYPE
+from _ctypes import Py_INCREF, Py_DECREF
 from time import asctime, gmtime
 from time import time as now
 
@@ -40,6 +41,7 @@ CType Definitions
 """
 
 ServiceIdType = c_int
+
 
 """
 
@@ -244,12 +246,12 @@ class State(CShadow):
         return ret + "</state>"
         
     time           = cproperty(lgs.stateGetTime, c_long, setter=lgs.stateSetTime)
-    weight         = cproperty(lgs.stateGetWeight, c_long)
-    dist_walked    = cproperty(lgs.stateGetDistWalked, c_double)
-    num_transfers  = cproperty(lgs.stateGetNumTransfers, c_int)
-    prev_edge_type = cproperty(lgs.stateGetPrevEdgeType, c_int)
-    prev_edge_name = cproperty(lgs.stateGetPrevEdgeName, c_char_p)
-    calendar_day   = cproperty(lgs.stateCalendarDay, c_void_p, CalendarDay)
+    weight         = cproperty(lgs.stateGetWeight, c_long, setter=lgs.stateSetWeight)
+    dist_walked    = cproperty(lgs.stateGetDistWalked, c_double, setter=lgs.stateSetDistWalked)
+    num_transfers  = cproperty(lgs.stateGetNumTransfers, c_int, setter=lgs.stateSetNumTransfers)
+    prev_edge_type = cproperty(lgs.stateGetPrevEdgeType, c_int) # should not use: setter=lgs.stateSetPrevEdgeType)
+    prev_edge_name = cproperty(lgs.stateGetPrevEdgeName, c_char_p, setter=lgs.stateSetPrevEdgeName)
+    calendar_day   = cproperty(lgs.stateCalendarDay, c_void_p, CalendarDay, setter=lgs.stateSetCalendarDay)
         
 
 class Vertex(CShadow):
@@ -340,12 +342,7 @@ class Edge(CShadow, Walkable):
         return self._cpayload(self.soul)
         
     def walk(self, state):
-        #State* eWalk(Edge *this, State* params) ;
-        statesoul = self._cwalk(self.soul, state.soul)
-        return State.from_pointer( statesoul )
-    
-#collapsable(Edge, lgs.epCollapse, lgs.epCollapseBack)
-
+        return self._cwalk(self.soul, state.soul)
 
 
 class ListNode(CShadow):
@@ -379,59 +376,132 @@ class EdgePayload(CShadow, Walkable):
         
         # TODO support custom types
         payloadtype = EdgePayload._subtypes[EdgePayload._cget_type(ptr)]
-        if payloadtype is PyPayloadBase:
-            return lgs.cpSoul(ptr)
+        if payloadtype is GenericPyPayload:
+            p = lgs.cpSoul(ptr)
+            # this is required to prevent garbage collection of the object
+            Py_INCREF(p)
+            return p
         ret = instantiate(payloadtype)
         ret.soul = ptr
         return ret
 
-class PyPayloadBase(EdgePayload):
-    _cmethods = None
-    _objects = []
-    
+def failsafe(return_arg_num_on_failure):
+    """ Decorator to prevent segfaults during failed callbacks."""
+    def deco(func):
+        def safe(*args):
+            try:
+                return func(*args)
+            except:
+                import traceback, sys            
+                sys.stderr.write("ERROR: Exception during callback ")
+                try:
+                    sys.stderr.write("%s\n" % (map(str, args)))
+                except:
+                    pass
+                traceback.print_exc()
+                return args[return_arg_num_on_failure]
+        return safe
+    return deco
+
+
+class GenericPyPayload(EdgePayload):
+    """ This class is the base type for custom payloads created in Python.  
+        Subclasses can override the *_impl methods, which will be invoked through
+        C callbacks. """
+        
     def __init__(self):
-        assert self._cmethods
+        """ Children MUST call this method to properly 
+            register themselves in C world. """
         self.soul = lgs.cpNew(py_object(self),self._cmethods)
-        self._objects.append(self)
-    
+        self.name = self.__class__.__name__
+        # required to keep this object around in the C world
+        Py_INCREF(self)
+
     def to_xml(self):
         return "<pypayload type='%s' class='%s'/>" % (self.type, self.__class__.__name__)
-    
-    def _walk(self, stateptr):
-        print "_walk %s state ptr" % stateptr
-        self.walk(State.from_pointer(stateptr))
-    
+
+    """ These methods are the public interface, BUT should not be overridden by subclasses 
+        - subclasses should override the *_impl methods instead.""" 
+    @failsafe(1)
     def walk(self, state):
-        print "%s walking..." % self
-            
-    def __free__(self):
-        print "Freeing %s..." % self
-        self._objects.remove(self)
-        
-def walkme(obj, stateptr):
-    print "_walk %s state ptr" % stateptr
-    return None
-
-
-wmp = CFUNCTYPE(c_void_p, py_object, c_void_p)(PyPayloadBase._walk)
-PyPayloadBase._cmethods = \
-    lgs.defineCustomPayloadType(PayloadMethodTypes.destroy(PyPayloadBase.__free__),
-                                wmp, #CFUNCTYPE(c_void_p, c_void_p, c_void_p)(walkme), #PayloadMethodTypes.walk(walkme),
-                                None, #PayloadMethodTypes.walk_back(PyPayloadBase._walk_back),
-                                None, #PayloadMethodTypes.collapse(PyPayloadBase._collapse),
-                                None) #PayloadMethodTypes.collapse_back(PyPayloadBase._collapse_back)
-assert(PyPayloadBase._cmethods)
+        s = state.clone()
+        s.prev_edge_name = self.name
+        return self.walk_impl(s)
     
-class NoOpPyPayload(PyPayloadBase):
+    @failsafe(1)
+    def walk_back(self, state):
+        s = state.clone()
+        s.prev_edge_name = self.name
+        return self.walk_back_impl(s)
+
+    @failsafe(0)
+    def collapse(self, state):
+        return self.collapse_impl(state)
+
+    @failsafe(0)
+    def collapse_back(self, state):
+        return self.collapse_back_impl(state)
+     
+    """ These methods should be overridden by subclasses as deemed fit. """
+    def walk_impl(self, state):
+        return state
+
+    def walk_back_impl(self, state):
+        return state
+
+    def collapse_impl(self, state):
+        return self
+
+    def collapse_back_impl(self, state):
+        return self
+
+    """ These methods provide the interface from the C world to py method implementation. """
+    def _cwalk(self, stateptr):
+        return self.walk(State.from_pointer(stateptr)).soul
+
+    def _cwalk_back(self, stateptr):
+        return self.walk_back(State.from_pointer(stateptr)).soul
+
+    def _ccollapse(self, stateptr):
+        return self.collapse(State.from_pointer(stateptr)).soul
+
+    def _ccollapse_back(self, stateptr):
+        return self.collapse_back(State.from_pointer(stateptr)).soul
+
+    def _cfree(self):
+        print "Freeing %s..." % self
+        # After this is freed in the C world, this can be freed
+        Py_DECREF(self)
+        
+    _cmethodptrs = [PayloadMethodTypes.destroy(_cfree),
+                    PayloadMethodTypes.walk(_cwalk),
+                    PayloadMethodTypes.walk_back(_cwalk_back),
+                    PayloadMethodTypes.collapse(_ccollapse),
+                    PayloadMethodTypes.collapse_back(_ccollapse_back)]
+
+    _cmethods = lgs.defineCustomPayloadType(*_cmethodptrs)
+
+"""
+wmp = CFUNCTYPE(c_void_p, py_object, c_void_p)(GenericPyPayload._walk)
+GenericPyPayload._cmethods = \
+    lgs.defineCustomPayloadType(PayloadMethodTypes.destroy(GenericPyPayload.__free__),
+                                wmp, #CFUNCTYPE(c_void_p, c_void_p, c_void_p)(walkme), #PayloadMethodTypes.walk(walkme),
+                                None, #PayloadMethodTypes.walk_back(GenericPyPayload._walk_back),
+                                None, #PayloadMethodTypes.collapse(GenericPyPayload._collapse),
+                                None) #PayloadMethodTypes.collapse_back(GenericPyPayload._collapse_back)
+assert(GenericPyPayload._cmethods)
+"""
+ 
+class NoOpPyPayload(GenericPyPayload):
     def __init__(self, num):
         self.num = num
-        PyPayloadBase.__init__(self)
+        GenericPyPayload.__init__(self)
     
     """ Dummy class."""
-    def walk(self, state):
+    def walk_impl(self, state):
         print "%s walking..." % self
         
-    def walk_back(self, state):
+    def walk_back_impl(self, state):
         print "%s walking back..." % self
         
         
@@ -543,11 +613,11 @@ Edge._cnew = lgs.eNew
 Edge._cfrom_v = ccast(lgs.eGetFrom, Vertex)
 Edge._cto_v = ccast(lgs.eGetTo, Vertex)
 Edge._cpayload = ccast(lgs.eGetPayload, EdgePayload)
-Edge._cwalk = lgs.eWalk
+Edge._cwalk = ccast(lgs.eWalk, State)
 Edge._cwalk_back = lgs.eWalkBack
 
 
-EdgePayload._subtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,4:PyPayloadBase,5:None}
+EdgePayload._subtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,4:GenericPyPayload,5:None}
 EdgePayload._cget_type = lgs.epGetType
 EdgePayload._cwalk = lgs.epWalk
 EdgePayload._cwalk_back = lgs.epWalkBack

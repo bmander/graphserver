@@ -66,6 +66,12 @@ stateSetNumTransfers( State* this, int n) { this->num_transfers = n; }
 void
 stateSetCalendarDay( State* this,  CalendarDay* cal ) { this->calendar_day = cal; }
 
+void
+stateSetPrevEdgeName( State* this, char* name ) { this->prev_edge_name = name; }
+
+void
+stateSetPrevEdgeType( State* this, edgepayload_t type ) { this->prev_edge_type = type; }
+
 //--------------------EDGEPAYLOAD FUNCTIONS-------------------
 
 EdgePayload*
@@ -75,7 +81,7 @@ epNew( edgepayload_t type, void* payload ) {
   return ret;
 }
 
-EdgePayload*
+EdgePayload*	
 epDup( EdgePayload* this ) {
   EdgePayload* ret = (EdgePayload*)malloc( sizeof(EdgePayload) );
   memcpy( ret, this, sizeof( EdgePayload ) );
@@ -396,11 +402,15 @@ cpMethods( CustomPayload* this ) {
 
 State*
 cpWalk(CustomPayload* this, State* params) {
-	return this->methods->walk(this->soul, params);	
+	State* s = this->methods->walk(this->soul, params);	
+	s->prev_edge_type = PL_EXTERNVALUE;
+	return s;
 }
 State*
 cpWalkBack(CustomPayload* this, State* params) {
-	return this->methods->walkBack(this->soul, params);	
+	State* s = this->methods->walkBack(this->soul, params);	
+	s->prev_edge_type = PL_EXTERNVALUE;
+	return s;
 }
 
 EdgePayload*
