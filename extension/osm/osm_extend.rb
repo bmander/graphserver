@@ -44,7 +44,6 @@ class Graphserver
       #general parsing variables
       @curr_obj = nil
       @directional = directional
-      @con = connection
       @file = file
       @debug_level = debug_level.to_i
       @ncount = 0
@@ -53,6 +52,7 @@ class Graphserver
       #graphserver-specific variables
       @nodes = {}
       @gg = graph
+      @conn = connection
     end
 
     # Subclass listener
@@ -85,6 +85,9 @@ class Graphserver
           else
             handle_node_db @curr_obj
           end
+          @ncount += 1
+          if @ncount%100==0 then $stderr.print( sprintf("\rProcessed %d osm nodes", @ncount ) ) end
+          STDOUT.flush
         when 'way'
           # We only process walking/driving navigable ways
           if @curr_obj.tags['highway'] then
@@ -99,6 +102,9 @@ class Graphserver
               puts "ignored way( id=#{@curr_obj.id}, name='#{@curr_obj.tags['name']}' )"
             end
           end
+          @wcount += 1
+          if @wcount%100==0 then $stderr.print( sprintf("\rProcessed %d osm ways", @wcount ) ) end
+          STDOUT.flush
       end
 
     end
@@ -125,14 +131,10 @@ class Graphserver
         name = "#{node.tags['name'] || 'Unnamed'}"
         # Import place to the DB
         geom = "POINT(#{node.lon} #{node.lat})"
-        @con.exec "COPY osm_places (id, type, name, location ) FROM STDIN"
-        @con.putline "#{node.id}\t#{type}\t#{name}\tSRID=#{WGS84_LATLONG_EPSG};#{geom}\n"
-        @con.endcopy
+        @conn.exec "COPY osm_places (id, type, name, location ) FROM STDIN"
+        @conn.putline "#{node.id}\t#{type}\t#{name}\tSRID=#{WGS84_LATLONG_EPSG};#{geom}\n"
+        @conn.endcopy
       end
-
-      @ncount += 1
-      if @ncount%100==0 then $stderr.print( sprintf("\rProcessed %d osm nodes", @ncount ) ) end
-      STDOUT.flush
     end
 
 
@@ -212,9 +214,9 @@ class Graphserver
       end
 
       # Puts the street in the osm_ways table
-      @con.exec "COPY osm_ways (id, name, type, oneway, file) FROM STDIN"
-      @con.putline "#{way.id}\t#{name}\t#{type}\t#{oneway}\t#{@file}\n"
-      @con.endcopy
+      @conn.exec "COPY osm_ways (id, name, type, oneway, file) FROM STDIN"
+      @conn.putline "#{way.id}\t#{name}\t#{type}\t#{oneway}\t#{@file}\n"
+      @conn.endcopy
 
       ret = "LINESTRING("
       node_count = 0
@@ -233,19 +235,15 @@ class Graphserver
           lon1 = @nodes[to_id][1].to_s
           # Import street in regular sense to the DB
           geom = "LINESTRING(#{lon0} #{lat0},#{lon1} #{lat1})"
-          @con.exec "COPY osm_segments (seg_id, id, from_id, to_id, geom ) FROM STDIN"
-          @con.putline "#{way.id}-#{node_count.to_s.rjust(digits,'0')}\t#{way.id}\t#{from_id}\t#{to_id}\tSRID=#{WGS84_LATLONG_EPSG};#{geom}\n"
-          @con.endcopy
+          @conn.exec "COPY osm_segments (seg_id, id, from_id, to_id, geom ) FROM STDIN"
+          @conn.putline "#{way.id}-#{node_count.to_s.rjust(digits,'0')}\t#{way.id}\t#{from_id}\t#{to_id}\tSRID=#{WGS84_LATLONG_EPSG};#{geom}\n"
+          @conn.endcopy
           node_count += 1
         end
         ret <<  "#{@nodes[node][1]} #{@nodes[node][0]}"
         ret << ","
         current = node
       end
-
-      @wcount += 1
-      if @wcount%100==0 then $stderr.print( sprintf("\rProcessed %d osm ways", @wcount ) ) end
-      STDOUT.flush
 
       ret[ret.size-1] =")"
       if @debug_level==2 then
