@@ -127,12 +127,15 @@ class Graphserver
       @nodes[node.id] = [node.lat, node.lon]
       # If the node is a place
       if node.tags['place'] then
-        type = "#{node.tags['place']}"
-        name = "#{node.tags['name'] || 'Unnamed'}"
-        # Import place to the DB
-        geom = "POINT(#{node.lon} #{node.lat})"
+#        type = "#{node.tags['place']}"
+#        name = "#{node.tags['name'] || 'Unnamed'}"
+#        # Import place to the DB
+#        geom = "POINT(#{node.lon} #{node.lat})"
+#        @conn.exec "COPY osm_places (id, type, name, location ) FROM STDIN"
+#        @conn.putline "#{node.id}\t#{type}\t#{name}\tSRID=#{WGS84_LATLONG_EPSG};#{geom}\n"
+#        @conn.endcopy
         @conn.exec "COPY osm_places (id, type, name, location ) FROM STDIN"
-        @conn.putline "#{node.id}\t#{type}\t#{name}\tSRID=#{WGS84_LATLONG_EPSG};#{geom}\n"
+        @conn.putline "#{node.id}\t#{node.tags['place']}\t#{node.tags['name'] || 'Unnamed'}\tSRID=#{WGS84_LATLONG_EPSG};POINT(#{node.lon} #{node.lat})\n"
         @conn.endcopy
       end
     end
