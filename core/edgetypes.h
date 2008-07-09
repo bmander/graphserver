@@ -10,7 +10,7 @@ typedef enum {
   PL_TRIPHOPSCHED,
   PL_TRIPHOP,
   PL_LINK,
-  PL_RUBYVALUE,
+  PL_EXTERNVALUE,
   PL_NONE,
 } edgepayload_t;
 
@@ -56,6 +56,24 @@ stateGetPrevEdgeName( State* this );
 CalendarDay*
 stateCalendarDay( State* this );
 
+void
+stateSetTime( State* this, long time );
+
+void
+stateSetWeight( State* this, long weight );
+
+void
+stateSetDistWalked( State* this, double dist );
+
+void
+stateSetNumTransfers( State* this, int n);
+
+void
+stateSetPrevEdgeType( State* this, edgepayload_t );
+
+void
+stateSetPrevEdgeName( State* this, char* name );
+
 //---------------DECLARATIONS FOR EDGEPAYLOAD CLASS---------------------
 
 typedef struct EdgePayload {
@@ -63,7 +81,7 @@ typedef struct EdgePayload {
 } EdgePayload;
 
 EdgePayload*
-epNew( );
+epNew( edgepayload_t type, void* payload );
 
 void
 epDestroy( EdgePayload* this );
@@ -218,5 +236,56 @@ thsGetServiceId(TripHopSchedule* this);
 
 TripHop*
 thsGetHop(TripHopSchedule* this, int i);
+
+
+typedef struct PayloadMethods {
+	void (*destroy)(void*);
+	State* (*walk)(void*,State*);
+	State* (*walkBack)(void*,State*);
+	EdgePayload* (*collapse)(void*,State*);
+	EdgePayload* (*collapseBack)(void*,State*);
+	//char* (*to_str)(void*);
+} PayloadMethods;
+
+typedef struct CustomPayload {
+  edgepayload_t type;
+  void* soul;
+  PayloadMethods* methods;
+} CustomPayload;
+
+PayloadMethods*
+defineCustomPayloadType(void (*destroy)(void*),
+						State* (*walk)(void*,State*),
+						State* (*walkback)(void*,State*),
+						EdgePayload* (*collapse)(void*,State*),
+						EdgePayload* (*collapseBack)(void*,State*));
+					
+
+void 
+undefineCustomPayloadType( PayloadMethods* this );
+
+CustomPayload*
+cpNew( void* soul, PayloadMethods* methods );
+
+void
+cpDestroy( CustomPayload* this );
+
+void*
+cpSoul( CustomPayload* this );
+
+PayloadMethods*
+cpMethods( CustomPayload* this );
+
+State*
+cpWalk(CustomPayload* this, State* params);
+
+State*
+cpWalkBack(CustomPayload* this, State* params);
+
+EdgePayload*
+cpCollapse(CustomPayload* this, State* params);
+
+EdgePayload*
+cpCollapseBack(CustomPayload* this, State* params);
 
 #endif
