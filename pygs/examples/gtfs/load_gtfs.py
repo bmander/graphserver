@@ -122,9 +122,6 @@ def add_gtfs_to_graph(g, data_dir):
     #get service bounds
     sid_start = min( [trip.GetStartTime() for trip in sched.GetTripList()] )
     sid_end   = max( [trip.GetEndTime() for trip in sched.GetTripList()] )
-        
-    print sid_start
-    print sid_end
 
     rawcalendar = raw_calendar( "./data/calendar.txt", "./data/calendar_dates.txt" )
 

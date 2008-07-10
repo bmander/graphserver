@@ -8,14 +8,11 @@ from ctypes.util import find_library
 import os
 import sys
 
-# Try the major versioned name first, falling back on the unversioned name.
-if 'GRAPHS_CORE_SO' in os.environ:
-    so_loc = os.environ['GRAPHS_CORE_SO']
-else:
-    import settings
-    so_loc = settings.GRAPHS_CORE_SO
-    
-lgs = PyDLL( so_loc )
+# Try loading from the source tree. If that doesn't work, fall back to the installed location.
+try:
+    lgs = PyDLL( '../core/libgraphserver.so' )
+except OSError:
+    lgs = PyDLL( '/usr/lib/libgraphserver.so' )
 
 class _EmptyClass(object):
     pass

@@ -651,6 +651,7 @@ class TripHop(EdgePayload):
 class TripHopSchedule(EdgePayload):
     
     calendar = cproperty( lgs.thsGetCalendar, c_void_p, CalendarDay )
+    timezone_offset = cproperty( lgs.thsGetTimezoneOffset, c_int )
     
     def __init__(self, hops, service_id, calendar, timezone_offset):
         #TripHopSchedule* thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, int timezone_offset );

@@ -639,6 +639,8 @@ class TestTriphopSchedule:
         # using a tuple
         ths = TripHopSchedule(rawhops, 1, CalendarDay(0, 1*3600*24, [1,2], 0), 0)
         
+        assert ths.timezone_offset == 0
+        
         h1 = ths.triphops[0]
         assert h1.depart == 0
         assert h1.arrive == 1*3600
