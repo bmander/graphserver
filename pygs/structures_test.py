@@ -1,15 +1,4 @@
 from structures import *
-
-tracecount = {}
-
-def trace():
-    import sys
-    return 
-    caller = inspect.stack()[1][3]
-    if caller not in tracecount:
-        tracecount[caller] = -1
-    tracecount[caller] = tracecount[caller] + 1
-    print sys.stderr, "--TRACE-- %s, step %s" % (caller, tracecount[caller])
     
 import os
 import sys
@@ -524,6 +513,78 @@ class TestStreet:
         assert after.dist_walked == 2
         assert after.prev_edge_type == 0
         assert after.prev_edge_name == "longstreet"
+
+class TestPyPayload:
+    def _minimal_graph(self):
+        g = Graph()
+        
+        g.add_vertex( "Seattle" )
+        g.add_vertex( "Portland" )
+        return g
+    
+    def test_basic(self):
+        p = NoOpPyPayload(1.1)
+        
+    def test_cast(self):
+        g = self._minimal_graph()
+        e = NoOpPyPayload(1.2)
+        
+        ed = g.add_edge( "Seattle", "Portland", e )
+        print ed.payload
+        assert e == ed.payload
+        ep = ed.payload # uses EdgePayload.from_pointer internally.
+        assert e == ep
+        assert ep.num == 1.2
+    
+        
+    
+    def test_walk(self):
+        class IncTimePayload(GenericPyPayload):
+            def walk_impl(self, state):
+                state.time = state.time + 10
+                state.weight = 5
+                return state
+            
+            def walk_back_impl(self, state):
+                state.time = state.time - 10
+                state.weight = 0
+                return state
+            
+            def collapse(self, state):
+                return Link()
+            
+        g = self._minimal_graph()
+        ed = g.add_edge( "Seattle", "Portland", IncTimePayload())
+        assert(isinstance(ed.payload,IncTimePayload))
+        s = State(1)
+        assert s.time == 1
+        s1 = ed.walk(s)
+        assert s1
+        assert s.time == 1
+        assert s1.soul != s.soul
+        assert s1.time == 11
+        assert s1.weight == 5
+        s2 = ed.walk_back(s1)
+        assert s2
+        assert s2.time == 1
+        assert s2.weight == 0
+        
+    def test_failures(self):
+        class ExceptionRaiser(GenericPyPayload):
+            def bad_stuff(self, state):
+                raise "I am designed to fail."
+            walk_impl = bad_stuff
+            walk_back_impl = bad_stuff
+            collapse_impl = bad_stuff
+            collapse_back_impl = bad_stuff
+
+        g = self._minimal_graph()
+        ed = g.add_edge( "Seattle", "Portland", ExceptionRaiser())
+        ed.walk(State(0))  
+        ed.walk_back(State(0))
+        ed.payload.collapse(State(0))
+        ed.payload.collapse_back(State(0))
+
 
 class TestLink:
     def link_test(self):
