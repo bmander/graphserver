@@ -63,6 +63,8 @@ streetWalkBack(Street* this, State* params) {
   return ret;
 }
 
+// This function is never called by the router - it's mostly a convenience method to be wrapped
+// by a higher-level langauge for the purpose of debugging.
 inline State*
 #ifndef ROUTE_REVERSE
 thsWalk(TripHopSchedule* this, State* params) {
@@ -76,6 +78,9 @@ thsWalkBack(TripHopSchedule* this, State* params) {
 #else
     th = thsCollapseBack(this, params);
 #endif
+    
+    if(!th)
+        return NULL;
     
     State* ret;
 #ifndef ROUTE_REVERSE

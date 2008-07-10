@@ -275,7 +275,10 @@ thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id
     ret->hops[i].depart = departs[i];
     ret->hops[i].arrive = arrives[i];
     ret->hops[i].transit = arrives[i] - departs[i];
-    ret->hops[i].trip_id = trip_ids[i];
+    int tripid_len = strlen(trip_ids[i])+1;
+    //ret->hops[i].trip_id = trip_ids[i]; //need to malloc the tripid and copy things over
+    ret->hops[i].trip_id = (char*)malloc(sizeof(char)*tripid_len);
+    memcpy(ret->hops[i].trip_id, trip_ids[i], tripid_len);
     ret->hops[i].schedule = ret;
   }
 
@@ -310,18 +313,19 @@ thsPrintHops(TripHopSchedule* this) {
 
 void
 thsDestroy(TripHopSchedule* this) {
-	// Possible leak with unfreed trip_id
-    /*int i;
+    int i;
   	for(i=0; i<this->n; i++) {
         free( this->hops[i].trip_id );
-  	}*/
+  	}
   	
   	free(this->hops);
   	free(this);
 }
 
-void
+CalendarDay*
+thsGetCalendar(TripHopSchedule* this ) { return this->calendar; }
 
+void
 triphopDestroy(TripHop* tokill) {
   free(tokill->trip_id);
   free(tokill);

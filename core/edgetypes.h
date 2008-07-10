@@ -237,6 +237,8 @@ thsGetServiceId(TripHopSchedule* this);
 TripHop*
 thsGetHop(TripHopSchedule* this, int i);
 
+CalendarDay*
+thsGetCalendar(TripHopSchedule* this );
 
 typedef struct PayloadMethods {
 	void (*destroy)(void*);
