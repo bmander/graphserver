@@ -342,6 +342,11 @@ thsGetServiceId(TripHopSchedule* this) {
 }
 
 int
+thsGetTimezoneOffset(TripHopSchedule* this) {
+    return this->timezone_offset;
+}
+
+int
 triphopDepart( TripHop* this ) { return this->depart; }
 
 int

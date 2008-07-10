@@ -240,6 +240,9 @@ thsGetHop(TripHopSchedule* this, int i);
 CalendarDay*
 thsGetCalendar(TripHopSchedule* this );
 
+int
+thsGetTimezoneOffset(TripHopSchedule* this );
+
 typedef struct PayloadMethods {
 	void (*destroy)(void*);
 	State* (*walk)(void*,State*);
