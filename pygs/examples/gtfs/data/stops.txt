@@ -1,0 +1,47 @@
+stop_id,stop_name,stop_desc,stop_lat,stop_lon,zone_id,stop_url
+LAKE,Lake Merritt BART,,37.79760237,-122.2654984,19,http://www.bart.gov/stations/LAKE/
+MCAR,MacArthur BART,,37.82840941,-122.2671871,16,http://www.bart.gov/stations/MCAR/
+MONT,Montgomery St. BART,,37.78933596,-122.4014855,41,http://www.bart.gov/stations/MONT/
+NBRK,North Berkeley BART,,37.87402614,-122.2838819,13,http://www.bart.gov/stations/NBRK/
+NCON,North Concord/Martinez BART,,38.00257665,-122.025106,31,http://www.bart.gov/stations/NCON/
+ORIN,Orinda BART,,37.87836087,-122.1837911,37,http://www.bart.gov/stations/ORIN/
+PHIL,Pleasant Hill BART,,37.92773627,-122.056847,34,http://www.bart.gov/stations/PHIL/
+PITT,Pittsburg/Bay Point BART,,38.01893434,-121.9419045,30,http://www.bart.gov/stations/PITT/
+PLZA,El Cerrito Plaza BART,,37.9030588,-122.2992715,12,http://www.bart.gov/stations/PLZA/
+POWL,Powell St. BART,,37.784971,-122.4070123,42,http://www.bart.gov/stations/POWL/
+ROCK,Rockridge BART,,37.84418385,-122.2527315,38,http://www.bart.gov/stations/ROCK/
+SANL,San Leandro BART,,37.72261921,-122.1613112,22,http://www.bart.gov/stations/SANL/
+SHAY,South Hayward BART,,37.63479954,-122.0575506,25,http://www.bart.gov/stations/SHAY/
+SSAN,South San Francisco BART,,37.66433,-122.44399,5,http://www.bart.gov/stations/SSAN/
+UCTY,Union City BART,,37.59120269,-122.017858,26,http://www.bart.gov/stations/UCTY/
+WCRK,Walnut Creek BART,,37.90463888,-122.0680181,35,http://www.bart.gov/stations/WCRK/
+WOAK,West Oakland BART,,37.80467476,-122.2945822,39,http://www.bart.gov/stations/WOAK/
+COLM,Colma BART,,37.68458089,-122.4673692,32,http://www.bart.gov/stations/COLM/
+MLBR,Millbrae BART,,37.600006,-122.386534,8,http://www.bart.gov/stations/MLBR/
+RICH,Richmond BART,,37.93716991,-122.3534001,10,http://www.bart.gov/stations/RICH/
+SBRN,San Bruno BART,,37.637143,-122.415912,6,http://www.bart.gov/stations/SBRN/
+SFIA,San Francisco Int BART,,37.6159,-122.392534,7,http://www.bart.gov/stations/SFIA/
+OAK,Oakland Airport Terminals AirBART,,37.712811,-122.213165,,http://www.bart.gov/guide/airport/inbound_oak.aspx
+12TH_N,12th St. Oakland City Center BART,,37.80309272,-122.271655,18,http://www.bart.gov/stations/12TH/
+MCAR_S,MacArthur BART,,37.82840941,-122.2671871,16,http://www.bart.gov/stations/MCAR/
+12TH,12th St. Oakland City Center BART,,37.80309272,-122.271655,18,http://www.bart.gov/stations/12TH/
+16TH,16th St. Mission BART,,37.765228,-122.419478,44,http://www.bart.gov/stations/16TH/
+19TH,19th St. Oakland BART,,37.80762952,-122.2688692,17,http://www.bart.gov/stations/19TH/
+24TH,24th St. Mission BART,,37.752411,-122.418292,45,http://www.bart.gov/stations/24TH/
+ASBY,Ashby BART,,37.853061,-122.269946,15,http://www.bart.gov/stations/ASHB/
+BALB,Balboa Park BART,,37.72198087,-122.4474142,47,http://www.bart.gov/stations/BALB/
+BAYF,Bay Fair BART,,37.69783218,-122.1278585,23,http://www.bart.gov/stations/BAYF/
+CAST,Castro Valley BART,,37.69073031,-122.07746,28,http://www.bart.gov/stations/CAST/
+CIVC,Civic Center BART,,37.77960559,-122.4138511,43,http://www.bart.gov/stations/CIVC/
+COLS,Coliseum/Oakland Airport BART,,37.75428138,-122.1977888,21,http://www.bart.gov/stations/COLS/
+CONC,Concord BART,,37.97201583,-122.0298613,33,http://www.bart.gov/stations/CONC/
+DALY,Daly City BART,,37.70612055,-122.4690807,48,http://www.bart.gov/stations/DALY/
+DBRK,Downtown Berkeley BART,,37.86986846,-122.2680509,14,http://www.bart.gov/stations/DBRK/
+DELN,El Cerrito Del Norte BART,,37.92565088,-122.3172189,11,http://www.bart.gov/stations/DELN/
+DUBL,Dublin/Pleasanton BART,,37.70167362,-121.9003525,29,http://www.bart.gov/stations/DUBL/
+EMBR,Embarcadero BART,,37.79302244,-122.3968132,40,http://www.bart.gov/stations/EMBR/
+FRMT,Fremont BART,,37.55733428,-121.9763954,27,http://www.bart.gov/stations/FRMT/
+FTVL,Fruitvale BART,,37.77462381,-122.2243277,20,http://www.bart.gov/stations/FTVL/
+GLEN,Glen Park BART,,37.73294154,-122.4341143,46,http://www.bart.gov/stations/GLEN/
+HAYW,Hayward Station BART,,37.67038689,-122.0880021,24,http://www.bart.gov/stations/HAYW/
+LAFY,Lafayette BART,,37.89342547,-122.1237985,36,http://www.bart.gov/stations/LAFY/
