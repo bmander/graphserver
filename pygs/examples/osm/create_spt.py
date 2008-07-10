@@ -2,7 +2,7 @@ import time
 from osm import OSM, Node, Way
 import sys
 sys.path.append('../..')
-from structures import Graph, Street, State
+from graphserver import Graph, Street, State
 
 
 from urllib import urlopen

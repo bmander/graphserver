@@ -1,5 +1,5 @@
 from stress_utils import get_mem_usage
-from structures import *
+from graphserver import *
 
 """
 print get_mem_usage()

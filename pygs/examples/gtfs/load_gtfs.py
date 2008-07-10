@@ -4,7 +4,7 @@ from pytz import timezone
 import sys
 import datetime
 sys.path.append('../..')
-from structures import Graph, Street, CalendarDay, TripHopSchedule, Calendar, State
+from graphserver import Graph, Street, CalendarDay, TripHopSchedule, Calendar, State
 import csv
 
 if transitfeed.__version__ != "1.1.5":

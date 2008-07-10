@@ -1,4 +1,4 @@
-from structures import *
+from graphserver import *
     
 import os
 import sys

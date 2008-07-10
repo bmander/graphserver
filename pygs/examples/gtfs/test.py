@@ -1,7 +1,7 @@
 from load_gtfs import add_gtfs_to_graph
 import sys
 sys.path.append('../..')
-from structures import Graph, Street, CalendarDay, TripHopSchedule, Calendar, State
+from graphserver import Graph, Street, CalendarDay, TripHopSchedule, Calendar, State
 import time
 from calendar import timegm
 

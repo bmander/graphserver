@@ -5,7 +5,7 @@ except ImportError:
     import sys
     sys.path.append("../..")
     from engine import XMLGraphEngine
-    from structures import TripHopSchedule, CalendarDay, Street, Link, State
+    from graphserver import TripHopSchedule, CalendarDay, Street, Link, State
 
 class HelloWorldEngine(XMLGraphEngine):
 
