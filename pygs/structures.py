@@ -546,7 +546,7 @@ class GenericPyPayload(EdgePayload):
 class NoOpPyPayload(GenericPyPayload):
     def __init__(self, num):
         self.num = num
-        super(NoOpPyPayload).__init__()
+        super(NoOpPyPayload,self).__init__()
     
     """ Dummy class."""
     def walk_impl(self, state):
