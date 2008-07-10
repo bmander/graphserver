@@ -1,20 +1,34 @@
+--== GRAPHSERVER CORE ==--
+
 Prerequisites:
+binutils 2.18
 
+Build:
+$ cd core
+$ make
+
+Install
+
+$ cd core
+$ sudo make install
+
+--== RUBY GRAPHSERVER ==--
+
+Prerequisites:
 Ruby 1.8.5
-libiberty
 
-=================================================================================
-Install:
+Build:
+$ cd rbgs
+Read the README
 
-ruby install.rb
+--== PYTHON GRAPHSERVER ==--
 
-=================================================================================
-Quickstart:
+Prerequisites:
+Python 2.5
 
-Go to the instance directory and read the comments in gserver.rb. They guide you
-through implementing your own graphserver. After you've done that, just run
+Build:
+There is no build step!
 
-ruby gserver.rb
-
-and access the graphserver as a webserver. A sample webserver client has been 
-provided for your amusement.
+Install and Test:
+$ cd pygs
+Read the README
