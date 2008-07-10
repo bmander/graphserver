@@ -215,6 +215,22 @@ class TestGraph:
         
         assert sp
         
+    def test_shortest_path_tree_triphopschedule_wrongday(self):
+        g = Graph()
+        
+        rawhops = [(10,     20,'Foo to Bar')]
+        cal = CalendarDay(0, 10, [1], 0)
+        ths = TripHopSchedule(hops=rawhops, service_id=2, calendar=cal, timezone_offset=0)
+        
+        g.add_vertex("A")
+        g.add_vertex("B")
+        
+        g.add_edge("A", "B", ths)
+        
+        sp = g.shortest_path_tree("A", "B", State(0) )
+        
+        print sp.vertices
+        
     def xtestx_shortest_path_bigweight(self):
         g = Graph()
         fromv = g.add_vertex("home")
@@ -572,7 +588,7 @@ class TestPyPayload:
     def test_failures(self):
         class ExceptionRaiser(GenericPyPayload):
             def bad_stuff(self, state):
-                raise "I am designed to fail."
+                raise Exception("I am designed to fail.")
             walk_impl = bad_stuff
             walk_back_impl = bad_stuff
             collapse_impl = bad_stuff
@@ -580,7 +596,9 @@ class TestPyPayload:
 
         g = self._minimal_graph()
         ed = g.add_edge( "Seattle", "Portland", ExceptionRaiser())
-        ed.walk(State(0))  
+        
+        
+        ed.walk(State(0)) 
         ed.walk_back(State(0))
         ed.payload.collapse(State(0))
         ed.payload.collapse_back(State(0))
@@ -644,6 +662,14 @@ class TestTriphopSchedule:
         
         assert ths.soul == None
         
+    def test_get_calendar(self):
+        rawhops = [(0,     1*3600,'Foo to Bar'),
+                   (1*3600,2*3600,'Bar to Cow')]
+        cal = CalendarDay(0, 1*3600*24, [1,2], 0)
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0)
+        
+        assert ths.calendar.end_time==86400
+        
     def test_walk(self):
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
@@ -659,6 +685,22 @@ class TestTriphopSchedule:
         assert s.prev_edge_type == 2
         assert s.prev_edge_name == "Foo to Bar"
         assert str(s) == "<state time='Thu Jan  1 01:00:00 1970' weight='3600' dist_walked='0.0' num_transfers='1' prev_edge_type='2' prev_edge_name='Foo to Bar'><calendar begin_time='Thu Jan  1 00:00:00 1970' end_time='Fri Jan  2 00:00:00 1970' service_ids='1,2'/></state>"
+        
+    def test_walk_wrong_day(self):
+        rawhops = [(10,     20,'Foo to Bar')]
+        cal = CalendarDay(0, 10, [1], 0)
+        ths = TripHopSchedule(hops=rawhops, service_id=2, calendar=cal, timezone_offset=0)
+        
+        s = ths.walk(State(0))
+        
+    def test_collapse_wrong_day(self):
+        rawhops = [(10,     20,'Foo to Bar')]
+        cal = CalendarDay(0, 10, [1], 0)
+        ths = TripHopSchedule(hops=rawhops, service_id=2, calendar=cal, timezone_offset=0)
+        
+        th = ths.collapse(State(0))
+        
+        assert th==None
         
     def test_collapse(self):
         rawhops = [(0,     1*3600,'Foo to Bar'),
@@ -711,15 +753,15 @@ class TestVertex:
         v = Vertex("home")
         assert v.to_xml() == "<Vertex degree_out='0' degree_in='0' label='home'/>"
 
-class TestCalendar:
-    def calendar_test(self):
+class TestCalendarDay:
+    def calendarday_test(self):
         c = CalendarDay(0, 1*3600*24, [1,2], 0)
         assert(c.begin_time == 0)
         assert(c.end_time == 1*3600*24)
         assert(len(c.service_ids) == 2)
         assert(c.service_ids == [1,2])
         print c
-        print c.append_day(c.end_time, c.end_time+1*3600*24, [3,4,5], 0)
+        print c.append_day(c.end_time+1, c.end_time+1*3600*24, [3,4,5], 0)
         assert(c.next.service_ids == [3,4,5])
         print c.next
         assert(c.previous == None)
@@ -729,12 +771,98 @@ class TestCalendar:
         
         return c
         
+class TestCalendar:
+    def test_basic(self):
+        c = Calendar()
+        assert( c.head == None )
+        assert( c.tail == None )
+        
+        assert( c.day_of_or_before(0) == None )
+        assert( c.day_of_or_after(0) == None )
+        
+    def test_single(self):
+        c = Calendar()
+        c.add_day(0,1000,['a','b','c'])
+        
+        assert c.head
+        assert c.head.begin_time == 0
+        assert c.head.end_time == 1000
+        assert c.head.service_ids == [1,2,3]
+        assert c.tail
+        assert c.tail.begin_time == 0
+        assert c.tail.end_time == 1000
+        assert c.tail.service_ids == [1,2,3]
+        
+        assert c.day_of_or_before(-1) == None
+        assert c.day_of_or_before(0).begin_time==0
+        assert c.day_of_or_before(500).begin_time==0
+        assert c.day_of_or_before(1000).begin_time==0
+        assert c.day_of_or_before(50000).begin_time==0
+        
+        assert c.day_of_or_after(-1).begin_time==0
+        assert c.day_of_or_after(0).begin_time==0
+        assert c.day_of_or_after(500).begin_time==0
+        assert c.day_of_or_after(1000).begin_time==0
+        assert c.day_of_or_after(1001) == None
+        
+    def test_multiple(self):
+        c = Calendar()
+        c.add_day(0,1000,[1,2,3])
+        c.add_day(1001,2000,[3,4,5])
+        
+        assert c.head
+        assert c.head.begin_time == 0
+        assert c.head.end_time == 1000
+        assert c.head.service_ids == [1,2,3]
+        assert c.tail
+        assert c.tail.begin_time == 1001
+        assert c.tail.end_time == 2000
+        assert c.tail.service_ids == [3,4,5]
+        
+        assert c.head.previous == None
+        assert c.head.next.begin_time == 1001
+        
+        assert c.tail.next == None
+        assert c.tail.previous.begin_time == 0
+        
+        assert c.day_of_or_before(-1) == None
+        assert c.day_of_or_before(0).begin_time == 0
+        assert c.day_of_or_before(1000).begin_time == 0
+        assert c.day_of_or_before(1001).begin_time == 1001
+        assert c.day_of_or_before(2000).begin_time == 1001
+        assert c.day_of_or_before(2001).begin_time == 1001
+        
+        assert c.day_of_or_after(-1).begin_time == 0
+        assert c.day_of_or_after(0).begin_time == 0
+        assert c.day_of_or_after(1000).begin_time == 0
+        assert c.day_of_or_after(1001).begin_time == 1001
+        assert c.day_of_or_after(2000).begin_time == 1001
+        assert c.day_of_or_after(2001) == None
+        
+    def test_add_three(self):
+        c = Calendar()
+        c.add_day(0,10,[1,2,3])
+        c.add_day(11,15,[3,4,5])
+        c.add_day(16,20,[4,5,6])
+        
+        assert c.head.next.next.begin_time == 16
+        assert c.tail.previous.previous.begin_time == 0
+        
+    def test_invalid_add(self):
+        c = Calendar()
+        c.add_day(0,1000,[1,2,3])
+        try:
+            c.add_day(900,1000,[2,3,4])
+            assert False #should pop exception by now
+        except:
+            pass
+        
 #the problem with this code snippet is that it runs _all_ tests in he same directory, some of which are slow stress tests
 #if __name__=='__main__':
 #    import nose
 #    nose.main()
 
 if __name__=='__main__':
-    mod = TestGraph()
-    mod.xtestx_gratuitous_loop()
+    mod = TestPyPayload()
+    mod.test_failures()
 

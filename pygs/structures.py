@@ -181,6 +181,53 @@ class ShortestPathTree(Graph):
         #destroy the vertex State instances, but not the edge EdgePayload instances, as they're owned by the parent graph
         super(ShortestPathTree, self).destroy(1, 0)
 
+class Calendar:
+    """Calendar provides a set of convient methods for dealing with the wrapper class CalendarDay, which
+       wraps a single node in the doubly linked list that represents a calendar in Graphserver."""
+    def __init__(self):
+        self.service_id_directory = {}
+        self.head = None
+        self.tail = None
+        
+        self.curr = None
+        
+    def add_day(self, begin_time, end_time, service_ids, daylight_savings=0):
+
+        if self.head is not None and (begin_time <= self.tail.end_time):
+            raise Exception( "begin_time (%d) is not after the tail's end_time (%d)"%(begin_time,self.tail.end_time) )
+
+        #translate service_ids to numbers
+        for service_id in service_ids:
+            if service_id not in self.service_id_directory:
+                self.service_id_directory[service_id]=len(self.service_id_directory)+1
+        service_ids = [self.service_id_directory[x] for x in service_ids]
+
+        if self.head is None:
+            cday = CalendarDay(begin_time,end_time,service_ids,daylight_savings)
+            self.head = cday
+            self.tail = cday
+        else:
+            self.tail.append_day( begin_time, end_time, service_ids, daylight_savings )
+            self.tail = self.tail.next
+            
+    def day_of_or_after(self,time):
+        if self.head is None:
+            return None
+            
+        return self.head.day_of_or_after(time)
+        
+    def day_of_or_before(self,time):
+        if self.head is None:
+            return None
+        
+        return self.head.day_of_or_before(time)
+    
+    def days(self):
+        curr = self.head
+        while curr is not None:
+            yield curr
+            curr = curr.next
+        
 
 class CalendarDay(CShadow):   
 
@@ -602,6 +649,9 @@ class TripHop(EdgePayload):
                         self.transit, self.trip_id)
     
 class TripHopSchedule(EdgePayload):
+    
+    calendar = cproperty( lgs.thsGetCalendar, c_void_p, CalendarDay )
+    
     def __init__(self, hops, service_id, calendar, timezone_offset):
         #TripHopSchedule* thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, int timezone_offset );
         
