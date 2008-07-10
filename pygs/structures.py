@@ -179,6 +179,11 @@ class Graph(CShadow):
             ret += "    %s -> %s;\n" % (e.from_v.label, e.to_v.label)
         return ret + "}"
 
+class ShortestPathTree(Graph):    
+    def destroy(self):
+        #destroy the vertex State instances, but not the edge EdgePayload instances, as they're owned by the parent graph
+        super(ShortestPathTree, self).destroy(1, 0)
+
 
 class CalendarDay(CShadow):   
 
@@ -657,8 +662,8 @@ Graph._cdel = lgs.gDestroy
 Graph._cadd_vertex = ccast(lgs.gAddVertex, Vertex)
 Graph._cget_vertex = ccast(lgs.gGetVertex, Vertex)
 Graph._cadd_edge = ccast(lgs.gAddEdge, Edge)
-Graph._cshortest_path_tree = ccast(lgs.gShortestPathTree, Graph)
-Graph._cshortest_path_tree_retro = ccast(lgs.gShortestPathTreeRetro, Graph)
+Graph._cshortest_path_tree = ccast(lgs.gShortestPathTree, ShortestPathTree)
+Graph._cshortest_path_tree_retro = ccast(lgs.gShortestPathTreeRetro, ShortestPathTree)
 
 Vertex._cnew = lgs.vNew
 Vertex._cdel = lgs.vDestroy

@@ -137,7 +137,7 @@ def test_min_edge_graph_delete():
     assert m1 <= m0+4
     
 def test_minimal_spt_delete():
-    """Graph.destroy_as_spt() completely destroys the spt for a minimal tree"""
+    """ShortestPathTree.destroy() completely destroys the spt for a minimal tree"""
     mperc, m0 = get_mem_usage()
 
 
@@ -151,7 +151,7 @@ def test_minimal_spt_delete():
     
     for i in xrange(100000):
         spt = s.shortest_path_tree("A", "C", State(0))
-        spt.destroy_as_spt()
+        spt.destroy()
         
     mperc, m1 = get_mem_usage()
     

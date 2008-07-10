@@ -98,7 +98,7 @@ class TestGraph:
         
         spt = g.shortest_path_tree("home", "work", State(0))
         assert spt
-        assert spt.__class__ == Graph
+        assert spt.__class__ == ShortestPathTree
         assert spt.get_vertex("home").degree_out==1
         assert spt.get_vertex("home").degree_in==0
         assert spt.get_vertex("home").payload.weight==0
@@ -106,7 +106,7 @@ class TestGraph:
         assert spt.get_vertex("work").degree_out==0
         assert spt.get_vertex("work").payload.weight==2
         
-        spt.destroy_as_spt()
+        spt.destroy()
         g.destroy()
         
     def test_shortst_path_tree_link(self):
@@ -119,7 +119,7 @@ class TestGraph:
         
         spt = g.shortest_path_tree("home", "work", State(0))
         assert spt
-        assert spt.__class__ == Graph
+        assert spt.__class__ == ShortestPathTree
         assert spt.get_vertex("home").outgoing[0].payload.__class__ == Link
         assert spt.get_vertex("work").incoming[0].payload.__class__ == Link
         assert spt.get_vertex("home").degree_out==1
@@ -127,7 +127,7 @@ class TestGraph:
         assert spt.get_vertex("work").degree_in==1
         assert spt.get_vertex("work").degree_out==0
         
-        spt.destroy_as_spt()
+        spt.destroy()
         g.destroy()
         
     def test_shortest_path_tree_triphopschedule(self):
@@ -144,7 +144,7 @@ class TestGraph:
         
         spt = g.shortest_path_tree("home", "work", State(0))
         assert spt
-        assert spt.__class__ == Graph
+        assert spt.__class__ == ShortestPathTree
         assert spt.get_vertex("home").outgoing[0].payload.__class__ == TripHop
         assert spt.get_vertex("work").incoming[0].payload.__class__ == TripHop
         assert spt.get_vertex("home").degree_out==1
@@ -152,7 +152,7 @@ class TestGraph:
         assert spt.get_vertex("work").degree_in==1
         assert spt.get_vertex("work").degree_out==0
         
-        spt.destroy_as_spt()
+        spt.destroy()
         g.destroy()
         
     def test_walk_longstreet(self):
@@ -182,7 +182,7 @@ class TestGraph:
         
         assert spt.get_vertex("home").degree_out == 1
         
-        spt.destroy_as_spt()
+        spt.destroy()
         g.destroy()
             
     def test_shortest_path_tree_retro(self):
@@ -195,13 +195,13 @@ class TestGraph:
         
         spt = g.shortest_path_tree_retro("home", "work", State(0))
         assert spt
-        assert spt.__class__ == Graph
+        assert spt.__class__ == ShortestPathTree
         assert spt.get_vertex("home").degree_out==0
         assert spt.get_vertex("home").degree_in==1
         assert spt.get_vertex("work").degree_in==0
         assert spt.get_vertex("work").degree_out==1
         
-        spt.destroy_as_spt()
+        spt.destroy()
         g.destroy()
     
     def test_shortest_path(self):
@@ -266,11 +266,11 @@ class TestGraph:
         
         spt = g.shortest_path_tree( "Seattle", "Seattle-busstop", State(0) )
         assert spt.get_vertex("Seattle-busstop").incoming[0].payload.__class__ == Link
-        spt.destroy_as_spt()
+        spt.destroy()
         
         spt = g.shortest_path_tree( "Seattle-busstop", "Portland", State(0) )
         assert spt.get_vertex("Portland").incoming[0].payload.__class__ == Street
-        spt.destroy_as_spt()
+        spt.destroy()
         
         cal = CalendarDay(0, 86400, [1,2], 0)
         rawhops = [(10,     20,'A'),
@@ -289,7 +289,7 @@ class TestGraph:
         assert [v.label for v in vertices] == ['Seattle', 'Seattle-busstop', 'Portland-busstop', 'Portland']
         assert [e.payload.__class__ for e in edges] == [Link, TripHop, Link]
         
-        spt.destroy_as_spt()
+        spt.destroy()
         g.destroy()
         
     def test_get_route(self):
@@ -350,7 +350,7 @@ class TestGraph:
         t0 = time.time()
         for i in range(n):
             spt = g.shortest_path_tree( v85thStreet, "bogus", State(0) )
-            spt.destroy_as_spt()
+            spt.destroy()
         t1 = time.time()
         
         print "executed %d iterations in %s seconds"%(n,(t1-t0))
@@ -427,7 +427,7 @@ class TestGraphPerformance:
         changes = []
         for i in range(40):
             spt = g.shortest_path_tree( nodeids[ randint(0,len(nodeids)-1) ], "bogus", State(0) )
-            spt.destroy_as_spt()
+            spt.destroy()
             
             thispercent, thisblock = get_mem_usage()
             
