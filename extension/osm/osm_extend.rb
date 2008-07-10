@@ -131,7 +131,6 @@ class Graphserver
 
     end
 
-
     # Processes an OSM node in order to load the graph directly from a file
     # Adds the node to the graph and to a list of nodes,
     # to be processed by the handle_way method
@@ -236,9 +235,6 @@ class Graphserver
       end
 
       # Puts the street in the osm_ways table
-#      @conn.exec "COPY osm_ways (id, name, type, oneway, file) FROM STDIN"
-#      @conn.putline "#{way.id}\t#{name}\t#{type}\t#{oneway}\t#{@file}\n"
-#      @conn.endcopy
       @query << "insert into osm_ways (id, name, type, oneway, file)"
       @query << " VALUES (\'#{way.id}\',\'#{@name}\',\'#{@type}\',\'#{oneway}\',\'#{@file}\');\n"
       @qcount += 1
@@ -259,14 +255,10 @@ class Graphserver
           lat1 = @nodes[to_id][0].to_s
           lon1 = @nodes[to_id][1].to_s
           # Import street in regular sense to the DB
-#          geom = "LINESTRING(#{lon0} #{lat0},#{lon1} #{lat1})"
           @geom = "SRID=#{WGS84_LATLONG_EPSG};LINESTRING(#{lon0} #{lat0},#{lon1} #{lat1})"
-#          @conn.exec "COPY osm_segments (seg_id, id, from_id, to_id, geom ) FROM STDIN"
-#          @conn.putline "#{way.id}-#{node_count.to_s.rjust(digits,'0')}\t#{way.id}\t#{from_id}\t#{to_id}\tSRID=#{WGS84_LATLONG_EPSG};#{geom}\n"
-#          @conn.endcopy
-          @query << "insert into osm_segments (seg_id, id, from_id, to_id, geom )"
-          @query << " VALUES (\'#{way.id}\',\'#{node_count.to_s.rjust(digits,'0')}\',"
-          @query << " VALUES (\'#{way.id}\',\'#{from_id}\',\'#{to_id}\',\'#{@geom}\');\n"
+          @query << "insert into osm_segments (seg_id, id, from_id, to_id, geom ) "
+          @query << "VALUES (\'#{way.id}-#{node_count.to_s.rjust(digits,'0')}\',"
+          @query << "\'#{way.id}\',\'#{from_id}\',\'#{to_id}\',\'#{@geom}\');\n"
           @qcount += 1
           node_count += 1
         end
