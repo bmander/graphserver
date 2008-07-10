@@ -17,11 +17,11 @@ These classes map C structs to Python Ctypes Structures.
 """
 
 class Collapsable():
-    def collapse(self):
-        return self._collapse_type.from_pointer(self._ccollapse(self, state))
+    def collapse(self, state):
+        return self._ccollapse(self.soul, state.soul)
     
-    def collapse_back(self):
-        return self._collapse_type.from_pointer(self._ccollapse_back(self, state))
+    def collapse_back(self,state):
+        return self._ccollapse_back(self.soul, state.soul)
 
 class Walkable():
     """ Implements the walkable interface. """
@@ -731,9 +731,8 @@ EdgePayload._subtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,4:GenericPy
 EdgePayload._cget_type = lgs.epGetType
 EdgePayload._cwalk = lgs.epWalk
 EdgePayload._cwalk_back = lgs.epWalkBack
-EdgePayload._ccollapse = lgs.epCollapse
-EdgePayload._ccollapse_back = lgs.epCollapseBack
-EdgePayload._collapse_type = EdgePayload
+EdgePayload._ccollapse = ccast(lgs.epCollapse, EdgePayload)
+EdgePayload._ccollapse_back = ccast(lgs.epCollapseBack, EdgePayload)
 
 CalendarDay._cnew = lgs.calNew
 CalendarDay._cappend_day = ccast(lgs.calAppendDay, CalendarDay)
@@ -755,9 +754,9 @@ TripHopSchedule._cdel = lgs.thsDestroy
 TripHopSchedule._chop = ccast(lgs.thsGetHop, TripHop)
 TripHopSchedule._cwalk = lgs.thsWalk
 TripHopSchedule._cwalk_back = lgs.thsWalkBack
-TripHopSchedule._ccollapse = lgs.thsCollapse
-TripHopSchedule._ccollapse_back = lgs.thsCollapseBack
-TripHopSchedule._collapse_type = TripHop
+#TripHopSchedule._ccollapse = ccast(lgs.thsCollapse, TripHop)
+#TripHopSchedule._ccollapse_back = lgs.thsCollapseBack
+#TripHopSchedule._collapse_type = TripHop
 
 Street._cnew = lgs.streetNew
 Street._cdel = lgs.streetDestroy

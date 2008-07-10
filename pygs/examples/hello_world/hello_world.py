@@ -1,11 +1,11 @@
 try:
-    from graphserver.engine import XMLGraphEngine
-    from graphserver.structures import TripHopSchedule, CalendarDay, Street, Link, State
+    from pygs.engine import XMLGraphEngine
+    from pygs.structures import TripHopSchedule, CalendarDay, Street, Link, State, Graph
 except ImportError:
     import sys
     sys.path.append("../..")
     from engine import XMLGraphEngine
-    from graphserver import TripHopSchedule, CalendarDay, Street, Link, State
+    from graphserver import TripHopSchedule, CalendarDay, Street, Link, State, Graph
 
 class HelloWorldEngine(XMLGraphEngine):
 
@@ -40,7 +40,6 @@ class HelloWorldEngine(XMLGraphEngine):
     ths = TripHopSchedule( sched, service_id, calendar, tz_offset )
 
     # add the pertinent vertices to the ExampleServer's member variable Graph object:
-
     self.gg.add_vertex( "Seattle-busstop" )
     self.gg.add_vertex( "Portland-busstop" )
 
@@ -77,7 +76,7 @@ class HelloWorldEngine(XMLGraphEngine):
     self.gg.add_edge( "Portland-busstop", "Portland", Street( "a-street-payload", 1.11) )
 
   def __init__(self):
-    super(HelloWorldEngine, self).__init__()
+    super(HelloWorldEngine, self).__init__(Graph())
     self.load_scheduled_data()
     self.load_street_data()
     self.load_links()
