@@ -60,10 +60,7 @@ class Graph(CShadow):
         
         self._cdel(self.soul, free_vertex_payloads, free_edge_payloads)
         self.soul = None
-    
-    def destroy_as_spt(self):
-        self.destroy(1, 0) #destroy the vertex State instances, but not the edge EdgePayload instances, as they're owned by the parent graph
-        
+            
     def add_vertex(self, label):
         #Vertex* gAddVertex( Graph* this, char *label );
         self.check_destroyed()
