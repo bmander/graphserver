@@ -29,10 +29,13 @@ class XMLGraphEngine(object):
             #Throws RuntimeError if no shortest path found.
             vertices, edges = self.gg.shortest_path(from_v, to_v, init_state) 
             ret = ["<?xml version='1.0'?><route>"]
-            for i in range(len(edges)):
-                ret.append(vertices[i].to_xml())
-                ret.append(edges[i].to_xml())
-            ret.append(vertices[-1].to_xml())
+            if vertices is None:
+                ret.append("<error>destination unreachable</error>")
+            else:
+                for i in range(len(edges)):
+                    ret.append(vertices[i].to_xml())
+                    ret.append(edges[i].to_xml())
+                ret.append(vertices[-1].to_xml())
             ret.append("</route>")
             return "".join(ret)
         # TODO
