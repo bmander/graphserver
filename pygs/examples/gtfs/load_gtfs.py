@@ -129,7 +129,7 @@ def add_gtfs_to_graph(g, data_dir):
     for day, service_ids in rawcalendar:
         local_daystart = date_to_secs(day)+time.timezone
         #if daylight savings is in effect
-        if not is_dst(day):
+        if is_dst(day):
             local_daystart -= dst_offset
             daylight_savings = dst_offset
         else:

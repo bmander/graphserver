@@ -7,25 +7,25 @@ from calendar import timegm
 
 #NON-DST DATES
 #weekday
-t1 = (timegm((2008,7,9,3,50,0))+8*3600) #Wed 2008-7-9 03:50:00 PST-0800, right before first train in system
-t2 = (timegm((2008,7,9,23,15,0))+8*3600) #Wed 2008-7-9 11:15:00 PST-0800
-t3 = (timegm((2008,7,10,2,36,0))+8*3600) #Thu 2008-7-10 2:36:00 PST-0800, right after last train in system
+t1 = (timegm((2008,7,9,3,50,0))+7*3600) #Wed 2008-7-9 03:50:00 PDT-0700, right before first train in system
+t2 = (timegm((2008,7,9,23,15,0))+7*3600) #Wed 2008-7-9 11:15:00 PDT-0700
+t3 = (timegm((2008,7,10,2,36,0))+7*3600) #Thu 2008-7-10 2:36:00 PDT-0800, right after last train in system
 
 #saturday
-t4 = (timegm((2008,7,5,3,49,0))+8*3600) #Sat 2008-7-5 03:50:00 PST-0800, right before first train in system
-t5 = (timegm((2008,7,5,23,15,0))+8*3600) #Sat 2008-7-5 11:15:00 PST-0800
-t6 = (timegm((2008,7,6,2,36,0))+8*3600) #Sun 2008-7-6 2:36:00 PST-0800, right after last train in system
+t4 = (timegm((2008,7,5,3,49,0))+7*3600) #Sat 2008-7-5 03:50:00 PDT-0700, right before first train in system
+t5 = (timegm((2008,7,5,23,15,0))+7*3600) #Sat 2008-7-5 11:15:00 PDT-0700
+t6 = (timegm((2008,7,6,2,36,0))+7*3600) #Sun 2008-7-6 2:36:00 PDT-0700, right after last train in system
 
 #sunday
-t7 = (timegm((2008,7,6,3,49,0))+8*3600) #Sun 2008-7-6 03:50:00 PST-0800, right before first train in system
-t8 = (timegm((2008,7,6,23,15,0))+8*3600) #Sun 2008-7-6 11:15:00 PST-0800
-t9 = (timegm((2008,7,7,2,36,0))+8*3600) #Mon 2008-7-7 2:36:00 PST-0800, right after last train in system
+t7 = (timegm((2008,7,6,3,49,0))+7*3600) #Sun 2008-7-6 03:50:00 PDT-0700, right before first train in system
+t8 = (timegm((2008,7,6,23,15,0))+7*3600) #Sun 2008-7-6 11:15:00 PDT-0700
+t9 = (timegm((2008,7,7,2,36,0))+7*3600) #Mon 2008-7-7 2:36:00 PDT-0700, right after last train in system
 
 #DST DATES
 #weekday
-t10 = (timegm((2008,1,9,3,50,0))+7*3600) #Wed 2008-1-9 03:50:00 PST-0800, right before first train in system
-t11 = (timegm((2008,1,9,23,15,0))+7*3600) #Wed 2008-1-9 11:15:00 PST-0800
-t12 = (timegm((2008,1,10,2,36,0))+7*3600) #Thu 2008-1-10 2:36:00 PST-0800, right after last train in system
+t10 = (timegm((2008,1,9,3,50,0))+8*3600) #Wed 2008-1-9 03:50:00 PST-0800, right before first train in system
+t11 = (timegm((2008,1,9,23,15,0))+8*3600) #Wed 2008-1-9 11:15:00 PST-0800
+t12 = (timegm((2008,1,10,2,36,0))+8*3600) #Thu 2008-1-10 2:36:00 PST-0800, right after last train in system
 
 g = Graph()
 add_gtfs_to_graph(g, "./data")
@@ -94,26 +94,31 @@ assert v.outgoing[0].payload.collapse( State(t12) ).trip_id == "01PB1"
 assert v.outgoing[1].payload.collapse( State(t12) ).trip_id == "01SFO1"
 assert v.outgoing[2].payload.collapse( State(t12) ) == None
 
+assert g.shortest_path( "OAK", "12TH", State(t2) ) == (None, None)
+
 print t2
-spt = g.shortest_path_tree( "16TH", "bogus", State(t2) )
+spt = g.shortest_path_tree( "OAK", "bogus", State(t2) )
 
 print spt
 
 for v in spt.vertices:
     print v
     curr = v
-    while curr.label != "16TH":
+    while curr.label != "OAK":
         print "\t%s @ %s"%(str(curr), str(curr.payload))
         curr = curr.incoming[0].from_v
+"""
 
 """
 for e in v.outgoing:
-    print e.to_v.label + " " + str(e.payload.collapse( State(t12) ))
+    print e.to_v.label + " " + str(e.payload.collapse( State(t11) ))
     
     for triphop in e.payload.triphops:
         print triphop
 print "--==--"
-"""
+
+
+
 
 """
 v = g.get_vertex("16TH")
