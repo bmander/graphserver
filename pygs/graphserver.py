@@ -136,6 +136,10 @@ class Graph(CShadow):
    
         spt = self.shortest_path_tree( from_v, to_v, init_state)
         curr = spt.get_vertex( to_v )
+        
+        #if the destination isn't in the SPT, there is no route
+        if curr is None:
+            return None, None
     
         path_vertices.append( curr )
         
@@ -157,6 +161,11 @@ class Graph(CShadow):
           
         spt = self.shortest_path_tree( from_v, to_v, final_state, False )
         curr = spt.get_vertex( from_v )
+        
+        #if the origin isn't in the SPT, there is no route
+        if curr is None:
+            return None,None
+        
         path_vertices.append(curr)
 
         incoming = curr.edge_in(0)
