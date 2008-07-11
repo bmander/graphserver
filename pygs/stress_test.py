@@ -130,6 +130,23 @@ def test_minimal_spt_delete():
         spt.destroy()
         
     grind( func, 100000 )
+    
+def test_shortest_path_grind():
+    s = Graph()
+    s.add_vertex("A")
+    s.add_vertex("B")
+    s.add_vertex("C")
+    s.add_edge("A","B",Street("1", 1.1))
+    s.add_edge("B","A",Street("1", 1.1))
+    s.add_edge("B","C",Street("2", 2.2))
+    
+    def func():
+        spt = s.shortest_path_tree("A","C", State(0))
+        sp = spt.path("C")
+        spt.destroy()
+        
+    grind(func, 50000)
+    
 
 from random import randint
 def random_graph(nvertices, nedges):
@@ -153,12 +170,13 @@ def random_graph(nvertices, nedges):
     return g
     
 if __name__=='__main__':
-    test_state_destroy()
-    test_simple_vertex_destroy()
-    test_street_destroy()
-    test_link_destroy()
-    test_ths_destroy() #this tends to pass despite not cleaning up the triphop's trip_ids
-    test_minimal_graph_delete()
-    test_min_vertex_graph_delete()
-    test_min_edge_graph_delete()
-    test_minimal_spt_delete()
+    #test_state_destroy()
+    #test_simple_vertex_destroy()
+    #test_street_destroy()
+    #test_link_destroy()
+    #test_ths_destroy() #this tends to pass despite not cleaning up the triphop's trip_ids
+    #test_minimal_graph_delete()
+    #test_min_vertex_graph_delete()
+    #test_min_edge_graph_delete()
+    #test_minimal_spt_delete()
+    test_shortest_path_grind()

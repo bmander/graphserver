@@ -128,6 +128,7 @@ class Graph(CShadow):
         return tree.contents
     """
 
+    """
     def shortest_path(self, from_v, to_v, init_state):
         self.check_destroyed()
         
@@ -176,6 +177,7 @@ class Graph(CShadow):
             incoming = curr.edge_in(0)
 
         return path_vertices, path_edges
+    """
 
     def to_dot(self):
         self.check_destroyed()
@@ -185,7 +187,31 @@ class Graph(CShadow):
             ret += "    %s -> %s;\n" % (e.from_v.label, e.to_v.label)
         return ret + "}"
 
-class ShortestPathTree(Graph):    
+class ShortestPathTree(Graph):
+    def path(self, vertex):
+        self.check_destroyed()
+        
+        path_vertices = []
+        path_edges    = []
+   
+        curr = self.get_vertex( vertex )
+        
+        #if the destination isn't in the SPT, there is no route
+        if curr is None:
+            return None, None
+    
+        path_vertices.append( curr )
+        
+        while len(curr.incoming) != 0:
+            edge_in = curr.incoming[0]
+            path_edges.append( edge_in )
+            curr = edge_in.from_v
+            path_vertices.append( curr )
+    
+        path_vertices.reverse()
+        path_edges.reverse()
+        return (path_vertices, path_edges)
+
     def destroy(self):
         #destroy the vertex State instances, but not the edge EdgePayload instances, as they're owned by the parent graph
         super(ShortestPathTree, self).destroy(1, 0)
