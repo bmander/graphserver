@@ -74,11 +74,14 @@ class Graphserver
     #for each service_id in the calendar table
     dates.each do |service_id, mon, tue, wed, thu, fri, sat, sun, start_date, end_date|
       #convert to boolean daymask
-      daymask = [mon, tue, wed, thu, fri, sat, sun].collect do |day| day == "1" end
+      #daymask = [mon, tue, wed, thu, fri, sat, sun].collect do |day| day == "1" end
+      daymask = [mon.to_i, tue.to_i, wed.to_i, thu.to_i, fri.to_i, sat.to_i, sun.to_i].collect do |day| day == 1 end
 
       #Find the UTC date, as if we're in London
-      i = GoogleTransitFeed::parse_date( start_date )  #date as parsed to UTC
-      n = GoogleTransitFeed::parse_date( end_date )    #end date is inclusive
+#      i = GoogleTransitFeed::parse_date( start_date )  #date as parsed to UTC
+#      n = GoogleTransitFeed::parse_date( end_date )    #end date is inclusive
+      i = GoogleTransitFeed::parse_date( start_date.to_s )  #date as parsed to UTC
+      n = GoogleTransitFeed::parse_date( end_date.to_s )    #end date is inclusive
 
       #the expanded calendar is a hash with the dates where services run as keys and
       #the service_ids of particular services running each day as values, grouped in arrays
@@ -100,13 +103,16 @@ class Graphserver
 
     single_dates.each do |service_id, date, exception_type|
       #returns UTC date, as if we're in London
-      i = GoogleTransitFeed::parse_date( date )
+#      i = GoogleTransitFeed::parse_date( date )
+      i = GoogleTransitFeed::parse_date( date.to_s )
       #if the key=>value pair doesn't exist, creates it, elsewhere it does nothing
       expanded_calendar[i] ||= []
 
-      if exception_type == "1" then
+#      if exception_type == "1" then
+      if exception_type.to_i == 1 then
         expanded_calendar[i] << sid_numbers[service_id]
-      elsif exception_type == "2" then
+#      elsif exception_type == "2" then
+      elsif exception_type.to_i == 2 then
         expanded_calendar[i].delete sid_numbers[service_id]
       end
     end

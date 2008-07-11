@@ -140,6 +140,11 @@ ARGV.options do |opts|
           "Runs Rails on the specified port.",
           "Default: 3003") { |v| OPTIONS[:port] = v }
 
+  #If the option -h or --host is found
+  opts.on("-h", "--host=host", String,
+          "Specifies database host.",
+          "Default: nil") { |v| DB_PARAMS[:host] = v }
+
   #If the option -d or --dbname is found
   opts.on("-d", "--dbname=dbname", String,
           "Specifies database name.",
