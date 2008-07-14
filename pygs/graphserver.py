@@ -1,3 +1,4 @@
+
 try:
     from pygs.gsdll import lgs, cproperty, ccast, CShadow, instantiate, PayloadMethodTypes
 except ImportError:
@@ -16,14 +17,14 @@ These classes map C structs to Python Ctypes Structures.
 
 """
 
-class Collapsable():
+class Collapsable:
     def collapse(self, state):
         return self._ccollapse(self.soul, state.soul)
     
     def collapse_back(self,state):
         return self._ccollapse_back(self.soul, state.soul)
 
-class Walkable():
+class Walkable:
     """ Implements the walkable interface. """
     def walk(self, state):
         return State.from_pointer(self._cwalk(self.soul, state.soul))
