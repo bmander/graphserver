@@ -94,7 +94,8 @@ assert v.outgoing[0].payload.collapse( State(t12) ).trip_id == "01PB1"
 assert v.outgoing[1].payload.collapse( State(t12) ).trip_id == "01SFO1"
 assert v.outgoing[2].payload.collapse( State(t12) ) == None
 
-assert g.shortest_path( "OAK", "12TH", State(t2) ) == (None, None)
+spt = g.shortest_path_tree( "OAK", "12TH", State(t2) )
+assert spt.path("12TH") == (None, None)
 
 print t2
 spt = g.shortest_path_tree( "OAK", "bogus", State(t2) )
