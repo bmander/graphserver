@@ -88,21 +88,24 @@ class GSHTTPServer(BaseHTTPServer.HTTPServer):
         self.gengine = gengine
         BaseHTTPServer.HTTPServer.__init__(self, *args)
         
+    def run(self):
+        try:
+            print "starting graphserver"
+            self.serve_forever()
+        except KeyboardInterrupt:
+            print "^C received, shutting down."
+            self.socket.close()
+        
     
 def test():
     import os, sys
     sys.path.append(os.path.dirname(__file__) + "/examples/hello_world")
     sys.path.append("examples/hello_world")
-    print sys.path
     from hello_world import HelloWorldEngine
     eng = HelloWorldEngine()
-    try:
-        httpd = GSHTTPServer(eng, ('', PORT), GSHTTPRequestHandler)
-        print "starting graphserver"
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        print "^C received, shutting down."
-        httpd.socket.close()
+    print "using port %s" % PORT    
+    httpd = GSHTTPServer(eng, ('', PORT), GSHTTPRequestHandler)
+    httpd.run()     
 
 if __name__ == '__main__':
     test()

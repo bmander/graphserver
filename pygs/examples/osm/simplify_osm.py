@@ -1,4 +1,4 @@
-from osm import OSM, Node, Way
+from pygs.ext.osm import OSM, Node, Way
 
 osm = OSM( "map.osm" )
 

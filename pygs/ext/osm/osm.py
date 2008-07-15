@@ -1,11 +1,14 @@
 import xml.sax
 import copy
-from pyproj import Proj, transform
-
+  
+def download_osm(left,bottom,right,top):
+    """ Return a filehandle to the downloaded data."""
+    from urllib import urlopen
+    fp = urlopen( "http://api.openstreetmap.org/api/0.5/map?bbox=%f,%f,%f,%f"%(left,bottom,right,top) )
+    return fp
+  
 def dist(x1,y1,x2,y2):
     return ((x2-x1)**2+(y2-y1)**2)**0.5
-    
-utmzone10 = Proj(init='epsg:26910')
 
 class Node:
     def __init__(self, id, lon, lat):
@@ -48,16 +51,16 @@ class Way:
             
         return ret
         
-    def get_projected_points(self, nodedir):
+    def get_projected_points(self, nodedir, reprojection_func):
         """nodedir is a dictionary of nodeid->node objects"""
         ret = []
         for nodeid in self.nds:
             node = nodedir[ nodeid ]
-            ret.append( utmzone10(node.lon,node.lat) )
+            ret.append( reprojection_func(node.lon,node.lat) )
             
         return ret
         
-    def length(self, nodedir):
+    def length(self, nodedir, reprojection_func):
         """nodedir is a dictionary of nodeid->node objects"""
         ret = 0
         
@@ -65,8 +68,8 @@ class Way:
             thisnode = nodedir[ self.nds[i] ]
             nextnode = nodedir[ self.nds[i+1] ]
             
-            fromx, fromy = utmzone10(thisnode.lon,thisnode.lat)
-            tox, toy = utmzone10(nextnode.lon,nextnode.lat)
+            fromx, fromy = reprojection_func(thisnode.lon,thisnode.lat)
+            tox, toy = reprojection_func(nextnode.lon,nextnode.lat)
             
             ret += dist(fromx,fromy,tox,toy)
         
@@ -81,7 +84,9 @@ class Way:
         return self.nds[-1]
 
 class OSM:
-    def __init__(self, filename):
+    
+    def __init__(self, filename_or_stream):
+        """ File can be either a filename or stream/file object."""
         nodes = {}
         ways = {}
         
@@ -120,7 +125,7 @@ class OSM:
             def characters(self, chars):
                 pass
 
-        xml.sax.parse(filename, OSMHandler)
+        xml.sax.parse(filename_or_stream, OSMHandler)
         
         self.nodes = nodes
         self.ways = ways
@@ -138,8 +143,21 @@ class OSM:
             for split_way in split_ways:
                 new_ways[split_way.id] = split_way
         self.ways = new_ways
-    
-if __name__=='__main__':
-    osm = OSM("map.osm")
-    for way in osm.ways.values():
-        way.length(osm.nodes)
+
+    @classmethod
+    def download_from_bbox(cls, left, bottom, right, top ):
+        """ Retrieve remote OSM data."""
+        fp = download_osm(left, bottom, right, top)
+        osm = cls(fp)
+        fp.close()
+        return osm
+
+    def nearest_node(self, lng, lat):
+        """ Brute force effort to find the nearest start or end node."""
+        best = self.nodes[0]
+        bdist = dist(best.lng,best.lat,lng,lat)
+        for n in self.nodes:
+            tdist = dist(best.lng,best.lat,n.lng,n.lat)
+            if tdist < bdist:
+                best = n
+        return best

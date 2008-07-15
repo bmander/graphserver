@@ -170,7 +170,7 @@ pycapi(lgs.triphopWalkBack, c_void_p, [c_void_p, c_void_p])
 #CUSTOM TYPE API
 class PayloadMethodTypes:
     """ Enumerates the ctypes of the function pointers."""
-    destroy = CFUNCTYPE(c_void_p, c_void_p)
+    destroy = CFUNCTYPE(c_void_p, py_object)
     walk = CFUNCTYPE(c_void_p, py_object, c_void_p)
     walk_back = CFUNCTYPE(c_void_p, py_object, c_void_p)
     collapse = CFUNCTYPE(c_void_p, py_object, c_void_p)

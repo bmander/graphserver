@@ -1,9 +1,9 @@
 import time
-from osm import OSM, Node, Way
+from pygs.ext.osm import OSM, Node, Way
 import sys
 sys.path.append('../..')
 from graphserver import Graph, Street, State
-
+from pyproj import Proj
 
 from urllib import urlopen
 def get_osm_xml( left, bottom, right, top ):
@@ -12,6 +12,7 @@ def get_osm_xml( left, bottom, right, top ):
 
 def main():
     #print get_osm_xml( -122.33, 47.66, -122.31, 47.68 )
+    utmzone10 = Proj(init='epsg:26910')
  
     print "read osm file"
     osm = OSM("map.osm")
@@ -24,7 +25,7 @@ def main():
     print "load edges into graph file"
     for wayid, way in osm.ways.iteritems():
         if 'highway' in way.tags:
-            len = way.length(osm.nodes)
+            len = way.length(osm.nodes, utmzone10)
             
             if way.tags['highway']=='cycleway':
                 len = len/3
@@ -48,8 +49,8 @@ def main():
     for edge in spt.edges:
         osmway = osm.ways[ edge.payload.name ]
         weight = edge.to_v.payload.weight
-        points = osmway.get_projected_points(osm.nodes)
-        length = osmway.length(osm.nodes)
+        points = osmway.get_projected_points(osm.nodes, utmzone10)
+        length = osmway.length(osm.nodes, utmzone10)
         
         fp.write( "%s:%s:%f:%d:"%(edge.from_v.label,edge.to_v.label,length,weight)+",".join( [" ".join([str(c) for c in p]) for p in points] ) + "\n" )
     fp.close()
