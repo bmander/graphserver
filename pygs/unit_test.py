@@ -1,4 +1,5 @@
 from graphserver import *
+from engine import XMLGraphEngine
     
 import os
 import sys
@@ -865,6 +866,66 @@ class TestCalendar:
             assert False #should pop exception by now
         except:
             pass
+    
+from ext.osm.osm import OSM
+from ext.osm.load_osm import add_osm_to_graph
+class TestEngine:
+    def test_basic(self):
+        gg = Graph()
+        eng = XMLGraphEngine(gg)
+        
+        assert eng
+        
+    def test_all_vertex_labels(self):
+        gg = Graph()
+        gg.add_vertex("A")
+        gg.add_vertex("B")
+        gg.add_edge("A","B",Street("1",10))
+        gg.add_edge("B","A",Street("2",10))
+        gg.add_vertex("C")
+        gg.add_edge("C","A",Street("3",10))
+        gg.add_edge("A","C",Street("4",10))
+        gg.add_edge("B","C",Street("5",10))
+        gg.add_edge("C","B",Street("6",10))
+        
+        eng = XMLGraphEngine(gg)
+        
+        assert eng.all_vertex_labels() == "<?xml version='1.0'?><labels><label>A</label><label>B</label><label>C</label></labels>"
+        
+    def test_walk_edges_street(self):
+        gg = Graph()
+        gg.add_vertex("A")
+        gg.add_vertex("B")
+        gg.add_edge("A","B",Street("1",10))
+        gg.add_edge("B","A",Street("2",10))
+        gg.add_vertex("C")
+        gg.add_edge("C","A",Street("3",10))
+        gg.add_edge("A","C",Street("4",10))
+        gg.add_edge("B","C",Street("5",10))
+        gg.add_edge("C","B",Street("6",10))
+        
+        eng = XMLGraphEngine(gg)
+        
+        assert eng.walk_edges("A", time=0) == "<?xml version='1.0'?><vertex><state time='Thu Jan  1 00:00:00 1970' weight='0' dist_walked='0.0' num_transfers='0' prev_edge_type='5' prev_edge_name='None'></state><outgoing_edges><edge><destination label='C'><state time='Thu Jan  1 00:00:11 1970' weight='22' dist_walked='10.0' num_transfers='0' prev_edge_type='0' prev_edge_name='4'></state></destination><payload><Street name='4' length='10.000000' /></payload></edge><edge><destination label='B'><state time='Thu Jan  1 00:00:11 1970' weight='22' dist_walked='10.0' num_transfers='0' prev_edge_type='0' prev_edge_name='1'></state></destination><payload><Street name='1' length='10.000000' /></payload></edge></outgoing_edges></vertex>"
+
+    def outgoing_edges_entire_osm(self):
+        gg = Graph()
+        osm = OSM("sf.osm")
+        add_osm_to_graph(gg,osm)
+        
+        eng = XMLGraphEngine(gg)
+        
+        assert eng.outgoing_edges("65287655") == "<?xml version='1.0'?><edges><edge><dest><Vertex degree_out='4' degree_in='4' label='65287660'/></dest><payload><Street name='8915843-0' length='218.044876' /></payload></edge></edges>"
+        
+    def walk_edges_entire_osm(self):
+        gg = Graph()
+        osm = OSM("sf.osm")
+        add_osm_to_graph(gg,osm)
+        
+        eng = XMLGraphEngine(gg)
+        
+        assert eng.walk_edges("65287655", time=0) == "<?xml version='1.0'?><vertex><state time='Thu Jan  1 00:00:00 1970' weight='0' dist_walked='0.0' num_transfers='0' prev_edge_type='5' prev_edge_name='None'></state><outgoing_edges><edge><destination label='65287660'><state time='Thu Jan  1 00:04:16 1970' weight='512' dist_walked='218.044875866' num_transfers='0' prev_edge_type='0' prev_edge_name='8915843-0'></state></destination><payload><Street name='8915843-0' length='218.044876' /></payload></edge></outgoing_edges></vertex>"
+        
         
 #the problem with this code snippet is that it runs _all_ tests in he same directory, some of which are slow stress tests
 #if __name__=='__main__':
@@ -872,6 +933,6 @@ class TestCalendar:
 #    nose.main()
 
 if __name__=='__main__':
-    mod = TestPyPayload()
-    mod.test_failures()
+    mod = TestEngine()
+    mod.outgoing_edges_entire_osm()
 
