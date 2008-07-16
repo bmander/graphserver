@@ -56,13 +56,15 @@ class XMLGraphEngine(object):
 
     def outgoing_edges(self, label):
         ret = ["<?xml version='1.0'?>"]
+        
+        v = self.gg.get_vertex(label)
+        
         ret.append("<edges>")
-        for v in self.gg.vertices:
-            for e in v.outgoing:
-                ret.append("<edge>")
-                ret.append("<dest>%s</dest>" % e.to_v.to_xml())
-                ret.append("<payload>%s</payload>" %e.payload.to_xml())
-                ret.append("</edge>")
+        for e in v.outgoing:
+            ret.append("<edge>")
+            ret.append("<dest>%s</dest>" % e.to_v.to_xml())
+            ret.append("<payload>%s</payload>" %e.payload.to_xml())
+            ret.append("</edge>")
         ret.append("</edges>")
         return "".join(ret)
 
@@ -77,7 +79,10 @@ class XMLGraphEngine(object):
         for edge in vertex.outgoing:
             ret.append("<edge>")
             ret.append("<destination label='%s'>" % edge.to_v.label)
-            collapsed = edge.payload.collapse( init_state )
+            if hasattr( edge.payload, 'collapse' ):
+                collapsed = edge.payload.collapse( init_state )
+            else:
+                collapsed = edge.payload
             if collapsed:
                 ret.append(collapsed.walk( init_state ).to_xml())
             else:
