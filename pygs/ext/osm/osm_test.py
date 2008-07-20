@@ -14,7 +14,8 @@ class TestOSM:
         osm = OSM("map.osm")
         print "iterating over all the ways and calculating length."
         for way in osm.ways.values():
-            way.length(osm.nodes, utmzone10)
+            way.length(utmzone10)
+            assert len(way.nds) > 1
         print "done"
         
     def test_osmgraph(self):
@@ -30,7 +31,7 @@ class TestOSM:
             print "finding a better vertex..."
         
         print "finding shortest path tree for %s" % random_vertex_label
-        spt = g.shortest_path_tree(random_vertex_label, "!bogus!!@", State(0))
+        spt = g.shortest_path_tree(random_vertex_label, "!bogus!!@", State(1,0))
         assert spt
         s = StringIO()
         g.write_spt(s, spt)

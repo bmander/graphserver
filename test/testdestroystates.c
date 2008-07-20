@@ -10,7 +10,7 @@ int main() {
     gAddVertex( gg, "B" );
     gAddEdge( gg, "A", "B", (EdgePayload*)linkNew());
     
-    State* initstate = stateNew(0);
+    State* initstate = stateNew(1, 0);
     Graph* spt = gShortestPathTree( gg, "A", "B", initstate );
     
     gDestroy(spt, 1, 0);

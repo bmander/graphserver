@@ -152,7 +152,7 @@ def add_gtfs_to_graph(g, data_dir):
             str_service_id = rawtriphopschedule[0][0].service_id #servic_id in string form
             service_id = cal.service_id_directory[str_service_id]
                 
-            ths = TripHopSchedule( hops, service_id, cal.head, -time.timezone )
+            ths = TripHopSchedule( hops, service_id, cal.head, -time.timezone, authority=0 )
             e = g.add_edge( fromv.stop_id, tov.stop_id, ths )
 
 

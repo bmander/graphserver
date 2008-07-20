@@ -11,7 +11,7 @@ def add_osm_to_graph(g, osm, projection, multipliers=[], prefix="osm"):
     
     for wayid, way in osm.ways.iteritems():
         if 'highway' in way.tags:
-            len = way.length(osm.nodes, projection)
+            len = way.length(projection)
             
             if way.tags['highway'] in multipliers:
                 len = len*multipliers[way.tags['highway']]

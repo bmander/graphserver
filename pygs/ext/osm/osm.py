@@ -18,7 +18,8 @@ class Node:
         self.tags = {}
         
 class Way:
-    def __init__(self, id):
+    def __init__(self, id, osm):
+        self.osm = osm
         self.id = id
         self.nds = []
         self.tags = {}
@@ -51,22 +52,29 @@ class Way:
             
         return ret
         
-    def get_projected_points(self, nodedir, reprojection_func):
-        """nodedir is a dictionary of nodeid->node objects"""
+    def get_projected_points(self, reprojection_func=lambda x,y:(x,y)):
+        """nodedir is a dictionary of nodeid->node objects. If reprojection_func is None, returns unprojected points"""
         ret = []
+        
         for nodeid in self.nds:
-            node = nodedir[ nodeid ]
+            node = self.osm.nodes[ nodeid ]
             ret.append( reprojection_func(node.lon,node.lat) )
             
         return ret
         
-    def length(self, nodedir, reprojection_func):
+    def to_canonical(self, srid, reprojection_func=None):
+        """Returns canonical string for this geometry"""
+        
+        return "SRID=%d;LINESTRING(%s)"%(srid, ",".join( ["%f %f"%(x,y) for x,y in self.get_projected_points()] ) )
+        
+        
+    def length(self, reprojection_func=lambda x,y:(x,y)):
         """nodedir is a dictionary of nodeid->node objects"""
         ret = 0
         
         for i in range(len(self.nds)-1):
-            thisnode = nodedir[ self.nds[i] ]
-            nextnode = nodedir[ self.nds[i+1] ]
+            thisnode = self.osm.nodes[ self.nds[i] ]
+            nextnode = self.osm.nodes[ self.nds[i+1] ]
             
             fromx, fromy = reprojection_func(thisnode.lon,thisnode.lat)
             tox, toy = reprojection_func(nextnode.lon,nextnode.lat)
@@ -90,6 +98,8 @@ class OSM:
         nodes = {}
         ways = {}
         
+        superself = self
+        
         class OSMHandler(xml.sax.ContentHandler):
             @classmethod
             def setDocumentLocator(self,loc):
@@ -108,7 +118,7 @@ class OSM:
                 if name=='node':
                     self.currElem = Node(attrs['id'], float(attrs['lon']), float(attrs['lat']))
                 elif name=='way':
-                    self.currElem = Way(attrs['id'])
+                    self.currElem = Way(attrs['id'], superself)
                 elif name=='tag':
                     self.currElem.tags[attrs['k']] = attrs['v']
                 elif name=='nd':
@@ -133,8 +143,11 @@ class OSM:
         #count times each node is used
         node_histogram = dict.fromkeys( self.nodes.keys(), 0 )
         for way in self.ways.values():
-            for node in way.nds:
-                node_histogram[node] += 1
+            if len(way.nds) < 2:       #if a way has only one node, delete it out of the osm collection
+                del self.ways[way.id]
+            else:
+                for node in way.nds:
+                    node_histogram[node] += 1
         
         #use that histogram to split all ways, replacing the member set of ways
         new_ways = {}

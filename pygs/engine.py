@@ -17,13 +17,13 @@ class XMLGraphEngine(object):
     def graph(self):
         return self.gg
 
-    def parse_init_state(self, time=int(now()), ):
-        return State(time)
+    def parse_init_state(self, numauthorities, time=int(now()), ):
+        return State(numauthorities, time)
 
     def shortest_path(self, from_v, to_v, **statevars):
         if not self.gg.get_vertex(from_v) and self.gg.get_vertex(to_v):
             raise
-        init_state = self.parse_init_state(**statevars)
+        init_state = self.parse_init_state(self.gg.numauthorities, **statevars)
         #print init_state
         try:
             #Throws RuntimeError if no shortest path found.
@@ -70,7 +70,7 @@ class XMLGraphEngine(object):
 
     def walk_edges(self, label, **statevars):
         vertex = self.gg.get_vertex( label )
-        init_state = self.parse_init_state(**statevars)
+        init_state = self.parse_init_state(self.gg.numauthorities, **statevars)
 
         ret = ["<?xml version='1.0'?>"]
         ret.append("<vertex>")
@@ -99,7 +99,7 @@ class XMLGraphEngine(object):
         
     def collapse_edges(self, label, **statevars):
         vertex = self.gg.get_vertex( label )
-        init_state = self.parse_init_state(**statevars)
+        init_state = self.parse_init_state(self.gg.numauthorities, **statevars)
         ret = ["<?xml version='1.0'?>"]
         ret.append("<vertex>")
         ret.append(init_state.to_xml())

@@ -11,6 +11,6 @@ if not os.path.exists(LIBSO):
 setup( name='graphserver',
        version='0.1',
        url='http://graphserver.wiki.sourceforge.net/',
-       py_modules=['pygs.gsdll', 'pygs.graphserver', 'pygs.engine', 'pygs.server', 'pygs.ext',
-                   'pygs.ext.osm.osm', 'pygs.ext.osm.graph', 'pygs.ext.osm.server'],
+       py_modules=['pygs.gsdll', 'pygs.graphserver', 'pygs.engine', 'pygs.server', 'pygs.ext', 'pygs.ext.osm',
+                   'pygs.ext.osm.osm', 'pygs.ext.osm.graph', 'pygs.ext.osm.server', 'pygs.ext.osm.load_osm'],
        data_files=[('/usr/lib',[LIBSO])])

@@ -52,8 +52,9 @@ class Graph(CShadow):
     
     size = cproperty(lgs.gSize, c_long)
     
-    def __init__(self):
+    def __init__(self, numauthorities=1):
         self.soul = self._cnew()
+        self.numauthorities = numauthorities #a central point that keeps track of how large the list of calendards need ot be in the state variables.
         
     def destroy(self, free_vertex_payloads=1, free_edge_payloads=1):
         #void gDestroy( Graph* this, int free_vertex_payloads, int free_edge_payloads );
@@ -330,10 +331,20 @@ class CalendarDay(CShadow):
 
 class State(CShadow):
     
-    def __init__(self, time=None):
+    def __init__(self, numcalendars, time=None):
         if time is None:
             time = now()
-        self.soul = self._cnew(long(time))
+        self.soul = self._cnew(numcalendars, long(time))
+        
+    def calendar_day(self, authority):
+        soul = lgs.stateCalendarDay( self.soul, authority )
+        return CalendarDay.from_pointer( soul )
+        
+    def set_calendar_day(self, authority, cal):
+        if authority>self.numcalendars-1:
+            raise Exception("Authority index %d out of bounds"%authority)
+        
+        lgs.stateSetCalendarDay( self.soul, c_int(authority), cal.soul)
         
     def destroy(self):
         self.check_destroyed()
@@ -367,8 +378,9 @@ class State(CShadow):
                self.num_transfers,
                self.prev_edge_type,
                self.prev_edge_name)
-        if self.calendar_day:
-            ret += self.calendar_day.to_xml()
+        for i in range(self.numcalendars):
+            if self.calendar_day(i) is not None:
+                ret += self.calendar_day(i).to_xml()
         return ret + "</state>"
         
     time           = cproperty(lgs.stateGetTime, c_long, setter=lgs.stateSetTime)
@@ -377,7 +389,7 @@ class State(CShadow):
     num_transfers  = cproperty(lgs.stateGetNumTransfers, c_int, setter=lgs.stateSetNumTransfers)
     prev_edge_type = cproperty(lgs.stateGetPrevEdgeType, c_int) # should not use: setter=lgs.stateSetPrevEdgeType)
     prev_edge_name = cproperty(lgs.stateGetPrevEdgeName, c_char_p, setter=lgs.stateSetPrevEdgeName)
-    calendar_day   = cproperty(lgs.stateCalendarDay, c_void_p, CalendarDay, setter=lgs.stateSetCalendarDay)
+    numcalendars   = cproperty(lgs.stateGetNumCalendars, c_int)
         
 
 class Vertex(CShadow):
@@ -689,7 +701,7 @@ class TripHopSchedule(EdgePayload):
     calendar = cproperty( lgs.thsGetCalendar, c_void_p, CalendarDay )
     timezone_offset = cproperty( lgs.thsGetTimezoneOffset, c_int )
     
-    def __init__(self, hops, service_id, calendar, timezone_offset):
+    def __init__(self, hops, service_id, calendar, timezone_offset, authority):
         #TripHopSchedule* thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, int timezone_offset );
         
         n = len(hops)
@@ -701,7 +713,7 @@ class TripHopSchedule(EdgePayload):
             arrives[i] = hops[i][1]
             trip_ids[i] = c_char_p(hops[i][2])
             
-        self.soul = lgs.thsNew(departs, arrives, trip_ids, n, ServiceIdType(service_id), calendar.soul, c_int(timezone_offset) )
+        self.soul = lgs.thsNew(departs, arrives, trip_ids, n, ServiceIdType(service_id), calendar.soul, c_int(timezone_offset), c_int(authority) )
     
     n = cproperty(lgs.thsGetN, c_int)
     service_id = cproperty(lgs.thsGetServiceId, c_int)

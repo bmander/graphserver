@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "hashtable_gs.h"
+#include "hashtable_itr.h"
 #include "statetypes.h"
 
 typedef enum {
@@ -23,11 +25,13 @@ typedef struct State {
    int           num_transfers;
    edgepayload_t prev_edge_type;
    char*         prev_edge_name;
-   CalendarDay*  calendar_day;
+   //CalendarDay*  calendar_day;
+   int           numcalendars;
+   CalendarDay** calendars;
 } State;
 
 State*
-stateNew(long time);
+stateNew(int numcalendars, long time);
 
 void
 stateDestroy( State* this);
@@ -53,8 +57,11 @@ stateGetPrevEdgeType( State* this );
 char*
 stateGetPrevEdgeName( State* this );
 
+int
+stateGetNumCalendars( State* this );
+
 CalendarDay*
-stateCalendarDay( State* this );
+stateCalendarDay( State* this, int authority );
 
 void
 stateSetTime( State* this, long time );
@@ -176,10 +183,11 @@ struct TripHopSchedule {
   ServiceId service_id;
   CalendarDay* calendar;
   int timezone_offset; //number of seconds this schedule is offset from GMT, eg. -8*3600=-28800 for US West Coast
+  int authority;
 };
 
 TripHopSchedule*
-thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, int timezone_offset );
+thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, int timezone_offset, int authority );
 
 void
 thsDestroy(TripHopSchedule* this);

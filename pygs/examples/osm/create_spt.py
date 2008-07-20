@@ -4,7 +4,8 @@
    
    
 import time
-from pygs.ext.osm.osm import OSM, Node, Way
+import pygs.ext
+from pygs.ext.osm import OSM, Node, Way
 from pygs.graphserver import Graph, Street, State
 from pygs.ext.osm.load_osm import add_osm_to_graph
 from pyproj import Proj
@@ -18,7 +19,7 @@ def main():
     
     add_osm_to_graph(g, osm, utmzone10, {'cycleway':0.3333, 'footway':0.5, 'motorway':100} )
         
-    random_vertex_label = "65287655" #one end of Pitt Ave in Sebastapol
+    random_vertex_label = "osm65305832" #one end of Pitt Ave in Sebastapol
     
     print "find shortest path tree"
     t0 = time.time()
@@ -30,8 +31,8 @@ def main():
     for edge in spt.edges:
         osmway = osm.ways[ edge.payload.name ]
         weight = edge.to_v.payload.weight
-        points = osmway.get_projected_points(osm.nodes, utmzone10)
-        length = osmway.length(osm.nodes, utmzone10)
+        points = osmway.get_projected_points(utmzone10)
+        length = osmway.length(utmzone10)
         
         fp.write( "%s:%s:%f:%d:"%(edge.from_v.label,edge.to_v.label,length,weight)+",".join( [" ".join([str(c) for c in p]) for p in points] ) + "\n" )
     fp.close()

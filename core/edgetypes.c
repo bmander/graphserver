@@ -4,7 +4,7 @@
 
 //STATE FUNCTIONS
 State*
-stateNew(long time) {
+stateNew(int numcalendars, long time) {
   State* ret = (State*)malloc( sizeof(State) );
   ret->time = time;
   ret->weight = 0;
@@ -12,7 +12,13 @@ stateNew(long time) {
   ret->num_transfers = 0;
   ret->prev_edge_name = NULL;
   ret->prev_edge_type = PL_NONE;
-  ret->calendar_day = NULL;
+  ret->numcalendars = numcalendars;
+  ret->calendars = (CalendarDay**)malloc(numcalendars*sizeof(CalendarDay*)); //hash of strings->calendardays
+    
+  int i;
+  for(i=0; i<numcalendars; i++) {
+      ret->calendars[i] = NULL;
+  }
 
   return ret;
 }
@@ -21,12 +27,17 @@ State*
 stateDup( State* this ) {
   State* ret = (State*)malloc( sizeof(State) );
   memcpy( ret, this, sizeof( State ) );
+    
+  ret->calendars = (CalendarDay**)malloc(this->numcalendars*sizeof(CalendarDay*)); //hash of strings->calendardays
+  memcpy( ret->calendars, this->calendars, this->numcalendars*sizeof(CalendarDay*));
+    
   return ret;
 }
 
 //the State object does not own State#calendar
 void
 stateDestroy(State* this) {
+  free( this->calendars );
   free( this );
 }
 
@@ -48,8 +59,11 @@ stateGetPrevEdgeType( State* this ) { return this->prev_edge_type; }
 char*
 stateGetPrevEdgeName( State* this ) { return this->prev_edge_name; }
 
+int
+stateGetNumCalendars( State* this ) { return this->numcalendars; }
+
 CalendarDay*
-stateCalendarDay( State* this ) { return this->calendar_day; }
+stateCalendarDay( State* this, int authority ) { return this->calendars[authority]; }
 
 void
 stateSetTime( State* this, long time ) { this->time = time; }
@@ -64,7 +78,7 @@ void
 stateSetNumTransfers( State* this, int n) { this->num_transfers = n; }
 
 void
-stateSetCalendarDay( State* this,  CalendarDay* cal ) { this->calendar_day = cal; }
+stateSetCalendarDay( State* this,  int authority, CalendarDay* cal ) { this->calendars[authority] = cal; }
 
 void
 stateSetPrevEdgeName( State* this, char* name ) { this->prev_edge_name = name; }
@@ -260,7 +274,7 @@ int hopcmp(const void* a, const void* b) {
  */
 
 TripHopSchedule*
-thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, int timezone_offset ) {
+thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, int timezone_offset, int authority ) {
   TripHopSchedule* ret = (TripHopSchedule*)malloc(sizeof(TripHopSchedule));
   ret->type = PL_TRIPHOPSCHED;
   ret->hops = (TripHop*)malloc(n*sizeof(TripHop));
@@ -268,6 +282,7 @@ thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id
   ret->service_id = service_id;
   ret->calendar = calendar;
   ret->timezone_offset = timezone_offset;
+  ret->authority = authority;
 
   int i;
   for(i=0; i<n; i++) {
@@ -291,11 +306,11 @@ thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id
 inline long
 thsSecondsSinceMidnight( TripHopSchedule* this, State* param ) {
     //difference between utc midnight and local midnight
-    long utc_offset = this->timezone_offset + param->calendar_day->daylight_savings;
+    long utc_offset = this->timezone_offset + param->calendars[this->authority]->daylight_savings;
     //difference between local midnight and calendar day begin
-    long since_midnight_local = (param->calendar_day->begin_time+utc_offset)%SECONDS_IN_DAY;
+    long since_midnight_local = (param->calendars[this->authority]->begin_time+utc_offset)%SECONDS_IN_DAY;
     //seconds since the calendar day began
-    long since_calday_begin = param->time - param->calendar_day->begin_time;
+    long since_calday_begin = param->time - param->calendars[this->authority]->begin_time;
     //seconds since local midnight
     return since_midnight_local + since_calday_begin;
 }

@@ -91,7 +91,7 @@ int main() {
                 trip_ids[k] = trip_id;
             }
             
-            TripHopSchedule* ths = thsNew( departs, arrives, trip_ids, nhops, service_id, cal, timezone_offset );
+            TripHopSchedule* ths = thsNew( departs, arrives, trip_ids, nhops, service_id, cal, timezone_offset, 0 );
             
             gAddEdge( gg, label, destlabel, (EdgePayload*)ths );
             
@@ -102,7 +102,7 @@ int main() {
     
     
     long t = 1215674100; //#Wed 2008-7-9 11:15:00 PST-0800
-    Graph* spt = gShortestPathTree( gg, "16TH", "bogus", stateNew( t ) );
+    Graph* spt = gShortestPathTree( gg, "16TH", "bogus", stateNew( 1, t ) );
     
     gDestroy( spt, 1, 0 );
     

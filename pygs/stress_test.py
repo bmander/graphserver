@@ -28,7 +28,7 @@ def grind(func, n):
 def test_state_destroy():
     """State picks up after itself"""
     def func():
-        s = State(0)
+        s = State(1,0)
         s.destroy()
         
     grind(func, 1000000)
@@ -70,7 +70,7 @@ def test_ths_destroy():
     """TripHopSchedule.destroy() completely destroys TripHopSchedule"""
     
     def func():
-        s = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0)
+        s = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0,authority=0)
         s.destroy()
         
     grind(func, 100000)
@@ -108,8 +108,8 @@ def test_min_edge_graph_delete():
         s.add_edge("A","B",Street("2",2.2))
         s.add_edge("A","B",Street("3",3.3))
         s.add_edge("B","A",Link())
-        s.add_edge("B","C",TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0))
-        s.add_edge("B","C",TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0))
+        s.add_edge("B","C",TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0,authority=0))
+        s.add_edge("B","C",TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0,authority=0))
         s.destroy()
         
     grind(func, 100000)
@@ -126,7 +126,7 @@ def test_minimal_spt_delete():
     s.add_edge("B","C",Street("2", 2.2))
     
     def func():
-        spt = s.shortest_path_tree("A", "C", State(0))
+        spt = s.shortest_path_tree("A", "C", State(1,0))
         spt.destroy()
         
     grind( func, 100000 )
@@ -141,7 +141,7 @@ def test_shortest_path_grind():
     s.add_edge("B","C",Street("2", 2.2))
     
     def func():
-        spt = s.shortest_path_tree("A","C", State(0))
+        spt = s.shortest_path_tree("A","C", State(1,0))
         sp = spt.path("C")
         spt.destroy()
         

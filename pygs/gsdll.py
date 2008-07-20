@@ -115,9 +115,10 @@ pycapi(lgs.calDayOfOrAfter, c_void_p, [c_void_p, c_long])
 pycapi(lgs.calDayOfOrBefore, c_void_p, [c_void_p, c_long])
 
 # STATE API
-pycapi(lgs.stateNew, c_void_p, [c_long])
+pycapi(lgs.stateNew, c_void_p, [c_int, c_long])
 pycapi(lgs.stateDup, c_void_p)
 pycapi(lgs.stateDestroy, c_void_p)
+pycapi(lgs.stateCalendarDay, c_void_p, [c_int])
 
 #VERTEX API
 pycapi(lgs.vNew, c_void_p, [c_char_p])

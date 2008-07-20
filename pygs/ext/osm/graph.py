@@ -44,7 +44,7 @@ class OSMGraph(Graph):
         return 'highway' in way.tags
     
     def create_edgepayload(self, way):
-        len = way.length(self.osm.nodes, self.projection)
+        len = way.length(self.projection)
         return Street( way.id, len )
             
     def shortest_path_tree(self, from_v, to_v, state):
@@ -75,9 +75,9 @@ class OSMGraph(Graph):
             osmway = self.osm.ways[ edge.payload.name ]
             state = edge.to_v.payload
             if reproject:
-                points = osmway.get_projected_points(self.osm.nodes, self.projection)
+                points = osmway.get_projected_points(self.projection)
             else:
-                points = osmway.get_projected_points(self.osm.nodes, lambda x,y: (x,y))
+                points = osmway.get_projected_points()
             length = edge.payload.length #osmway.length(osm.nodes)
             elapsed = state.time
             num_transfers = state.num_transfers
