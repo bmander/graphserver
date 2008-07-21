@@ -12,7 +12,7 @@ def get_mem_usage():
     parsed_psout = psout.split("\n")[1].split()
     
     return float(parsed_psout[3]), int( parsed_psout[4] )
-"""
+
 class TestGraph:
     def test_basic(self):
         g = Graph()
@@ -674,7 +674,7 @@ class TestLink:
         assert after.dist_walked==0
         assert after.prev_edge_type==3
         assert after.prev_edge_name=="LINK"
-"""
+
 class TestTriphopSchedule:
     def triphop_schedule_test(self):
         
@@ -752,9 +752,6 @@ class TestTriphopSchedule:
         assert sfinal.calendar_day(0).service_ids == [1,2]
         assert sfinal.calendar_day(1).service_ids == [3,4]
         
-    def test_walk_afterhours:
-        
-
     def test_walk_wrong_day(self):
         rawhops = [(10,     20,'Foo to Bar')]
         cal = CalendarDay(0, 10, [1], 0)
@@ -783,7 +780,7 @@ class TestTriphopSchedule:
         assert th.arrive == 3600
         assert th.transit == 3600
         assert th.trip_id == "Foo to Bar"
-"""
+
 class TestListNode:
     def list_node_test(self):
         l = ListNode()
@@ -985,7 +982,7 @@ class TestEngine:
         eng = XMLGraphEngine(gg)
         
         assert eng.walk_edges("65287655", time=0) == "<?xml version='1.0'?><vertex><state time='Thu Jan  1 00:00:00 1970' weight='0' dist_walked='0.0' num_transfers='0' prev_edge_type='5' prev_edge_name='None'></state><outgoing_edges><edge><destination label='65287660'><state time='Thu Jan  1 00:04:16 1970' weight='512' dist_walked='218.044875866' num_transfers='0' prev_edge_type='0' prev_edge_name='8915843-0'></state></destination><payload><Street name='8915843-0' length='218.044876' /></payload></edge></outgoing_edges></vertex>"
-"""
+
         
 #the problem with this code snippet is that it runs _all_ tests in he same directory, some of which are slow stress tests
 #if __name__=='__main__':
