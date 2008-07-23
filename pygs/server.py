@@ -50,6 +50,10 @@ class GSHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def _shortest_path(self, **kw):
         return self.server.gengine.shortest_path(kw['from'],kw['to'],
                                                  time=int(kw.get('time',0)))
+                                                 
+    def _shortest_path_retro(self, **kw):
+        return self.server.gengine.shortest_path_retro(kw['from'],kw['to'],
+                                                       time=int(kw.get('time',0)))
 
     def _all_vertex_labels(self,**kw):
         return self.server.gengine.all_vertex_labels(**kw)
@@ -59,6 +63,9 @@ class GSHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def _walk_edges(self,**kw):
         return self.server.gengine.walk_edges(**kw)
+        
+    def _walk_edges_retro(self,**kw):
+        return self.server.gengine.walk_edges_retro(**kw)
 
     def _outgoing_edges(self,**kw):
         return self.server.gengine.outgoing_edges(**kw)
@@ -78,7 +85,9 @@ class GSHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     urlpatterns = ((_rc(r'/vertices'), _all_vertex_labels, None),
                (_rc(r'/vertex/outgoing'), _outgoing_edges, ('label',)),
                (_rc(r'/vertex/outgoing/collapsed'), _collapse_edges, ('label', 'time')),
+               (_rc(r'/vertex/walk_retro'), _walk_edges_retro, ('label', 'time')),
                (_rc(r'/vertex/walk'), _walk_edges, ('label', 'time')),
+               (_rc(r'/shortest_path_retro'), _shortest_path_retro, ('from','to','time')),
                (_rc(r'/shortest_path'), _shortest_path, ('from','to','time')))
 
 

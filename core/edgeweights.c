@@ -1,5 +1,5 @@
 #define WALKING_SPEED 0.85    //meters per second
-#define MIN_TRANSFER_TIME 300 //five minutes
+#define MIN_TRANSFER_TIME 1//300 //five minutes
 #define TRANSFER_PENALTY 3    //rough measure of how bad a close transfer is
 #define MAX_WALK 1200         //in meters; he better part of a mile
 #define WALKING_OVERAGE 0.1   //hassle/second/meter
@@ -124,15 +124,16 @@ triphopWalkBack(TripHop* this, State* params) {
 
       //add a weight penalty to the transfer under some conditions
       if( wait < MIN_TRANSFER_TIME && 
-          params->num_transfers > 0)
+          params->num_transfers > 0) {
         transfer_penalty = (MIN_TRANSFER_TIME-wait)*TRANSFER_PENALTY;
+      }
       //transfer_penalty = 1000; //penalty of making a transfer; flat rate.
 
       ret->num_transfers += 1;
     }
 
     int i;
-#ifndef ROUTE_REVRSE
+#ifndef ROUTE_REVERSE
     ret->time           += wait + this->transit;
     for(i=0; i<params->numcalendars; i++) {
         if( ret->calendars[i] && ret->time >= ret->calendars[i]->end_time) {
@@ -140,10 +141,10 @@ triphopWalkBack(TripHop* this, State* params) {
         }
     }
 #else
-    ret->time           -= wait - this->transit;
+    ret->time           -= (wait + this->transit);
     for(i=0; i<params->numcalendars; i++) {
         if( ret->calendars[i] && ret->time < ret->calendars[i]->begin_time) {
-          ret->calendar_day = ret->calendars[i]->prev_day;
+          ret->calendars[i] = ret->calendars[i]->prev_day;
         }
     }
 #endif

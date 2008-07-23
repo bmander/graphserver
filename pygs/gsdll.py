@@ -163,6 +163,8 @@ pycapi(lgs.thsWalk, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.thsWalkBack, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.thsCollapse, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.thsCollapseBack, c_void_p, [c_void_p, c_void_p])
+pycapi(lgs.thsGetNextHop, c_void_p, [c_void_p, c_long])
+pycapi(lgs.thsGetLastHop, c_void_p, [c_void_p, c_long])
 
 #TRIPHOP API
 pycapi(lgs.triphopWalk, c_void_p, [c_void_p, c_void_p])

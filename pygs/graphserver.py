@@ -190,15 +190,26 @@ class Graph(CShadow):
         return ret + "}"
 
 class ShortestPathTree(Graph):
-    def path(self, vertex):
+    def path(self, destination):
+        path_vertices, path_edges = self.path_retro(destination)
+        
+        if path_vertices is None:
+            return (None,None)
+        
+        path_vertices.reverse()
+        path_edges.reverse()
+        
+        return (path_vertices, path_edges)
+        
+    def path_retro(self,origin):
         self.check_destroyed()
         
         path_vertices = []
         path_edges    = []
    
-        curr = self.get_vertex( vertex )
+        curr = self.get_vertex( origin )
         
-        #if the destination isn't in the SPT, there is no route
+        #if the origin isn't in the SPT, there is no route
         if curr is None:
             return None, None
     
@@ -210,8 +221,6 @@ class ShortestPathTree(Graph):
             curr = edge_in.from_v
             path_vertices.append( curr )
     
-        path_vertices.reverse()
-        path_edges.reverse()
         return (path_vertices, path_edges)
 
     def destroy(self):
@@ -368,14 +377,14 @@ class State(CShadow):
         return self.to_xml()
 
     def to_xml(self):
-        self.check_destroyed()
+        self.check_destroyed()  
         
         ret = "<state time='%s' weight='%s' dist_walked='%s' " \
               "num_transfers='%s' prev_edge_type='%s' prev_edge_name='%s'>" % \
               (asctime(gmtime(self.time)),
                self.weight,
                self.dist_walked,
-               self.num_transfers,
+              self.num_transfers,
                self.prev_edge_type,
                self.prev_edge_name)
         for i in range(self.numcalendars):
@@ -752,6 +761,23 @@ class TripHopSchedule(EdgePayload):
         triphopsoul = func(self.soul, state.soul)
         
         return TripHop.from_pointer( triphopsoul )
+        
+    def collapse_back(self, state):
+        self.check_destroyed()
+        
+        func = lgs.thsCollapseBack
+        func.restype = c_void_p
+        func.argtypes = [c_void_p, c_void_p]
+        
+        triphopsoul = func(self.soul, state.soul)
+        
+        return TripHop.from_pointer( triphopsoul )
+        
+    def get_next_hop(self, time):
+        return TripHop.from_pointer( self._cget_next_hop(self.soul, time) )
+        
+    def get_last_hop(self, time):
+        return TripHop.from_pointer( self._cget_last_hop(self.soul, time) )
 
 Graph._cnew = lgs.gNew
 Graph._cdel = lgs.gDestroy
@@ -802,6 +828,8 @@ TripHopSchedule._cdel = lgs.thsDestroy
 TripHopSchedule._chop = ccast(lgs.thsGetHop, TripHop)
 TripHopSchedule._cwalk = lgs.thsWalk
 TripHopSchedule._cwalk_back = lgs.thsWalkBack
+TripHopSchedule._cget_last_hop = lgs.thsGetLastHop
+TripHopSchedule._cget_next_hop = lgs.thsGetNextHop
 #TripHopSchedule._ccollapse = ccast(lgs.thsCollapse, TripHop)
 #TripHopSchedule._ccollapse_back = lgs.thsCollapseBack
 #TripHopSchedule._collapse_type = TripHop
