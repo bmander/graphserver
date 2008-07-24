@@ -9,4 +9,4 @@ $ make
 Test it
 
 $ cd test
-$ ruby test_ruby-wrapper
+$ ruby test_ruby_wrapper.rb
