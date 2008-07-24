@@ -22,9 +22,31 @@ def create_ths
 
     service_id = 0   #The service type for this day is "0". Service_ids are integers, but stand in for "weekday" or "saturday" etc.
     tz_offset = 0    #The timezone offset in seconds. US West coast is -28800 (-8 hours) for instance.
-    ths = TripHopSchedule.new( service_id, sched, calendar, tz_offset )
+    ths = TripHopSchedule.new( service_id, sched, calendar, tz_offset, authority=0 )
     
     return ths
+end
+  
+class TestCalendar < Test::Unit::TestCase
+  def setup
+    @calendar = Calendar.new
+    
+    day_begin = 0               #In unix time - Midnight UTC, January 1st 1970
+    day_end = 86400             #Also unix time - Midnight UTC, January 2nd 1970
+    service_ids = [1,2]           #One bus service type runs this day, called "0"
+    daylight_savings_offset = 0 #The daylight savings time offset for this day is 0 seconds
+    @calendar.append_day( day_begin, day_end, service_ids, daylight_savings_offset )
+  end
+  
+  def teardown
+    
+  end
+  
+  def test_calendar
+    assert( @calendar.begin_time == 0 )
+    assert( @calendar.end_time == 86400 )
+    assert( @calendar.service_ids == [1,2] )
+  end
 end
 
 
@@ -113,7 +135,7 @@ class TestGraph < Test::Unit::TestCase
     e = g.add_edge("home", "work", s)
     g.add_edge("work", "home", Street.new("backwards",1) )
     
-    spt = g.shortest_path_tree("home", "work", State.new(0), true)
+    spt = g.shortest_path_tree("home", "work", State.new(1,0), true)
     assert spt
     assert spt.class == Graph
     assert spt.get_vertex("home").degree_out==1
@@ -132,7 +154,7 @@ class TestGraph < Test::Unit::TestCase
     g.add_edge("home", "work", Link.new() )
     g.add_edge("work", "home", Link.new() )
     
-    spt = g.shortest_path_tree("home", "work", State.new(0), true)
+    spt = g.shortest_path_tree("home", "work", State.new(1,0), true)
     assert spt
     assert spt.class == Graph
     assert spt.get_vertex("home").edge_out(0).payload.class == Link
@@ -151,7 +173,7 @@ class TestGraph < Test::Unit::TestCase
     e = g.add_edge("home", "work", s)
     g.add_edge("work", "home", Street.new("backwards",1) )
     
-    spt = g.shortest_path_tree("home", "work", State.new(0), false)
+    spt = g.shortest_path_tree("home", "work", State.new(1,0), false)
     assert spt
     assert spt.class == Graph
     assert spt.get_vertex("home").degree_out==0
@@ -167,7 +189,7 @@ class TestGraph < Test::Unit::TestCase
     s = Street.new( "helloworld", 1 )
     e = g.add_edge("home", "work", s)
     
-    sp = g.shortest_path("home", "work", State.new(0))
+    sp = g.shortest_path("home", "work", State.new(1,0))
     
     assert sp
   end
@@ -196,7 +218,7 @@ class TestGraph < Test::Unit::TestCase
     g.add_edge( "Seattle", "Portland", Street.new("I-5 south", 5000) )
     g.add_edge( "Portland", "Seattle", Street.new("I-5 north", 5500) )
     
-    spt = g.shortest_path_tree( "Seattle", "Portland", State.new(0), true )
+    spt = g.shortest_path_tree( "Seattle", "Portland", State.new(1, 0), true )
     
     assert spt.get_vertex("Seattle").edge_out(0).payload.name == "I-5 south"
     
@@ -208,21 +230,21 @@ class TestGraph < Test::Unit::TestCase
     g.add_edge( "Portland", "Portland-busstop", Link.new() )
     g.add_edge( "Portland-busstop", "Portland", Link.new() )
     
-    spt = g.shortest_path_tree( "Seattle", "Seattle-busstop", State.new(0), true )
+    spt = g.shortest_path_tree( "Seattle", "Seattle-busstop", State.new(1, 0), true )
     assert spt.get_vertex("Seattle-busstop").edge_in(0).payload.class == Link
     
-    spt = g.shortest_path_tree( "Seattle-busstop", "Portland", State.new(0), true )
+    spt = g.shortest_path_tree( "Seattle-busstop", "Portland", State.new(1, 0), true )
     assert spt.get_vertex("Portland").edge_in(0).payload.class == Street
     
     ths = create_ths()
     
     g.add_edge( "Seattle-busstop", "Portland-busstop", ths )
     
-    spt = g.shortest_path_tree( "Seattle", "Portland", State.new(0), true )
+    spt = g.shortest_path_tree( "Seattle", "Portland", State.new(1,0), true )
     
     assert spt.get_vertex( "Portland" ).edge_in(0).from.edge_in(0).from.edge_in(0).from.label == "Seattle"
     
-    vertices, edges = g.shortest_path( "Seattle", "Portland", State.new(0) )
+    vertices, edges = g.shortest_path( "Seattle", "Portland", State.new(1,0) )
     
     assert vertices.collect{|v| v.label} == ['Seattle', 'Seattle-busstop', 'Portland-busstop', 'Portland']
     assert edges.collect{|e| e.payload.class} == [Link, TripHop, Link]
@@ -232,18 +254,51 @@ end
 
 class TestState < Test::Unit::TestCase
   def test_basic
-    s = State.new(0)
+    s = State.new(1,0)
     assert s['time'] == 0
     assert s['weight'] == 0
     assert s['dist_walked'] == 0
     assert s['num_transfers'] == 0
     assert s['prev_edge_name'] == nil
     assert s['prev_edge_type'] == 5
-    assert s['calendar_day'] == nil
+    assert s['bogus'] == nil
+  end
+
+  def test_set_calendar
+    s = State.new(2,0)
+    
+    #====Create a Calendar Object====
+    calendar = Calendar.new
+    calendar.append_day( 0, 86400, [1,2], 0 )
+    
+    s.set_calendar( 0, calendar )
+    
+    calout = s.get_calendar( 0 )
+    
+    assert( calout.begin_time == 0 )
+    assert( calout.end_time == 86400 )
+    assert( calout.service_ids == [1,2] )
+    
+    calout = s.get_calendar( 1 )
+    assert( calout == nil )
+    
+    calendar2 = Calendar.new
+    calendar2.append_day( 0, 86400, [3,4], 0 )
+    
+    s.set_calendar( 1, calendar2 )
+    
+    calout2 = s.get_calendar( 1 )
+    
+    assert( calout2.service_ids == [3,4] )
+    
+    assert( s['calendars'].length == 2 )
+    
+    assert( s.to_xml == "<state weight='0' time='Wed Dec 31 19:00:00 -0500 1969' prev_edge_name='' dist_walked='0.0' num_transfers='0' prev_edge_type='5' ><calendar begin_time='Wed Dec 31 19:00:00 -0500 1969' end_time='Thu Jan 01 19:00:00 -0500 1970' service_ids='1, 2' /><calendar begin_time='Wed Dec 31 19:00:00 -0500 1969' end_time='Thu Jan 01 19:00:00 -0500 1970' service_ids='3, 4' /></state>" )
+    
   end
         
   def test_dup
-    s = State.new(0)
+    s = State.new(1,0)
     
     s2 = s.dup()
     
@@ -276,7 +331,7 @@ class TestStreet < Test::Unit::TestCase
     def test_walk
         s = Street.new("longstreet", 2)
         
-        after = s.walk(State.new(0))
+        after = s.walk(State.new(1,0))
         assert after['time'] == 2
         assert after['weight'] == 4
         assert after['dist_walked'] == 2
@@ -295,7 +350,7 @@ class TestLink < Test::Unit::TestCase
     def test_walk
         l = Link.new()
         
-        after = l.walk(State.new(0))
+        after = l.walk(State.new(1,0))
         
         assert after['time']==0
         assert after['weight']==0
@@ -326,7 +381,7 @@ class TestTriphopSchedule < Test::Unit::TestCase
     def test_walk
         ths = create_ths()
         
-        s = ths.walk(State.new(0))
+        s = ths.walk(State.new(1,0))
         
         assert_equal( 20, s['time'] )
         assert_equal( 20, s['weight'] )
@@ -340,7 +395,7 @@ class TestTriphopSchedule < Test::Unit::TestCase
     def test_collapse
         ths = create_ths()
         
-        th = ths.collapse(State.new(0))
+        th = ths.collapse(State.new(1,0))
         
         assert_equal( 10, th.depart )
         assert_equal( 20, th.arrive )

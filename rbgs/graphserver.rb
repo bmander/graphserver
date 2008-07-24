@@ -62,6 +62,8 @@ class State
       if name == "time" then #TODO kludge alert
         #If the key is "time", inserts "time='value'"
         ret << "time='#{Time.at( value ).inspect}' "
+      elsif name == 'calendars' then
+        #do nothing
       else
         #Otherwise writes "name='value'" unless the object value has a to_xml method
         ret << "#{name}='#{CGI.escape(value.to_s)}' " unless value.public_methods.include? "to_xml"
@@ -72,6 +74,11 @@ class State
     #Process to_xml method for value objects
     self.to_hash.each_pair do |name, value|
       ret << value.to_xml if value.public_methods.include? "to_xml"
+    end
+  
+    #for each calendar
+    self['calendars'].each do |cal|
+      ret << cal.to_xml
     end
 
     ret << "</state>"
@@ -156,6 +163,7 @@ ARGV.options do |opts|
 end
 
 class Graphserver
+
   attr_reader :gg
 
   #Extracts the 'time' parameter from the GET request
@@ -171,6 +179,7 @@ class Graphserver
   end
 
   def initialize
+    
     @gg = Graph.create #horrible hack
 
     # Creates the WEBrick server
@@ -317,6 +326,7 @@ class Graphserver
         rescue ArgumentError
           ret << "ERROR: Invalid parameters."
       end
+    end
 
     #Response to GET request "/walk_edges"
     @server.mount_proc( "/walk_edges" ) do |request, response|

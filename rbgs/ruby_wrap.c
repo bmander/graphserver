@@ -527,13 +527,29 @@ VALUE t_state_set( VALUE self, VALUE rbkey, VALUE rbvalue ) {
     state->prev_edge_type = NUM2INT( rbvalue );
   else if (!strcmp(key, "prev_edge_name"))
     state->prev_edge_name = STR2CSTR( rbvalue );
-  else if (!strcmp(key, "calendar_day"))
-//    state->calendar_day = unpack_cal( rbvalue );
-    state->calendars = unpack_cal( rbvalue );
   else
     return Qnil;
 
   return rbvalue;
+}
+
+VALUE t_state_set_cal( VALUE self, VALUE rbauthority, VALUE rbvalue ) {
+    State* state = unpack_state( self );
+    CalendarDay* cal = unpack_cal( rbvalue );
+    int authority = NUM2INT( rbauthority );
+    
+    stateSetCalendarDay( state, authority, cal );
+    
+    return Qnil;
+}
+
+VALUE t_state_get_cal( VALUE self, VALUE rbauthority ) {
+    State* state = unpack_state( self );
+    int authority = NUM2INT( rbauthority );
+    
+    CalendarDay* ret = stateCalendarDay( state, authority );
+    
+    return pack_cal( ret );
 }
 
 VALUE t_state_to_hash( VALUE self ) {
@@ -546,7 +562,14 @@ VALUE t_state_to_hash( VALUE self ) {
   rb_hash_aset( ret, rb_str_new2( "num_transfers" ), INT2NUM( state->num_transfers ) ) ;
   rb_hash_aset( ret, rb_str_new2( "prev_edge_type" ), INT2NUM( state->prev_edge_type ) );
   rb_hash_aset( ret, rb_str_new2( "prev_edge_name" ), (state->prev_edge_name?rb_str_new2(state->prev_edge_name ):Qnil ) );
-  rb_hash_aset( ret, rb_str_new2( "calendar_day" ), pack_cal( state->calendar_day ) );
+
+  //create, initialize, and set calendar array
+  VALUE calary = rb_ary_new();
+  int i;
+  for(i=0; i<state->numcalendars; i++) {
+    rb_ary_push( calary, pack_cal( state->calendars[i] ) );
+  }
+  rb_hash_aset( ret, rb_str_new2( "calendars" ), calary );
 
   return ret;
 }
@@ -851,6 +874,8 @@ void Init_Graphserver() {
   rb_define_singleton_method( cState, "new", t_state_new, 2 );
   rb_define_method( cState, "[]=", t_state_set, 2 );
   rb_define_method( cState, "[]", t_state_ref, 1 );
+  rb_define_method( cState, "set_calendar", t_state_set_cal, 2 );
+  rb_define_method( cState, "get_calendar", t_state_get_cal, 1 );
   rb_define_method( cState, "inspect", t_state_inspect, 0 );
   rb_define_method( cState, "to_hash", t_state_to_hash, 0 );
   rb_define_method( cState, "dup", t_state_dup, 0 );
