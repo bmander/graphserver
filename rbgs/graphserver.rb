@@ -190,7 +190,6 @@ class Graphserver
       ret << "vertices_from_address?add=ADDRESS"
       ret << "stops_from_coords?lat=LAT&lon=LON"
       ret << "keep_alive"
-      ret << "dot"
       response.body = ret.join("\n")
     end
 
