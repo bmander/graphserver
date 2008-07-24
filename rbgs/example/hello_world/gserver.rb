@@ -14,6 +14,7 @@ USAGE = %<
  .../shortest_path?from=Seattle&to=Portland&time=0&debug=true (finds short for given unix time, with verbose output)
 >
 
+$: << "../.."
 require 'graphserver.rb'
 
 class ExampleServer < Graphserver
@@ -44,7 +45,7 @@ class ExampleServer < Graphserver
 
     service_id = 0   #The service type for this day is "0". Service_ids are integers, but stand in for "weekday" or "saturday" etc.
     tz_offset = 0    #The timezone offset in seconds. US West coast is -28800 (-8 hours) for instance.
-    ths = TripHopSchedule.new( service_id, sched, calendar, tz_offset )
+    ths = TripHopSchedule.new( service_id, sched, calendar, tz_offset, 0 )
 
     # add the pertinent vertices to the ExampleServer's member variable Graph object:
 

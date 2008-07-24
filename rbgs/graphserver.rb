@@ -168,8 +168,8 @@ class Graphserver
 
   #Extracts the 'time' parameter from the GET request
   #If it doesn't exist, takes the current time
-  def parse_init_state request
-    State.new( (request.query['time'] or Time.now) ) #breaks without the extra parens
+  def parse_init_state request, numcalendars=1
+    State.new( numcalendars, (request.query['time'] or Time.now) ) #breaks without the extra parens
   end
 
   #Extracts the 'format' parameter from the GET request
