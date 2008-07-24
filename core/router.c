@@ -11,6 +11,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
   Vertex *u, *v;
   Vertex *spt_u, *spt_v;
   State *du, *dv;
+  int count = 1;
 
   //Goal Variables
 #ifndef RETRO
@@ -31,8 +32,8 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
 /*
  *  CENTRAL ITERATION
  *
- */ 
-  
+ */
+
   while( !dirfibheap_empty( q ) ) {                  //Until the priority queue is empty:
     u = dirfibheap_extract_min( q );                 //get the lowest-weight Vertex 'u',
 
@@ -63,7 +64,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
         dv = NULL;                                       //which may not exist yet
         old_w = INFINITY;
       }
-    
+
       /*TODO: proposed edge evaluation procedure:
         (1) collapse edge using du
         (2) find node impedance from incoming collapsed edge to outgoing collapsed edge
@@ -100,14 +101,20 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
         dirfibheap_insert_or_dec_key( q, v, new_w );    // rekey v in the priority queue
 
         // If this is the first time v has been reached
-        if( !spt_v )
+        if( !spt_v ) {
           spt_v = gAddVertex( spt, v->label );        //Copy v over to the SPT
+          count++;
+          }
+
+        if((count%10000) == 0)
+          fprintf(stdout, "Shortest path tree size: %d\n",count);
 
         if(spt_v->payload)
             stateDestroy(spt_v->payload);
         spt_v->payload = new_dv;                      //Set the State of v in the SPT to the current winner
 
-        vSetParent( spt_v, spt_u, collapsed );      //Make u the parent of v in the SPT
+        if(edge->geom!=NULL) vSetParentGeom( spt_v, spt_u, collapsed, edge->geom->data);
+        else vSetParent( spt_v, spt_u, collapsed );      //Make u the parent of v in the SPT
       } else {
         stateDestroy(new_dv); //new_dv will never be used; merge it with the infinite.
       }
@@ -117,5 +124,6 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
 
   dirfibheap_delete( q );
 
+  fprintf(stdout, "Final shortest path tree size: %d\n",count);
   return spt;
 }

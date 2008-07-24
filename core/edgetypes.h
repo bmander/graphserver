@@ -230,7 +230,7 @@ thsCollapseBack( TripHopSchedule* this, State* params );
 inline long
 thsSecondsSinceMidnight( TripHopSchedule* this, State* param );
 
-inline TripHop* 
+inline TripHop*
 thsGetNextHop(TripHopSchedule* this, long time);
 
 inline TripHop*
@@ -272,9 +272,9 @@ defineCustomPayloadType(void (*destroy)(void*),
 						State* (*walkback)(void*,State*),
 						EdgePayload* (*collapse)(void*,State*),
 						EdgePayload* (*collapseBack)(void*,State*));
-					
 
-void 
+
+void
 undefineCustomPayloadType( PayloadMethods* this );
 
 CustomPayload*
@@ -300,5 +300,33 @@ cpCollapse(CustomPayload* this, State* params);
 
 EdgePayload*
 cpCollapseBack(CustomPayload* this, State* params);
+
+// ------------ DECLARATIONS FOR GEOM --------------------------
+
+typedef struct Geom {
+	char *data;
+}Geom;
+
+Geom*
+geomNew (char * geomdata);
+
+void
+geomDestroy(Geom* this);
+
+
+//--------------DECLARATIONS FOR COORDINATES---------------------
+typedef struct Coordinates {
+   long lat;
+   long lon;
+}Coordinates;
+
+Coordinates*
+coordinatesNew(long latitude,long length);
+
+void
+coordinatesDestroy(Coordinates* this);
+
+Coordinates*
+coordinatesDup(Coordinates* this);
 
 #endif

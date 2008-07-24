@@ -160,7 +160,7 @@ inline VALUE pack_ep_as_children( EdgePayload* unpacked ) {
       return pack_triphop( (TripHop*)unpacked );
     case PL_LINK:
       return pack_link( (Link*)unpacked );
-    case PL_RUBYVALUE:
+    case PL_EXTERNVALUE:
       return (VALUE)unpacked;
     default:
       return Qnil;
@@ -175,7 +175,7 @@ VALUE t_ep_collapse( VALUE self, VALUE rbstate ) {
 
   EdgePayload* ret = epCollapse( ep, state );
 
-  return pack_ep_as_children( ret ); 
+  return pack_ep_as_children( ret );
 }
 
 //LINK METHODS----------------------------------------------------------
@@ -251,7 +251,8 @@ VALUE t_street_inspect( VALUE self ) {
 //TRIPHOPSCHEDULE METHODS----------------------------------------------------------
 
 //rbtriphops is an array of [depart, arrive, trip_id]
-VALUE t_ths_new( VALUE class, VALUE rbservice_id, VALUE rbtriphops, VALUE rbcalendar, VALUE rbtimezone_offset ) {
+//VALUE t_ths_new( VALUE class, VALUE rbservice_id, VALUE rbtriphops, VALUE rbcalendar, VALUE rbtimezone_offset ) {
+VALUE t_ths_new( VALUE class, VALUE rbservice_id, VALUE rbtriphops, VALUE rbcalendar, VALUE rbtimezone_offset, VALUE rbauthority ) {
   long size = RARRAY(rbtriphops)->len;
   int* departs = (int*)malloc(size*sizeof(int));
   int* arrives = (int*)malloc(size*sizeof(int));
@@ -263,7 +264,7 @@ VALUE t_ths_new( VALUE class, VALUE rbservice_id, VALUE rbtriphops, VALUE rbcale
 
     departs[i] = NUM2INT(rb_ary_entry(triphop, 0));
     arrives[i] = NUM2INT(rb_ary_entry(triphop, 1));
-    
+
     char* tid  = STR2CSTR( rb_ary_entry( triphop, 2 ) );
     int tid_len = strlen( tid ) + 1;
     trip_ids[i] = (char*)malloc(tid_len*sizeof(char));
@@ -272,8 +273,10 @@ VALUE t_ths_new( VALUE class, VALUE rbservice_id, VALUE rbtriphops, VALUE rbcale
   int service_id = NUM2INT( rbservice_id );
   CalendarDay* calendar = unpack_cal( rbcalendar );
   int timezone_offset = NUM2INT( rbtimezone_offset );
+  int authority = NUM2INT( rbauthority );
 
-  TripHopSchedule* raw = thsNew( departs, arrives, trip_ids, size, service_id, calendar, timezone_offset );
+//  TripHopSchedule* raw = thsNew( departs, arrives, trip_ids, size, service_id, calendar, timezone_offset );
+  TripHopSchedule* raw = thsNew( departs, arrives, trip_ids, size, service_id, calendar, timezone_offset, authority );
 
   free(departs);
   free(arrives);
@@ -356,7 +359,7 @@ VALUE t_triphop_walk_back( VALUE self, VALUE rbstate ) {
 
 VALUE t_triphop_depart( VALUE self ) {
   TripHop* th = unpack_triphop( self );
-  
+
   return INT2NUM( th->depart );
 }
 
@@ -383,9 +386,9 @@ VALUE t_triphop_trip_id( VALUE self ) {
 
 VALUE t_cal_new( VALUE class ) {
   VALUE ret = Data_Wrap_Struct( cCalendar, 0, 0, NULL );
- 
+
   rb_obj_call_init( ret, 0, 0 );
- 
+
   return ret;
 }
 
@@ -404,7 +407,7 @@ VALUE t_cal_append_day( VALUE self, VALUE begin_time, VALUE end_time, VALUE serv
   free( c_service_ids );
 
   DATA_PTR( self ) = ret;
-  return self; 
+  return self;
 }
 
 VALUE t_cal_inspect( VALUE self ) {
@@ -421,7 +424,7 @@ VALUE t_cal_inspect( VALUE self ) {
 
 VALUE t_cal_begin_time( VALUE self ) {
   CalendarDay* this = unpack_cal( self );
-  
+
   return INT2NUM( this->begin_time );
 }
 
@@ -438,7 +441,7 @@ VALUE t_cal_service_ids( VALUE self ) {
 
   int i;
   for(i=0; i<this->n_service_ids; i++) {
-    rb_ary_push( ret, INT2NUM( this->service_ids[i] ) );   
+    rb_ary_push( ret, INT2NUM( this->service_ids[i] ) );
   }
 
   return ret;
@@ -453,7 +456,7 @@ VALUE t_cal_previous( VALUE self ) {
     return Qnil;
 
   DATA_PTR( self ) = prev_day;
-  return self; 
+  return self;
 }
 
 VALUE t_cal_next( VALUE self ) {
@@ -495,13 +498,16 @@ VALUE t_cal_day_of_or_before( VALUE self, VALUE rbtime ) {
 }
 
 //MST CORE OBJECTS======================================================
-VALUE t_state_new( VALUE class, VALUE rbtime ) {
+//VALUE t_state_new( VALUE class, VALUE rbtime ) {
+VALUE t_state_new( VALUE class, VALUE rbnumcalendars, VALUE rbtime ) {
+  int numcalendars = NUM2INT( rbnumcalendars );
   long time = NUM2LONG( rb_funcall( rbtime, rb_intern( "to_i" ), 0 ) );
 
-  VALUE ret = pack_state( stateNew( time ) );
- 
+//  VALUE ret = pack_state( stateNew( time ) );
+  VALUE ret = pack_state( stateNew( numcalendars, time ) );
+
   rb_obj_call_init( ret, 0, 0 );
- 
+
   return ret;
 }
 
@@ -522,7 +528,8 @@ VALUE t_state_set( VALUE self, VALUE rbkey, VALUE rbvalue ) {
   else if (!strcmp(key, "prev_edge_name"))
     state->prev_edge_name = STR2CSTR( rbvalue );
   else if (!strcmp(key, "calendar_day"))
-    state->calendar_day = unpack_cal( rbvalue );
+//    state->calendar_day = unpack_cal( rbvalue );
+    state->calendars = unpack_cal( rbvalue );
   else
     return Qnil;
 
@@ -566,7 +573,7 @@ VALUE t_state_dup( VALUE self ) {
 
 VALUE t_v_new( VALUE self, VALUE label ) {
     Vertex* vv = vNew( STR2CSTR(label) );
-    
+
     return pack_v( vv );
 }
 
@@ -638,6 +645,12 @@ static VALUE t_e_payload( VALUE self ) {
   return pack_ep_as_children( e->payload );
 }
 
+VALUE t_edge_geom( VALUE self ) {
+  Edge* e = unpack_e( self );
+  if (e->geom==NULL) return rb_str_new2("");
+  return rb_str_new2(e->geom->data);
+}
+
 static VALUE t_e_walk( VALUE self, VALUE rbinit ) {
   Edge* e = unpack_e( self );
 
@@ -684,7 +697,7 @@ static VALUE t_init(VALUE self)
 static VALUE t_add_vertex(VALUE self, VALUE key)
 {
   Graph* gg = unpack_g( self );
-  
+
   Vertex* vv = gAddVertex( gg, STR2CSTR( key ) );
 
   return pack_v( vv );
@@ -708,11 +721,20 @@ static VALUE t_add_edge(VALUE self, VALUE key_from, VALUE key_to, VALUE rbpayloa
   return pack_e( ee );
 }
 
+static VALUE t_add_edge_geom(VALUE self, VALUE key_from, VALUE key_to, VALUE rbpayload, VALUE rbgeom)
+{
+
+  char *geom=STR2CSTR(rbgeom);
+  Graph* gg = unpack_g( self );
+  Edge* ee = gAddEdgeGeom( gg, STR2CSTR( key_from ), STR2CSTR( key_to ), unpack_ep( rbpayload ) ,geom);
+  return pack_e( ee );
+}
+
 static VALUE t_get_size(VALUE self) {
     Graph* gg = unpack_g( self );
-    
+
     long size = gSize( gg );
-    
+
     return LONG2NUM( size );
 }
 
@@ -792,13 +814,14 @@ void Init_Graphserver() {
   rb_define_method( cStreet, "inspect", t_street_inspect, 0 );
 
   cTripHopSchedule = rb_define_class("TripHopSchedule", cEdgePayload);
-  rb_define_singleton_method( cTripHopSchedule, "new", t_ths_new, 4 );
+//  rb_define_singleton_method( cTripHopSchedule, "new", t_ths_new, 4 );
+  rb_define_singleton_method( cTripHopSchedule, "new", t_ths_new, 5 );
   rb_define_method( cTripHopSchedule, "walk", t_ths_walk, 1 );
   rb_define_method( cTripHopSchedule, "walk_back", t_ths_walk_back, 1);
   rb_define_method( cTripHopSchedule, "inspect", t_ths_inspect, 0 );
   rb_define_method( cTripHopSchedule, "triphops", t_ths_triphops, 0 );
   rb_define_method( cTripHopSchedule, "service_id", t_ths_service_id, 0);
-  
+
   cTripHop = rb_define_class( "TripHop", cEdgePayload) ;
   rb_define_method( cTripHop, "walk", t_triphop_walk, 1 );
   rb_define_method( cTripHop, "walk_back", t_triphop_walk_back, 1 );
@@ -824,7 +847,8 @@ void Init_Graphserver() {
 
   //MST CORE OBJECTS
   cState = rb_define_class( "State", rb_cObject );
-  rb_define_singleton_method( cState, "new", t_state_new, 1 );
+//  rb_define_singleton_method( cState, "new", t_state_new, 1 );
+  rb_define_singleton_method( cState, "new", t_state_new, 2 );
   rb_define_method( cState, "[]=", t_state_set, 2 );
   rb_define_method( cState, "[]", t_state_ref, 1 );
   rb_define_method( cState, "inspect", t_state_inspect, 0 );
@@ -845,6 +869,7 @@ void Init_Graphserver() {
   rb_define_method(cEdge, "to", t_e_to, 0);
   rb_define_method(cEdge, "from", t_e_from, 0);
   rb_define_method(cEdge, "payload", t_e_payload, 0);
+  rb_define_method(cEdge, "geom", t_edge_geom, 0);
   rb_define_method(cEdge, "walk", t_e_walk, 1);
   rb_define_method(cEdge, "inspect", t_e_inspect, 0 );
 
@@ -854,6 +879,7 @@ void Init_Graphserver() {
   rb_define_method(cGraph, "get_vertex", t_get_vertex, 1);
   rb_define_method(cGraph, "vertices", t_vertices, 0);
   rb_define_method(cGraph, "add_edge", t_add_edge, 3);
+  rb_define_method(cGraph, "add_edge_geom", t_add_edge_geom, 4);
   rb_define_method(cGraph, "shortest_path_tree", t_shortest_path_tree, 4);
   rb_define_method(cGraph, "size", t_get_size, 0);
 //  rb_define_method(cGraph, "shortest_path", t_shortest_path, 4);

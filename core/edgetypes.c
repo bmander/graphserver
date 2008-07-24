@@ -14,7 +14,7 @@ stateNew(int numcalendars, long time) {
   ret->prev_edge_type = PL_NONE;
   ret->numcalendars = numcalendars;
   ret->calendars = (CalendarDay**)malloc(numcalendars*sizeof(CalendarDay*)); //hash of strings->calendardays
-    
+
   int i;
   for(i=0; i<numcalendars; i++) {
       ret->calendars[i] = NULL;
@@ -27,10 +27,10 @@ State*
 stateDup( State* this ) {
   State* ret = (State*)malloc( sizeof(State) );
   memcpy( ret, this, sizeof( State ) );
-    
+
   ret->calendars = (CalendarDay**)malloc(this->numcalendars*sizeof(CalendarDay*)); //hash of strings->calendardays
   memcpy( ret->calendars, this->calendars, this->numcalendars*sizeof(CalendarDay*));
-    
+
   return ret;
 }
 
@@ -315,6 +315,52 @@ thsSecondsSinceMidnight( TripHopSchedule* this, State* param ) {
     return since_midnight_local + since_calday_begin;
 }
 
+//GEOM FUNTIONS
+
+Geom*
+geomNew (char * geomdata) {
+
+        if (geomdata==NULL)
+		return NULL;
+	Geom* tmp=(Geom *)malloc(sizeof(Geom));
+        tmp->data=strdup(geomdata);
+	return tmp;
+}
+
+void
+geomDestroy(Geom* this){
+
+	if (this!=NULL)
+	{
+		if (this->data!=NULL) free(this->data);
+		free(this);
+		this=NULL;
+	}
+}
+
+
+//COORDINATES FUNTIONS
+Coordinates*
+coordinatesNew(long latitude,long length)
+{
+	Coordinates* ret=(Coordinates*)malloc(sizeof(Coordinates));
+	ret->lat=latitude;
+	ret->lon=length;
+	return ret;
+}
+
+void
+coordinatesDestroy(Coordinates* this){
+	if (this!=NULL) free(this);
+}
+
+Coordinates*
+coordinatesDup(Coordinates* this) {
+	Coordinates* ret=(Coordinates*)malloc(sizeof(Coordinates));
+	memcpy(ret,this,sizeof( Coordinates ));
+	return ret;
+}
+
 //DEBUG CODE
 void
 thsPrintHops(TripHopSchedule* this) {
@@ -332,7 +378,7 @@ thsDestroy(TripHopSchedule* this) {
   	for(i=0; i<this->n; i++) {
         free( this->hops[i].trip_id );
   	}
-  	
+
   	free(this->hops);
   	free(this);
 }
@@ -394,9 +440,9 @@ defineCustomPayloadType(void (*destroy)(void*),
 	return this;
 }
 
-void 
+void
 undefineCustomPayloadType( PayloadMethods* this ) {
-	free(this);	
+	free(this);
 }
 
 CustomPayload*
@@ -426,13 +472,13 @@ cpMethods( CustomPayload* this ) {
 
 State*
 cpWalk(CustomPayload* this, State* params) {
-	State* s = this->methods->walk(this->soul, params);	
+	State* s = this->methods->walk(this->soul, params);
 	s->prev_edge_type = PL_EXTERNVALUE;
 	return s;
 }
 State*
 cpWalkBack(CustomPayload* this, State* params) {
-	State* s = this->methods->walkBack(this->soul, params);	
+	State* s = this->methods->walkBack(this->soul, params);
 	s->prev_edge_type = PL_EXTERNVALUE;
 	return s;
 }
@@ -441,14 +487,14 @@ EdgePayload*
 cpCollapse(CustomPayload* this, State* params) {
 	if (this->methods->collapse)
 		return this->methods->collapse(this->soul, params);
-	return (EdgePayload*)this;	
+	return (EdgePayload*)this;
 }
 
 EdgePayload*
 cpCollapseBack(CustomPayload* this, State* params) {
 	if (this->methods->collapseBack)
 		return this->methods->collapseBack(this->soul, params);
-	return (EdgePayload*)this;	
+	return (EdgePayload*)this;
 }
 
 #undef ROUTE_REVERSE

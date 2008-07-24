@@ -3,6 +3,7 @@ require "tiger"
 class Street
   #takes an open database object; will not close it.
   def geom conn
+    # This query is no longer correct (table streets doesn't exist)
     res = conn.exec "SELECT AsBinary( geom ) FROM streets WHERE id='#{name}'"
     return res.get_value(0, 0)
 
@@ -22,16 +23,20 @@ class Graphserver
   TIGER_PREFIX = "tg"
 
   def load_tiger_from_db filename_base=nil
-    query = "SELECT id, from_id, to_id, length_spheroid(geom, 'SPHEROID[\"GRS_1980\",6378137,298.257222101]') FROM tiger_streets"
+    query = "SELECT from_id, to_id, name, length_spheroid(geom, 'SPHEROID[\"GRS_1980\",6378137,298.257222101]'), AsText(geom), AsText(Reverse(geom)) FROM tiger_streets"
     query << "WHERE file = '#{filename_base}'" if filename_base
 
     res = conn.exec query
 
-    res.each do |id, from_id, to_id, length|
+    res.each do |from_id, to_id, name, length, geom, rgeom|
+      #In KML LineStrings have the spaces and the comas swapped with respect to postgis
+      #We just substitute a space for a comma and viceversa
+      geom.gsub!(/[ ,()A-Z]/) {|s| if (s==' ') then ',' else if (s==',') then ' ' end end}
+      rgeom.gsub!(/[ ,()A-Z]/) {|s| if (s==' ') then ',' else if (s==',') then ' ' end end}
       @gg.add_vertex( TIGER_PREFIX+from_id )
       @gg.add_vertex( TIGER_PREFIX+to_id )
-      @gg.add_edge( TIGER_PREFIX+from_id, TIGER_PREFIX+to_id, Street.new( id, Float(length) ) )
-      @gg.add_edge( TIGER_PREFIX+to_id, TIGER_PREFIX+from_id, Street.new( id, Float(length) ) )
+      @gg.add_edge_geom( TIGER_PREFIX+from_id, TIGER_PREFIX+to_id, Street.new( name, Float(length) ),geom)
+      @gg.add_edge_geom( TIGER_PREFIX+to_id, TIGER_PREFIX+from_id, Street.new( name, Float(length) ),rgeom)
     end
   end
 
@@ -92,7 +97,8 @@ class Graphserver
 
     res.each do |row|
       conn.exec "delete from tiger_streets where id='#{row[id_n]}'"
-      conn.exec "insert into tiger_streets (#{res.fields.join(',')}) VALUES (#{row.map do |ii| "'"+ii+"'" end.join(',')})"
+      #Uses regexp to substitute "'" by "''" to escape offending apostrophes. It might slow the process, but works
+      conn.exec "insert into tiger_streets (#{res.fields.join(',')}) VALUES (#{row.map do |ii| "'"+ii.gsub(/'/,"''")+"'" end.join(',')})"
     end
   end
 
@@ -120,6 +126,66 @@ class Graphserver
     consolidate_lines!
 
     conn.exec "VACUUM ANALYZE tiger_streets"
+  end
+
+  #Overrides function which is not implemented in graphserver.rb
+  #This function looks for the vertices of the closest edge to the input coords
+  #Returns an array of 3 rows an columns named label, lat, lon, name, dist
+  #The first row is not actually a vertex, but the nearest point in the edge
+  #to the input coordinates
+  def get_closest_edge_vertices(lat, lon)
+    center = "GeomFromText(\'POINT(#{lon} #{lat})\',4326)"
+    #Looks for the closest tiger line in the search range
+    line = conn.exec <<-SQL
+      SELECT id, geom, distance(geom, #{center}) AS dist
+      FROM tiger_streets
+      WHERE geom && expand( #{center}::geometry, 0.003 )
+      ORDER BY dist
+      LIMIT 1
+    SQL
+
+    if line.num_tuples == 0 then return nil end
+
+    line_id = line[0][0]
+    line_geom = line[0][1]
+
+    #Looks for the closest street vertex in a radius of approximately 500m from the center
+    res = conn.exec <<-SQL
+      SELECT 'nearest_point_in_line' AS label, Y(line_point) AS lat, X(line_point) AS lon, name,
+             distance_sphere(line_point, #{center}) AS dist_vertex
+      FROM tiger_streets,
+      (SELECT line_interpolate_point('#{line_geom}', line_locate_point('#{line_geom}', #{center})) AS line_point) AS tpoint
+      WHERE id = '#{line_id}'
+      UNION
+     (SELECT 'tg' || from_id AS label, Y(StartPoint(geom)) AS lat, X(StartPoint(geom)) AS lon, name,
+             distance_sphere(StartPoint(geom), #{center}) AS dist_vertex
+      FROM tiger_streets
+      WHERE id = '#{line_id}'
+      UNION
+     (SELECT 'tg' || to_id AS label, Y(EndPoint(geom)) AS lat, X(EndPoint(geom)) AS lon, name,
+             distance_sphere(EndPoint(geom), #{center}) AS dist_vertex
+      FROM tiger_streets
+      WHERE id = '#{line_id}' )
+      ORDER BY dist_vertex
+      LIMIT 2 )
+    SQL
+
+    #An array of vertices
+    v = []
+    i = 0
+    #Each vertex is a hash of properties
+    if res then
+      res.each do |vertex|
+        v[i]={}
+        v[i]['label'] = vertex[0] #Label of the vertex
+        v[i]['lat'] = vertex[1] #Latitude of the vertex
+        v[i]['lon'] = vertex[2] #Longitude of the vertex
+        v[i]['name'] = vertex[3] #Name of the closest edge containing the vertex
+        v[i]['dist'] = vertex[4] #Distance from the vertex to the input coordinates
+        i += 1
+      end
+    end
+    return v
   end
 
 end

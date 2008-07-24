@@ -16,9 +16,9 @@ Create the tables for gtfs info in the databse
 
 $ ruby setup_gtfs_tables.rb create_tables
 
-Note, if you want to resintall the tables you'll first need to remove all tables like so:
+Note, if you want to resintall the tables you'll need to use again the create_tables option.
+It will automatically remove the tables first.
 
-$ ruby setup_gtfs_tables.rb remove_tables
 $ ruby setup_gtfs_tables.rb create_tables
 
 Unzip a GTFS file into the "data" directory, then

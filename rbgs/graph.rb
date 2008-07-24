@@ -1,5 +1,6 @@
 require 'Graphserver'
 
+# Overrides Vertex to add the methods inspect, edge_out and edge_in
 class Vertex
   def inspect
     ret = "#<Vertex label=\"#{label}\" degree_in=#{degree_in} degree_out=#{degree_out}"
@@ -31,6 +32,7 @@ class Vertex
   end
 end
 
+# Overrides Graph to add the methods edges, shortest_path, shortest_path_retro and to_dot
 class Graph
   def edges
     edges = []
@@ -42,28 +44,32 @@ class Graph
     edges
   end
 
+  # Computes the shortest path between two vertices
+  # using init_state as departure time
   def shortest_path from, to, init_state
     path_vertices = []
     path_edges    = []
-   
+
     spt = shortest_path_tree( from, to, init_state, true )
     curr = spt.get_vertex( to )
-    
+
     #if the end node wasn't found
     unless curr then raise RuntimeError end
 
     path_vertices << curr
-    
+
     while incoming = curr.edge_in( 0 )
       path_edges << incoming
 
       curr = incoming.from
       path_vertices << curr
     end
-    
+
     return path_vertices.reverse, path_edges.reverse
   end
 
+  # Computes the shortest path between two vertices
+  # using init_state as arrival time
   def shortest_path_retro from, to, final_state
     path_vertices = []
     path_edges    = []
@@ -82,7 +88,7 @@ class Graph
     return path_vertices, path_edges
   end
 
-
+  # Returns a representation of the graph as a list of links
   def to_dot
     accum = []
     accum << "digraph G {"

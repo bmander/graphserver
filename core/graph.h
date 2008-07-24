@@ -43,6 +43,7 @@ struct Vertex {
 struct Edge {
   Vertex* from;
   Vertex* to;
+  Geom* geom;
   EdgePayload* payload;
 } ;
 
@@ -67,6 +68,9 @@ gGetVertex( Graph* this, char *label );
 
 Edge*
 gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload );
+
+Edge*
+gAddEdgeGeom( Graph* this, char *from, char *to, EdgePayload *payload, char *datageom );
 
 Vertex**
 gVertices( Graph* this, long* num_vertices );
@@ -99,7 +103,13 @@ Edge*
 vLink(Vertex* this, Vertex* to, EdgePayload* payload) ;
 
 Edge*
+vLinkGeom(Vertex* this, Vertex* to, EdgePayload* payload, char *datageom) ;
+
+Edge*
 vSetParent( Vertex* this, Vertex* parent, EdgePayload* payload );
+
+Edge*
+vSetParentGeom( Vertex* this, Vertex* parent, EdgePayload* payload, char * geomdata );
 
 inline ListNode*
 vGetOutgoingEdgeList( Vertex* this );
@@ -130,6 +140,9 @@ vPayload( Vertex* this );
 Edge*
 eNew(Vertex* from, Vertex* to, EdgePayload* payload);
 
+Edge*
+eNewGeom(Vertex* from, Vertex* to, EdgePayload* payload,char * datageom);
+
 void
 eDestroy(Edge *this, int destroy_payload) ;
 
@@ -141,6 +154,9 @@ eWalk(Edge *this, State* params) ;
 
 State*
 eWalkBack(Edge *this, State *params) ;
+
+Edge*
+eGeom(Edge* this,char * datageom);
 
 Vertex*
 eGetFrom(Edge *this);

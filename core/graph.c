@@ -2,8 +2,7 @@
 #include "dirfibheap.h"
 
 //GRAPH FUNCTIONS
-	
-	
+
 Graph*
 gNew() {
   Graph *this = (Graph*)malloc(sizeof(Graph));
@@ -33,7 +32,7 @@ gDestroy( Graph* this, int kill_vertex_payloads, int kill_edge_payloads ) {
 
 }
 
-Vertex* 
+Vertex*
 gAddVertex( Graph* this, char *label ) {
   Vertex* exists = gGetVertex( this, label );
   if( !exists ) {
@@ -57,7 +56,18 @@ gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload ) {
   if(!(vtx_from && vtx_to))
     return NULL;
 
-  return vLink( vtx_from, vtx_to, payload ); 
+  return vLink( vtx_from, vtx_to, payload );
+}
+
+Edge*
+gAddEdgeGeom( Graph* this, char *from, char *to, EdgePayload *payload, char * datageom ) {
+  Vertex* vtx_from = gGetVertex( this, from );
+  Vertex* vtx_to   = gGetVertex( this, to );
+
+  if(!(vtx_from && vtx_to))
+    return NULL;
+
+  return vLinkGeom( vtx_from, vtx_to, payload, datageom ); // link two vertices
 }
 
 Vertex**
@@ -74,7 +84,7 @@ gVertices( Graph* this, long* num_vertices ) {
     ret[i] = vtx;
     next_exists = hashtable_iterator_advance( itr );
     i++;
-  }  
+  }
 
   *num_vertices = nn;
   return ret;
@@ -198,7 +208,7 @@ void
 vDestroy(Vertex *this, int free_vertex_payload, int free_edge_payloads) {
     if( free_vertex_payload && this->payload )
       stateDestroy( this->payload );
-    
+
     //delete incoming edges
     while(this->incoming->next != NULL) {
       eDestroy( this->incoming->next->data, free_edge_payloads );
@@ -210,7 +220,7 @@ vDestroy(Vertex *this, int free_vertex_payload, int free_edge_payloads) {
     //free the list dummy-heads that remain
     free(this->outgoing);
     free(this->incoming);
-    
+
     //and finally, sweet release*/
     free( this->label );
     free( this );
@@ -225,11 +235,25 @@ vLink(Vertex* this, Vertex* to, EdgePayload* payload) {
     ListNode* outlistnode = liNew( link );
     liInsertAfter( this->outgoing, outlistnode );
     this->degree_out++;
-    
+
     ListNode* inlistnode = liNew( link );
     liInsertAfter( to->incoming, inlistnode );
     to->degree_in++;
 
+    return link;
+}
+
+Edge*
+vLinkGeom(Vertex* this, Vertex* to, EdgePayload* payload, char* datageom) {
+    // create edge object
+    Edge* link = eNewGeom(this, to, payload, datageom);
+
+    ListNode* outlistnode = liNew( link );
+    liInsertAfter( this->outgoing, outlistnode );
+    this->degree_out++;
+    ListNode* inlistnode = liNew( link );
+    liInsertAfter( to->incoming, inlistnode );
+    to->degree_in++;
     return link;
 }
 
@@ -245,7 +269,20 @@ vSetParent( Vertex* this, Vertex* parent, EdgePayload* payload ) {
     }
 
     //add incoming edge
-    return vLink( parent, this, payload );  
+    return vLink( parent, this, payload );
+}
+
+Edge*
+vSetParentGeom( Vertex* this, Vertex* parent, EdgePayload* payload, char * geomdata ) {
+    //delete all incoming edges
+    ListNode* edges = vGetIncomingEdgeList( this );
+    while(edges) {
+      eDestroy( edges->data, 0 );
+      edges = edges->next;
+    }
+
+    //add incoming edge
+    return vLinkGeom( parent, this, payload, geomdata);
 }
 
 ListNode*
@@ -296,6 +333,17 @@ eNew(Vertex* from, Vertex* to, EdgePayload* payload) {
     this->from = from;
     this->to = to;
     this->payload = payload;
+    this->geom = NULL;
+    return this;
+}
+
+Edge*
+eNewGeom(Vertex* from, Vertex* to, EdgePayload* payload,char * datageom) {
+    Edge *this = (Edge *)malloc(sizeof(Edge));
+    this->from = from;
+    this->to = to;
+    this->payload = payload;
+    this->geom = geomNew(datageom);
     return this;
 }
 
@@ -307,6 +355,7 @@ eDestroy(Edge *this, int destroy_payload) {
 
     vRemoveOutEdgeRef( this->from, this );
     vRemoveInEdgeRef( this->to, this );
+    geomDestroy(this->geom);
     free(this);
 }
 
@@ -318,6 +367,12 @@ eWalk(Edge *this, State* params) {
 State*
 eWalkBack(Edge *this, State* params) {
   return epWalkBack( this->payload, params );
+}
+
+Edge*
+eGeom(Edge* this,char * datageom) {
+	this->geom = geomNew(datageom);
+	return this;
 }
 
 Vertex*
@@ -379,7 +434,7 @@ Edge*
 liGetData( ListNode *this ) {
 	return this->data;
 }
-	
+
 ListNode*
 liGetNext( ListNode *this ) {
 	return this->next;
