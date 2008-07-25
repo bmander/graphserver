@@ -1,4 +1,4 @@
-from load_gtfs import add_gtfs_to_graph
+from pygs.ext.gtfs import GTFSLoadable
 import sys
 sys.path.append('../..')
 from graphserver import Graph, Street, CalendarDay, TripHopSchedule, Calendar, State
@@ -27,90 +27,82 @@ t10 = (timegm((2008,1,9,3,50,0))+8*3600) #Wed 2008-1-9 03:50:00 PST-0800, right 
 t11 = (timegm((2008,1,9,23,15,0))+8*3600) #Wed 2008-1-9 11:15:00 PST-0800
 t12 = (timegm((2008,1,10,2,36,0))+8*3600) #Thu 2008-1-10 2:36:00 PST-0800, right after last train in system
 
-g = Graph()
-add_gtfs_to_graph(g, "./data")
+class TestGTFS(Graph, GTFSLoadable):
+    pass
 
-v = g.get_vertex("24TH")
-assert v.outgoing[0].payload.collapse( State(1,t1) ).trip_id == "01PB1"
-assert v.outgoing[1].payload.collapse( State(1,t1) ).trip_id == "01SFO1"
-assert v.outgoing[2].payload.collapse( State(1,t1) ) == None
+g = TestGTFS()
+g.load_gtfs("./data")
 
-assert v.outgoing[0].payload.collapse( State(1,t2) ).trip_id == "76ED1"
-assert v.outgoing[1].payload.collapse( State(1,t2) ).trip_id == "90SFO1"
-assert v.outgoing[2].payload.collapse( State(1,t2) ) == None
+v = g.get_vertex("gtfs24TH")
 
-assert v.outgoing[0].payload.collapse( State(1,t3) ).trip_id == "01PB1"
-assert v.outgoing[1].payload.collapse( State(1,t3) ).trip_id == "01SFO1"
-assert v.outgoing[2].payload.collapse( State(1,t3) ) == None
+def check(answers, t0):
+    for ths, answer in zip(v.outgoing, answers):
+        triphop = ths.payload.collapse( State(1, t0) )
+        
+        if answer is None:
+            assert triphop is None
+        else:
+            assert str(triphop.trip_id) == str(answer)
 
-assert v.outgoing[0].payload.collapse( State(1,t4) ) == None
-assert v.outgoing[1].payload.collapse( State(1,t4) ) == None
-assert v.outgoing[2].payload.collapse( State(1,t4) ).trip_id == "01ED1SAT"
-assert v.outgoing[3].payload.collapse( State(1,t4) ) == None
-assert v.outgoing[4].payload.collapse( State(1,t4) ).trip_id == "01DCM2SAT"
-assert v.outgoing[5].payload.collapse( State(1,t4) ) == None
+t1answers = (None, None, '01DCM2', '01DC1', None, '01DCM1', '01SFO1', None, None, None, '01PB1', '01ED1', '01F2', None, None, '01R2', None, None, None, None)
+check(t1answers, t1)
+    
+t2answers = (None, None, '75DCM2', None, None, None, '90SFO1', None, None, None, '92PB1', '76ED1', None, None, None, None, None, None, None, None)
+check(t2answers, t2)
 
-assert v.outgoing[0].payload.collapse( State(1,t5) ) == None
-assert v.outgoing[1].payload.collapse( State(1,t5) ) == None
-assert v.outgoing[2].payload.collapse( State(1,t5) ).trip_id == "58ED1SAT"
-assert v.outgoing[3].payload.collapse( State(1,t5) ) == None
-assert v.outgoing[4].payload.collapse( State(1,t5) ).trip_id == "55SFO1SAT"
-assert v.outgoing[5].payload.collapse( State(1,t5) ) == None
+t3answers = [None, None, '01DCM2', '01DC1', None, '01DCM1', '01SFO1', None, None, None, '01PB1', '01ED1', '01F2', None, None, '01R2', None, None, None, None]
+check(t3answers, t3)
 
-assert v.outgoing[0].payload.collapse( State(1,t6) ) == None
-assert v.outgoing[1].payload.collapse( State(1,t6) ) == None
-assert v.outgoing[2].payload.collapse( State(1,t6) ) == None
-assert v.outgoing[3].payload.collapse( State(1,t6) ).trip_id == "01DCM2SUN"
-assert v.outgoing[4].payload.collapse( State(1,t6) ) == None
-assert v.outgoing[5].payload.collapse( State(1,t6) ).trip_id == "01ED1SUN"
+t4answers = ['01DCM2SAT', '01PB1SAT', None, None, '01R2SAT', None, None, None, None, '01ED1SAT', None, None, None, None, '01SFO1SAT', None, '01F2SAT', '01DC1SAT', '01DCM1SAT', None]
+check(t4answers, t4)
 
-assert v.outgoing[0].payload.collapse( State(1,t7) ) == None
-assert v.outgoing[1].payload.collapse( State(1,t7) ) == None
-assert v.outgoing[2].payload.collapse( State(1,t7) ) == None
-assert v.outgoing[3].payload.collapse( State(1,t7) ).trip_id == "01DCM2SUN"
-assert v.outgoing[4].payload.collapse( State(1,t7) ) == None
-assert v.outgoing[5].payload.collapse( State(1,t7) ).trip_id == "01ED1SUN"
+t5answers = ['56DCM2SAT', '56PB1SAT', None, None, None, None, None, None, None, '58ED1SAT', None, None, None, None, '55SFO1SAT', None, None, None, None, None]
+check(t5answers, t5)
 
-assert v.outgoing[0].payload.collapse( State(1,t8) ) == None
-assert v.outgoing[1].payload.collapse( State(1,t8) ) == None
-assert v.outgoing[2].payload.collapse( State(1,t8) ) == None
-assert v.outgoing[3].payload.collapse( State(1,t8) ).trip_id == "59SFO1SUN"
-assert v.outgoing[4].payload.collapse( State(1,t8) ) == None
-assert v.outgoing[5].payload.collapse( State(1,t8) ).trip_id == "62ED1SUN"
+t6answers = [None, None, None, None, None, None, None, '02PB1SUN', '01ED1SUN', None, None, None, None, '01DCM2SUN', None, None, None, None, None, '01SFO1SUN']
+check(t6answers, t6)
 
-assert v.outgoing[0].payload.collapse( State(1,t9) ).trip_id == "01PB1"
-assert v.outgoing[1].payload.collapse( State(1,t9) ).trip_id == "01SFO1"
-assert v.outgoing[2].payload.collapse( State(1,t9) ) == None
+t7answers = [None, None, None, None, None, None, None, '02PB1SUN', '01ED1SUN', None, None, None, None, '01DCM2SUN', None, None, None, None, None, '01SFO1SUN']
+check(t7answers, t7)
 
-assert v.outgoing[0].payload.collapse( State(1,t10) ).trip_id == "01PB1"
-assert v.outgoing[1].payload.collapse( State(1,t10) ).trip_id == "01SFO1"
-assert v.outgoing[2].payload.collapse( State(1,t10) ) == None
+t8answers = [None, None, None, None, None, None, None, '62PB1SUN', '62ED1SUN', None, None, None, None, '60DCM2SUN', None, None, None, None, None, '59SFO1SUN']
+check(t8answers, t8)
 
-assert v.outgoing[0].payload.collapse( State(1,t11) ).trip_id == "76ED1"
-assert v.outgoing[1].payload.collapse( State(1,t11) ).trip_id == "90SFO1"
-assert v.outgoing[2].payload.collapse( State(1,t11) ) == None
+t9answers = [None, None, '01DCM2', '01DC1', None, '01DCM1', '01SFO1', None, None, None, '01PB1', '01ED1', '01F2', None, None, '01R2', None, None, None, None]
+check(t9answers, t9)
 
-assert v.outgoing[0].payload.collapse( State(1,t12) ).trip_id == "01PB1"
-assert v.outgoing[1].payload.collapse( State(1,t12) ).trip_id == "01SFO1"
-assert v.outgoing[2].payload.collapse( State(1,t12) ) == None
+t10answers = [None, None, '01DCM2', '01DC1', None, '01DCM1', '01SFO1', None, None, None, '01PB1', '01ED1', '01F2', None, None, '01R2', None, None, None, None]
+check(t10answers, t10)
 
-spt = g.shortest_path_tree( "OAK", "12TH", State(1,t2) )
-assert spt.path("12TH") == (None, None)
+t11answers = [None, None, '75DCM2', None, None, None, '90SFO1', None, None, None, '92PB1', '76ED1', None, None, None, None, None, None, None, None]
+check(t11answers, t11)
 
-print t2
-spt = g.shortest_path_tree( "OAK", "bogus", State(1,t2) )
+t12answers = [None, None, '01DCM2', '01DC1', None, '01DCM1', '01SFO1', None, None, None, '01PB1', '01ED1', '01F2', None, None, '01R2', None, None, None, None]
+check(t12answers, t12)
+
+#answersout = []
+#for i in v.outgoing:
+#    th = i.payload.collapse( State(1, t12) )
+#    if th is None:
+#        answersout.append( None )
+#    else:
+#        answersout.append( th.trip_id )
+#print answersout
+
+spt = g.shortest_path_tree( "gtfsOAK", "gtfs12TH", State(1,t2) )
+assert spt.path("gtfs12TH") == (None, None)
+
+spt = g.shortest_path_tree( "gtfsOAK", "gtfsbogus", State(1,t2) )
 
 print spt
 
 for v in spt.vertices:
     print v
     curr = v
-    while curr.label != "OAK":
+    while curr.label != "gtfsOAK":
         print "\t%s @ %s"%(str(curr), str(curr.payload))
         curr = curr.incoming[0].from_v
-"""
 
-"""
 for e in v.outgoing:
     print e.to_v.label + " " + str(e.payload.collapse( State(1,t11) ))
     

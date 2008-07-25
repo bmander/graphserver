@@ -1,14 +1,10 @@
 --== GRAPHSERVER CORE ==--
 
-Prerequisites:
-binutils 2.18
-
 Build:
 $ cd core
 $ make
 
-Install
-
+Install:
 $ cd core
 $ sudo make install
 

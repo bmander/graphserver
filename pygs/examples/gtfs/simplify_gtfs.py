@@ -3,10 +3,17 @@
 import sys
 sys.path.append('../..')
 from graphserver import Graph, Street, CalendarDay, TripHopSchedule, Calendar, State
-from load_gtfs import add_gtfs_to_graph
+from pygs.ext.gtfs import GTFSLoadable
+import transitfeed
 
-g = Graph()
-add_gtfs_to_graph(g, "./data")
+class SimplifyGTFS(Graph, GTFSLoadable):
+    pass
+
+g = SimplifyGTFS()
+
+#sched = transitfeed.Loader("./data").Load()
+g.load_gtfs("./data")
+
 fp = open("transit.txt", "w")
 
 #print out calendar
