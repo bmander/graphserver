@@ -106,8 +106,8 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
           count++;
           }
 
-        if((count%10000) == 0)
-          fprintf(stdout, "Shortest path tree size: %d\n",count);
+        //if((count%10000) == 0)
+        //  fprintf(stdout, "Shortest path tree size: %d\n",count);
 
         if(spt_v->payload)
             stateDestroy(spt_v->payload);
@@ -124,6 +124,6 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
 
   dirfibheap_delete( q );
 
-  fprintf(stdout, "Final shortest path tree size: %d\n",count);
+  //fprintf(stdout, "Final shortest path tree size: %d\n",count);
   return spt;
 }

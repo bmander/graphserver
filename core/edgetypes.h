@@ -64,6 +64,9 @@ CalendarDay*
 stateCalendarDay( State* this, int authority );
 
 void
+stateSetCalendarDay( State* this,  int authority, CalendarDay* cal );
+
+void
 stateSetTime( State* this, long time );
 
 void
