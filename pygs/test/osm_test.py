@@ -1,9 +1,12 @@
 from pyproj import Proj
 from StringIO import StringIO
 from random import randint
-from graph import OSMGraph
-from osm import OSM
-from pygs.graphserver import State
+
+import sys
+sys.path.append("..")
+from graphserver.ext.osm.graph import OSMGraph
+from graphserver.ext.osm.osm import OSM
+from graphserver.core import State
 
 
 class TestOSM:
