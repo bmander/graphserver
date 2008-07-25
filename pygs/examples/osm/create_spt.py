@@ -7,17 +7,20 @@ import time
 import pygs.ext
 from pygs.ext.osm import OSM, Node, Way
 from pygs.graphserver import Graph, Street, State
-from pygs.ext.osm.load_osm import add_osm_to_graph
+from pygs.ext.osm import OSMLoadable
 from pyproj import Proj
+
+class SPTGraph(Graph, OSMLoadable):
+    pass
 
 def main():
     #print get_osm_xml( -122.33, 47.66, -122.31, 47.68 )
     utmzone10 = Proj(init='epsg:26910')
  
-    g = Graph()
+    g = SPTGraph()
     osm = OSM("sf.osm")
     
-    add_osm_to_graph(g, osm, utmzone10, {'cycleway':0.3333, 'footway':0.5, 'motorway':100} )
+    g.load_osm(osm, utmzone10, {'cycleway':0.3333, 'footway':0.5, 'motorway':100} )
         
     random_vertex_label = "osm65305832" #one end of Pitt Ave in Sebastapol
     
