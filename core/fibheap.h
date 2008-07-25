@@ -41,7 +41,6 @@ Boston, MA 02110-1301, USA.  */
 #define _FIBHEAP_H_
 
 #include "stdio.h"
-#include "ansidecl.h"
 
 typedef long fibheapkey_t;
 //typedef double fibheapkey_t;

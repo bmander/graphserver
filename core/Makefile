@@ -3,7 +3,7 @@ all: libgraphserver
 
 # You know what? Honestly? I don't know what most of these switches do.
 libgraphserver: dirfibheap edgetypes hashtable_itr fibheap statetypes dirfibheap graph edgetypes hashtable_gs hashtable_utility hashtable
-	cc -shared -o libgraphserver.so hashtable_itr.o  fibheap.o statetypes.o dirfibheap.o graph.o edgetypes.o hashtable_gs.o hashtable_utility.o hashtable.o -L. -Bsymbolic-functions -rdynamic -Wall -export-dynamic -liberty -ldl -lcrypt -lm -lc
+	cc -shared -o libgraphserver.so hashtable_itr.o  fibheap.o statetypes.o dirfibheap.o graph.o edgetypes.o hashtable_gs.o hashtable_utility.o hashtable.o -L. -Bsymbolic-functions -rdynamic -Wall -export-dynamic -ldl -lcrypt -lm -lc
 
 dirfibheap: dirfibheap.c dirfibheap.h
 	cc -I. -g -fno-strict-aliasing -O2 -fPIC -Wall -c dirfibheap.c
