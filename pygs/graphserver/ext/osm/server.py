@@ -1,5 +1,7 @@
-from pygs.engine import XMLGraphEngine
-from pygs.server import GSHTTPServer, PORT, GSHTTPRequestHandler
+import sys
+sys.path.append('../../..')
+from graphserver.engine import XMLGraphEngine
+from graphserver.server import GSHTTPServer, PORT, GSHTTPRequestHandler
 from graph import OSMGraph
 import re
 _rc = re.compile

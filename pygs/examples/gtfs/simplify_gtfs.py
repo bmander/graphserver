@@ -2,8 +2,8 @@
 
 import sys
 sys.path.append('../..')
-from graphserver import Graph, Street, CalendarDay, TripHopSchedule, Calendar, State
-from pygs.ext.gtfs import GTFSLoadable
+from graphserver.core import Graph, Street, CalendarDay, TripHopSchedule, Calendar, State
+from graphserver.ext.gtfs import GTFSLoadable
 import transitfeed
 
 class SimplifyGTFS(Graph, GTFSLoadable):

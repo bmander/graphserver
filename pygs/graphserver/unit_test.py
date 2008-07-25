@@ -1,4 +1,4 @@
-from graphserver import *
+from core import *
 from engine import XMLGraphEngine
     
 import os
@@ -1211,7 +1211,7 @@ class TestCalendar:
             pass
 
 from ext.osm.osm import OSM
-from ext.osm.load_osm import add_osm_to_graph
+from ext.osm import OSMLoadable
 class TestEngine:
     def test_basic(self):
         gg = Graph()

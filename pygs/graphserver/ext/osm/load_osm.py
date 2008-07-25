@@ -1,5 +1,7 @@
 from osm import OSM,Node,Way
-from pygs.graphserver import Graph, Street
+import sys
+sys.path.append('../../..')
+from graphserver.core import Graph, Street
 
 class OSMLoadable:
     def load_osm(self, osm, projection, multipliers=[], prefix="osm"):

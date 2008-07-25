@@ -1,7 +1,8 @@
-from pygs.ext.gtfs import GTFSLoadable
+
 import sys
 sys.path.append('../..')
-from graphserver import Graph, Street, CalendarDay, TripHopSchedule, Calendar, State
+from graphserver.core import Graph, Street, CalendarDay, TripHopSchedule, Calendar, State
+from graphserver.ext.gtfs import GTFSLoadable
 import time
 from calendar import timegm
 

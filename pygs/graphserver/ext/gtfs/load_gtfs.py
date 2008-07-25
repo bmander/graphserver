@@ -3,7 +3,8 @@ import time
 from pytz import timezone
 import sys
 import datetime
-from pygs.graphserver import Graph, Street, CalendarDay, TripHopSchedule, Calendar, State
+sys.path.append("../../..")
+from graphserver.core import Graph, Street, CalendarDay, TripHopSchedule, Calendar, State
 import csv
 import calendar
 import os
