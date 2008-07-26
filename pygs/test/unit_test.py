@@ -1,8 +1,9 @@
-from graphserver import *
-from engine import XMLGraphEngine
+import sys
+sys.path.append("..")
+from graphserver.core import *
+from graphserver.engine import XMLGraphEngine
     
 import os
-import sys
 
 def get_mem_usage():
     """returns percentage and vsz mem usage of this script"""
@@ -984,7 +985,7 @@ class TestTriphopSchedule:
         sfinal = ths.walk(s)
         
         assert sfinal.time == 7200
-        assert sfinal.weight == 8100
+        assert sfinal.weight == 7203
         assert sfinal.dist_walked == 0.0
         assert sfinal.prev_edge_type == 2
         assert sfinal.prev_edge_name == "auth1trip1"
@@ -1023,7 +1024,7 @@ class TestTriphopSchedule:
         sfinal = ths.walk_back(s)
         
         assert sfinal.time == 3600
-        assert sfinal.weight == 7200
+        assert sfinal.weight == 7203
         assert sfinal.dist_walked == 0.0
         assert sfinal.num_transfers == 2
         assert sfinal.prev_edge_type == 2
@@ -1210,8 +1211,8 @@ class TestCalendar:
         except:
             pass
 
-from ext.osm.osm import OSM
-from ext.osm.load_osm import add_osm_to_graph
+from graphserver.ext.osm.osm import OSM
+from graphserver.ext.osm import OSMLoadable
 class TestEngine:
     def test_basic(self):
         gg = Graph()

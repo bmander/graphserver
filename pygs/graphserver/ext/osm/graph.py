@@ -1,12 +1,9 @@
 import time
 from osm import OSM
+import sys
 
-try:
-    from pygs.graphserver import Graph, Street, State
-except ImportError, e:
-    sys.path.append('../..')
-    from graphserver import Graph, Street, State
-
+sys.path.append('../../..')
+from graphserver.core import Graph, Street, State
 
 
 class OSMGraph(Graph):

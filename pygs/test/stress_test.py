@@ -1,5 +1,7 @@
 from stress_utils import get_mem_usage
-from graphserver import *
+import sys
+sys.path.append("..")
+from graphserver.core import *
 
 """
 print get_mem_usage()
