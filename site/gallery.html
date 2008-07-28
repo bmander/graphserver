@@ -1,33 +1,50 @@
 <html>
+  <head>
+    <link rel="stylesheet" href="main.css" type="text/css">
+    <title>Graphserver - The Open-Source Multi-Modal Trip Planner</title>
+  </head>
+<body>
+<div id='container'>
 <h1>Gallery</h1>
-Images produced from Graphserver output. Click on thumbnails to view larger images.<br>
-<br>
-<b>Shortest Path Tree of King County on Sunday Morning</b><br>
+<h2>Movies</h2>
+<h3>Growing Shortest Path Tree of Seattle</h3>
+<object type="application/x-shockwave-flash" width="500" height="500" data="http://www.flickr.com/apps/video/stewart.swf?v=55430" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"> <param name="flashvars" value="intl_lang=en-us&amp;photo_secret=d208ff11be&amp;photo_id=2644897307"></param> <param name="movie" value="http://www.flickr.com/apps/video/stewart.swf?v=55430"></param> <param name="bgcolor" value="#000000"></param> <param name="allowFullScreen" value="true"></param><embed type="application/x-shockwave-flash" src="http://www.flickr.com/apps/video/stewart.swf?v=55430" bgcolor="#000000" allowfullscreen="true" flashvars="intl_lang=en-us&amp;photo_secret=d208ff11be&amp;photo_id=2644897307" height="500" width="500"></embed></object>
+<h3>Growing Shortest Path Tree of San Francisco</h3>
+<object type="application/x-shockwave-flash" width="500" height="500" data="http://www.flickr.com/apps/video/stewart.swf?v=55430" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"> <param name="flashvars" value="intl_lang=en-us&amp;photo_secret=20eb02390e&amp;photo_id=2657592495"></param> <param name="movie" value="http://www.flickr.com/apps/video/stewart.swf?v=55430"></param> <param name="bgcolor" value="#000000"></param> <param name="allowFullScreen" value="true"></param><embed type="application/x-shockwave-flash" src="http://www.flickr.com/apps/video/stewart.swf?v=55430" bgcolor="#000000" allowfullscreen="true" flashvars="intl_lang=en-us&amp;photo_secret=20eb02390e&amp;photo_id=2657592495" height="500" width="500"></embed></object>
+<h3>Growing SPT of Seattle with Highlighted Frontier</h3>
+<object type="application/x-shockwave-flash" width="500" height="500" data="http://www.flickr.com/apps/video/stewart.swf?v=55430" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"> <param name="flashvars" value="intl_lang=en-us&amp;photo_secret=aeec7b9d23&amp;photo_id=2639172707"></param> <param name="movie" value="http://www.flickr.com/apps/video/stewart.swf?v=55430"></param> <param name="bgcolor" value="#000000"></param> <param name="allowFullScreen" value="true"></param><embed type="application/x-shockwave-flash" src="http://www.flickr.com/apps/video/stewart.swf?v=55430" bgcolor="#000000" allowfullscreen="true" flashvars="intl_lang=en-us&amp;photo_secret=aeec7b9d23&amp;photo_id=2639172707" height="500" width="500"></embed></object>
+<h2>Stills</h2>
+Images produced from Graphserver output. Click on thumbnails to view larger images.
+<h3>Shortest Path Tree of Seattle Area for Bicycle Travel</h3>
+<a href="img/seattle-spt.png"><img src="img/seattle-spt-small.png"></a><br>
+Shortest path tree on a street grid of Seattle derived from the Open Street Map. Bicycle and walking paths are preferentially weighted, and the interstate is heavily penalized. The width of a branch is proportional to the square root of the sum of branches reachable by that branch.
+<h3>Shortest Path Tree of San Francisco Area for Bicycle Travel</h3>
+<a href="img/sf-spt.png"><img src="img/sf-spt-small.png"></a><br>
+Like above, but with San Francisco.
+<h3>Isochron Map of San Francisco</h3>
+<a href="img/isochron.jpg"><img src="img/isochron-small.jpg"></a><br>
+Isochron map of San Francsico with respect to one point on street grid with arterials preferentially weighted. Made by Nino Walker using Global Mapper.
+<h3>Shortest Path Tree of King County on Sunday Morning</h3>
 <a href="img/spt_sun_large.jpg"><img src="img/spt_sun_small.jpg"></a><br>
-This is a rendering of the shortest path tree to every intersection and bus stop in King County taking into account both King County Metro Transit busses, and walking at a steady pace of 2 miles per hour. All SPT branches representing bus travel are colored black, and walking branches are colored according to the time of day they would be traversed. All intersections inside the blue area, for example, can be reached within about two hours of disembarking from the SPT origin at 3rd & Pine in downtown Seattle at about 8AM Sunday morning<br>
-The image was produced by converting the raw shortest path tree output from Graphserver into an ESRI shapefile using the <a href="http://www.gdal.org/ogr/">GDAL/OGR</a> library, then rendered and colored using the free <a href="http://www.esri.com/software/arcexplorer/index.html">ArcExplorer</a> shapefile viewer.<br>
-<br>
-<b>Shortest Path Tree of King County on Monday Morning</b><br>
+This is a rendering of the shortest path tree to every intersection and bus stop in King County taking into account both King County Metro Transit busses, and walking at a steady pace of 2 miles per hour. All SPT branches representing bus travel are colored black, and walking branches are colored according to the time of day they would be traversed. All intersections inside the blue area, for example, can be reached within about two hours of disembarking from the SPT origin at 3rd & Pine in downtown Seattle at about 8AM Sunday morning. The image was produced by converting the raw shortest path tree output from Graphserver into an ESRI shapefile using the <a href="http://www.gdal.org/ogr/">GDAL/OGR</a> library, then rendered and colored using the free <a href="http://www.esri.com/software/arcexplorer/index.html">ArcExplorer</a> shapefile viewer.<br>
+<h3>Shortest Path Tree of King County on Monday Morning</h3>
 <a href="img/spt_mon_large.jpg"><img src="img/spt_mon_small.jpg"></a><br>
 This image was produced in same way as above, with respect to 3rd & Pine in downtown Seattle at about 8 AM Monday morning. Again the blue area represents all places reachable by bus and walking within two hours of 8 AM. As you can see, it's much easier to get around on a weekday.<br>
-<br>
-<b>Graphserver Path on Busmonster</b><br>
+<h3>Graphserver Path on Busmonster</h3>
 <a href="img/busmonst_large.png"><img src="img/busmonst_small.jpg"></a><br>
-Here's a screenshot of Busmonster.com presenting a bus+walking itinerary produced using the Graphserver itinerary server.<br>
-<br>
-<b>Animation of Shortest Path Tree Growth</b><br>
+Here's a screenshot of Busmonster.com presenting a bus+walking itinerary produced using the Graphserver itinerary server.
+<h3>Animation of Shortest Path Tree Growth</h3>
 <a href="img/anim_slow_large.gif"><img src="img/anim_slow_small.jpg"></a><br>
-Click to view an animation of the growth of a bus+walking shortest path tree with respect to Monday morning at 3rd & Pine.<br>
-<br>
-<b>An Absurd Route</b><br>
+Click to view an animation of the growth of a bus+walking shortest path tree with respect to Monday morning at 3rd & Pine.
+<h3>An Absurd Route</h3>
 <a href="img/absurd_route_large.png"><img src="img/absurd_route_small.jpg"></a><br>
 Graphserver will return an itinerary between any two connected vertices, even if the itinerary is absurd. In this case traveling by bus and foot from downtown Seattle to deep within the foothills of the Cascade Mountians involves an eight-hour hike from one of the most remote bus stops in the county.<br>
-
+</div>
 <script src="http://www.google-analytics.com/urchin.js" type="text/javascript">
 </script>
 <script type="text/javascript">
 _uacct = "UA-1815162-1";
 urchinTracker();
 </script>
-
+</body>
 </html>
