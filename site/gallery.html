@@ -1,0 +1,33 @@
+<html>
+<h1>Gallery</h1>
+Images produced from Graphserver output. Click on thumbnails to view larger images.<br>
+<br>
+<b>Shortest Path Tree of King County on Sunday Morning</b><br>
+<a href="img/spt_sun_large.jpg"><img src="img/spt_sun_small.jpg"></a><br>
+This is a rendering of the shortest path tree to every intersection and bus stop in King County taking into account both King County Metro Transit busses, and walking at a steady pace of 2 miles per hour. All SPT branches representing bus travel are colored black, and walking branches are colored according to the time of day they would be traversed. All intersections inside the blue area, for example, can be reached within about two hours of disembarking from the SPT origin at 3rd & Pine in downtown Seattle at about 8AM Sunday morning<br>
+The image was produced by converting the raw shortest path tree output from Graphserver into an ESRI shapefile using the <a href="http://www.gdal.org/ogr/">GDAL/OGR</a> library, then rendered and colored using the free <a href="http://www.esri.com/software/arcexplorer/index.html">ArcExplorer</a> shapefile viewer.<br>
+<br>
+<b>Shortest Path Tree of King County on Monday Morning</b><br>
+<a href="img/spt_mon_large.jpg"><img src="img/spt_mon_small.jpg"></a><br>
+This image was produced in same way as above, with respect to 3rd & Pine in downtown Seattle at about 8 AM Monday morning. Again the blue area represents all places reachable by bus and walking within two hours of 8 AM. As you can see, it's much easier to get around on a weekday.<br>
+<br>
+<b>Graphserver Path on Busmonster</b><br>
+<a href="img/busmonst_large.png"><img src="img/busmonst_small.jpg"></a><br>
+Here's a screenshot of Busmonster.com presenting a bus+walking itinerary produced using the Graphserver itinerary server.<br>
+<br>
+<b>Animation of Shortest Path Tree Growth</b><br>
+<a href="img/anim_slow_large.gif"><img src="img/anim_slow_small.jpg"></a><br>
+Click to view an animation of the growth of a bus+walking shortest path tree with respect to Monday morning at 3rd & Pine.<br>
+<br>
+<b>An Absurd Route</b><br>
+<a href="img/absurd_route_large.png"><img src="img/absurd_route_small.jpg"></a><br>
+Graphserver will return an itinerary between any two connected vertices, even if the itinerary is absurd. In this case traveling by bus and foot from downtown Seattle to deep within the foothills of the Cascade Mountians involves an eight-hour hike from one of the most remote bus stops in the county.<br>
+
+<script src="http://www.google-analytics.com/urchin.js" type="text/javascript">
+</script>
+<script type="text/javascript">
+_uacct = "UA-1815162-1";
+urchinTracker();
+</script>
+
+</html>
