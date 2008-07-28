@@ -1,6 +1,6 @@
 
 try:
-    from pygs.gsdll import lgs, cproperty, ccast, CShadow, instantiate, PayloadMethodTypes
+    from graphserver.gsdll import lgs, cproperty, ccast, CShadow, instantiate, PayloadMethodTypes
 except ImportError:
     #so I can run this script from the same folder
     from gsdll import lgs, cproperty, ccast, CShadow, instantiate, PayloadMethodTypes

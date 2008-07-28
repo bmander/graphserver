@@ -1,8 +1,8 @@
 import BaseHTTPServer
 from SimpleHTTPServer import *
 try: 
-    from pygs.engine import XMLGraphEngine
-    from pygs.graphserver import Graph
+    from graphserver.engine import XMLGraphEngine
+    from graphserver.core import Graph
 except ImportError:
     from engine import XMLGraphEngine
     from graphserver import Graph
