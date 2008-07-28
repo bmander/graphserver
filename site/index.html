@@ -98,6 +98,42 @@ $ python
 &gt;&gt;&gt; gg.destroy()                                     <span class="pycomment"># so we have to perform garbage collection explicitly</span>
 &gt;&gt;&gt; exit()
 </pre>
+<h3>Loading OpenStreetMap Data</h3>
+<pre>
+$ cd /path/to/graphserver/pygs/examples/osm
+$ python
+&gt;&gt;&gt; from graphserver.ext.osm import OSM
+&gt;&gt;&gt; osm = OSM("sf.osm")
+&gt;&gt;&gt; len(osm.nodes)
+<span class="computeroutput">39406</span>
+&gt;&gt;&gt; from graphserver.core import Graph
+&gt;&gt;&gt; from graphserver.ext.osm import OSMLoadable
+&gt;&gt;&gt; from pyproj import Proj
+&gt;&gt;&gt; class OSMGraph(Graph, OSMLoadable):               <span class="pycomment"># add the load_osm() function to the graph with a mixin</span>
+...   pass
+... 
+&gt;&gt;&gt; gg = OSMGraph()
+&gt;&gt;&gt; gg.load_osm(osm, Proj(init='epsg:26910'))         <span class="pycomment"># specify projection to convert OSM data to meters</span>
+&gt;&gt;&gt; gg.size
+<span class="computeroutput">39406</span>
+&gt;&gt;&gt; fortmason = "osm65298435"                         <span class="pycomment"># a location near Fort Mason in San Francisco, California</span>
+&gt;&gt;&gt; hollypark = "osm65297473"                         <span class="pycomment"># a location near Holly Park in San Francisco</span>
+&gt;&gt;&gt; spt=gg.shortest_path_tree(fortmason,hollypark,State(1,0)) <span class="pycomment"># this took about 0.05 seconds</span>
+&gt;&gt;&gt; vertices, edges = spt.path(hollypark)
+&gt;&gt;&gt; len(vertices), len(edges)                         <span class="pycomment"># the shortet path has 96 edge segments</span>
+<span class="computeroutput">(97, 96)</span>
+&gt;&gt;&gt; edges[0].payload.name                             <span class="pycomment"># the first of which has this id</span>
+<span class="computeroutput">'8920043-48'</span>
+&gt;&gt;&gt; vertices[-1].payload.time                         <span class="pycomment"># it takes a little over two and a half hours to walk that far</span>
+<span class="computeroutput">9192</span>
+&gt;&gt;&gt; spt.destroy()                                     <span class="pycomment"># remember to explicitly clean up</span>
+&gt;&gt;&gt; gg.destroy()
+&gt;&gt;&gt; quit()
+</pre>
+
+Converting the raw IDs returned by Graphserver into a human-readable message is left as an exercise to the reader.
+
+<pre>
 <a href="http://sourceforge.net"><img src="http://sflogo.sourceforge.net/sflogo.php?group_id=191374&amp;type=1" width="88" height="31" border="0" alt="SourceForge.net Logo" /></a>
 <div>
 <script src="http://www.google-analytics.com/urchin.js" type="text/javascript">
