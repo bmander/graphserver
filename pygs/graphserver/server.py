@@ -5,7 +5,7 @@ try:
     from graphserver.core import Graph
 except ImportError:
     from engine import XMLGraphEngine
-    from graphserver import Graph
+    from core import Graph
 
 import re
 import cgi

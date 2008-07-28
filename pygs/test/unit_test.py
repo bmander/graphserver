@@ -651,8 +651,8 @@ class TestGraphPerformance:
             changes.append( cmp(memblock, thisblock) )
             
             memblock = thisblock
-            
-        assert 1 in changes
+        
+        assert sum(changes) >= -1 #memory usage only increases in one iteration out of all
 
 class TestState:
     def test_basic(self):

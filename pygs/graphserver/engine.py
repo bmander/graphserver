@@ -1,7 +1,7 @@
 try:
     from graphserver.core import Graph, State
 except ImportError:
-    from graphserver import Graph, State
+    from core import Graph, State
 from time import time as now
 
 class XMLGraphEngine(object):
