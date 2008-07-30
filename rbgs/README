@@ -6,6 +6,10 @@ Make it
 
 $ make
 
+Install it
+
+$ sudo make install
+
 Test it
 
 $ cd test
