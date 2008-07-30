@@ -293,7 +293,7 @@ class TestState < Test::Unit::TestCase
     
     assert( s['calendars'].length == 2 )
     
-    assert( s.to_xml == "<state weight='0' time='Wed Dec 31 19:00:00 -0500 1969' prev_edge_name='' dist_walked='0.0' num_transfers='0' prev_edge_type='5' ><calendar begin_time='Wed Dec 31 19:00:00 -0500 1969' end_time='Thu Jan 01 19:00:00 -0500 1970' service_ids='1, 2' /><calendar begin_time='Wed Dec 31 19:00:00 -0500 1969' end_time='Thu Jan 01 19:00:00 -0500 1970' service_ids='3, 4' /></state>" )
+    assert_equal( s.to_xml,  "<state weight='0' time='Wed Dec 31 19:00:00 -0500 1969' prev_edge_name='' dist_walked='0.0' num_transfers='0' prev_edge_type='5' ><calendar begin_time='Wed Dec 31 19:00:00 -0500 1969' end_time='Thu Jan 01 19:00:00 -0500 1970' service_ids='1, 2' /><calendar begin_time='Wed Dec 31 19:00:00 -0500 1969' end_time='Thu Jan 01 19:00:00 -0500 1970' service_ids='3, 4' /></state>" )
     
   end
         
