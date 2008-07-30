@@ -112,6 +112,24 @@ class TestGraph:
         spt.destroy()
         g.destroy()
         
+    def test_bogus_origin(self):
+        g = Graph()
+        
+        fromv = g.add_vertex("home")
+        tov = g.add_vertex("work")
+        s = Street( "helloworld", 1 )
+        e = g.add_edge("home", "work", s)
+        g.add_edge("work", "home", Street("backwards",1) )
+        
+        spt = g.shortest_path_tree("bogus", "work", State(g.numauthorities,0))
+        
+        assert spt == None
+        
+        spt = g.shortest_path_tree_retro("home", "bogus", State(g.numauthorities,0))
+        
+        assert spt == None
+        
+        
     def test_spt_retro(self):
         
         g = Graph()

@@ -22,6 +22,12 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
   char* target = from;
 #endif
 
+  //Get origin vertex to make sure it exists
+  Vertex* origin_v = gGetVertex( this, origin );
+  if( origin_v == NULL ) {
+    return NULL;
+  }
+    
   //Return Tree
   Graph* spt = gNew();
   gAddVertex( spt, origin )->payload = init_state;
