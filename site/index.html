@@ -36,6 +36,14 @@ $ cd ..
 
 <h3>Install Python wrappers</h3>
 
+Install dependencies
+<pre style="background-color:#F5F5F5">
+$ easy_install transitfeed
+$ easy_install pyproj
+$ easy_install pytz
+</pre>
+
+Install wrappers
 <pre style="background-color:#F5F5F5">
 $ cd pygs
 $ sudo python setup.py install
@@ -106,7 +114,7 @@ $ python
 &gt;&gt;&gt; osm = OSM("sf.osm")
 &gt;&gt;&gt; len(osm.nodes)
 <span class="computeroutput">39406</span>
-&gt;&gt;&gt; from graphserver.core import Graph
+&gt;&gt;&gt; from graphserver.core import Graph, State
 &gt;&gt;&gt; from graphserver.ext.osm import OSMLoadable
 &gt;&gt;&gt; from pyproj import Proj
 &gt;&gt;&gt; class OSMGraph(Graph, OSMLoadable):               <span class="pycomment"># add the load_osm() function to the graph with a mixin</span>
@@ -134,7 +142,7 @@ $ python
 Converting the raw IDs returned by Graphserver into a human-readable message is left as an exercise to the reader.
 
 <h3>Loading Public Transit Data</h3>
-Graphserver has built-in edge types to handle schedule public transit. Public transit data is loaded into the graph using files formatted according to the  <a href="http://code.google.com/transit/spec/transit_feed_specification.html">Google Transit Feed Specification</a> (GTFS). <a href="http://code.google.com/p/googletransitdatafeed/wiki/PublicFeeds">Several transit agencies</a> publicly release schedule data in the GTFS format.
+Graphserver has built-in edge types to handle scheduled public transit. Public transit data is loaded into the graph via <a href="http://code.google.com/transit/spec/transit_feed_specification.html">Google Transit Feed Specification</a> (GTFS) files. <a href="http://code.google.com/p/googletransitdatafeed/wiki/PublicFeeds">Several transit agencies</a> publicly release schedule data in the GTFS format.
 <pre>
 $ mkdir bart
 $ cd bart
