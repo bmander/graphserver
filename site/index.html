@@ -150,7 +150,7 @@ $ wget http://www.bart.gov/schedules/developers/latest_open.aspx
 $ unzip google_transit.zip
 $ cd ..
 $ python
-&gt;&gt;&gt; from graphserver.core import Graph, Link
+&gt;&gt;&gt; from graphserver.core import Graph, Link, State
 &gt;&gt;&gt; from graphserver.ext.gtfs import GTFSLoadable
 &gt;&gt;&gt; class GTFSGraph(Graph, GTFSLoadable):
 ...   pass
@@ -194,7 +194,7 @@ Unlike the above working examples, this is more of an illustrative outline.
 
 <pre>
 $ python
->>> from graphserver.core import Graph
+>>> from graphserver.core import Graph, Like, State
 >>> from graphserver.ext.osm import OSMLoadable
 >>> from graphserver.ext.gtfs import GTFSLoadable
 >>> class MultimodalGraph(Graph, OSMLoadable, GTFSLoadable):
