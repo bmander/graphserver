@@ -139,10 +139,10 @@ class GTFSLoadable:
 
             cal.add_day( local_daystart+sid_start, local_daystart+sid_end, service_ids, daylight_savings )
 
+
         #add all vertices
         for stop in sched.GetStopList():
             self.add_vertex(prefix+stop.stop_id)
-
 
         #add all tripstops
         for stop in sched.GetStopList():
