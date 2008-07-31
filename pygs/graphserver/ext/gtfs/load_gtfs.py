@@ -8,9 +8,43 @@ from graphserver.core import Graph, Street, CalendarDay, TripHopSchedule, Calend
 import csv
 import calendar
 import os
+from datetime import date, timedelta
 
 if transitfeed.__version__ != "1.1.5":
     raise Exception("transitfeed.__version__ != 1.1.5")
+    
+def parse_date(date):
+    return (int(date[0:4]), int(date[4:6]), int(date[6:8]))
+
+def get_service_ids(sched, date):
+    sids = []
+    
+    if type(date)==datetime.date:
+        date = "%0.4d%0.2d%0.2d"%(date.year,date.month,date.day)
+        
+    for sp in sched.GetServicePeriodList():
+        start_date, end_date = sp.GetDateRange()
+        
+        # if date is in the service_period's date range
+        if int(date) <= int(end_date) and int(date) >= int(start_date):
+            runs = sp.day_of_week[ calendar.weekday( *parse_date(date) ) ]
+            
+            if date in sp.date_exceptions:
+                if sp.date_exceptions[date]==1:
+                    runs = True
+                elif sp.date_exceptions[date]==2:
+                    runs = False
+                    
+            if runs:
+                sids.append( sp.service_id )
+                
+    return sids
+    
+def iter_dates(startdate, enddate):
+    currdate = startdate
+    while currdate <= enddate:
+        yield currdate
+        currdate += timedelta(1)
 
 class GTFSLoadable:
     def _triphops_from_stop(self, stop):
@@ -50,50 +84,10 @@ class GTFSLoadable:
         
         return thss
 
-    def _raw_calendar(self, calendarfile, exceptionsfile):
-        rawdays = {} #hash of date to service_id lists
+    def _raw_calendar(self, sched):
+        startdate, enddate = [ date( *parse_date(x) ) for x in sched.GetDateRange() ]
         
-        # regular calendar
-        reader = csv.reader(open(calendarfile,"r"))
-        reader.next() #skip the header
-        
-        # for each service id
-        for service_id, mon,tue,wed,thu,fri,sat,sun,service_start,service_end in reader:
-            dows = dict( zip(range(0,7), [ x=="1" for x in [mon,tue,wed,thu,fri,sat,sun] ] ) )
-            
-            #get date range
-            service_start = datetime.date(int(service_start[0:4]),int(service_start[4:6]),int(service_start[6:]))
-            service_end   = datetime.date(int(service_end[0:4]),int(service_end[4:6]),int(service_end[6:]))
-            
-            #apply that service_id to every date in the range which matches a weekday where the service_id is valid
-            for i in range( service_start.toordinal(), service_end.toordinal()+1 ):
-                if i not in rawdays:
-                    rawdays[i] = []
-                
-                if dows[ datetime.date.fromordinal(i).weekday() ]:
-                    rawdays[i].append( service_id )
-        
-        # exceptions
-        reader = csv.reader(open(exceptionsfile, "r"))
-        reader.next() #skip the header
-        
-        #for each exception
-        for service_id, exceptdate, exceptiontype in reader:
-            exceptdate = datetime.date(int(exceptdate[0:4]),int(exceptdate[4:6]),int(exceptdate[6:]))
-            
-            if exceptiontype == "1":
-                rawdays[exceptdate.toordinal()].append(service_id)
-            elif exceptiontype == "2":
-                rawdays[exceptdate.toordinal()].remove(service_id)
-                
-        #convert days to list and order
-        rawdays = [ (datetime.date.fromordinal(x),y) for x,y in rawdays.items() ]
-        rawdays.sort(lambda x,y: cmp(x[0],y[0]))
-        
-        #for rawday in rawdays:
-        #    print rawday
-        
-        return rawdays
+        return [ (currdate, get_service_ids( sched, currdate )) for currdate in iter_dates(startdate, enddate) ]
         
     def _date_to_secs(self, adate):
         return calendar.timegm( (adate.year,adate.month,adate.day,0,0,0,0,0,0) )
@@ -101,10 +95,12 @@ class GTFSLoadable:
     def _is_dst(self, adate):
         return time.localtime( time.mktime((adate.year,adate.month,adate.day,0,0,0,0,0,-1)) )[-1]
 
-    def load_gtfs(self, datadir, sched=None, prefix="gtfs", authority=0):
+    def load_gtfs(self, sched_or_datadir, prefix="gtfs", authority=0):
         
-        if sched is None:
-            sched = transitfeed.Loader(datadir).Load()
+        if type(sched_or_datadir)==str:
+            sched = transitfeed.Loader(sched_or_datadir).Load()
+        else:
+            sched = sched_or_datadir
 
         # get timezone offset for all agencies
         agency_offsets = {}
@@ -125,7 +121,7 @@ class GTFSLoadable:
         sid_start = min( [trip.GetStartTime() for trip in sched.GetTripList()] )
         sid_end   = max( [trip.GetEndTime() for trip in sched.GetTripList()] )
 
-        rawcalendar = self._raw_calendar( os.path.join(datadir, "calendar.txt"), os.path.join(datadir, "calendar_dates.txt") )
+        rawcalendar = self._raw_calendar( sched )
 
         cal = Calendar()
         for day, service_ids in rawcalendar:
@@ -139,7 +135,6 @@ class GTFSLoadable:
 
             cal.add_day( local_daystart+sid_start, local_daystart+sid_end, service_ids, daylight_savings )
 
-
         #add all vertices
         for stop in sched.GetStopList():
             self.add_vertex(prefix+stop.stop_id)
@@ -151,7 +146,7 @@ class GTFSLoadable:
             for rawtriphopschedule in rawtriphopschedules:
                 hops = [(fromv.departure_secs, tov.arrival_secs, trip.trip_id.encode("ascii")) for trip,fromv,tov in rawtriphopschedule]
                     
-                str_service_id = rawtriphopschedule[0][0].service_id #servic_id in string form
+                str_service_id = rawtriphopschedule[0][0].service_id #service_id in string form
                 service_id = cal.service_id_directory[str_service_id]
                     
                 ths = TripHopSchedule( hops, service_id, cal.head, -time.timezone, authority )

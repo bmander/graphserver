@@ -1,7 +1,6 @@
 To run the tests, first unzip the archives:
 
 $ unzip map.osm.zip
-$ unzip gtfs.zip
 
 To run all tests, use 'nosetests'
 

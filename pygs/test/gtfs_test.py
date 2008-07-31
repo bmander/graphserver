@@ -1,6 +1,6 @@
-
+import transitfeed
 import sys
-sys.path.append('..')
+sys.path = ['..'] + sys.path
 from graphserver.core import Graph, Street, CalendarDay, TripHopSchedule, Calendar, State
 from graphserver.ext.gtfs import GTFSLoadable
 import time
@@ -46,7 +46,7 @@ def get_answers(vertex, time):
 
 def test_gtfs():
     g = TestGTFS()
-    g.load_gtfs("./gtfs")
+    g.load_gtfs("google_transit.zip")
 
     v = g.get_vertex("gtfs24TH")
 
@@ -117,4 +117,23 @@ def test_gtfs():
         for triphop in e.payload.triphops:
             print triphop
     print "--==--"
-
+    
+def test_raw_calendar():
+    g = TestGTFS()
+    fp = open("raw_cal_out", "r")
+    for line in g._raw_calendar(transitfeed.Loader("google_transit.zip").Load()):
+        expected = fp.readline().strip()
+        
+        foundsids = [str(x) for x in line[1]]
+        foundsids.sort()
+        found    = "%s, %s"%(line[0], foundsids)
+        
+        print "found: %s"%found
+        print "expected: %s"%expected
+        
+        assert( expected == found )
+    fp.close()
+    
+if __name__=='__main__':
+    test_gtfs()
+    test_raw_calendar()
