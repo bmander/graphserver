@@ -156,6 +156,17 @@ class OSM:
             for split_way in split_ways:
                 new_ways[split_way.id] = split_way
         self.ways = new_ways
+        
+    @property
+    def connecting_nodes(self):
+        """List of nodes that are the endpoint of one or more ways"""
+        
+        ret = {}
+        for way in self.ways.values():
+            ret[way.fromv] = self.nodes[way.fromv]
+            ret[way.tov] = self.nodes[way.tov]
+            
+        return ret
 
     @classmethod
     def download_from_bbox(cls, left, bottom, right, top ):
