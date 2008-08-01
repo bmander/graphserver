@@ -14,8 +14,11 @@ class OSMLoadable:
         else:
             osm = osm_filename_or_object
         
-        for nodeid in osm.nodes.keys():
-            self.add_vertex( prefix+str(nodeid) )
+        for way in osm.ways.values():
+            # Nodes will be added to the vertex twice. That's not a problem: the second time, nothing happens.
+            # Do this instead of adding each osm.nodes.keys(), because not all nodes are connected to other nodes
+            self.add_vertex( prefix+str(way.fromv) )
+            self.add_vertex( prefix+str(way.tov) )
         
         for wayid, way in osm.ways.iteritems():
             if 'highway' in way.tags:
