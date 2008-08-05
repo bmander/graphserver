@@ -42,3 +42,8 @@ class TestOSM:
         s.close()
         spt.destroy()
         g.destroy() 
+    
+    def test_osmgraph_from_object(self):
+        utmzone10 = Proj(init='epsg:26910')
+        g = OSMGraph(OSM("map.osm"), utmzone10)
+        assert len(g.vertices) != 0
