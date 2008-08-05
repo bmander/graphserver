@@ -1,7 +1,8 @@
-import sys
-sys.path.append("..")
+import sys, os
+sys.path = [os.path.dirname(os.path.abspath(__file__)) + "/.."] + sys.path
 from graphserver.core import *
 from graphserver.engine import XMLGraphEngine
+import time
     
 import os
 
@@ -28,6 +29,20 @@ class TestGraph:
         assert v.label == "home"
         
         g.destroy()
+        
+    def test_add_vertices(self):
+        g = Graph()
+        verts = range(0,100000)
+        t0 = time.time()
+        g.add_vertices(verts)
+        print "add vertices elapsed ", (time.time() - t0)
+        vlist = g.vertices
+        assert len(vlist) == len(verts)
+        vlist.sort(lambda x, y: int(x.label) - int(y.label))
+        assert vlist[0].label == "0"
+        assert vlist[-1].label == str(verts[-1])
+        g.destroy()
+        
         
     def test_double_add_vertex(self):
         g = Graph()
@@ -629,7 +644,7 @@ class TestGraphPerformance:
                    "53103049","53178033"] #twenty random node ids in the given graph
         for nodeid in nodeids:
             t0 = time.time()
-            spt = g.shortest_path_tree( nodeid, 'bogus', State(0) )
+            spt = g.shortest_path_tree( nodeid, None, State(0) )
             t1 = time.time()
             runtimes.append( t1-t0 )
             

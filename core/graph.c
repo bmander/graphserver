@@ -43,6 +43,14 @@ gAddVertex( Graph* this, char *label ) {
   return exists;
 }
 
+void 
+gAddVertices( Graph* this, char **labels, int n ) {
+  int i;
+  for (i = 0; i < n; i++) {
+  	gAddVertex(this, labels[i]);
+  }
+}
+
 Vertex*
 gGetVertex( Graph* this, char *label ) {
   return hashtable_search( this->vertices, label );

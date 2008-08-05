@@ -66,6 +66,9 @@ gAddVertex( Graph* this, char *label );
 Vertex*
 gGetVertex( Graph* this, char *label );
 
+void
+gAddVertices( Graph* this, char **labels, int n );
+
 Edge*
 gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload );
 

@@ -94,6 +94,12 @@ class Graph(CShadow):
             verts.append(v)
         return verts
     
+    def add_vertices(self, vs):
+        a = (c_char_p * len(vs))()
+        for i, v in enumerate(vs):
+            a[i] = str(v)
+        lgs.gAddVertices(self.soul, a, len(vs))
+    
     @property
     def edges(self):
         self.check_destroyed()
@@ -109,13 +115,15 @@ class Graph(CShadow):
     def shortest_path_tree(self, fromv, tov, initstate):
         #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
         self.check_destroyed()
-
+        if not tov:
+            tov = "*bogus^*^vertex*"
         return self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul )
         
     def shortest_path_tree_retro(self, fromv, tov, finalstate):
         #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
         self.check_destroyed()
-        
+        if not fromv:
+            fromv = "*bogus^*^vertex*"        
         return self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul )
     """
     def shortest_path_tree(self, from_key, to_key, init, direction=True):

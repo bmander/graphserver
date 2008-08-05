@@ -10,7 +10,8 @@ import sys
 
 # Try loading from the source tree. If that doesn't work, fall back to the installed location.
 try:
-    lgs = PyDLL( '../core/libgraphserver.so' )
+    path = os.path.dirname(os.path.abspath(__file__)) + '/../../core/libgraphserver.so'
+    lgs = PyDLL( path )
 except OSError:
     lgs = PyDLL( '/usr/lib/libgraphserver.so' )
 
