@@ -47,3 +47,9 @@ class TestOSM:
         utmzone10 = Proj(init='epsg:26910')
         g = OSMGraph(OSM("map.osm"), utmzone10)
         assert len(g.vertices) != 0
+        
+    def test_find_nearest_node(self):
+        osm = OSM("sf.osm")
+        n = osm.find_nearest_node(-122.4179760000,37.7434470000)
+        print n.id
+        assert n.id == "65325497"
