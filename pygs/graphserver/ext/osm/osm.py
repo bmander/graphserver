@@ -176,12 +176,15 @@ class OSM:
         fp.close()
         return osm
 
-    def nearest_node(self, lng, lat):
-        """ Brute force effort to find the nearest start or end node."""
-        best = self.nodes[0]
-        bdist = dist(best.lng,best.lat,lng,lat)
-        for n in self.nodes:
-            tdist = dist(best.lng,best.lat,n.lng,n.lat)
-            if tdist < bdist:
-                best = n
+    def find_nearest_node(self, lng, lat):
+        """ Brute force effort to find the nearest start or end node based on lat/lng distances."""
+        best = self.nodes[self.ways[self.ways.keys()[0]].nds[0]]
+        bdist = dist(best.lon, best.lat, lng, lat)
+        for id, way in self.ways.iteritems():
+            for i in (0,-1):
+                nd = self.nodes[way.nds[i]]
+                d = dist(lng, lat, nd.lon, nd.lat) 
+                if d < bdist:
+                    bdist = d
+                    best = nd
         return best
