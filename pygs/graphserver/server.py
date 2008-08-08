@@ -10,6 +10,7 @@ except ImportError:
 import re
 import cgi
 import traceback, sys 
+from types import *
 
 _rc = re.compile
 
@@ -21,15 +22,15 @@ class GSHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             
     def do_GET(self):
         
-        for pat in self.urlpatterns:
-            if pat[0].match(self.path):
+        for ppath, pfunc, pargs in self.urlpatterns():
+            if ppath.match(self.path):
                 args = {}
-                if pat[2] and self.path.find("?") != -1:
+                if pargs and self.path.find("?") != -1:
                     args = cgi.parse_qs(self.path[self.path.index("?")+1:])
                     for k in args.keys():
                         args[k] = args[k][0]
                 try:
-                    r = pat[1](self,**args)
+                    r = pfunc(self,**args)
  
                     self.send_response(200)
                     self.send_header('Content-type', 'text/xml')
@@ -50,29 +51,43 @@ class GSHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def _shortest_path(self, **kw):
         return self.server.gengine.shortest_path(kw['from'],kw['to'],
                                                  time=int(kw.get('time',0)))
+    _shortest_path.path = _rc(r'/shortest_path')
+    _shortest_path.args    = ('from','to','time')
                                                  
     def _shortest_path_retro(self, **kw):
         return self.server.gengine.shortest_path_retro(kw['from'],kw['to'],
                                                        time=int(kw.get('time',0)))
+    _shortest_path_retro.path = _rc(r'/shortest_path_retro')
+    _shortest_path_retro.args = ('from','to','time')
 
     def _all_vertex_labels(self,**kw):
         return self.server.gengine.all_vertex_labels(**kw)
+    _all_vertex_labels.path = _rc(r'/vertices')
+    _all_vertex_labels.args = None
         
     def _collapse_edges(self,**kw):
         return self.server.gengine.collapse_edges(**kw)
+    _collapse_edges.path = _rc(r'/vertex/outgoing/collapsed')
+    _collapse_edges.args = ('label', 'time')
 
     def _walk_edges(self,**kw):
         return self.server.gengine.walk_edges(**kw)
+    _walk_edges.path = _rc(r'/vertex/walk')
+    _walk_edges.args = ('label', 'time')
         
     def _walk_edges_retro(self,**kw):
         return self.server.gengine.walk_edges_retro(**kw)
+    _walk_edges_retro.path = _rc(r'/vertex/walk_retro')
+    _walk_edges_retro.args = ('label', 'time')
 
     def _outgoing_edges(self,**kw):
         return self.server.gengine.outgoing_edges(**kw)
+    _outgoing_edges.path = _rc(r'/vertex/outgoing')
+    _outgoing_edges.args = ('label',)
     
     def _usage(self):
         ret = ["<?xml version='1.0'?><api>"]
-        for pat in self.urlpatterns:
+        for pat in self.urlpatterns():
             ret.append("<method><path>%s</path><parameters>" % pat[0].pattern)
             if pat[2]:
                 for p in pat[2]:
@@ -80,16 +95,17 @@ class GSHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             ret.append("</parameters></method>")
         ret.append("</api>")
         return "".join(ret)
-            
-        
-    urlpatterns = ((_rc(r'/vertices'), _all_vertex_labels, None),
-               (_rc(r'/vertex/outgoing'), _outgoing_edges, ('label',)),
-               (_rc(r'/vertex/outgoing/collapsed'), _collapse_edges, ('label', 'time')),
-               (_rc(r'/vertex/walk_retro'), _walk_edges_retro, ('label', 'time')),
-               (_rc(r'/vertex/walk'), _walk_edges, ('label', 'time')),
-               (_rc(r'/shortest_path_retro'), _shortest_path_retro, ('from','to','time')),
-               (_rc(r'/shortest_path'), _shortest_path, ('from','to','time')))
 
+    @classmethod
+    def urlpatterns(cls):
+        ret = []
+        
+        for name in dir(cls):
+            attr = getattr(cls, name)
+            if type(attr) == UnboundMethodType and hasattr(attr, 'path') and hasattr(attr,'args'):
+                ret.append( (attr.path, attr, attr.args) )
+                
+        return ret
 
 
 class GSHTTPServer(BaseHTTPServer.HTTPServer):

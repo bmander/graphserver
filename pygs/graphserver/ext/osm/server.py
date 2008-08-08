@@ -18,6 +18,8 @@ class OSMRequestHandler(GSHTTPRequestHandler):
                     ret.append("<node>%s</node>" % n)
         ret.append("</way>")
         return "".join(ret)
+    _nodes.path = _rc(r"/nodes")
+    _nodes.args = ("w",)
     
     
     def _intersection(self, a, b):
@@ -30,6 +32,8 @@ class OSMRequestHandler(GSHTTPRequestHandler):
                 ret.append("<node>%s</node>" % n)
         ret.append("</intersections>")
         return "".join(ret)
+    _intersection.path = _rc(r"/intersection")
+    _intersection.args = ("a", "b")
     
     def _ways(self):
         osm = self.server.gengine.graph.osm
@@ -38,10 +42,8 @@ class OSMRequestHandler(GSHTTPRequestHandler):
             ret.append("<way id='%s' name='%s'/>" % (wayid, way.tags.get('name',"").replace("'","\'")))
         ret.append("</ways>")
         return "".join(ret)
-    
-    urlpatterns = ((_rc(r"/nodes"),_nodes, ("w")),
-                   (_rc(r"/intersection"),_intersection, ("a", "b")),
-                   (_rc(r"/ways"), _ways, None)) + GSHTTPRequestHandler.urlpatterns
+    _ways.path = _rc(r"/ways")
+    _ways.args = None
     
 
 if __name__ == '__main__':
