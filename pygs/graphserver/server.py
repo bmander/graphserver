@@ -50,10 +50,10 @@ class GSHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     
     def _usage(self):
         ret = ["<?xml version='1.0'?><api>"]
-        for pat in self.urlpatterns():
-            ret.append("<method><path>%s</path><parameters>" % pat[0].pattern)
-            if pat[2]:
-                for p in pat[2]:
+        for ppath, pfunc, pargs in self.urlpatterns():
+            ret.append("<method><path>%s</path><parameters>" % ppath.pattern)
+            if pargs:
+                for p in pargs:
                     ret.append("<param>%s</param>" %p)
             ret.append("</parameters></method>")
         ret.append("</api>")
