@@ -4,6 +4,9 @@ except ImportError:
     from core import Graph, State
 from time import time as now
 
+import re
+_rc = re.compile
+
 class XMLGraphEngine(object):
     """ Provides a high level API to graph functions, outputing data to XML."""
 
@@ -17,13 +20,18 @@ class XMLGraphEngine(object):
     def graph(self):
         return self.gg
 
-    def parse_init_state(self, numauthorities, time=int(now()), ):
+    def parse_init_state(self, numauthorities, time ):
+        if time is None:
+            time = int(now())
+        else:
+            time = int(time)
+        
         return State(numauthorities, time)
 
-    def shortest_path_general(self,dir_forward,doubleback,from_v,to_v,**statevars):
+    def shortest_path_general(self,dir_forward,doubleback,from_v,to_v,time):
         if not self.gg.get_vertex(from_v) and self.gg.get_vertex(to_v):
             raise
-        init_state = self.parse_init_state(self.gg.numauthorities, **statevars)
+        init_state = self.parse_init_state(self.gg.numauthorities, time)
         #print init_state
         try:
             #Throws RuntimeError if no shortest path found.
@@ -68,11 +76,15 @@ class XMLGraphEngine(object):
         except RuntimeError, e:
             raise "Couldn't find a shortest path from #{from} to #{to}"
             
-    def shortest_path(self, from_v, to_v, **statevars):
-        return self.shortest_path_general( True, True, from_v, to_v, **statevars )
+    def shortest_path(self, from_v, to_v, time):
+        return self.shortest_path_general( True, True, from_v, to_v, time )
+    shortest_path.path = _rc(r'/shortest_path')
+    shortest_path.args    = ('from','to','time')
             
-    def shortest_path_retro(self, from_v, to_v, **statevars):
-        return self.shortest_path_general( False, True, from_v, to_v, **statevars )
+    def shortest_path_retro(self, from_v, to_v, time):
+        return self.shortest_path_general( False, True, from_v, to_v, time )
+    shortest_path_retro.path = _rc(r'/shortest_path_retro')
+    shortest_path_retro.args = ('from','to','time')
 
     def all_vertex_labels(self):
         ret = ["<?xml version='1.0'?>"]
@@ -81,6 +93,8 @@ class XMLGraphEngine(object):
             ret.append("<label>%s</label>" % v.label)
         ret.append("</labels>")
         return "".join(ret)
+    all_vertex_labels.path = _rc(r'/vertices')
+    all_vertex_labels.args = ()
 
     def outgoing_edges(self, label):
         ret = ["<?xml version='1.0'?>"]
@@ -95,10 +109,12 @@ class XMLGraphEngine(object):
             ret.append("</edge>")
         ret.append("</edges>")
         return "".join(ret)
+    outgoing_edges.path = _rc(r'/vertex/outgoing')
+    outgoing_edges.args = ('label',)
 
-    def walk_edges_general(self, forward_dir, label, **statevars):
+    def walk_edges_general(self, forward_dir, label, time):
         vertex = self.gg.get_vertex( label )
-        init_state = self.parse_init_state(self.gg.numauthorities, **statevars)
+        init_state = self.parse_init_state(self.gg.numauthorities, time)
 
         ret = ["<?xml version='1.0'?>"]
         ret.append("<vertex>")
@@ -135,15 +151,19 @@ class XMLGraphEngine(object):
         ret.append("</vertex>")
         return "".join(ret)
         
-    def walk_edges(self, label, **statevars):
-        return self.walk_edges_general( True, label, **statevars )
+    def walk_edges(self, label, time):
+        return self.walk_edges_general( True, label, time )
+    walk_edges.path = _rc(r'/vertex/walk')
+    walk_edges.args = ('label', 'time')
         
-    def walk_edges_retro(self, label, **statevars):
-        return self.walk_edges_general( False, label, **statevars )
+    def walk_edges_retro(self, label, time):
+        return self.walk_edges_general( False, label, time )
+    walk_edges_retro.path = _rc(r'/vertex/walk_retro')
+    walk_edges_retro.args = ('label', 'time')
         
-    def collapse_edges(self, label, **statevars):
+    def collapse_edges(self, label, time):
         vertex = self.gg.get_vertex( label )
-        init_state = self.parse_init_state(self.gg.numauthorities, **statevars)
+        init_state = self.parse_init_state(self.gg.numauthorities, time)
         ret = ["<?xml version='1.0'?>"]
         ret.append("<vertex>")
         ret.append(init_state.to_xml())
@@ -160,6 +180,8 @@ class XMLGraphEngine(object):
         ret.append("</outgoing_edges>")
         ret.append("</vertex>")
         return "".join(ret)
+    collapse_edges.path = _rc(r'/vertex/outgoing/collapsed')
+    collapse_edges.args = ('label', 'time')
     
 def _test():
     #from pygs.engine import *

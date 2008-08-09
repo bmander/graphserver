@@ -30,7 +30,8 @@ class GSHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                     for k in args.keys():
                         args[k] = args[k][0]
                 try:
-                    r = pfunc(self,**args)
+                    fargs = [args.get(parg) for parg in pargs]
+                    r = pfunc(self.server.gengine,*fargs)
  
                     self.send_response(200)
                     self.send_header('Content-type', 'text/xml')
@@ -46,44 +47,6 @@ class GSHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_header('Content-type', 'text/xml')
         self.end_headers()
         self.wfile.write(self._usage())
-        
-
-    def _shortest_path(self, **kw):
-        return self.server.gengine.shortest_path(kw['from'],kw['to'],
-                                                 time=int(kw.get('time',0)))
-    _shortest_path.path = _rc(r'/shortest_path')
-    _shortest_path.args    = ('from','to','time')
-                                                 
-    def _shortest_path_retro(self, **kw):
-        return self.server.gengine.shortest_path_retro(kw['from'],kw['to'],
-                                                       time=int(kw.get('time',0)))
-    _shortest_path_retro.path = _rc(r'/shortest_path_retro')
-    _shortest_path_retro.args = ('from','to','time')
-
-    def _all_vertex_labels(self,**kw):
-        return self.server.gengine.all_vertex_labels(**kw)
-    _all_vertex_labels.path = _rc(r'/vertices')
-    _all_vertex_labels.args = None
-        
-    def _collapse_edges(self,**kw):
-        return self.server.gengine.collapse_edges(**kw)
-    _collapse_edges.path = _rc(r'/vertex/outgoing/collapsed')
-    _collapse_edges.args = ('label', 'time')
-
-    def _walk_edges(self,**kw):
-        return self.server.gengine.walk_edges(**kw)
-    _walk_edges.path = _rc(r'/vertex/walk')
-    _walk_edges.args = ('label', 'time')
-        
-    def _walk_edges_retro(self,**kw):
-        return self.server.gengine.walk_edges_retro(**kw)
-    _walk_edges_retro.path = _rc(r'/vertex/walk_retro')
-    _walk_edges_retro.args = ('label', 'time')
-
-    def _outgoing_edges(self,**kw):
-        return self.server.gengine.outgoing_edges(**kw)
-    _outgoing_edges.path = _rc(r'/vertex/outgoing')
-    _outgoing_edges.args = ('label',)
     
     def _usage(self):
         ret = ["<?xml version='1.0'?><api>"]
@@ -96,8 +59,8 @@ class GSHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         ret.append("</api>")
         return "".join(ret)
 
-    @classmethod
-    def urlpatterns(cls):
+    def urlpatterns(self):
+        cls = self.server.gengine.__class__
         ret = []
         
         for name in dir(cls):
