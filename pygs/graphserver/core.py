@@ -697,8 +697,9 @@ class Street(EdgePayload):
         return "<Street name='%s' length='%f' />" % (self.name, self.length)
 
 
+
 class TripHop(EdgePayload):
-        
+    
     depart = cproperty( lgs.triphopDepart, c_int )
     arrive = cproperty( lgs.triphopArrive, c_int )
     transit = cproperty( lgs.triphopTransit, c_int )
@@ -706,11 +707,15 @@ class TripHop(EdgePayload):
 
     SEC_IN_HOUR = 3600
     SEC_IN_MINUTE = 60
+    
+    @classmethod
+    def _daysecs_to_str(cls,daysecs):
+        return "%02d:%02d"%(int(daysecs/cls.SEC_IN_HOUR), int(daysecs%cls.SEC_IN_HOUR/cls.SEC_IN_MINUTE))
 
     def to_xml(self):
-        return "<TripHop depart='%02d:%02d' arrive='%02d:%02d' transit='%s' trip_id='%s' />" % \
-                        (int(self.depart/self.SEC_IN_HOUR), int(self.depart%self.SEC_IN_HOUR/self.SEC_IN_MINUTE),
-                        int(self.arrive/self.SEC_IN_HOUR), int(self.arrive%self.SEC_IN_HOUR/self.SEC_IN_MINUTE),
+        return "<TripHop depart='%s' arrive='%s' transit='%s' trip_id='%s' />" % \
+                        (self._daysecs_to_str(self.depart),
+                        self._daysecs_to_str(self.arrive),
                         self.transit, self.trip_id)
     
 class TripHopSchedule(EdgePayload):

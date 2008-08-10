@@ -28,53 +28,61 @@ class XMLGraphEngine(object):
         
         return State(numauthorities, time)
 
-    def shortest_path_general(self,dir_forward,doubleback,from_v,to_v,time):
+    def _shortest_path_raw(self,dir_forward,doubleback,from_v,to_v,time):
+        """returns (spt,vertices,edges). You need to destroy spt when you're done with the path"""
         if not self.gg.get_vertex(from_v) and self.gg.get_vertex(to_v):
             raise
+            
         init_state = self.parse_init_state(self.gg.numauthorities, time)
-        #print init_state
-        try:
-            #Throws RuntimeError if no shortest path found.
-            if not dir_forward:
-                spt = self.gg.shortest_path_tree_retro(from_v, to_v, init_state)
-                if doubleback:
-                    origin = spt.get_vertex(from_v)
-                    if origin is not None:
-                        departure_time = origin.payload.time
-                        spt = self.gg.shortest_path_tree( from_v, to_v, State(self.gg.numauthorities, departure_time) )
-                        vertices, edges = spt.path(to_v)
-                    else:
-                        vertices, edges = None, None
-                else:
-                    vertices, edges = spt.path_retro(from_v)
-            else:
-                spt = self.gg.shortest_path_tree(from_v, to_v, init_state)
-                if doubleback:
-                    dest = spt.get_vertex(to_v)
-                    if dest is not None:
-                        arrival_time = dest.payload.time
-                        spt = self.gg.shortest_path_tree_retro( from_v, to_v, State(self.gg.numauthorities, arrival_time) )
-                        vertices, edges = spt.path_retro(from_v)
-                    else:
-                        vertices, edges = None, None
-                else:
+        
+        if not dir_forward:
+            spt = self.gg.shortest_path_tree_retro(from_v, to_v, init_state)
+            if doubleback:
+                origin = spt.get_vertex(from_v)
+                if origin is not None:
+                    departure_time = origin.payload.time
+                    spt.destroy()
+                    spt = self.gg.shortest_path_tree( from_v, to_v, State(self.gg.numauthorities, departure_time) )
                     vertices, edges = spt.path(to_v)
-            ret = ["<?xml version='1.0'?><route>"]
-            if vertices is None:
-                ret.append("<error>destination unreachable</error>")
+                else:
+                    spt.destroy()
+                    vertices, edges = None, None, None
             else:
-                for i in range(len(edges)):
-                    ret.append(vertices[i].to_xml())
-                    ret.append(edges[i].to_xml())
-                ret.append(vertices[-1].to_xml())
-            ret.append("</route>")
-            spt.destroy()
-            return "".join(ret)
-        # TODO
-        #except ArgumentError, e:
-        #    raise "ERROR: Invalid parameters."
-        except RuntimeError, e:
-            raise "Couldn't find a shortest path from #{from} to #{to}"
+                vertices, edges = spt.path_retro(from_v)
+        else:
+            spt = self.gg.shortest_path_tree(from_v, to_v, init_state)
+            if doubleback:
+                dest = spt.get_vertex(to_v)
+                if dest is not None:
+                    arrival_time = dest.payload.time
+                    spt.destroy()
+                    spt = self.gg.shortest_path_tree_retro( from_v, to_v, State(self.gg.numauthorities, arrival_time) )
+                    vertices, edges = spt.path_retro(from_v)
+                else:
+                    spt.destroy()
+                    vertices, edges = None, None, None
+            else:
+                vertices, edges = spt.path(to_v)
+                
+        return spt, vertices, edges
+        
+
+    def shortest_path_general(self,dir_forward,doubleback,from_v,to_v,time):
+
+
+        spt, vertices, edges = self._shortest_path_raw(dir_forward,doubleback,from_v,to_v,time)
+                
+        ret = ["<?xml version='1.0'?><route>"]
+        if vertices is None:
+            ret.append("<error>destination unreachable</error>")
+        else:
+            for i in range(len(edges)):
+                ret.append(vertices[i].to_xml())
+                ret.append(edges[i].to_xml())
+            ret.append(vertices[-1].to_xml())
+        ret.append("</route>")
+        spt.destroy()
+        return "".join(ret)
             
     def shortest_path(self, from_v, to_v, time):
         return self.shortest_path_general( True, True, from_v, to_v, time )
