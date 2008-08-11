@@ -1,0 +1,4 @@
+Here's a set of simple unit tests in C. Run them with the 'valgrind' memory profiler to check for memory leaks and invalid reads.
+
+$ make
+$ valgrind --leak_check=yes ./streetprofile

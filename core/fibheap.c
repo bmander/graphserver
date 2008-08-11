@@ -31,7 +31,6 @@ Boston, MA 02110-1301, USA.  */
 //#ifdef HAVE_STRING_H
 #include <string.h>
 //#endif
-#include "libiberty.h"
 #include "fibheap.h"
 
 #include "graph.h"
@@ -57,7 +56,7 @@ static fibnode_t fibnode_remove (fibnode_t);
 fibheap_t
 fibheap_new (void)
 {
-  return (fibheap_t) xcalloc (1, sizeof (struct fibheap));
+  return (fibheap_t) calloc (1, sizeof (struct fibheap));
 }
 
 /* Create a new fibonacci heap node.  */
@@ -66,7 +65,7 @@ fibnode_new (void)
 {
   fibnode_t node;
 
-  node = (fibnode_t) xcalloc (1, sizeof *node);
+  node = (fibnode_t) calloc (1, sizeof *node);
   node->left = node;
   node->right = node;
 
@@ -74,7 +73,7 @@ fibnode_new (void)
 }
 
 static inline int
-fibheap_compare (fibheap_t heap ATTRIBUTE_UNUSED, fibnode_t a, fibnode_t b)
+fibheap_compare (fibheap_t heap, fibnode_t a, fibnode_t b)
 {
   if (a->key < b->key)
     return -1;
@@ -395,7 +394,7 @@ fibheap_consolidate (fibheap_t heap)
 
 /* Make NODE a child of PARENT.  */
 static void
-fibheap_link (fibheap_t heap ATTRIBUTE_UNUSED,
+fibheap_link (fibheap_t heap,
               fibnode_t node, fibnode_t parent)
 {
   if (parent->child == NULL)

@@ -1,0 +1,3 @@
+agency_id,agency_name,agency_url,agency_timezone
+BART,Bay Area Rapid Transit,http://www.bart.gov,America/Los_Angeles
+AirBART,AirBART,http://www.bart.gov/guide/airport/inbound_oak.aspx,America/Los_Angeles

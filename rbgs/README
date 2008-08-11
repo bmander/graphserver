@@ -1,0 +1,16 @@
+Create the ruby extension makefile
+
+$ ruby extconf.rb
+
+Make it
+
+$ make
+
+Install it
+
+$ sudo make install
+
+Test it
+
+$ cd test
+$ ruby test_ruby_wrapper.rb

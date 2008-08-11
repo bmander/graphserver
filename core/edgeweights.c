@@ -1,5 +1,5 @@
 #define WALKING_SPEED 0.85    //meters per second
-#define MIN_TRANSFER_TIME 300 //five minutes
+#define MIN_TRANSFER_TIME 1//300 //five minutes
 #define TRANSFER_PENALTY 3    //rough measure of how bad a close transfer is
 #define MAX_WALK 1200         //in meters; he better part of a mile
 #define WALKING_OVERAGE 0.1   //hassle/second/meter
@@ -27,11 +27,21 @@ linkWalkBack(Link* this, State* params) {
   return ret;
 }
 
-inline State*
+State*
 #ifndef ROUTE_REVERSE
 streetWalk(Street* this, State* params) {
+	return streetWalkAlgorithm(this, params);
 #else
 streetWalkBack(Street* this, State* params) {
+	return streetWalkBackAlgorithm(this, params);
+#endif
+}
+
+inline State*
+#ifndef ROUTE_REVERSE
+streetWalkPedestrian(Street* this, State* params) {
+#else
+streetWalkBackPedestrian(Street* this, State* params) {
 #endif
   State* ret = stateDup( params );
 
@@ -41,15 +51,22 @@ streetWalkBack(Street* this, State* params) {
   if(end_dist > MAX_WALK)
     delta_w += (end_dist - MAX_WALK)*WALKING_OVERAGE*delta_t;
 
+  int i;
 #ifndef ROUTE_REVERSE
   ret->time           += delta_t;
-  if(params->calendar_day && ret->time >= params->calendar_day->end_time) {
-    ret->calendar_day = params->calendar_day->next_day;
+  for(i=0; i<params->numcalendars; i++) {
+      CalendarDay* cal = params->calendars[i];
+      if(cal && ret->time >= cal->end_time) {
+        ret->calendars[i] = cal->next_day;
+      }
   }
 #else
   ret->time           -= delta_t;
-  if(params->calendar_day && ret->time < params->calendar_day->begin_time) {
-    ret->calendar_day = params->calendar_day->prev_day;
+  for(i=0; i<params->numcalendars; i++) {
+    CalendarDay* cal = params->calendars[i];
+    if(cal && ret->time < cal->begin_time) {
+      ret->calendars[i] = cal->prev_day;
+    }
   }
 #endif
   if (end_dist > ABSOLUTE_MAX_WALK) //TODO profile this to see if it's worth it
@@ -63,6 +80,15 @@ streetWalkBack(Street* this, State* params) {
   return ret;
 }
 
+#ifndef ROUTE_REVERSE
+State* (*streetWalkAlgorithm)(Street*,State*) = streetWalkPedestrian;
+#else
+State* (*streetWalkBackAlgorithm)(Street*,State*) = streetWalkBackPedestrian;
+#endif
+
+
+// This function is never called by the router - it's mostly a convenience method to be wrapped
+// by a higher-level langauge for the purpose of debugging.
 inline State*
 #ifndef ROUTE_REVERSE
 thsWalk(TripHopSchedule* this, State* params) {
@@ -76,6 +102,9 @@ thsWalkBack(TripHopSchedule* this, State* params) {
 #else
     th = thsCollapseBack(this, params);
 #endif
+    
+    if(!th)
+        return NULL;
     
     State* ret;
 #ifndef ROUTE_REVERSE
@@ -112,22 +141,28 @@ triphopWalkBack(TripHop* this, State* params) {
 
       //add a weight penalty to the transfer under some conditions
       if( wait < MIN_TRANSFER_TIME && 
-          params->num_transfers > 0)
+          params->num_transfers > 0) {
         transfer_penalty = (MIN_TRANSFER_TIME-wait)*TRANSFER_PENALTY;
+      }
       //transfer_penalty = 1000; //penalty of making a transfer; flat rate.
 
       ret->num_transfers += 1;
     }
 
-#ifndef ROUTE_REVRSE
+    int i;
+#ifndef ROUTE_REVERSE
     ret->time           += wait + this->transit;
-    if( ret->time >= ret->calendar_day->end_time) {
-      ret->calendar_day = ret->calendar_day->next_day;
+    for(i=0; i<params->numcalendars; i++) {
+        if( ret->calendars[i] && ret->time >= ret->calendars[i]->end_time) {
+          ret->calendars[i] = ret->calendars[i]->next_day;
+        }
     }
 #else
-    ret->time           -= wait - this->transit;
-    if( ret->time < ret->calendar_day->begin_time) {
-      ret->calendar_day = ret->calendar_day->prev_day;
+    ret->time           -= (wait + this->transit);
+    for(i=0; i<params->numcalendars; i++) {
+        if( ret->calendars[i] && ret->time < ret->calendars[i]->begin_time) {
+          ret->calendars[i] = ret->calendars[i]->prev_day;
+        }
     }
 #endif
     ret->weight         += wait + this->transit + transfer_penalty;
@@ -149,14 +184,16 @@ thsCollapseBack(TripHopSchedule* this, State* params) {
     // if the params->calendar_day is NULL, use the params->time to find the calendar_day
     // the calendar_day is actually a denormalization of the params->time
     // this way, the user doesn't need to worry about it
-    CalendarDay* calendar_day = params->calendar_day;
+    
+    CalendarDay* calendar_day = params->calendars[this->authority];
     if( !calendar_day )
 #ifndef ROUTE_REVERSE
-      calendar_day = calDayOfOrAfter( this->calendar, params->time );
+        calendar_day = calDayOfOrAfter( this->calendar, params->time );
 #else
-      calendar_day = calDayOfOrBefore( this->calendar, params->time );
+        calendar_day = calDayOfOrBefore( this->calendar, params->time );
 #endif
-    params->calendar_day = calendar_day;
+    params->calendars[this->authority] = calendar_day;
+    
 
     // if the schedule never runs
     // or if the schedule does not run on this day

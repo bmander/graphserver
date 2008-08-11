@@ -3,7 +3,9 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <statetypes.h>
+#include "hashtable_gs.h"
+#include "hashtable_itr.h"
+#include "statetypes.h"
 
 typedef enum {
   PL_STREET,
@@ -14,7 +16,6 @@ typedef enum {
   PL_NONE,
 } edgepayload_t;
 
-
 //---------------DECLARATIONS FOR STATE CLASS---------------------
 
 typedef struct State {
@@ -24,11 +25,13 @@ typedef struct State {
    int           num_transfers;
    edgepayload_t prev_edge_type;
    char*         prev_edge_name;
-   CalendarDay*  calendar_day;
+   //CalendarDay*  calendar_day;
+   int           numcalendars;
+   CalendarDay** calendars;
 } State;
 
 State*
-stateNew(long time);
+stateNew(int numcalendars, long time);
 
 void
 stateDestroy( State* this);
@@ -54,8 +57,14 @@ stateGetPrevEdgeType( State* this );
 char*
 stateGetPrevEdgeName( State* this );
 
+int
+stateGetNumCalendars( State* this );
+
 CalendarDay*
-stateCalendarDay( State* this );
+stateCalendarDay( State* this, int authority );
+
+void
+stateSetCalendarDay( State* this,  int authority, CalendarDay* cal );
 
 void
 stateSetTime( State* this, long time );
@@ -110,7 +119,7 @@ typedef struct Link {
 } Link;
 
 Link*
-linkNew( void );
+linkNew();
 
 void
 linkDestroy(Link* tokill);
@@ -138,17 +147,37 @@ streetNew(const char *name, double length);
 void
 streetDestroy(Street* tokill);
 
-inline State*
+State*
 streetWalk(Street* this, State* params);
 
-inline State*
+State*
 streetWalkBack(Street* this, State* params);
+
+
+State*
+streetWalkPedestrian(Street* this, State* params);
+
+State*
+streetWalkBackPedestrian(Street* this, State* params);
+
+typedef State* (*StreetWalkFunction)(Street*,State*);
+typedef State* (*StreetWalkBackFunction)(Street*,State*);
+
+//void streetSetWalkAlgorithms(StreetWalkFunction swalk, StreetWalkBackFunction swalkback);
+void streetSetWalkAlgorithms(State* (*walk)(Street*,State*), State* (*walkback)(Street*,State*));
+State* (*streetWalkAlgorithm)(Street*,State*);
+State* (*streetWalkBackAlgorithm)(Street*,State*);
+
+//StreetWalkFunction streetWalk;
+//StreetWalkBackFunction streetWalkBack;
+
 
 char*
 streetGetName(Street* this);
 
 double
 streetGetLength(Street* this);
+
 
 //---------------DECLARATIONS FOR TRIPHOPSCHEDULE and TRIPHOP  CLASSES---------------------
 
@@ -177,10 +206,11 @@ struct TripHopSchedule {
   ServiceId service_id;
   CalendarDay* calendar;
   int timezone_offset; //number of seconds this schedule is offset from GMT, eg. -8*3600=-28800 for US West Coast
+  int authority;
 };
 
 TripHopSchedule*
-thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, int timezone_offset );
+thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, int timezone_offset, int authority );
 
 void
 thsDestroy(TripHopSchedule* this);
@@ -223,7 +253,7 @@ thsCollapseBack( TripHopSchedule* this, State* params );
 inline long
 thsSecondsSinceMidnight( TripHopSchedule* this, State* param );
 
-inline TripHop* 
+inline TripHop*
 thsGetNextHop(TripHopSchedule* this, long time);
 
 inline TripHop*
@@ -238,6 +268,11 @@ thsGetServiceId(TripHopSchedule* this);
 TripHop*
 thsGetHop(TripHopSchedule* this, int i);
 
+CalendarDay*
+thsGetCalendar(TripHopSchedule* this );
+
+int
+thsGetTimezoneOffset(TripHopSchedule* this );
 
 typedef struct PayloadMethods {
 	void (*destroy)(void*);
@@ -260,9 +295,9 @@ defineCustomPayloadType(void (*destroy)(void*),
 						State* (*walkback)(void*,State*),
 						EdgePayload* (*collapse)(void*,State*),
 						EdgePayload* (*collapseBack)(void*,State*));
-					
 
-void 
+
+void
 undefineCustomPayloadType( PayloadMethods* this );
 
 CustomPayload*
@@ -288,5 +323,33 @@ cpCollapse(CustomPayload* this, State* params);
 
 EdgePayload*
 cpCollapseBack(CustomPayload* this, State* params);
+
+// ------------ DECLARATIONS FOR GEOM --------------------------
+
+typedef struct Geom {
+	char *data;
+}Geom;
+
+Geom*
+geomNew (char * geomdata);
+
+void
+geomDestroy(Geom* this);
+
+
+//--------------DECLARATIONS FOR COORDINATES---------------------
+typedef struct Coordinates {
+   long lat;
+   long lon;
+}Coordinates;
+
+Coordinates*
+coordinatesNew(long latitude,long length);
+
+void
+coordinatesDestroy(Coordinates* this);
+
+Coordinates*
+coordinatesDup(Coordinates* this);
 
 #endif

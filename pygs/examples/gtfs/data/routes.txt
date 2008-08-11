@@ -1,0 +1,12 @@
+route_id,agency_id,route_short_name,route_long_name,route_desc,route_type,route_url,route_color,route_text_color
+AirBART,AirBART,Shuttle,,,3,http://www.bart.gov/guide/airport/inbound_oak.aspx,,
+01,BART,BART,,,1,http://www.bart.gov/schedules/,ffff33,
+02,BART,BART,,,1,http://www.bart.gov/schedules/,ffff33,
+03,BART,BART,,,1,http://www.bart.gov/schedules/,ff9933,
+04,BART,BART,,,1,http://www.bart.gov/schedules/,ff9933,
+05,BART,BART,,,1,http://www.bart.gov/schedules/,339933,
+06,BART,BART,,,1,http://www.bart.gov/schedules/,339933,
+07,BART,BART,,,1,http://www.bart.gov/schedules/,ff0000,
+08,BART,BART,,,1,http://www.bart.gov/schedules/,ff0000,
+11,BART,BART,,,1,http://www.bart.gov/schedules/,0099cc,
+12,BART,BART,,,1,http://www.bart.gov/schedules/,0099cc,
