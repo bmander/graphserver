@@ -1,16 +1,15 @@
 import sys
 sys.path.append('../../..')
 from graphserver.engine import XMLGraphEngine
-from graphserver.server import GSHTTPServer, PORT, GSHTTPRequestHandler
 from graph import OSMGraph
 import re
 _rc = re.compile
 
 
-class OSMRequestHandler(GSHTTPRequestHandler):
+class OSMEngine(XMLGraphEngine):
     """ Provides additional methods for inspecting an OSMGraph. """
     def _nodes(self, w):
-        osm = self.server.gengine.graph.osm
+        osm = self.graph.osm
         ret = ["<?xml version='1.0'?><way>"]
         for way in osm.ways.values():
             if way.tags.get('name',"") == w:
@@ -23,7 +22,7 @@ class OSMRequestHandler(GSHTTPRequestHandler):
     
     
     def _intersection(self, a, b):
-        osm = self.server.gengine.graph.osm
+        osm = self.graph.osm
         a = osm.ways[a]
         b = osm.ways[b]
         ret = ["<?xml version='1.0'?><intersections>"]
@@ -36,7 +35,7 @@ class OSMRequestHandler(GSHTTPRequestHandler):
     _intersection.args = ("a", "b")
     
     def _ways(self):
-        osm = self.server.gengine.graph.osm
+        osm = self.graph.osm
         ret = ["<?xml version='1.0'?><ways>"]
         for wayid, way in osm.ways.iteritems():
             ret.append("<way id='%s' name='%s'/>" % (wayid, way.tags.get('name',"").replace("'","\'")))

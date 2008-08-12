@@ -8,6 +8,7 @@ import traceback
 import re
 _rc = re.compile
 from types import *
+import cgi
 
 class Servable:
     @classmethod
@@ -17,13 +18,13 @@ class Servable:
         for name in dir(cls):
             attr = getattr(cls, name)
             if type(attr) == UnboundMethodType and hasattr(attr, 'path') and hasattr(attr,'args'):
-                ret.append( (attr.path, attr, attr.args) )
+                ret.append( (re.compile(attr.path), attr, attr.args) )
                 
         return ret
         
-    def _usage(self):
+    def _usage(self, urlpatterns):
         ret = ["<?xml version='1.0'?><api>"]
-        for ppath, pfunc, pargs in self._urlpatterns():
+        for ppath, pfunc, pargs in urlpatterns:
             ret.append("<method><path>%s</path><parameters>" % ppath.pattern)
             if pargs:
                 for p in pargs:
@@ -35,9 +36,11 @@ class Servable:
     def wsgi_app(self):
         """returns a wsgi app which exposes this object as a webservice"""
         
+        urlpatterns = self._urlpatterns()
+        
         def myapp(environ, start_response):
             
-            for ppath, pfunc, pargs in self._urlpatterns():
+            for ppath, pfunc, pargs in urlpatterns:
                 if ppath.match(environ['PATH_INFO']):
                     args = {}
                     if pargs and environ['QUERY_STRING'] != "":
@@ -48,7 +51,11 @@ class Servable:
                         fargs = [args.get(parg) for parg in pargs]
                         r = pfunc(self,*fargs)
             
-                        start_response('200 OK', [('Content-type', 'text/xml')])
+                        if hasattr(pfunc, 'mime'):
+                            mime = pfunc.mime
+                        else:
+                            mime = 'text/xml'
+                        start_response('200 OK', [('Content-type', mime)])
                         return [r]
                     except:
                         traceback.print_exc()
@@ -56,7 +63,7 @@ class Servable:
                         return ["Something went wrong"]
             # no match:
             start_response('200 OK', [('Content-type', 'text/xml')])
-            return [self._usage()]
+            return [self._usage(urlpatterns)]
             
         return myapp
 
@@ -73,7 +80,7 @@ class XMLGraphEngine(object, Servable):
     def graph(self):
         return self.gg
 
-    def parse_init_state(self, numauthorities, time ):
+    def _parse_init_state(self, numauthorities, time ):
         if time is None:
             time = int(now())
         else:
@@ -86,7 +93,7 @@ class XMLGraphEngine(object, Servable):
         if not self.gg.get_vertex(from_v) and self.gg.get_vertex(to_v):
             raise
             
-        init_state = self.parse_init_state(self.gg.numauthorities, time)
+        init_state = self._parse_init_state(self.gg.numauthorities, time)
         
         if not dir_forward:
             spt = self.gg.shortest_path_tree_retro(from_v, to_v, init_state)
@@ -120,9 +127,7 @@ class XMLGraphEngine(object, Servable):
         return spt, vertices, edges
         
 
-    def shortest_path_general(self,dir_forward,doubleback,from_v,to_v,time):
-
-
+    def _shortest_path_general(self,dir_forward,doubleback,from_v,to_v,time):
         spt, vertices, edges = self._shortest_path_raw(dir_forward,doubleback,from_v,to_v,time)
                 
         ret = ["<?xml version='1.0'?><route>"]
@@ -138,13 +143,13 @@ class XMLGraphEngine(object, Servable):
         return "".join(ret)
             
     def shortest_path(self, from_v, to_v, time):
-        return self.shortest_path_general( True, True, from_v, to_v, time )
-    shortest_path.path = _rc(r'/shortest_path')
+        return self._shortest_path_general( True, True, from_v, to_v, time )
+    shortest_path.path = r'/shortest_path'
     shortest_path.args    = ('from','to','time')
             
     def shortest_path_retro(self, from_v, to_v, time):
-        return self.shortest_path_general( False, True, from_v, to_v, time )
-    shortest_path_retro.path = _rc(r'/shortest_path_retro')
+        return self._shortest_path_general( False, True, from_v, to_v, time )
+    shortest_path_retro.path = r'/shortest_path_retro'
     shortest_path_retro.args = ('from','to','time')
 
     def all_vertex_labels(self):
@@ -154,7 +159,7 @@ class XMLGraphEngine(object, Servable):
             ret.append("<label>%s</label>" % v.label)
         ret.append("</labels>")
         return "".join(ret)
-    all_vertex_labels.path = _rc(r'/vertices')
+    all_vertex_labels.path = r'/vertices'
     all_vertex_labels.args = ()
 
     def outgoing_edges(self, label):
@@ -170,12 +175,12 @@ class XMLGraphEngine(object, Servable):
             ret.append("</edge>")
         ret.append("</edges>")
         return "".join(ret)
-    outgoing_edges.path = _rc(r'/vertex/outgoing')
+    outgoing_edges.path = r'/vertex/outgoing'
     outgoing_edges.args = ('label',)
 
     def walk_edges_general(self, forward_dir, label, time):
         vertex = self.gg.get_vertex( label )
-        init_state = self.parse_init_state(self.gg.numauthorities, time)
+        init_state = self._parse_init_state(self.gg.numauthorities, time)
 
         ret = ["<?xml version='1.0'?>"]
         ret.append("<vertex>")
@@ -214,17 +219,17 @@ class XMLGraphEngine(object, Servable):
         
     def walk_edges(self, label, time):
         return self.walk_edges_general( True, label, time )
-    walk_edges.path = _rc(r'/vertex/walk')
+    walk_edges.path = r'/vertex/walk'
     walk_edges.args = ('label', 'time')
         
     def walk_edges_retro(self, label, time):
         return self.walk_edges_general( False, label, time )
-    walk_edges_retro.path = _rc(r'/vertex/walk_retro')
+    walk_edges_retro.path = r'/vertex/walk_retro'
     walk_edges_retro.args = ('label', 'time')
         
     def collapse_edges(self, label, time):
         vertex = self.gg.get_vertex( label )
-        init_state = self.parse_init_state(self.gg.numauthorities, time)
+        init_state = self._parse_init_state(self.gg.numauthorities, time)
         ret = ["<?xml version='1.0'?>"]
         ret.append("<vertex>")
         ret.append(init_state.to_xml())
@@ -241,7 +246,7 @@ class XMLGraphEngine(object, Servable):
         ret.append("</outgoing_edges>")
         ret.append("</vertex>")
         return "".join(ret)
-    collapse_edges.path = _rc(r'/vertex/outgoing/collapsed')
+    collapse_edges.path = r'/vertex/outgoing/collapsed'
     collapse_edges.args = ('label', 'time')
 
 def _test():

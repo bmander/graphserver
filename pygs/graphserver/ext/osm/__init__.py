@@ -1,4 +1,4 @@
 from osm import Way, Node, OSM
 from graph import OSMGraph
-from server import OSMRequestHandler
+from engine import OSMEngine
 from load_osm import OSMLoadable
