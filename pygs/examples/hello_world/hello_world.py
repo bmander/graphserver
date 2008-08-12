@@ -1,13 +1,13 @@
 try:
-    from pygs.engine import XMLGraphEngine
+    from pygs.engine import Engine
     from pygs.structures import TripHopSchedule, CalendarDay, Street, Link, State, Graph
 except ImportError:
     import sys
     sys.path.append("../..")
-    from engine import XMLGraphEngine
+    from engine import Engine
     from graphserver import TripHopSchedule, CalendarDay, Street, Link, State, Graph
 
-class HelloWorldEngine(XMLGraphEngine):
+class HelloWorldEngine(Engine):
 
   def load_scheduled_data(self):
 

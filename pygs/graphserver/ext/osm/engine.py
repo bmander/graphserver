@@ -1,12 +1,12 @@
 import sys
 sys.path.append('../../..')
-from graphserver.engine import XMLGraphEngine
+from graphserver.engine import Engine
 from graph import OSMGraph
 import re
 _rc = re.compile
 
 
-class OSMEngine(XMLGraphEngine):
+class OSMEngine(Engine):
     """ Provides additional methods for inspecting an OSMGraph. """
     def _nodes(self, w):
         osm = self.graph.osm

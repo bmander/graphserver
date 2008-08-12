@@ -1,7 +1,7 @@
 import sys, os
 sys.path = [os.path.dirname(os.path.abspath(__file__)) + "/.."] + sys.path
 from graphserver.core import *
-from graphserver.engine import XMLGraphEngine
+from graphserver.engine import Engine
 import time
     
 import os
@@ -1249,7 +1249,7 @@ from graphserver.ext.osm import OSMLoadable
 class TestEngine:
     def test_basic(self):
         gg = Graph()
-        eng = XMLGraphEngine(gg)
+        eng = Engine(gg)
         
         assert eng
         
@@ -1265,7 +1265,7 @@ class TestEngine:
         gg.add_edge("B","C",Street("5",10))
         gg.add_edge("C","B",Street("6",10))
         
-        eng = XMLGraphEngine(gg)
+        eng = Engine(gg)
         
         assert eng.all_vertex_labels() == "<?xml version='1.0'?><labels><label>A</label><label>B</label><label>C</label></labels>"
         
@@ -1281,7 +1281,7 @@ class TestEngine:
         gg.add_edge("B","C",Street("5",10))
         gg.add_edge("C","B",Street("6",10))
         
-        eng = XMLGraphEngine(gg)
+        eng = Engine(gg)
         
         print eng.walk_edges("A", time=0)
         assert eng.walk_edges("A", time=0) == "<?xml version='1.0'?><vertex><state time='Thu Jan  1 00:00:00 1970' weight='0' dist_walked='0.0' num_transfers='0' prev_edge_type='5' prev_edge_name='None'></state><outgoing_edges><edge><destination label='C'><state time='Thu Jan  1 00:00:11 1970' weight='22' dist_walked='10.0' num_transfers='0' prev_edge_type='0' prev_edge_name='4'></state></destination><payload><Street name='4' length='10.000000' /></payload></edge><edge><destination label='B'><state time='Thu Jan  1 00:00:11 1970' weight='22' dist_walked='10.0' num_transfers='0' prev_edge_type='0' prev_edge_name='1'></state></destination><payload><Street name='1' length='10.000000' /></payload></edge></outgoing_edges></vertex>"
@@ -1291,7 +1291,7 @@ class TestEngine:
         osm = OSM("sf.osm")
         add_osm_to_graph(gg,osm)
         
-        eng = XMLGraphEngine(gg)
+        eng = Engine(gg)
         
         assert eng.outgoing_edges("65287655") == "<?xml version='1.0'?><edges><edge><dest><Vertex degree_out='4' degree_in='4' label='65287660'/></dest><payload><Street name='8915843-0' length='218.044876' /></payload></edge></edges>"
         
@@ -1300,7 +1300,7 @@ class TestEngine:
         osm = OSM("sf.osm")
         add_osm_to_graph(gg,osm)
         
-        eng = XMLGraphEngine(gg)
+        eng = Engine(gg)
         
         assert eng.walk_edges("65287655", time=0) == "<?xml version='1.0'?><vertex><state time='Thu Jan  1 00:00:00 1970' weight='0' dist_walked='0.0' num_transfers='0' prev_edge_type='5' prev_edge_name='None'></state><outgoing_edges><edge><destination label='65287660'><state time='Thu Jan  1 00:04:16 1970' weight='512' dist_walked='218.044875866' num_transfers='0' prev_edge_type='0' prev_edge_name='8915843-0'></state></destination><payload><Street name='8915843-0' length='218.044876' /></payload></edge></outgoing_edges></vertex>"
 

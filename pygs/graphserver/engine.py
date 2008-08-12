@@ -67,7 +67,7 @@ class Servable:
             
         return myapp
 
-class XMLGraphEngine(object, Servable):
+class Engine(object, Servable):
     """ Provides a high level API to graph functions, outputing data to XML."""
 
     def __init__(self, graph):
@@ -251,5 +251,5 @@ class XMLGraphEngine(object, Servable):
 
 def _test():
     #from pygs.engine import *
-    e = XMLGraphEngine()
+    e = Engine()
     
