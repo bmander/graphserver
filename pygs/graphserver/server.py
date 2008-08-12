@@ -42,6 +42,7 @@ class GSHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                     self.log_error("Exception handling '%s'", self.path)
                     self.send_error(500)
                 return
+                
         # no match:
         self.send_response(200)
         self.send_header('Content-type', 'text/xml')

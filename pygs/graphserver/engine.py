@@ -3,11 +3,64 @@ try:
 except ImportError:
     from core import Graph, State
 from time import time as now
+import traceback
 
 import re
 _rc = re.compile
+from types import *
 
-class XMLGraphEngine(object):
+class Servable:
+    @classmethod
+    def _urlpatterns(cls):
+        ret = []
+        
+        for name in dir(cls):
+            attr = getattr(cls, name)
+            if type(attr) == UnboundMethodType and hasattr(attr, 'path') and hasattr(attr,'args'):
+                ret.append( (attr.path, attr, attr.args) )
+                
+        return ret
+        
+    def _usage(self):
+        ret = ["<?xml version='1.0'?><api>"]
+        for ppath, pfunc, pargs in self._urlpatterns():
+            ret.append("<method><path>%s</path><parameters>" % ppath.pattern)
+            if pargs:
+                for p in pargs:
+                    ret.append("<param>%s</param>" %p)
+            ret.append("</parameters></method>")
+        ret.append("</api>")
+        return "".join(ret)
+
+    def wsgi_app(self):
+        """returns a wsgi app which exposes this object as a webservice"""
+        
+        def myapp(environ, start_response):
+            
+            for ppath, pfunc, pargs in self._urlpatterns():
+                if ppath.match(environ['PATH_INFO']):
+                    args = {}
+                    if pargs and environ['QUERY_STRING'] != "":
+                        args = cgi.parse_qs(environ['QUERY_STRING'])
+                        for k in args.keys():
+                            args[k] = args[k][0]
+                    try:
+                        fargs = [args.get(parg) for parg in pargs]
+                        r = pfunc(self,*fargs)
+            
+                        start_response('200 OK', [('Content-type', 'text/xml')])
+                        return [r]
+                    except:
+                        traceback.print_exc()
+                        start_response('500 Internal Error', [('Content-type', 'text/plain')])
+                        return ["Something went wrong"]
+            # no match:
+            start_response('200 OK', [('Content-type', 'text/xml')])
+            return [self._usage()]
+            
+        return myapp
+
+class XMLGraphEngine(object, Servable):
     """ Provides a high level API to graph functions, outputing data to XML."""
 
     def __init__(self, graph):
@@ -190,7 +243,7 @@ class XMLGraphEngine(object):
         return "".join(ret)
     collapse_edges.path = _rc(r'/vertex/outgoing/collapsed')
     collapse_edges.args = ('label', 'time')
-    
+
 def _test():
     #from pygs.engine import *
     e = XMLGraphEngine()
