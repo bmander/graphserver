@@ -14,3 +14,4 @@ while i < 1000000:
   print i,"vertices added."
   print "Computing shortest path tree from \'0\' to \'",i,"\'"
   spt = g.shortest_path_tree("0", str(i), State(1,0))
+  spt.destroy()
