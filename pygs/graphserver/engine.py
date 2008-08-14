@@ -1,9 +1,10 @@
 try:
-    from graphserver.core import Graph, State
+    from graphserver.core import Graph, State, TripHop
 except ImportError:
     from core import Graph, State
 from time import time as now
 import traceback
+import simplejson
 
 import re
 _rc = re.compile
@@ -248,6 +249,101 @@ class Engine(object, Servable):
         return "".join(ret)
     collapse_edges.path = r'/vertex/outgoing/collapsed'
     collapse_edges.args = ('label', 'time')
+
+class Action:
+    action = "action"
+    
+    @classmethod
+    def applies(cls,vertex,lastedge,nextedge,verbose=False):
+        return True
+    
+    @classmethod
+    def describe(cls,vertex,lastedge,nextedge):
+        return (cls.action,"%s -> %s"%(str(lastedge),str(nextedge)),None,None)
+    
+class Board(Action):
+    action="board"
+    
+    @classmethod
+    def applies(cls,vertex,lastedge,nextedge,verbose=False):
+        return nextedge is not None and nextedge.payload.__class__==TripHop and (lastedge is None or lastedge.payload.__class__!=TripHop or lastedge.payload.trip_id!=nextedge.payload.trip_id)
+        
+    @classmethod
+    def describe(cls,vertex,lastedge,nextedge):
+        return (cls.action,"%s at %s"%(nextedge.payload.trip_id, vertex.label),TripHop._daysecs_to_str(nextedge.payload.depart),None)
+        
+class Pass(Action):
+    action="pass"
+    
+    @classmethod
+    def applies(cls,vertex,lastedge,nextedge,verbose=False):
+        return verbose and lastedge is not None and nextedge is not None and lastedge.payload.__class__==TripHop and nextedge.payload.__class__==TripHop and lastedge.payload.trip_id==nextedge.payload.trip_id
+
+    @classmethod
+    def describe(cls,vertex,lastedge,nextedge):
+        return (cls.action,vertex.label,TripHop._daysecs_to_str(lastedge.payload.arrive),None)
+
+class Alight(Action):
+    action="alight"
+    
+    @classmethod
+    def applies(cls,vertex,lastedge,nextedge,verbose=False):
+        return lastedge is not None and lastedge.payload.__class__==TripHop and (nextedge is None or nextedge.payload.__class__!=TripHop or lastedge.payload.trip_id!=nextedge.payload.trip_id)
+
+    @classmethod
+    def describe(cls,vertex,lastedge,nextedge):
+        return (cls.action,"%s at %s"%(lastedge.payload.trip_id, vertex.label),TripHop._daysecs_to_str(lastedge.payload.arrive),None)
+
+class TripPlanEngine(Engine):
+    def __init__(self, gg, action_handlers=(Alight,Board,Pass)):
+        Engine.__init__(self, gg)
+        self.action_handlers = action_handlers
+    
+    def _actions_from_path(self, vertices, edges, verbose=False):
+        actions = []
+        
+        for vertex,lastedge,nextedge in zip(vertices, [None]+edges, edges+[None]):
+            for handler in self.action_handlers:
+                if handler.applies(vertex,lastedge, nextedge, verbose):
+                    actions.append( handler.describe( vertex, lastedge, nextedge ) )
+                    
+        return actions
+    
+    def trip_plan(self,from_v,to_v,time,verbose):
+        verbose=verbose.lower()=="true"
+        if time is None:
+            time=int(now())
+        
+        spt, vertices, edges = self._shortest_path_raw( True, True, from_v, to_v, time )
+        
+        actions = self._actions_from_path(vertices,edges,verbose)
+
+        ret = ["<?xml version='1.0'?>"]
+        ret.append( "<trip_plan>" )
+        for action,location,when,latlon in actions:
+            ret.append( "<action what='%s' where='%s' when='%s'/>"%(action,location,when) )
+        ret.append( "</trip_plan>" )
+        
+        spt.destroy()
+        
+        return "".join(ret)
+    trip_plan.path = r'/trip_plan$'
+    trip_plan.args = ('from','to','time','verbose')
+    
+    def trip_plan_json(self,from_v,to_v,time,verbose):
+        verbose=verbose.lower()=="true"
+        if time is None:
+            time=int(now())
+            
+        spt, vertices, edges = self._shortest_path_raw( True, True, from_v, to_v, time )
+        actions = self._actions_from_path(vertices,edges,verbose)
+        ret = simplejson.dumps(actions)
+        spt.destroy()
+        
+        return ret
+    trip_plan_json.path = r'/trip_plan/json'
+    trip_plan_json.args = ('from','to','time','verbose')
+    trip_plan_json.mime = "text/plain"
 
 def _test():
     #from pygs.engine import *
