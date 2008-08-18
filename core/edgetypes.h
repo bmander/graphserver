@@ -14,6 +14,7 @@ typedef enum {
   PL_LINK,
   PL_EXTERNVALUE,
   PL_NONE,
+  PL_WAIT,
 } edgepayload_t;
 
 //---------------DECLARATIONS FOR STATE CLASS---------------------
@@ -132,6 +133,28 @@ linkWalkBack(Link* this, State* param);
 
 char*
 linkGetName(Link* this);
+
+//---------------DECLARATIONS FOR WAIT CLASS------------------------
+
+typedef struct Wait {
+    edgepayload_t type;
+    long end;
+} Wait;
+
+Wait*
+waitNew(long end);
+
+void
+waitDestroy(Wait* tokill);
+
+inline State*
+waitWalk(Wait* this, State* param);
+
+inline State*
+waitWalkBack(Wait* this, State* param);
+
+long
+waitGetEnd(Wait* this);
 
 //---------------DECLARATIONS FOR STREET  CLASS---------------------
 

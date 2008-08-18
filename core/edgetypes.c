@@ -120,6 +120,9 @@ epDestroy( EdgePayload* this ) {
     case PL_EXTERNVALUE:
       cpDestroy( (CustomPayload*)this );
       break;
+    case PL_WAIT:
+      waitDestroy( (Wait*)this );
+      break;
     default:
       free( this );
   }
@@ -147,6 +150,9 @@ epWalk( EdgePayload* this, State* params ) {
     case PL_EXTERNVALUE:
       return cpWalk( (CustomPayload*)this, params );
       break;
+    case PL_WAIT:
+      return waitWalk( (Wait*)this, params );
+      break;
     default:
       return NULL;
   }
@@ -168,7 +174,8 @@ epWalkBack( EdgePayload* this, State* params ) {
       return linkWalkBack( (Link*)this, params );
     case PL_EXTERNVALUE:
       return cpWalkBack( (CustomPayload*)this, params );
-      break;
+    case PL_WAIT:
+      return waitWalkBack( (Wait*)this, params );
     default:
       return NULL;
   }
@@ -252,6 +259,26 @@ streetGetName(Street* this) {
 double
 streetGetLength(Street* this) {
     return this->length;
+}
+
+//WAIT FUNCTIONS
+Wait*
+waitNew(long end) {
+    Wait* ret = (Wait*)malloc(sizeof(Wait));
+    ret->type = PL_WAIT;
+    ret->end = end;
+    
+    return ret;
+}
+
+void
+waitDestroy(Wait* tokill) {
+    free(tokill);
+}
+
+long
+waitGetEnd(Wait* this) {
+    return this->end;
 }
 
 //TRIPHOP FUNCTIONS

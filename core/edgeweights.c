@@ -6,6 +6,7 @@
 #define WALKING_RELUCTANCE 2  //hassle/second
 #define ABSOLUTE_MAX_WALK 100000 //meters. 100 km. prevents overflow
 #define MAX_LONG 2147483647
+#define WAITING_RELUCTANCE 1
 /*#define WALKING_SPEED 0.85    //meters per second
 #define MIN_TRANSFER_TIME 0 //five minutes
 #define TRANSFER_PENALTY 0    //rough measure of how bad a close transfer is
@@ -26,6 +27,38 @@ linkWalkBack(Link* this, State* params) {
 
   return ret;
 }
+
+#ifndef ROUTE_REVERSE
+inline State*
+waitWalk(Wait* this, State* params) {
+    State* ret = stateDup( params );
+    
+    ret->prev_edge_type = PL_WAIT;
+    
+    if( params->time > this->end ) {
+        ret->weight = INFINITY;
+    } else {
+        ret->time = this->end;
+        ret->weight += (this->end - params->time)*WAITING_RELUCTANCE;
+    }
+    return ret;
+}
+#else
+inline State*
+waitWalkBack(Wait* this, State* params) {
+    State* ret = stateDup( params );
+    
+    ret->prev_edge_type = PL_WAIT;
+    
+    if( params->time < this->end) {
+        ret->weight = INFINITY;
+    } else {
+        ret->time = this->end;
+        ret->weight += (params->time - this->end)*WAITING_RELUCTANCE;
+    }
+    return ret;
+}
+#endif
 
 inline State*
 #ifndef ROUTE_REVERSE
