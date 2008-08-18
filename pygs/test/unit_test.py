@@ -922,6 +922,26 @@ class TestLink:
         assert before.prev_edge_name == "LINK"
         assert before.numcalendars == 1
 
+from graphserver.core import Wait
+class TestWait:
+    def wait_test(self):
+        waitend = 100
+        w = Wait(waitend)
+        assert w.end == waitend
+        assert w.to_xml() == "<Wait end='100' />"
+
+        s = State(1,0)
+        sprime = w.walk(s)
+        assert sprime.time == 100
+        assert sprime.weight == 100
+
+        s = State(1, 150)
+        sprime = w.walk_back(s)
+        assert sprime.time == 100
+        assert sprime.weight == 50
+
+        w.destroy()
+
 
 class TestTriphopSchedule:
     

@@ -683,6 +683,17 @@ class Link(EdgePayload):
         self.check_destroyed()
         
         return "<Link name='%s'/>" % (self.name)
+        
+class Wait(EdgePayload):
+    end = cproperty(lgs.waitGetEnd, c_long)
+    
+    def __init__(self, end):
+        self.soul = self._cnew( end )
+        
+    def to_xml(self):
+        self.check_destroyed()
+        
+        return "<Wait end='%ld' />"%self.end
     
 class Street(EdgePayload):
     length = cproperty(lgs.streetGetLength, c_double)
@@ -856,6 +867,11 @@ Link._cnew = lgs.linkNew
 Link._cdel = lgs.linkDestroy
 Link._cwalk = lgs.linkWalk
 Link._cwalk_back = lgs.linkWalkBack
+
+Wait._cnew = lgs.waitNew
+Wait._cdel = lgs.waitDestroy
+Wait._cwalk = lgs.waitWalk
+Wait._cwalk_back = lgs.waitWalkBack
 
 GenericPyPayload._cnew = lgs.cpNew
 GenericPyPayload._cdel = lgs.cpDestroy
