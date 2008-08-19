@@ -105,7 +105,7 @@ class GTFSLoadable:
         # get timezone offset for all agencies
         agency_offsets = {}
         for agency in sched.GetAgencyList():
-            td = timezone(agency.agency_timezone).utcoffset(None)
+            td = timezone(agency.agency_timezone.encode('ascii')).utcoffset(None)
             agency_offsets[agency.agency_id] = td.days*3600*24 + td.seconds
 
         #just set the local timezone from a random entry in the agency list
