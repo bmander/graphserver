@@ -719,6 +719,9 @@ class TripHop(EdgePayload):
     SEC_IN_HOUR = 3600
     SEC_IN_MINUTE = 60
     
+    def __init__(self, depart, arrive, trip_id):
+        self.soul = self._cnew(depart, arrive, trip_id)
+    
     @classmethod
     def _daysecs_to_str(cls,daysecs):
         return "%02d:%02d"%(int(daysecs/cls.SEC_IN_HOUR), int(daysecs%cls.SEC_IN_HOUR/cls.SEC_IN_MINUTE))
@@ -847,6 +850,10 @@ State._ccopy = ccast(lgs.stateDup, State)
 
 ListNode._cdata = ccast(lgs.liGetData, Edge)
 ListNode._cnext = ccast(lgs.liGetNext, ListNode)
+
+TripHop._cnew = lgs.triphopNew
+TripHop._cwalk = lgs.triphopWalk
+TripHop._cwalk_back = lgs.triphopWalkBack
 
 TripHopSchedule._cdel = lgs.thsDestroy
 TripHopSchedule._chop = ccast(lgs.thsGetHop, TripHop)

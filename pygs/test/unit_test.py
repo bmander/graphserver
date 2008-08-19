@@ -943,6 +943,27 @@ class TestWait:
         w.destroy()
 
 
+class TestTripHop:
+    
+    def triphop_test(self):
+        th = TripHop(25, 100, "foo")
+
+        assert th.depart == 25
+        assert th.arrive == 100
+        assert th.transit == 75
+        assert th.trip_id == "foo"
+
+        s = State(1,0)
+        sprime = th.walk(s)
+        assert sprime.time == 100
+        assert sprime.weight == 100
+
+        s = State(1, 200)
+        sprime = th.walk_back(s)
+        assert sprime
+        assert sprime.time==25
+        assert sprime.weight==175
+
 class TestTriphopSchedule:
     
     def triphop_schedule_test(self):
