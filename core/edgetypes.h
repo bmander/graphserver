@@ -218,6 +218,12 @@ thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id
 void
 thsDestroy(TripHopSchedule* this);
 
+TripHop*
+triphopNew( int depart, int arrive, char* trip_id );
+
+void
+triphopDestroy( TripHop* this );
+
 void
 triphopDestroy( TripHop* this);
 

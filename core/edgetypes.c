@@ -330,6 +330,21 @@ thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id
   return ret; // return NULL;
 }
 
+TripHop*
+triphopNew(int depart, int arrive, char* trip_id) {
+    TripHop* ret = (TripHop*)malloc(sizeof(TripHop));
+    
+    ret->depart = depart;
+    ret->arrive = arrive;
+    ret->transit = (arrive-depart);
+    int n = strlen(trip_id)+1;
+    ret->trip_id = (char*)malloc(sizeof(char)*(n));
+    memcpy(ret->trip_id, trip_id, n);
+    ret->schedule = NULL;
+    
+    return ret;
+}
+
 inline long
 thsSecondsSinceMidnight( TripHopSchedule* this, State* param ) {
     //difference between utc midnight and local midnight

@@ -140,7 +140,10 @@ triphopWalkBack(TripHop* this, State* params) {
 #endif
     State* ret = stateDup( params );
 
-    long adjusted_time = thsSecondsSinceMidnight( this->schedule, params );
+    long adjusted_time = params->time;
+    if(this->schedule) {
+        adjusted_time = thsSecondsSinceMidnight( this->schedule, params );
+    }
 
     long wait;
 #ifndef ROUTE_REVERSE
