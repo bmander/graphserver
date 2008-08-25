@@ -1169,12 +1169,12 @@ class TestVertex:
     
     def test_incoming(self):
         v=Vertex("home")
-        print v.degree_in
+        assert v.incoming == []
         assert v.degree_in == 0
         
     def test_outgoing(self):
         v=Vertex("home")
-        print v.degree_out
+        assert v.outgoing == []
         assert v.degree_out == 0
         
     def test_prettyprint(self):
@@ -1352,6 +1352,6 @@ class TestEngine:
 #    nose.main()
 
 if __name__=='__main__':
-    mod = TestEngine()
-    mod.outgoing_edges_entire_osm()
+    mod = TestTripHop()
+    mod.triphop_test()
 

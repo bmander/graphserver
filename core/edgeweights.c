@@ -30,8 +30,10 @@ linkWalkBack(Link* this, State* params) {
 
 #ifndef ROUTE_REVERSE
 inline State*
-waitWalk(Wait* this, State* params) {
+waitWalk(Wait* this, State* params, int transfer_penalty) {
     State* ret = stateDup( params );
+    
+
     
     ret->prev_edge_type = PL_WAIT;
     
@@ -41,11 +43,16 @@ waitWalk(Wait* this, State* params) {
         ret->time = this->end;
         ret->weight += (this->end - params->time)*WAITING_RELUCTANCE;
     }
+    
+    if(params->prev_edge_type==PL_TRIPHOP) {
+        ret->weight += transfer_penalty;
+    }
+    
     return ret;
 }
 #else
 inline State*
-waitWalkBack(Wait* this, State* params) {
+waitWalkBack(Wait* this, State* params, int transfer_penalty) {
     State* ret = stateDup( params );
     
     ret->prev_edge_type = PL_WAIT;
@@ -56,6 +63,11 @@ waitWalkBack(Wait* this, State* params) {
         ret->time = this->end;
         ret->weight += (params->time - this->end)*WAITING_RELUCTANCE;
     }
+    
+    if(params->prev_edge_type==PL_TRIPHOP) {
+        ret->weight += transfer_penalty;
+    }
+    
     return ret;
 }
 #endif
@@ -107,9 +119,9 @@ streetWalkBack(Street* this, State* params) {
 // by a higher-level langauge for the purpose of debugging.
 inline State*
 #ifndef ROUTE_REVERSE
-thsWalk(TripHopSchedule* this, State* params) {
+thsWalk(TripHopSchedule* this, State* params, int transferPenalty) {
 #else
-thsWalkBack(TripHopSchedule* this, State* params) {
+thsWalkBack(TripHopSchedule* this, State* params, int transferPenalty) {
 #endif
     
     TripHop* th;
@@ -124,9 +136,9 @@ thsWalkBack(TripHopSchedule* this, State* params) {
     
     State* ret;
 #ifndef ROUTE_REVERSE
-    ret = triphopWalk(th, params);
+    ret = triphopWalk(th, params, transferPenalty);
 #else
-    ret = triphopWalkBack(th, params);
+    ret = triphopWalkBack(th, params, transferPenalty);
 #endif
     
     return ret;
@@ -134,9 +146,9 @@ thsWalkBack(TripHopSchedule* this, State* params) {
 
 inline State*
 #ifndef ROUTE_REVERSE
-triphopWalk(TripHop* this, State* params) {
+triphopWalk(TripHop* this, State* params, int transferPenalty) {
 #else
-triphopWalkBack(TripHop* this, State* params) {
+triphopWalkBack(TripHop* this, State* params, int transferPenalty) {
 #endif
     State* ret = stateDup( params );
 
@@ -159,11 +171,11 @@ triphopWalkBack(TripHop* this, State* params) {
         strcmp( params->prev_edge_name, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
 
       //add a weight penalty to the transfer under some conditions
-      if( wait < MIN_TRANSFER_TIME && 
-          params->num_transfers > 0) {
-        transfer_penalty = (MIN_TRANSFER_TIME-wait)*TRANSFER_PENALTY;
-      }
-      //transfer_penalty = 1000; //penalty of making a transfer; flat rate.
+      //if( wait < MIN_TRANSFER_TIME && 
+      //    params->num_transfers > 0) {
+      //  transfer_penalty = (MIN_TRANSFER_TIME-wait)*TRANSFER_PENALTY;
+      //}
+      transfer_penalty = transferPenalty; //penalty of making a transfer; flat rate. "all things being equal, transferring costs a little"
 
       ret->num_transfers += 1;
     }
@@ -171,6 +183,11 @@ triphopWalkBack(TripHop* this, State* params) {
     int i;
 #ifndef ROUTE_REVERSE
     ret->time           += wait + this->transit;
+    if(adjusted_time>this->depart) {
+        ret->weight = INFINITY;
+    } else {
+        ret->weight += wait + this->transit + transfer_penalty;
+    }
     for(i=0; i<params->numcalendars; i++) {
         if( ret->calendars[i] && ret->time >= ret->calendars[i]->end_time) {
           ret->calendars[i] = ret->calendars[i]->next_day;
@@ -178,13 +195,17 @@ triphopWalkBack(TripHop* this, State* params) {
     }
 #else
     ret->time           -= (wait + this->transit);
+    if(adjusted_time<this->arrive) {
+        ret->weight = INFINITY;
+    } else {
+        ret->weight += wait + this->transit + transfer_penalty;
+    }
     for(i=0; i<params->numcalendars; i++) {
         if( ret->calendars[i] && ret->time < ret->calendars[i]->begin_time) {
           ret->calendars[i] = ret->calendars[i]->prev_day;
         }
     }
 #endif
-    ret->weight         += wait + this->transit + transfer_penalty;
     ret->dist_walked    = 0;
     ret->prev_edge_type = PL_TRIPHOP;
     ret->prev_edge_name = this->trip_id;

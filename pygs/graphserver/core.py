@@ -26,11 +26,11 @@ class Collapsable:
 
 class Walkable:
     """ Implements the walkable interface. """
-    def walk(self, state):
-        return State.from_pointer(self._cwalk(self.soul, state.soul))
+    def walk(self, state, transfer_penalty=0):
+        return State.from_pointer(self._cwalk(self.soul, state.soul, transfer_penalty))
         
-    def walk_back(self, state):
-        return State.from_pointer(self._cwalk_back(self.soul, state.soul))
+    def walk_back(self, state, transfer_penalty=0):
+        return State.from_pointer(self._cwalk_back(self.soul, state.soul, transfer_penalty))
 
 
 
@@ -112,19 +112,19 @@ class Graph(CShadow):
                 edges.append(e)
         return edges    
     
-    def shortest_path_tree(self, fromv, tov, initstate):
+    def shortest_path_tree(self, fromv, tov, initstate, transfer_penalty=0):
         #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
         self.check_destroyed()
         if not tov:
             tov = "*bogus^*^vertex*"
-        return self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul )
+        return self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, transfer_penalty )
         
-    def shortest_path_tree_retro(self, fromv, tov, finalstate):
+    def shortest_path_tree_retro(self, fromv, tov, finalstate, transfer_penalty=0):
         #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
         self.check_destroyed()
         if not fromv:
             fromv = "*bogus^*^vertex*"        
-        return self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul )
+        return self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, transfer_penalty )
     """
     def shortest_path_tree(self, from_key, to_key, init, direction=True):
         if direction:
@@ -507,8 +507,8 @@ class Edge(CShadow, Walkable):
     def payload(self):
         return self._cpayload(self.soul)
         
-    def walk(self, state):
-        return self._cwalk(self.soul, state.soul)
+    def walk(self, state, transfer_penalty=0):
+        return self._cwalk(self.soul, state.soul, transfer_penalty)
 
 
 class ListNode(CShadow):
@@ -828,7 +828,7 @@ Edge._cwalk = ccast(lgs.eWalk, State)
 Edge._cwalk_back = lgs.eWalkBack
 
 
-EdgePayload._subtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,4:GenericPyPayload,5:None}
+EdgePayload._subtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,4:GenericPyPayload,5:None,6:Wait}
 EdgePayload._cget_type = lgs.epGetType
 EdgePayload._cwalk = lgs.epWalk
 EdgePayload._cwalk_back = lgs.epWalkBack

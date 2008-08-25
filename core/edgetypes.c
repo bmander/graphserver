@@ -134,7 +134,7 @@ epGetType( EdgePayload* this ) {
 }
 
 State*
-epWalk( EdgePayload* this, State* params ) {
+epWalk( EdgePayload* this, State* params, int transferPenalty ) {
   if( !this )
     return NULL;
 
@@ -142,16 +142,16 @@ epWalk( EdgePayload* this, State* params ) {
     case PL_STREET:
       return streetWalk( (Street*)this, params );
     case PL_TRIPHOPSCHED:
-      return thsWalk((TripHopSchedule*)this, params);
+      return thsWalk((TripHopSchedule*)this, params, transferPenalty);
     case PL_TRIPHOP:
-      return triphopWalk((TripHop*)this, params );
+      return triphopWalk((TripHop*)this, params, transferPenalty );
     case PL_LINK:
       return linkWalk((Link*)this, params);
     case PL_EXTERNVALUE:
       return cpWalk( (CustomPayload*)this, params );
       break;
     case PL_WAIT:
-      return waitWalk( (Wait*)this, params );
+      return waitWalk( (Wait*)this, params, transferPenalty );
       break;
     default:
       return NULL;
@@ -159,7 +159,7 @@ epWalk( EdgePayload* this, State* params ) {
 }
 
 State*
-epWalkBack( EdgePayload* this, State* params ) {
+epWalkBack( EdgePayload* this, State* params, int transferPenalty ) {
   if(!this)
     return NULL;
 
@@ -167,15 +167,15 @@ epWalkBack( EdgePayload* this, State* params ) {
     case PL_STREET:
       return streetWalkBack( (Street*)this, params );
     case PL_TRIPHOPSCHED:
-      return thsWalkBack( (TripHopSchedule*)this, params );
+      return thsWalkBack( (TripHopSchedule*)this, params, transferPenalty );
     case PL_TRIPHOP:
-      return triphopWalkBack( (TripHop*)this, params );
+      return triphopWalkBack( (TripHop*)this, params, transferPenalty );
     case PL_LINK:
       return linkWalkBack( (Link*)this, params );
     case PL_EXTERNVALUE:
       return cpWalkBack( (CustomPayload*)this, params );
     case PL_WAIT:
-      return waitWalkBack( (Wait*)this, params );
+      return waitWalkBack( (Wait*)this, params, transferPenalty );
     default:
       return NULL;
   }
@@ -334,6 +334,7 @@ TripHop*
 triphopNew(int depart, int arrive, char* trip_id) {
     TripHop* ret = (TripHop*)malloc(sizeof(TripHop));
     
+    ret->type = PL_TRIPHOP;
     ret->depart = depart;
     ret->arrive = arrive;
     ret->transit = (arrive-depart);

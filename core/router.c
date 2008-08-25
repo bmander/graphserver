@@ -1,8 +1,8 @@
 Graph*
 #ifndef RETRO
-gShortestPathTree( Graph* this, char *from, char *to, State* init_state ) {
+gShortestPathTree( Graph* this, char *from, char *to, State* init_state, int transferPenalty ) {
 #else
-gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
+gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, int transferPenalty ) {
 #endif
 /*
  *  VARIABLE SETUP
@@ -82,10 +82,10 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state ) {
       //EdgePayload* prev_collapsed = vParent( spt_u )->payload;
       //State *du_with_penalty = vWalk( spt_u, prev_collapsed, collapsed, du );
       //State *new_dv = epWalk( collapsed, du_with_penalty );
-      State *new_dv = epWalk( collapsed, du );
+      State *new_dv = epWalk( collapsed, du, transferPenalty );
 #else
       EdgePayload *collapsed = epCollapseBack( edge->payload, du );
-      State *new_dv = epWalkBack( collapsed, du );
+      State *new_dv = epWalkBack( collapsed, du, transferPenalty );
 #endif
 
       // When an edge leads nowhere (as indicated by returning NULL), the iteration is over.

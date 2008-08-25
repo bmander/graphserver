@@ -103,8 +103,8 @@ pycapi(lgs.gAddVertex, c_void_p, [c_void_p, c_char_p])
 pycapi(lgs.gGetVertex, c_void_p, [c_void_p, c_char_p])
 pycapi(lgs.gAddEdge, c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p])
 pycapi(lgs.gVertices, c_void_p, [c_void_p, c_void_p])
-pycapi(lgs.gShortestPathTree,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p])
-pycapi(lgs.gShortestPathTreeRetro,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p])
+pycapi(lgs.gShortestPathTree,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p, c_int])
+pycapi(lgs.gShortestPathTreeRetro,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p, c_int])
 pycapi(lgs.gSize,c_void_p, [c_long])
 
 # CALENDAR API 
@@ -134,13 +134,13 @@ pycapi(lgs.eNew, c_void_p, [c_void_p, c_void_p, c_void_p])
 pycapi(lgs.eGetFrom, c_void_p, [c_void_p])
 pycapi(lgs.eGetTo, c_void_p, [c_void_p])
 pycapi(lgs.eGetPayload, c_void_p, [c_void_p])
-pycapi(lgs.eWalk, c_void_p, [c_void_p, c_void_p])
-pycapi(lgs.eWalkBack, c_void_p, [c_void_p, c_void_p])
+pycapi(lgs.eWalk, c_void_p, [c_void_p, c_void_p, c_int])
+pycapi(lgs.eWalkBack, c_void_p, [c_void_p, c_void_p, c_int])
 
 #EDGEPAYLOAD API
 pycapi(lgs.epGetType, c_int, [c_void_p])
-pycapi(lgs.epWalk, c_void_p, [c_void_p, c_void_p])
-pycapi(lgs.epWalkBack, c_void_p, [c_void_p, c_void_p])
+pycapi(lgs.epWalk, c_void_p, [c_void_p, c_void_p, c_int])
+pycapi(lgs.epWalkBack, c_void_p, [c_void_p, c_void_p, c_int])
 pycapi(lgs.epCollapse, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.epCollapseBack, c_void_p, [c_void_p, c_void_p])
 
@@ -160,16 +160,16 @@ pycapi(lgs.streetWalkBack, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.thsNew, c_void_p) # args are dynamic, and not specified
 pycapi(lgs.thsDestroy, c_void_p)
 pycapi(lgs.thsGetHop, c_void_p, [c_void_p, c_int])
-pycapi(lgs.thsWalk, c_void_p, [c_void_p, c_void_p])
-pycapi(lgs.thsWalkBack, c_void_p, [c_void_p, c_void_p])
+pycapi(lgs.thsWalk, c_void_p, [c_void_p, c_void_p, c_int])
+pycapi(lgs.thsWalkBack, c_void_p, [c_void_p, c_void_p, c_int])
 pycapi(lgs.thsCollapse, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.thsCollapseBack, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.thsGetNextHop, c_void_p, [c_void_p, c_long])
 pycapi(lgs.thsGetLastHop, c_void_p, [c_void_p, c_long])
 
 #TRIPHOP API
-pycapi(lgs.triphopWalk, c_void_p, [c_void_p, c_void_p])
-pycapi(lgs.triphopWalkBack, c_void_p, [c_void_p, c_void_p])
+pycapi(lgs.triphopWalk, c_void_p, [c_void_p, c_void_p, c_int])
+pycapi(lgs.triphopWalkBack, c_void_p, [c_void_p, c_void_p, c_int])
 
 #CUSTOM TYPE API
 class PayloadMethodTypes:

@@ -56,7 +56,8 @@ class Servable:
                             mime = pfunc.mime
                         else:
                             mime = 'text/xml'
-                        start_response('200 OK', [('Content-type', mime)])
+                        content_length = len(r)
+                        start_response('200 OK', [('Content-type', mime),('Content-Length', str(content_length))])
                         return [r]
                     except:
                         traceback.print_exc()
@@ -89,47 +90,58 @@ class Engine(object, Servable):
         
         return State(numauthorities, time)
 
-    def _shortest_path_raw(self,dir_forward,doubleback,from_v,to_v,time):
+    def _shortest_path_raw(self,dir_forward,doubleback,from_v,to_v,time,transfer_penalty=0):
         """returns (spt,vertices,edges). You need to destroy spt when you're done with the path"""
         if not self.gg.get_vertex(from_v) and self.gg.get_vertex(to_v):
             raise
             
         init_state = self._parse_init_state(self.gg.numauthorities, time)
+        if transfer_penalty is None:
+            transfer_penalty = 0
+        else:
+            transfer_penalty = int(transfer_penalty)
+        
+        if type(doubleback)==type(True):
+            pass
+        elif doubleback is None:
+            doubleback = True
+        else:
+            doubleback = (doubleback.lower()=="true")
         
         if not dir_forward:
-            spt = self.gg.shortest_path_tree_retro(from_v, to_v, init_state)
+            spt = self.gg.shortest_path_tree_retro(from_v, to_v, init_state, transfer_penalty)
             if doubleback:
                 origin = spt.get_vertex(from_v)
                 if origin is not None:
                     departure_time = origin.payload.time
                     spt.destroy()
-                    spt = self.gg.shortest_path_tree( from_v, to_v, State(self.gg.numauthorities, departure_time) )
+                    spt = self.gg.shortest_path_tree( from_v, to_v, State(self.gg.numauthorities, departure_time),transfer_penalty )
                     vertices, edges = spt.path(to_v)
                 else:
                     spt.destroy()
-                    vertices, edges = None, None, None
+                    spt, vertices, edges = None, None, None
             else:
                 vertices, edges = spt.path_retro(from_v)
         else:
-            spt = self.gg.shortest_path_tree(from_v, to_v, init_state)
+            spt = self.gg.shortest_path_tree(from_v, to_v, init_state, transfer_penalty)
             if doubleback:
                 dest = spt.get_vertex(to_v)
                 if dest is not None:
                     arrival_time = dest.payload.time
                     spt.destroy()
-                    spt = self.gg.shortest_path_tree_retro( from_v, to_v, State(self.gg.numauthorities, arrival_time) )
+                    spt = self.gg.shortest_path_tree_retro( from_v, to_v, State(self.gg.numauthorities, arrival_time),transfer_penalty )
                     vertices, edges = spt.path_retro(from_v)
                 else:
                     spt.destroy()
-                    vertices, edges = None, None, None
+                    spt, vertices, edges = None, None, None
             else:
                 vertices, edges = spt.path(to_v)
                 
         return spt, vertices, edges
         
 
-    def _shortest_path_general(self,dir_forward,doubleback,from_v,to_v,time):
-        spt, vertices, edges = self._shortest_path_raw(dir_forward,doubleback,from_v,to_v,time)
+    def _shortest_path_general(self,dir_forward,doubleback,from_v,to_v,time,transfer_penalty=0):
+        spt, vertices, edges = self._shortest_path_raw(dir_forward,doubleback,from_v,to_v,time,transfer_penalty)
                 
         ret = ["<?xml version='1.0'?><route>"]
         if vertices is None:
@@ -143,15 +155,15 @@ class Engine(object, Servable):
         spt.destroy()
         return "".join(ret)
             
-    def shortest_path(self, from_v, to_v, time):
-        return self._shortest_path_general( True, True, from_v, to_v, time )
-    shortest_path.path = r'/shortest_path'
-    shortest_path.args    = ('from','to','time')
+    def shortest_path(self, from_v, to_v, time,doubleback="true",transfer_penalty=0):
+        return self._shortest_path_general( True, doubleback, from_v, to_v, time, transfer_penalty )
+    shortest_path.path = r'/shortest_path$'
+    shortest_path.args    = ('from','to','time','doubleback','tp')
             
-    def shortest_path_retro(self, from_v, to_v, time):
-        return self._shortest_path_general( False, True, from_v, to_v, time )
-    shortest_path_retro.path = r'/shortest_path_retro'
-    shortest_path_retro.args = ('from','to','time')
+    def shortest_path_retro(self, from_v, to_v, time,doubleback="true",transfer_penalty=0):
+        return self._shortest_path_general( False, doubleback, from_v, to_v, time, transfer_penalty )
+    shortest_path_retro.path = r'/shortest_path_retro$'
+    shortest_path_retro.args = ('from','to','time','doubleback','tp')
 
     def all_vertex_labels(self):
         ret = ["<?xml version='1.0'?>"]
@@ -176,7 +188,7 @@ class Engine(object, Servable):
             ret.append("</edge>")
         ret.append("</edges>")
         return "".join(ret)
-    outgoing_edges.path = r'/vertex/outgoing'
+    outgoing_edges.path = r'/vertex/outgoing$'
     outgoing_edges.args = ('label',)
 
     def walk_edges_general(self, forward_dir, label, time):
@@ -220,12 +232,12 @@ class Engine(object, Servable):
         
     def walk_edges(self, label, time):
         return self.walk_edges_general( True, label, time )
-    walk_edges.path = r'/vertex/walk'
+    walk_edges.path = r'/vertex/walk$'
     walk_edges.args = ('label', 'time')
         
     def walk_edges_retro(self, label, time):
         return self.walk_edges_general( False, label, time )
-    walk_edges_retro.path = r'/vertex/walk_retro'
+    walk_edges_retro.path = r'/vertex/walk_retro$'
     walk_edges_retro.args = ('label', 'time')
         
     def collapse_edges(self, label, time):
@@ -247,7 +259,7 @@ class Engine(object, Servable):
         ret.append("</outgoing_edges>")
         ret.append("</vertex>")
         return "".join(ret)
-    collapse_edges.path = r'/vertex/outgoing/collapsed'
+    collapse_edges.path = r'/vertex/outgoing/collapsed$'
     collapse_edges.args = ('label', 'time')
 
 class Action:
@@ -314,7 +326,7 @@ class TripPlanEngine(Engine):
         if time is None:
             time=int(now())
         
-        spt, vertices, edges = self._shortest_path_raw( True, True, from_v, to_v, time )
+        spt, vertices, edges = self._shortest_path_raw( True, False, from_v, to_v, time, transfer_penalty=1 )
         
         actions = self._actions_from_path(vertices,edges,verbose)
 
@@ -335,7 +347,7 @@ class TripPlanEngine(Engine):
         if time is None:
             time=int(now())
             
-        spt, vertices, edges = self._shortest_path_raw( True, True, from_v, to_v, time )
+        spt, vertices, edges = self._shortest_path_raw( True, False, from_v, to_v, time, transfer_penalty=1 )
         actions = self._actions_from_path(vertices,edges,verbose)
         ret = simplejson.dumps(actions)
         spt.destroy()

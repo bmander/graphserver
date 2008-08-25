@@ -79,14 +79,14 @@ Vertex**
 gVertices( Graph* this, long* num_vertices );
 
 Graph*
-gShortestPathTree( Graph* this, char *from, char *to, State* init_state );
+gShortestPathTree( Graph* this, char *from, char *to, State* init_state, int transferPenalty );
 
 Graph*
-gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state );
+gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, int transferPenalty );
 
 //direction specifies forward or retro routing
 State*
-gShortestPath( Graph* this, char *from, char *to, State* init_state, int direction, long *size );
+gShortestPath( Graph* this, char *from, char *to, State* init_state, int direction, long *size, int transferPenalty );
 
 long
 gSize( Graph* this );
@@ -153,10 +153,10 @@ void
 eMark(Edge *this) ;
 
 State*
-eWalk(Edge *this, State* params) ;
+eWalk(Edge *this, State* params, int transferPenalty) ;
 
 State*
-eWalkBack(Edge *this, State *params) ;
+eWalkBack(Edge *this, State *params, int transferPenalty) ;
 
 Edge*
 eGeom(Edge* this,char * datageom);

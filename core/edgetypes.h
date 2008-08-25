@@ -101,10 +101,10 @@ edgepayload_t
 epGetType( EdgePayload* this );
 
 State*
-epWalk( EdgePayload* this, State* param );
+epWalk( EdgePayload* this, State* param, int transferPenalty );
 
 State*
-epWalkBack( EdgePayload* this, State* param );
+epWalkBack( EdgePayload* this, State* param, int transferPenalty );
 
 EdgePayload*
 epCollapse( EdgePayload* this, State* param );
@@ -148,10 +148,10 @@ void
 waitDestroy(Wait* tokill);
 
 inline State*
-waitWalk(Wait* this, State* param);
+waitWalk(Wait* this, State* param, int transfer_penalty);
 
 inline State*
-waitWalkBack(Wait* this, State* param);
+waitWalkBack(Wait* this, State* param, int transfer_penalty);
 
 long
 waitGetEnd(Wait* this);
@@ -241,16 +241,16 @@ triphopTripId( TripHop* this );
 
 
 inline State*
-thsWalk(TripHopSchedule* this, State* params);
+thsWalk(TripHopSchedule* this, State* params, int transferPenalty);
 
 inline State*
-thsWalkBack(TripHopSchedule* this, State* params);
+thsWalkBack(TripHopSchedule* this, State* params, int transferPenalty);
 
 inline State*
-triphopWalk( TripHop* this, State* params );
+triphopWalk( TripHop* this, State* params, int transferPenalty );
 
 inline State*
-triphopWalkBack( TripHop* this, State* params );
+triphopWalkBack( TripHop* this, State* params, int transferPenalty );
 
 inline TripHop*
 thsCollapse( TripHopSchedule* this, State* params );

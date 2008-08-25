@@ -107,7 +107,7 @@ gVertices( Graph* this, long* num_vertices ) {
 #define LARGEST_ROUTE_SIZE 10000
 
 State*
-gShortestPath( Graph* this, char *from, char *to, State* init_state, int direction, long *size ) {
+gShortestPath( Graph* this, char *from, char *to, State* init_state, int direction, long *size, int transferPenalty ) {
   //make sure from/to vertices exist
   if( !gGetVertex( this, from ) ) {
     fprintf( stderr, "Origin vertex \"%s\" does not exist\n", from );
@@ -122,10 +122,10 @@ gShortestPath( Graph* this, char *from, char *to, State* init_state, int directi
   Graph *raw_tree;
   Vertex *curr;
   if(direction) {
-    raw_tree = gShortestPathTree( this, from, to, init_state );
+    raw_tree = gShortestPathTree( this, from, to, init_state, transferPenalty );
     curr = gGetVertex( raw_tree, to );
   } else {
-    raw_tree = gShortestPathTreeRetro( this, from, to, init_state );
+    raw_tree = gShortestPathTreeRetro( this, from, to, init_state, transferPenalty );
     curr = gGetVertex( raw_tree, from );
   }
 
@@ -368,13 +368,13 @@ eDestroy(Edge *this, int destroy_payload) {
 }
 
 State*
-eWalk(Edge *this, State* params) {
-  return epWalk( this->payload, params );
+eWalk(Edge *this, State* params, int transferPenalty) {
+  return epWalk( this->payload, params, transferPenalty );
 }
 
 State*
-eWalkBack(Edge *this, State* params) {
-  return epWalkBack( this->payload, params );
+eWalkBack(Edge *this, State* params, int transferPenalty) {
+  return epWalkBack( this->payload, params, transferPenalty );
 }
 
 Edge*
