@@ -107,19 +107,24 @@ pycapi(lgs.gShortestPathTree,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p, 
 pycapi(lgs.gShortestPathTreeRetro,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p, c_int])
 pycapi(lgs.gSize,c_void_p, [c_long])
 
-# CALENDAR API 
-pycapi(lgs.calNew, c_void_p, [c_long, c_long, c_int, c_void_p, c_int])
-pycapi(lgs.calAppendDay, c_void_p, [c_void_p, c_long, c_long, c_int, c_void_p, c_int])
-pycapi(lgs.calRewind, c_void_p, [c_void_p])
-pycapi(lgs.calFastForward, c_void_p, [c_void_p])
-pycapi(lgs.calDayOfOrAfter, c_void_p, [c_void_p, c_long])
-pycapi(lgs.calDayOfOrBefore, c_void_p, [c_void_p, c_long])
+# SERVICE PERIOD API 
+pycapi(lgs.spNew, c_void_p, [c_long, c_long, c_int, c_void_p, c_int])
+pycapi(lgs.spRewind, c_void_p, [c_void_p])
+pycapi(lgs.spFastForward, c_void_p, [c_void_p])
+pycapi(lgs.spDatumMidnight, c_long, [c_void_p, c_int])
+pycapi(lgs.spNormalizeTime, c_long, [c_void_p, c_int, c_long])
+
+# SERVICE CALENDAR API
+pycapi(lgs.scNew, c_void_p, [])
+pycapi(lgs.scPeriodOfOrAfter, c_void_p, [c_void_p, c_int])
+pycapi(lgs.scPeriodOfOrBefore, c_void_p, [c_void_p, c_int])
+pycapi(lgs.scAddPeriod, c_void_p, [c_void_p, c_void_p])
 
 # STATE API
 pycapi(lgs.stateNew, c_void_p, [c_int, c_long])
 pycapi(lgs.stateDup, c_void_p)
 pycapi(lgs.stateDestroy, c_void_p)
-pycapi(lgs.stateCalendarDay, c_void_p, [c_int])
+pycapi(lgs.stateServicePeriod, c_void_p, [c_int])
 
 #VERTEX API
 pycapi(lgs.vNew, c_void_p, [c_char_p])

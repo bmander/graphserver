@@ -16,7 +16,7 @@ int main() {
 
     //printf( "%d\n", ncaldays );
     
-    CalendarDay* cal = NULL;
+    ServiceCalendar* cal = scNew();
     int i;
     for(i=0; i<ncaldays; i++) {
         long daystart;
@@ -35,9 +35,8 @@ int main() {
             //printf( "%d\n", service_id);
         }
         
-        cal = calAppendDay( cal, daystart, dayend, nserviceids, serviceids, daylightsavings );
+        scAddPeriod( cal, spNew( daystart, dayend, nserviceids, serviceids, daylightsavings ) );
     }
-    cal = calRewind(cal);
     
     //Load up vertices
     int nvertices;
@@ -102,13 +101,13 @@ int main() {
     
     
     long t = 1215674100; //#Wed 2008-7-9 11:15:00 PST-0800
-    Graph* spt = gShortestPathTree( gg, "16TH", "bogus", stateNew( 1, t ) );
+    Graph* spt = gShortestPathTree( gg, "16TH", "bogus", stateNew( 1, t ), 1 );
     
     gDestroy( spt, 1, 0 );
     
     gDestroy(gg, 1, 1);
 
-    calDestroy( cal );
+    scDestroy( cal );
     
     
     

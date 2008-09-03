@@ -11,7 +11,7 @@ int main() {
     gAddEdge( gg, "A", "B", (EdgePayload*)linkNew());
     
     State* initstate = stateNew(1, 0);
-    Graph* spt = gShortestPathTree( gg, "A", "B", initstate );
+    Graph* spt = gShortestPathTree( gg, "A", "B", initstate, 1 );
     
     gDestroy(spt, 1, 0);
     gDestroy(gg, 1, 1);

@@ -4,7 +4,7 @@ from pytz import timezone
 import sys
 import datetime
 sys.path.append("../../..")
-from graphserver.core import Graph, Street, CalendarDay, TripHopSchedule, Calendar, State
+from graphserver.core import Graph, Street, ServicePeriod, TripHopSchedule, ServiceCalendar, State
 import csv
 import calendar
 import os
@@ -123,7 +123,7 @@ class GTFSLoadable:
 
         rawcalendar = self._raw_calendar( sched )
 
-        cal = Calendar()
+        cal = ServiceCalendar()
         for day, service_ids in rawcalendar:
             local_daystart = self._date_to_secs(day)+time.timezone
             #if daylight savings is in effect
@@ -133,7 +133,7 @@ class GTFSLoadable:
             else:
                 daylight_savings = 0
 
-            cal.add_day( local_daystart+sid_start, local_daystart+sid_end, service_ids, daylight_savings )
+            cal.add_period( ServicePeriod( local_daystart+sid_start, local_daystart+sid_end, cal.int_sids(service_ids), daylight_savings) )
 
         #add all vertices
         for stop in sched.GetStopList():

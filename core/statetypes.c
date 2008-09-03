@@ -1,69 +1,114 @@
 #include "statetypes.h"
 #include "stdio.h"
 
-//CALENDAR FUNCTIONS
+//SERVICE CALENDAR METHODS
 
-CalendarDay* calNew( long begin_time, long end_time, int n_service_ids, ServiceId* service_ids, int daylight_savings ) {
-  CalendarDay* ret = (CalendarDay*)malloc(sizeof(CalendarDay));
+ServiceCalendar*
+scNew( ) {
+    ServiceCalendar* ret = (ServiceCalendar*)malloc(sizeof(ServiceCalendar));
+    ret->head = NULL;
+    
+    return ret;
+}
+
+void
+scAddPeriod( ServiceCalendar* this, ServicePeriod* period ) {
+    if(!this->head) {
+        this->head = period;
+    } else {
+        ServicePeriod* prev = NULL;
+        ServicePeriod* curs = this->head;
+        
+        while(curs && period->begin_time > curs->end_time ) {
+            prev = curs;
+            curs = curs->next_period;
+        }
+        
+        //link last and period; replace the head if necessary
+        if(prev) {
+            prev->next_period = period;
+        } else {
+            this->head = period;
+        }
+        period->prev_period = prev;
+        
+        //link period and curs
+        period->next_period = curs;
+        //curs could be the end of the linked list, in which case next is NULL
+        if(curs){
+            curs->prev_period = period;
+        }
+        
+    }
+}
+
+ServicePeriod*
+scPeriodOfOrAfter( ServiceCalendar* this, long time ) {
+  ServicePeriod* period = this->head;
+
+  while( period && period->end_time < time ) {
+    period = period->next_period;
+  }
+  
+  return period;
+}
+
+ServicePeriod*
+scPeriodOfOrBefore( ServiceCalendar* this, long time ) {
+  if(!this->head) {
+    return NULL;
+  }
+    
+  ServicePeriod* period = spFastForward( this->head );
+
+  while( period && period->begin_time > time ) {
+    period = period->prev_period;
+  }
+  return period;
+}
+
+ServicePeriod*
+scHead( ServiceCalendar* this ) { return this->head; }
+
+void
+scDestroy( ServiceCalendar* this ) {
+    ServicePeriod* curs = this->head;
+    ServicePeriod* next;
+
+    while(curs) {
+      next = curs->next_period;
+      spDestroyPeriod(curs);
+      curs = next;
+    }
+
+    free(this);
+}
+
+//SERVICEPERIOD METHODS
+
+ServicePeriod* spNew( long begin_time, long end_time, int n_service_ids, ServiceId* service_ids, int daylight_savings ) {
+  ServicePeriod* ret = (ServicePeriod*)malloc(sizeof(ServicePeriod));
   ret->begin_time    = begin_time;
   ret->end_time      = end_time;
   ret->n_service_ids = n_service_ids;
   ret->service_ids  = (ServiceId*)malloc(n_service_ids*sizeof(ServiceId));
   ret->daylight_savings = daylight_savings;
   memcpy( ret->service_ids, service_ids, n_service_ids*sizeof(ServiceId) );
-  ret->prev_day = NULL;
-  ret->next_day = NULL;
-
-  return ret;
-}
-
-//Inserts a new day into the calendar linked list. Pass NULL to create a new linked list
-CalendarDay*
-calAppendDay( CalendarDay* this, long begin_time, long end_time, int n_service_ids, ServiceId* service_ids, int daylight_savings) {
-  CalendarDay* ret = calNew( begin_time, end_time, n_service_ids, service_ids, daylight_savings );
-
-  //if it's a new calendar
-  if(!this)
-    return ret;
-
-  this->next_day = ret;
-  ret->prev_day = this;
+  ret->prev_period = NULL;
+  ret->next_period = NULL;
 
   return ret;
 }
 
 void
-calDestroyDay( CalendarDay* this ) {
+spDestroyPeriod( ServicePeriod* this ) {
   free( this->service_ids );
   free( this );
 }
 
-//destroys the calendar linked list given any node on the list
-void
-calDestroy(CalendarDay* this) {
-  CalendarDay* middle = this;
-  CalendarDay* trash;
 
-  //delete forward
-  this = middle->next_day;
-  while(this) {
-    trash = this;
-    this = trash->next_day;
-    calDestroyDay(trash);
-  }
-
-  //delete backward
-  this = middle->prev_day;
-  while(this) {
-    trash = this;
-    this = trash->prev_day;
-    calDestroyDay( trash );
-  }
-
-  calDestroyDay( middle );
-}
 int
-calDayHasServiceId( CalendarDay* this, ServiceId service_id) {
+spPeriodHasServiceId( ServicePeriod* this, ServiceId service_id) {
   int i;
   for(i=0; i<this->n_service_ids; i++) {
     if( this->service_ids[i] == service_id ) {
@@ -73,57 +118,33 @@ calDayHasServiceId( CalendarDay* this, ServiceId service_id) {
   return 0;
 }
 
-CalendarDay*
-calRewind( CalendarDay* this ) {
-  while( this->prev_day ) {
-    this = this->prev_day;
+ServicePeriod*
+spRewind( ServicePeriod* this ) {
+  while( this->prev_period ) {
+    this = this->prev_period;
   }
   return this;
 }
 
-CalendarDay*
-calFastForward( CalendarDay* this ) {
-  while( this->next_day ) {
-    this = this->next_day;
-  }
-  return this;
-}
-
-CalendarDay*
-calDayOfOrAfter( CalendarDay* this, long time ) {
-  this = calRewind( this );
-
-  while( this->end_time < time ) {
-    this = this->next_day;
-    if(!this)
-      return NULL;
-  }
-  return this;
-}
-
-CalendarDay*
-calDayOfOrBefore( CalendarDay* this, long time ) {
-  this = calFastForward( this );
-
-  while( this->begin_time > time ) {
-    this = this->prev_day;
-    if(!this)
-      return NULL;
+ServicePeriod*
+spFastForward( ServicePeriod* this ) {
+  while( this->next_period ) {
+    this = this->next_period;
   }
   return this;
 }
 
 void
-calPrint( CalendarDay* this ) {
-  CalendarDay* curr = calRewind( this );
-  while( curr->next_day ) {
-    calPrintDay( curr );
-    curr = curr->next_day;
+spPrint( ServicePeriod* this ) {
+  ServicePeriod* curr = spRewind( this );
+  while( curr->next_period ) {
+    spPrintPeriod( curr );
+    curr = curr->next_period;
   }
 }
 
 void
-calPrintDay( CalendarDay* this ) {
+spPrintPeriod( ServicePeriod* this ) {
   printf( "time=%ld..%ld service_ids=[", this->begin_time, this->end_time );
   int i;
   for(i=0; i<this->n_service_ids; i++) {
@@ -135,35 +156,54 @@ calPrintDay( CalendarDay* this ) {
 }
 
 long
-calBeginTime( CalendarDay* this ) {
+spBeginTime( ServicePeriod* this ) {
 	return this->begin_time;
 }
 
 long
-calEndTime( CalendarDay* this ) {
+spEndTime( ServicePeriod* this ) {
 	return this->end_time;	
 }
 
 ServiceId*
-calServiceIds( CalendarDay* this, int* count ) {
+spServiceIds( ServicePeriod* this, int* count ) {
 	*count = this->n_service_ids;
 	return this->service_ids;
 }
 
 int 
-calDaylightSavings( CalendarDay* this ) {
+spDaylightSavings( ServicePeriod* this ) {
 	return this->daylight_savings;	
 }
 
-CalendarDay*
-calNextDay(CalendarDay* this) {
-	return this->next_day;
+ServicePeriod*
+spNextPeriod(ServicePeriod* this) {
+	return this->next_period;
 }
 
-CalendarDay*
-calPreviousDay(CalendarDay* this) {
-	return this->prev_day;
+ServicePeriod*
+spPreviousPeriod(ServicePeriod* this) {
+	return this->prev_period;
 }
 
 void
-calPrint( CalendarDay* this );
+spPrint( ServicePeriod* this );
+
+inline long
+spDatumMidnight( ServicePeriod* this, int timezone_offset ) {
+    /*Returns the unix time corresponding to the local time of the last midnight to occur 
+      before the beginning of this service peroid. Typically, triphops specify events relative
+      to this datum*/
+    
+    long utc_offset = timezone_offset + this->daylight_savings;
+    long since_local_midnight = (this->begin_time+utc_offset)%SECS_IN_DAY;
+    return this->begin_time - since_local_midnight;
+}
+
+inline long
+spNormalizeTime( ServicePeriod* this, int timezone_offset, long time ) {
+    /* Normalizes unix time to seconds since the last midnight before the beginning of the service period */
+    
+    long midnight = spDatumMidnight( this, timezone_offset );
+    return time-midnight;
+}

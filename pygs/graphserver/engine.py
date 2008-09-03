@@ -3,71 +3,10 @@ try:
 except ImportError:
     from core import Graph, State
 from time import time as now
-import traceback
+
 import simplejson
 
-import re
-_rc = re.compile
-from types import *
-import cgi
-
-class Servable:
-    @classmethod
-    def _urlpatterns(cls):
-        ret = []
-        
-        for name in dir(cls):
-            attr = getattr(cls, name)
-            if type(attr) == UnboundMethodType and hasattr(attr, 'path') and hasattr(attr,'args'):
-                ret.append( (re.compile(attr.path), attr, attr.args) )
-                
-        return ret
-        
-    def _usage(self, urlpatterns):
-        ret = ["<?xml version='1.0'?><api>"]
-        for ppath, pfunc, pargs in urlpatterns:
-            ret.append("<method><path>%s</path><parameters>" % ppath.pattern)
-            if pargs:
-                for p in pargs:
-                    ret.append("<param>%s</param>" %p)
-            ret.append("</parameters></method>")
-        ret.append("</api>")
-        return "".join(ret)
-
-    def wsgi_app(self):
-        """returns a wsgi app which exposes this object as a webservice"""
-        
-        urlpatterns = self._urlpatterns()
-        
-        def myapp(environ, start_response):
-            
-            for ppath, pfunc, pargs in urlpatterns:
-                if ppath.match(environ['PATH_INFO']):
-                    args = {}
-                    if pargs and environ['QUERY_STRING'] != "":
-                        args = cgi.parse_qs(environ['QUERY_STRING'])
-                        for k in args.keys():
-                            args[k] = args[k][0]
-                    try:
-                        fargs = [args.get(parg) for parg in pargs]
-                        r = pfunc(self,*fargs)
-            
-                        if hasattr(pfunc, 'mime'):
-                            mime = pfunc.mime
-                        else:
-                            mime = 'text/xml'
-                        content_length = len(r)
-                        start_response('200 OK', [('Content-type', mime),('Content-Length', str(content_length))])
-                        return [r]
-                    except:
-                        traceback.print_exc()
-                        start_response('500 Internal Error', [('Content-type', 'text/plain')])
-                        return ["Something went wrong"]
-            # no match:
-            start_response('200 OK', [('Content-type', 'text/xml')])
-            return [self._usage(urlpatterns)]
-            
-        return myapp
+from servable import Servable
 
 class Engine(object, Servable):
     """ Provides a high level API to graph functions, outputing data to XML."""
@@ -79,7 +18,7 @@ class Engine(object, Servable):
         self.gg.destroy()
 
     @property
-    def graph(self):
+    def _graph(self):
         return self.gg
 
     def _parse_init_state(self, numauthorities, time ):
@@ -90,32 +29,24 @@ class Engine(object, Servable):
         
         return State(numauthorities, time)
 
-    def _shortest_path_raw(self,dir_forward,doubleback,from_v,to_v,time,transfer_penalty=0):
+    def _shortest_path_raw(self,dir_forward,from_v,to_v,time,doubleback=True,tp=0):
         """returns (spt,vertices,edges). You need to destroy spt when you're done with the path"""
         if not self.gg.get_vertex(from_v) and self.gg.get_vertex(to_v):
             raise
-            
-        init_state = self._parse_init_state(self.gg.numauthorities, time)
-        if transfer_penalty is None:
-            transfer_penalty = 0
-        else:
-            transfer_penalty = int(transfer_penalty)
         
-        if type(doubleback)==type(True):
-            pass
-        elif doubleback is None:
-            doubleback = True
-        else:
-            doubleback = (doubleback.lower()=="true")
+        tp = int(tp)
+        doubleback = (str(doubleback).lower()=="true")
+        
+        init_state = self._parse_init_state(self.gg.numauthorities, time)
         
         if not dir_forward:
-            spt = self.gg.shortest_path_tree_retro(from_v, to_v, init_state, transfer_penalty)
+            spt = self.gg.shortest_path_tree_retro(from_v, to_v, init_state, tp)
             if doubleback:
                 origin = spt.get_vertex(from_v)
                 if origin is not None:
                     departure_time = origin.payload.time
                     spt.destroy()
-                    spt = self.gg.shortest_path_tree( from_v, to_v, State(self.gg.numauthorities, departure_time),transfer_penalty )
+                    spt = self.gg.shortest_path_tree( from_v, to_v, State(self.gg.numauthorities, departure_time),tp )
                     vertices, edges = spt.path(to_v)
                 else:
                     spt.destroy()
@@ -123,13 +54,13 @@ class Engine(object, Servable):
             else:
                 vertices, edges = spt.path_retro(from_v)
         else:
-            spt = self.gg.shortest_path_tree(from_v, to_v, init_state, transfer_penalty)
+            spt = self.gg.shortest_path_tree(from_v, to_v, init_state, tp)
             if doubleback:
                 dest = spt.get_vertex(to_v)
                 if dest is not None:
                     arrival_time = dest.payload.time
                     spt.destroy()
-                    spt = self.gg.shortest_path_tree_retro( from_v, to_v, State(self.gg.numauthorities, arrival_time),transfer_penalty )
+                    spt = self.gg.shortest_path_tree_retro( from_v, to_v, State(self.gg.numauthorities, arrival_time),tp )
                     vertices, edges = spt.path_retro(from_v)
                 else:
                     spt.destroy()
@@ -140,8 +71,8 @@ class Engine(object, Servable):
         return spt, vertices, edges
         
 
-    def _shortest_path_general(self,dir_forward,doubleback,from_v,to_v,time,transfer_penalty=0):
-        spt, vertices, edges = self._shortest_path_raw(dir_forward,doubleback,from_v,to_v,time,transfer_penalty)
+    def _shortest_path_general(self,dir_forward,from_v,to_v,time,doubleback,tp=0):
+        spt, vertices, edges = self._shortest_path_raw(dir_forward,from_v,to_v,time,doubleback,tp)
                 
         ret = ["<?xml version='1.0'?><route>"]
         if vertices is None:
@@ -155,15 +86,13 @@ class Engine(object, Servable):
         spt.destroy()
         return "".join(ret)
             
-    def shortest_path(self, from_v, to_v, time,doubleback="true",transfer_penalty=0):
-        return self._shortest_path_general( True, doubleback, from_v, to_v, time, transfer_penalty )
-    shortest_path.path = r'/shortest_path$'
-    shortest_path.args    = ('from','to','time','doubleback','tp')
+    def shortest_path(self, from_v, to_v, time,doubleback="true",tp=0):
+        return self._shortest_path_general( True, from_v, to_v, time, doubleback, tp )
+    shortest_path.mime = "text/xml"
             
-    def shortest_path_retro(self, from_v, to_v, time,doubleback="true",transfer_penalty=0):
-        return self._shortest_path_general( False, doubleback, from_v, to_v, time, transfer_penalty )
-    shortest_path_retro.path = r'/shortest_path_retro$'
-    shortest_path_retro.args = ('from','to','time','doubleback','tp')
+    def shortest_path_retro(self, from_v, to_v, time,doubleback="true",tp=0):
+        return self._shortest_path_general( False, from_v, to_v, time, doubleback, tp )
+    shortest_path_retro.mime = "text/xml"
 
     def all_vertex_labels(self):
         ret = ["<?xml version='1.0'?>"]
@@ -172,8 +101,8 @@ class Engine(object, Servable):
             ret.append("<label>%s</label>" % v.label)
         ret.append("</labels>")
         return "".join(ret)
-    all_vertex_labels.path = r'/vertices'
-    all_vertex_labels.args = ()
+    all_vertex_labels.path = r'/vertices$'
+    all_vertex_labels.mime = "text/xml"
 
     def outgoing_edges(self, label):
         ret = ["<?xml version='1.0'?>"]
@@ -189,9 +118,9 @@ class Engine(object, Servable):
         ret.append("</edges>")
         return "".join(ret)
     outgoing_edges.path = r'/vertex/outgoing$'
-    outgoing_edges.args = ('label',)
+    outgoing_edges.mime = "text/xml"
 
-    def walk_edges_general(self, forward_dir, label, time):
+    def _walk_edges_general(self, forward_dir, label, time):
         vertex = self.gg.get_vertex( label )
         init_state = self._parse_init_state(self.gg.numauthorities, time)
 
@@ -231,14 +160,14 @@ class Engine(object, Servable):
         return "".join(ret)
         
     def walk_edges(self, label, time):
-        return self.walk_edges_general( True, label, time )
+        return self._walk_edges_general( True, label, time )
     walk_edges.path = r'/vertex/walk$'
-    walk_edges.args = ('label', 'time')
+    walk_edges.mime = "text/xml"
         
     def walk_edges_retro(self, label, time):
-        return self.walk_edges_general( False, label, time )
+        return self._walk_edges_general( False, label, time )
     walk_edges_retro.path = r'/vertex/walk_retro$'
-    walk_edges_retro.args = ('label', 'time')
+    walk_edges_retro.mime = "text.xml"
         
     def collapse_edges(self, label, time):
         vertex = self.gg.get_vertex( label )
@@ -260,7 +189,7 @@ class Engine(object, Servable):
         ret.append("</vertex>")
         return "".join(ret)
     collapse_edges.path = r'/vertex/outgoing/collapsed$'
-    collapse_edges.args = ('label', 'time')
+    collapse_edges.mime = "text/xml"
 
 class Action:
     action = "action"
@@ -326,7 +255,7 @@ class TripPlanEngine(Engine):
         if time is None:
             time=int(now())
         
-        spt, vertices, edges = self._shortest_path_raw( True, False, from_v, to_v, time, transfer_penalty=1 )
+        spt, vertices, edges = self._shortest_path_raw( True, from_v, to_v, time, doubleback=False, tp=1 )
         
         actions = self._actions_from_path(vertices,edges,verbose)
 
@@ -339,22 +268,20 @@ class TripPlanEngine(Engine):
         spt.destroy()
         
         return "".join(ret)
-    trip_plan.path = r'/trip_plan$'
-    trip_plan.args = ('from','to','time','verbose')
+    trip_plan.mime = "text/xml"
     
     def trip_plan_json(self,from_v,to_v,time,verbose):
         verbose=verbose.lower()=="true"
         if time is None:
             time=int(now())
             
-        spt, vertices, edges = self._shortest_path_raw( True, False, from_v, to_v, time, transfer_penalty=1 )
+        spt, vertices, edges = self._shortest_path_raw( True, from_v, to_v, time, doubleback=False, tp=1 )
         actions = self._actions_from_path(vertices,edges,verbose)
         ret = simplejson.dumps(actions)
         spt.destroy()
         
         return ret
     trip_plan_json.path = r'/trip_plan/json'
-    trip_plan_json.args = ('from','to','time','verbose')
     trip_plan_json.mime = "text/plain"
 
 def _test():

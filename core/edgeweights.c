@@ -7,6 +7,7 @@
 #define ABSOLUTE_MAX_WALK 100000 //meters. 100 km. prevents overflow
 #define MAX_LONG 2147483647
 #define WAITING_RELUCTANCE 1
+#define SECS_IN_DAY 86400
 /*#define WALKING_SPEED 0.85    //meters per second
 #define MIN_TRANSFER_TIME 0 //five minutes
 #define TRANSFER_PENALTY 0    //rough measure of how bad a close transfer is
@@ -33,16 +34,16 @@ inline State*
 waitWalk(Wait* this, State* params, int transfer_penalty) {
     State* ret = stateDup( params );
     
-
-    
     ret->prev_edge_type = PL_WAIT;
     
-    if( params->time > this->end ) {
-        ret->weight = INFINITY;
-    } else {
-        ret->time = this->end;
-        ret->weight += (this->end - params->time)*WAITING_RELUCTANCE;
+    long secs_since_local_midnight = (params->time+this->utcoffset)%SECS_IN_DAY;
+    long wait_time = this->end - secs_since_local_midnight;
+    if(wait_time<0) {
+        wait_time += SECS_IN_DAY;
     }
+    
+    ret->time += wait_time;
+    ret->weight += wait_time*WAITING_RELUCTANCE;
     
     if(params->prev_edge_type==PL_TRIPHOP) {
         ret->weight += transfer_penalty;
@@ -57,12 +58,14 @@ waitWalkBack(Wait* this, State* params, int transfer_penalty) {
     
     ret->prev_edge_type = PL_WAIT;
     
-    if( params->time < this->end) {
-        ret->weight = INFINITY;
-    } else {
-        ret->time = this->end;
-        ret->weight += (params->time - this->end)*WAITING_RELUCTANCE;
+    long secs_since_local_midnight = (params->time+this->utcoffset)%SECS_IN_DAY;
+    long wait_time = secs_since_local_midnight - this->end;
+    if(wait_time<0) {
+        wait_time += SECS_IN_DAY;
     }
+    
+    ret->time -= wait_time;
+    ret->weight += wait_time*WAITING_RELUCTANCE;
     
     if(params->prev_edge_type==PL_TRIPHOP) {
         ret->weight += transfer_penalty;
@@ -89,18 +92,18 @@ streetWalkBack(Street* this, State* params) {
   int i;
 #ifndef ROUTE_REVERSE
   ret->time           += delta_t;
-  for(i=0; i<params->numcalendars; i++) {
-      CalendarDay* cal = params->calendars[i];
-      if(cal && ret->time >= cal->end_time) {
-        ret->calendars[i] = cal->next_day;
+  for(i=0; i<params->n_agencies; i++) {
+      ServicePeriod* sp = params->service_periods[i];
+      if(sp && ret->time >= sp->end_time) {
+        ret->service_periods[i] = sp->next_period;
       }
   }
 #else
   ret->time           -= delta_t;
-  for(i=0; i<params->numcalendars; i++) {
-    CalendarDay* cal = params->calendars[i];
-    if(cal && ret->time < cal->begin_time) {
-      ret->calendars[i] = cal->prev_day;
+  for(i=0; i<params->n_agencies; i++) {
+    ServicePeriod* sp = params->service_periods[i];
+    if(sp && ret->time < sp->begin_time) {
+      ret->service_periods[i] = sp->prev_period;
     }
   }
 #endif
@@ -150,13 +153,34 @@ triphopWalk(TripHop* this, State* params, int transferPenalty) {
 #else
 triphopWalkBack(TripHop* this, State* params, int transferPenalty) {
 #endif
-    State* ret = stateDup( params );
-
-    long adjusted_time = params->time;
-    if(this->schedule) {
-        adjusted_time = thsSecondsSinceMidnight( this->schedule, params );
+    
+    // if the params->service_period is NULL, use the params->time to find the service_period
+    // the service_period is actually a denormalization of the params->time
+    // this way, the user doesn't need to worry about it
+    
+    ServicePeriod* service_period = params->service_periods[this->agency];
+    if( !service_period )
+#ifndef ROUTE_REVERSE
+        service_period = scPeriodOfOrAfter( this->calendar, params->time );
+#else
+        service_period = scPeriodOfOrBefore( this->calendar, params->time );
+#endif
+    params->service_periods[this->agency] = service_period;
+    
+    // if the schedule never runs
+    // or if the schedule does not run on this day
+    // this link goes nowhere
+    if( !service_period ||
+        !spPeriodHasServiceId( service_period, this->service_id) ) {
+      return NULL;
     }
-
+    
+    State* ret = stateDup( params );
+    
+    long adjusted_time = spNormalizeTime( service_period, this->timezone_offset, params->time );
+    
+    fprintf(stderr,"adjusted time: %ld\n", adjusted_time);
+    
     long wait;
 #ifndef ROUTE_REVERSE
     wait = (this->depart - adjusted_time);
@@ -184,25 +208,25 @@ triphopWalkBack(TripHop* this, State* params, int transferPenalty) {
 #ifndef ROUTE_REVERSE
     ret->time           += wait + this->transit;
     if(adjusted_time>this->depart) {
-        ret->weight = INFINITY;
+        return NULL;
     } else {
         ret->weight += wait + this->transit + transfer_penalty;
     }
-    for(i=0; i<params->numcalendars; i++) {
-        if( ret->calendars[i] && ret->time >= ret->calendars[i]->end_time) {
-          ret->calendars[i] = ret->calendars[i]->next_day;
+    for(i=0; i<params->n_agencies; i++) {
+        if( ret->service_periods[i] && ret->time >= ret->service_periods[i]->end_time) {
+          ret->service_periods[i] = ret->service_periods[i]->next_period;
         }
     }
 #else
     ret->time           -= (wait + this->transit);
     if(adjusted_time<this->arrive) {
-        ret->weight = INFINITY;
+        return NULL;
     } else {
         ret->weight += wait + this->transit + transfer_penalty;
     }
-    for(i=0; i<params->numcalendars; i++) {
-        if( ret->calendars[i] && ret->time < ret->calendars[i]->begin_time) {
-          ret->calendars[i] = ret->calendars[i]->prev_day;
+    for(i=0; i<params->n_agencies; i++) {
+        if( ret->service_periods[i] && ret->time < ret->service_periods[i]->begin_time) {
+          ret->service_periods[i] = ret->service_periods[i]->prev_period;
         }
     }
 #endif
@@ -213,7 +237,7 @@ triphopWalkBack(TripHop* this, State* params, int transferPenalty) {
     return ret;
 }
 
-// Note that this has the side effect of filling in the params->calendar_day if it is not already set
+// Note that this has the side effect of filling in the params->service_period if it is not already set
 inline TripHop*
 #ifndef ROUTE_REVERSE
 thsCollapse(TripHopSchedule* this, State* params) {
@@ -221,30 +245,28 @@ thsCollapse(TripHopSchedule* this, State* params) {
 thsCollapseBack(TripHopSchedule* this, State* params) {
 #endif
 
-    // if the params->calendar_day is NULL, use the params->time to find the calendar_day
-    // the calendar_day is actually a denormalization of the params->time
+    // if the params->service_period is NULL, use the params->time to find the service_period
+    // the service_period is actually a denormalization of the params->time
     // this way, the user doesn't need to worry about it
     
-    CalendarDay* calendar_day = params->calendars[this->authority];
-    if( !calendar_day )
+    ServicePeriod* service_period = params->service_periods[this->agency];
+    if( !service_period )
 #ifndef ROUTE_REVERSE
-        calendar_day = calDayOfOrAfter( this->calendar, params->time );
+        service_period = scPeriodOfOrAfter( this->calendar, params->time );
 #else
-        calendar_day = calDayOfOrBefore( this->calendar, params->time );
+        service_period = scPeriodOfOrBefore( this->calendar, params->time );
 #endif
-    params->calendars[this->authority] = calendar_day;
+    params->service_periods[this->agency] = service_period;
     
-
     // if the schedule never runs
     // or if the schedule does not run on this day
     // this link goes nowhere
-    if( !calendar_day ||
-        !calDayHasServiceId( calendar_day, this->service_id) ||
-        this->n == 0 ) {
+    if( !service_period ||
+        !spPeriodHasServiceId( service_period, this->service_id) ) {
       return NULL;
     }
-
-    long adjusted_time = thsSecondsSinceMidnight( this, params );
+    
+    long adjusted_time = spNormalizeTime( service_period, this->timezone_offset, params->time );
 
 #ifndef ROUTE_REVERSE
     return thsGetNextHop(this, adjusted_time);
@@ -273,7 +295,7 @@ inline TripHop* thsGetLastHop(TripHopSchedule* this, long time) {
     mid = ceil( (low+high)/2.0 );
 #endif
 
-    TripHop* inquestion = &(this->hops[mid]);
+    TripHop* inquestion = this->hops[mid];
 
 #ifndef ROUTE_REVERSE
     if( time < inquestion->depart ) {
@@ -288,7 +310,7 @@ inline TripHop* thsGetLastHop(TripHopSchedule* this, long time) {
   if( high == this->n ) //there is no next departure
     return NULL;
   else
-    return &(this->hops[high]);
+    return this->hops[high];
 #else
     if( time < inquestion->arrive ) {
       high = mid;
@@ -302,6 +324,6 @@ inline TripHop* thsGetLastHop(TripHopSchedule* this, long time) {
   if( low == -1 ) //thee is no previous arrival
     return NULL;
   else
-    return &(this->hops[low]);
+    return this->hops[low];
 #endif
 }

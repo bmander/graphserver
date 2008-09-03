@@ -8,8 +8,8 @@ from graphserver.ext.osm.graph import OSMGraph
 from graphserver.ext.osm.osm import OSM
 from graphserver.core import State
 
-
-class TestOSM:
+import unittest
+class TestOSM(unittest.TestCase):
     def test_basic(self):
         """basic osm file load test."""        
         utmzone10 = Proj(init='epsg:26910')
@@ -53,3 +53,14 @@ class TestOSM:
         n = osm.find_nearest_node(-122.4179760000,37.7434470000)
         print n.id
         assert n.id == "65325497"
+        
+if __name__=='__main__':
+    tl = unittest.TestLoader()
+    
+    testables = [\
+                 TestOSM,
+                 ]
+
+    for testable in testables:
+        suite = tl.loadTestsFromTestCase(testable)
+        unittest.TextTestRunner(verbosity=2).run(suite)

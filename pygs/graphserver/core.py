@@ -32,8 +32,6 @@ class Walkable:
     def walk_back(self, state, transfer_penalty=0):
         return State.from_pointer(self._cwalk_back(self.soul, state.soul, transfer_penalty))
 
-
-
 """
 
 CType Definitions
@@ -235,73 +233,22 @@ class ShortestPathTree(Graph):
         #destroy the vertex State instances, but not the edge EdgePayload instances, as they're owned by the parent graph
         super(ShortestPathTree, self).destroy(1, 0)
 
-class Calendar:
-    """Calendar provides a set of convient methods for dealing with the wrapper class CalendarDay, which
-       wraps a single node in the doubly linked list that represents a calendar in Graphserver."""
-    def __init__(self):
-        self.service_id_directory = {}
-        self.head = None
-        self.tail = None
-        
-        self.curr = None
-        
-    def add_day(self, begin_time, end_time, service_ids, daylight_savings=0):
 
-        if self.head is not None and (begin_time <= self.tail.end_time):
-            raise Exception( "begin_time (%d) is not after the tail's end_time (%d)"%(begin_time,self.tail.end_time) )
+class ServicePeriod(CShadow):   
 
-        #translate service_ids to numbers
-        for service_id in service_ids:
-            if service_id not in self.service_id_directory:
-                self.service_id_directory[service_id]=len(self.service_id_directory)+1
-        service_ids = [self.service_id_directory[x] for x in service_ids]
-
-        if self.head is None:
-            cday = CalendarDay(begin_time,end_time,service_ids,daylight_savings)
-            self.head = cday
-            self.tail = cday
-        else:
-            self.tail.append_day( begin_time, end_time, service_ids, daylight_savings )
-            self.tail = self.tail.next
-            
-    def day_of_or_after(self,time):
-        if self.head is None:
-            return None
-            
-        return self.head.day_of_or_after(time)
-        
-    def day_of_or_before(self,time):
-        if self.head is None:
-            return None
-        
-        return self.head.day_of_or_before(time)
-    
-    def days(self):
-        curr = self.head
-        while curr is not None:
-            yield curr
-            curr = curr.next
-        
-
-class CalendarDay(CShadow):   
-
-    begin_time = cproperty(lgs.calBeginTime, c_long)
-    end_time = cproperty(lgs.calEndTime, c_long)
-    daylight_savings = cproperty(lgs.calDaylightSavings, c_int)
+    begin_time = cproperty(lgs.spBeginTime, c_long)
+    end_time = cproperty(lgs.spEndTime, c_long)
+    daylight_savings = cproperty(lgs.spDaylightSavings, c_int)
     
 
     def __init__(self, begin_time, end_time, service_ids, daylight_savings):
-        n, sids = CalendarDay._py2c_service_ids(service_ids)
+        n, sids = ServicePeriod._py2c_service_ids(service_ids)
         self.soul = self._cnew(begin_time, end_time, n, sids, daylight_savings)
-        
-    def append_day(self, begin_time, end_time, service_ids, daylight_savings):
-        n, sids = self._py2c_service_ids(service_ids)
-        return self._cappend_day(self.soul, begin_time, end_time, n, sids, daylight_savings)
     
     @property
     def service_ids(self):
         count = c_int()
-        ptr = lgs.calServiceIds(self.soul, byref(count))
+        ptr = lgs.spServiceIds(self.soul, byref(count))
         ptr = cast(ptr, POINTER(ServiceIdType))
         ids = []
         for i in range(count.value):
@@ -322,19 +269,22 @@ class CalendarDay(CShadow):
     def fast_forward(self):
         return self._cfast_forward(self.soul)
     
-    def day_of_or_after(self, time):
-        return self._cday_of_or_after(self.soul, time)
-        
-    def day_of_or_before(self, time):
-        return self._cday_of_or_before(self.soul, time)
-    
     def __str__(self):
         return self.to_xml()
     
     def to_xml(self):
-        return "<calendar begin_time='%s' end_time='%s' service_ids='%s'/>" % \
-            (asctime(gmtime(self.begin_time)), asctime(gmtime(self.end_time)), 
+        #return "<ServicePeriod begin_time='%s' end_time='%s' service_ids='%s'/>" % \
+        #    (asctime(gmtime(self.begin_time)), asctime(gmtime(self.end_time)), 
+        #     ",".join(map(str, self.service_ids)))
+        return "<ServicePeriod begin_time='%d' end_time='%d' service_ids='%s'/>" %( \
+            self.begin_time, self.end_time, 
              ",".join(map(str, self.service_ids)))
+    
+    def datum_midnight(self, timezone_offset):
+        return lgs.spDatumMidnight( self.soul, timezone_offset )
+    
+    def normalize_time(self, timezone_offset, time):
+        return lgs.spNormalizeTime(self.soul, timezone_offset, time)
         
     @staticmethod
     def _py2c_service_ids(service_ids):
@@ -344,24 +294,84 @@ class CalendarDay(CShadow):
             asids[i] = ServiceIdType(service_ids[i])
         return (ns, asids)
 
+class ServiceCalendar(CShadow):
+    """Calendar provides a set of convient methods for dealing with the wrapper class ServicePeriod, which
+       wraps a single node in the doubly linked list that represents a calendar in Graphserver."""
+    head = cproperty( lgs.scHead, c_void_p, ServicePeriod )
+       
+    def __init__(self):
+        self.service_id_directory = {}
+        self.soul = lgs.scNew()
+        
+    def int_sid(self, service_id):
+        if service_id not in self.service_id_directory:
+            self.service_id_directory[service_id]=len(self.service_id_directory)+1
+            
+        return self.service_id_directory[service_id]
+        
+    def int_sids(self, service_ids):
+        return [self.int_sid(sid) for sid in service_ids]
+        
+    def add_period(self, service_period):
+        lgs.scAddPeriod(self.soul, service_period.soul)
+        
+    """def add_day(self, begin_time, end_time, service_ids, daylight_savings=0):
 
+        if self.head is not None and (begin_time <= self.tail.end_time):
+            raise Exception( "begin_time (%d) is not after the tail's end_time (%d)"%(begin_time,self.tail.end_time) )
+
+        #translate service_ids to numbers
+        for service_id in service_ids:
+            if service_id not in self.service_id_directory:
+                self.service_id_directory[service_id]=len(self.service_id_directory)+1
+        service_ids = [self.service_id_directory[x] for x in service_ids]
+
+        if self.head is None:
+            cday = ServicePeriod(begin_time,end_time,service_ids,daylight_savings)
+            self.head = cday
+            self.tail = cday
+        else:
+            self.tail.append_day( begin_time, end_time, service_ids, daylight_savings )
+            self.tail = self.tail.next
+    """
+    def period_of_or_after(self,time):
+        soul = lgs.scPeriodOfOrAfter(self.soul, time)
+        return ServicePeriod.from_pointer(soul)
+    
+    def period_of_or_before(self,time):
+        soul = lgs.scPeriodOfOrBefore(self.soul, time)
+        return ServicePeriod.from_pointer(soul)
+    
+    @property
+    def periods(self):
+        curr = self.head
+        while curr:
+            yield curr
+            curr = curr.next
+            
+    def to_xml(self):
+        ret = ["<ServiceCalendar>"]
+        for period in self.periods:
+            ret.append( period.to_xml() )
+        ret.append( "</ServiceCalendar>" )
+        return "".join(ret)
 
 class State(CShadow):
     
-    def __init__(self, numcalendars, time=None):
+    def __init__(self, n_agencies, time=None):
         if time is None:
             time = now()
-        self.soul = self._cnew(numcalendars, long(time))
+        self.soul = self._cnew(n_agencies, long(time))
         
-    def calendar_day(self, authority):
-        soul = lgs.stateCalendarDay( self.soul, authority )
-        return CalendarDay.from_pointer( soul )
+    def service_period(self, agency):
+        soul = lgs.stateServicePeriod( self.soul, agency )
+        return ServicePeriod.from_pointer( soul )
         
-    def set_calendar_day(self, authority, cal):
-        if authority>self.numcalendars-1:
-            raise Exception("Authority index %d out of bounds"%authority)
+    def set_service_period(self, agency, sp):
+        if agency>self.num_agencies-1:
+            raise Exception("Agency index %d out of bounds"%agency)
         
-        lgs.stateSetCalendarDay( self.soul, c_int(authority), cal.soul)
+        lgs.stateSetServicePeriod( self.soul, c_int(agency), sp.soul)
         
     def destroy(self):
         self.check_destroyed()
@@ -387,17 +397,17 @@ class State(CShadow):
     def to_xml(self):
         self.check_destroyed()  
         
-        ret = "<state time='%s' weight='%s' dist_walked='%s' " \
+        ret = "<state time='%d' weight='%s' dist_walked='%s' " \
               "num_transfers='%s' prev_edge_type='%s' prev_edge_name='%s'>" % \
-              (asctime(gmtime(self.time)),
+               (self.time,
                self.weight,
                self.dist_walked,
               self.num_transfers,
                self.prev_edge_type,
                self.prev_edge_name)
-        for i in range(self.numcalendars):
-            if self.calendar_day(i) is not None:
-                ret += self.calendar_day(i).to_xml()
+        for i in range(self.num_agencies):
+            if self.service_period(i) is not None:
+                ret += self.service_period(i).to_xml()
         return ret + "</state>"
         
     time           = cproperty(lgs.stateGetTime, c_long, setter=lgs.stateSetTime)
@@ -406,7 +416,7 @@ class State(CShadow):
     num_transfers  = cproperty(lgs.stateGetNumTransfers, c_int, setter=lgs.stateSetNumTransfers)
     prev_edge_type = cproperty(lgs.stateGetPrevEdgeType, c_int) # should not use: setter=lgs.stateSetPrevEdgeType)
     prev_edge_name = cproperty(lgs.stateGetPrevEdgeName, c_char_p, setter=lgs.stateSetPrevEdgeName)
-    numcalendars   = cproperty(lgs.stateGetNumCalendars, c_int)
+    num_agencies     = cproperty(lgs.stateGetNumAgencies, c_int)
         
 
 class Vertex(CShadow):
@@ -686,14 +696,15 @@ class Link(EdgePayload):
         
 class Wait(EdgePayload):
     end = cproperty(lgs.waitGetEnd, c_long)
+    utcoffset = cproperty(lgs.waitGetUTCOffset, c_int)
     
-    def __init__(self, end):
-        self.soul = self._cnew( end )
+    def __init__(self, end, utcoffset):
+        self.soul = self._cnew( end, utcoffset )
         
     def to_xml(self):
         self.check_destroyed()
         
-        return "<Wait end='%ld' />"%self.end
+        return "<Wait end='%ld' utcoffset='%d' />"%(self.end,self.utcoffset)
     
 class Street(EdgePayload):
     length = cproperty(lgs.streetGetLength, c_double)
@@ -715,30 +726,34 @@ class TripHop(EdgePayload):
     arrive = cproperty( lgs.triphopArrive, c_int )
     transit = cproperty( lgs.triphopTransit, c_int )
     trip_id = cproperty( lgs.triphopTripId, c_char_p )
+    calendar = cproperty( lgs.triphopCalendar, c_void_p, ServiceCalendar )
+    timezone_offset = cproperty( lgs.triphopTimezoneOffset, c_int )
+    agency = cproperty( lgs.triphopAuthority, c_int )
+    service_id = cproperty( lgs.triphopServiceId, c_int )
 
     SEC_IN_HOUR = 3600
     SEC_IN_MINUTE = 60
     
-    def __init__(self, depart, arrive, trip_id):
-        self.soul = self._cnew(depart, arrive, trip_id)
+    def __init__(self, depart, arrive, trip_id, calendar, timezone_offset, agency, service_id ):
+        self.soul = lgs.triphopNew(depart, arrive, trip_id, calendar.soul, c_int(timezone_offset), c_int(agency), ServiceIdType(service_id))
     
     @classmethod
     def _daysecs_to_str(cls,daysecs):
         return "%02d:%02d"%(int(daysecs/cls.SEC_IN_HOUR), int(daysecs%cls.SEC_IN_HOUR/cls.SEC_IN_MINUTE))
 
     def to_xml(self):
-        return "<TripHop depart='%s' arrive='%s' transit='%s' trip_id='%s' />" % \
+        return "<TripHop depart='%s' arrive='%s' transit='%s' trip_id='%s' service_id='%d' agency='%d' timezone_offset='%d'/>" % \
                         (self._daysecs_to_str(self.depart),
                         self._daysecs_to_str(self.arrive),
-                        self.transit, self.trip_id)
+                        self.transit, self.trip_id,self.service_id,self.agency,self.timezone_offset)
     
 class TripHopSchedule(EdgePayload):
     
-    calendar = cproperty( lgs.thsGetCalendar, c_void_p, CalendarDay )
+    calendar = cproperty( lgs.thsGetCalendar, c_void_p, ServiceCalendar )
     timezone_offset = cproperty( lgs.thsGetTimezoneOffset, c_int )
     
-    def __init__(self, hops, service_id, calendar, timezone_offset, authority):
-        #TripHopSchedule* thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, int timezone_offset );
+    def __init__(self, hops, service_id, calendar, timezone_offset, agency):
+        #TripHopSchedule* thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, ServicePeriod* calendar, int timezone_offset );
         
         n = len(hops)
         departs = (c_int * n)()
@@ -749,7 +764,7 @@ class TripHopSchedule(EdgePayload):
             arrives[i] = hops[i][1]
             trip_ids[i] = c_char_p(hops[i][2])
             
-        self.soul = lgs.thsNew(departs, arrives, trip_ids, n, ServiceIdType(service_id), calendar.soul, c_int(timezone_offset), c_int(authority) )
+        self.soul = lgs.thsNew(departs, arrives, trip_ids, n, ServiceIdType(service_id), calendar.soul, c_int(timezone_offset), c_int(agency) )
     
     n = cproperty(lgs.thsGetN, c_int)
     service_id = cproperty(lgs.thsGetServiceId, c_int)
@@ -835,14 +850,15 @@ EdgePayload._cwalk_back = lgs.epWalkBack
 EdgePayload._ccollapse = ccast(lgs.epCollapse, EdgePayload)
 EdgePayload._ccollapse_back = ccast(lgs.epCollapseBack, EdgePayload)
 
-CalendarDay._cnew = lgs.calNew
-CalendarDay._cappend_day = ccast(lgs.calAppendDay, CalendarDay)
-CalendarDay._crewind = ccast(lgs.calRewind, CalendarDay)
-CalendarDay._cfast_forward = ccast(lgs.calFastForward, CalendarDay)
-CalendarDay._cday_of_or_after = ccast(lgs.calDayOfOrAfter, CalendarDay)
-CalendarDay._cday_of_or_before = ccast(lgs.calDayOfOrBefore, CalendarDay)
-CalendarDay._cnext = ccast(lgs.calNextDay, CalendarDay)
-CalendarDay._cprev = ccast(lgs.calPreviousDay, CalendarDay)
+ServicePeriod._cnew = lgs.spNew
+ServicePeriod._crewind = ccast(lgs.spRewind, ServicePeriod)
+ServicePeriod._cfast_forward = ccast(lgs.spFastForward, ServicePeriod)
+ServicePeriod._cnext = ccast(lgs.spNextPeriod, ServicePeriod)
+ServicePeriod._cprev = ccast(lgs.spPreviousPeriod, ServicePeriod)
+
+ServiceCalendar._cnew = lgs.scNew
+ServiceCalendar._cperiod_of_or_before = ccast(lgs.scPeriodOfOrBefore, ServicePeriod)
+ServiceCalendar._cperiod_of_or_after = ccast(lgs.scPeriodOfOrAfter, ServicePeriod)
 
 State._cnew = lgs.stateNew
 State._cdel = lgs.stateDestroy

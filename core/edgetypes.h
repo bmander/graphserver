@@ -26,9 +26,8 @@ typedef struct State {
    int           num_transfers;
    edgepayload_t prev_edge_type;
    char*         prev_edge_name;
-   //CalendarDay*  calendar_day;
-   int           numcalendars;
-   CalendarDay** calendars;
+   int           n_agencies;
+   ServicePeriod** service_periods;
 } State;
 
 State*
@@ -59,13 +58,13 @@ char*
 stateGetPrevEdgeName( State* this );
 
 int
-stateGetNumCalendars( State* this );
+stateGetNumAgencies( State* this );
 
-CalendarDay*
-stateCalendarDay( State* this, int authority );
+ServicePeriod*
+stateServicePeriod( State* this, int agency );
 
 void
-stateSetCalendarDay( State* this,  int authority, CalendarDay* cal );
+stateSetServicePeriod( State* this,  int agency, ServicePeriod* cal );
 
 void
 stateSetTime( State* this, long time );
@@ -139,10 +138,11 @@ linkGetName(Link* this);
 typedef struct Wait {
     edgepayload_t type;
     long end;
+    int utcoffset;
 } Wait;
 
 Wait*
-waitNew(long end);
+waitNew(long end, int utcoffset);
 
 void
 waitDestroy(Wait* tokill);
@@ -155,6 +155,9 @@ waitWalkBack(Wait* this, State* param, int transfer_penalty);
 
 long
 waitGetEnd(Wait* this);
+
+int
+waitGetUTCOffset(Wait* this);
 
 //---------------DECLARATIONS FOR STREET  CLASS---------------------
 
@@ -199,33 +202,33 @@ typedef struct TripHop {
   int arrive;
   int transit;
   char* trip_id;
-  TripHopSchedule* schedule;
+  ServiceCalendar* calendar;
+  int timezone_offset;
+  int agency;
+  ServiceId service_id;
 } TripHop;
 
 struct TripHopSchedule {
   edgepayload_t type;
   int n;
-  TripHop* hops;
+  TripHop** hops;
   ServiceId service_id;
-  CalendarDay* calendar;
+  ServiceCalendar* calendar;
   int timezone_offset; //number of seconds this schedule is offset from GMT, eg. -8*3600=-28800 for US West Coast
-  int authority;
+  int agency;
 };
 
 TripHopSchedule*
-thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, int timezone_offset, int authority );
+thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, ServiceCalendar* calendar, int timezone_offset, int agency );
 
 void
 thsDestroy(TripHopSchedule* this);
 
 TripHop*
-triphopNew( int depart, int arrive, char* trip_id );
+triphopNew( int depart, int arrive, char* trip_id, ServiceCalendar* calendar, int timezone_offset, int agency, ServiceId service_id );
 
 void
 triphopDestroy( TripHop* this );
-
-void
-triphopDestroy( TripHop* this);
 
 int
 triphopDepart( TripHop* this );
@@ -238,6 +241,18 @@ triphopTransit( TripHop* this );
 
 char *
 triphopTripId( TripHop* this );
+
+ServiceCalendar*
+triphopCalendar( TripHop* this );
+
+int
+triphopTimezoneOffset( TripHop* this );
+
+int
+triphopAuthority( TripHop* this );
+
+int
+triphopServiceId( TripHop* this );
 
 
 inline State*
@@ -277,7 +292,7 @@ thsGetServiceId(TripHopSchedule* this);
 TripHop*
 thsGetHop(TripHopSchedule* this, int i);
 
-CalendarDay*
+ServiceCalendar*
 thsGetCalendar(TripHopSchedule* this );
 
 int

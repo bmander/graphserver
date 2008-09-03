@@ -4,7 +4,7 @@
 
 //STATE FUNCTIONS
 State*
-stateNew(int numcalendars, long time) {
+stateNew(int n_agencies, long time) {
   State* ret = (State*)malloc( sizeof(State) );
   ret->time = time;
   ret->weight = 0;
@@ -12,12 +12,12 @@ stateNew(int numcalendars, long time) {
   ret->num_transfers = 0;
   ret->prev_edge_name = NULL;
   ret->prev_edge_type = PL_NONE;
-  ret->numcalendars = numcalendars;
-  ret->calendars = (CalendarDay**)malloc(numcalendars*sizeof(CalendarDay*)); //hash of strings->calendardays
+  ret->n_agencies = n_agencies;
+  ret->service_periods = (ServicePeriod**)malloc(n_agencies*sizeof(ServicePeriod*)); //hash of strings->calendardays
 
   int i;
-  for(i=0; i<numcalendars; i++) {
-      ret->calendars[i] = NULL;
+  for(i=0; i<n_agencies; i++) {
+      ret->service_periods[i] = NULL;
   }
 
   return ret;
@@ -28,8 +28,8 @@ stateDup( State* this ) {
   State* ret = (State*)malloc( sizeof(State) );
   memcpy( ret, this, sizeof( State ) );
 
-  ret->calendars = (CalendarDay**)malloc(this->numcalendars*sizeof(CalendarDay*)); //hash of strings->calendardays
-  memcpy( ret->calendars, this->calendars, this->numcalendars*sizeof(CalendarDay*));
+  ret->service_periods = (ServicePeriod**)malloc(this->n_agencies*sizeof(ServicePeriod*)); //hash of strings->calendardays
+  memcpy( ret->service_periods, this->service_periods, this->n_agencies*sizeof(ServicePeriod*));
 
   return ret;
 }
@@ -37,7 +37,7 @@ stateDup( State* this ) {
 //the State object does not own State#calendar
 void
 stateDestroy(State* this) {
-  free( this->calendars );
+  free( this->service_periods );
   free( this );
 }
 
@@ -60,10 +60,10 @@ char*
 stateGetPrevEdgeName( State* this ) { return this->prev_edge_name; }
 
 int
-stateGetNumCalendars( State* this ) { return this->numcalendars; }
+stateGetNumAgencies( State* this ) { return this->n_agencies; }
 
-CalendarDay*
-stateCalendarDay( State* this, int authority ) { return this->calendars[authority]; }
+ServicePeriod*
+stateServicePeriod( State* this, int agency ) { return this->service_periods[agency]; }
 
 void
 stateSetTime( State* this, long time ) { this->time = time; }
@@ -78,7 +78,7 @@ void
 stateSetNumTransfers( State* this, int n) { this->num_transfers = n; }
 
 void
-stateSetCalendarDay( State* this,  int authority, CalendarDay* cal ) { this->calendars[authority] = cal; }
+stateSetServicePeriod( State* this,  int agency, ServicePeriod* cal ) { this->service_periods[agency] = cal; }
 
 void
 stateSetPrevEdgeName( State* this, char* name ) { this->prev_edge_name = name; }
@@ -263,10 +263,11 @@ streetGetLength(Street* this) {
 
 //WAIT FUNCTIONS
 Wait*
-waitNew(long end) {
+waitNew(long end, int utcoffset) {
     Wait* ret = (Wait*)malloc(sizeof(Wait));
     ret->type = PL_WAIT;
     ret->end = end;
+    ret->utcoffset = utcoffset;
     
     return ret;
 }
@@ -281,15 +282,23 @@ waitGetEnd(Wait* this) {
     return this->end;
 }
 
+int
+waitGetUTCOffset(Wait* this) {
+    return this->utcoffset;
+}
+
 //TRIPHOP FUNCTIONS
 
 //tests the order of the hops, by terminus time, for use with sorting functions
 int hopcmp(const void* a, const void* b) {
-  TripHop* aa = (TripHop*)a;
-  TripHop* bb = (TripHop*)b;
-  if(aa->arrive < bb->arrive)
+  TripHop** aa = (TripHop**)a;
+  TripHop** bb = (TripHop**)b;
+  
+  TripHop* ac = *aa;
+  TripHop* bc = *bb;
+  if(ac->arrive < bc->arrive)
     return -1;
-  else if(aa->arrive > bb->arrive)
+  else if(ac->arrive > bc->arrive)
     return 1;
   else {
     return 0;
@@ -301,37 +310,29 @@ int hopcmp(const void* a, const void* b) {
  */
 
 TripHopSchedule*
-thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, CalendarDay* calendar, int timezone_offset, int authority ) {
+thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, ServiceCalendar* calendar, int timezone_offset, int agency ) {
   TripHopSchedule* ret = (TripHopSchedule*)malloc(sizeof(TripHopSchedule));
   ret->type = PL_TRIPHOPSCHED;
-  ret->hops = (TripHop*)malloc(n*sizeof(TripHop));
+  ret->hops = (TripHop**)malloc(n*sizeof(TripHop*));
   ret->n = n;
   ret->service_id = service_id;
   ret->calendar = calendar;
   ret->timezone_offset = timezone_offset;
-  ret->authority = authority;
+  ret->agency = agency;
 
   int i;
   for(i=0; i<n; i++) {
-    ret->hops[i].type = PL_TRIPHOP;
-    ret->hops[i].depart = departs[i];
-    ret->hops[i].arrive = arrives[i];
-    ret->hops[i].transit = arrives[i] - departs[i];
-    int tripid_len = strlen(trip_ids[i])+1;
-    //ret->hops[i].trip_id = trip_ids[i]; //need to malloc the tripid and copy things over
-    ret->hops[i].trip_id = (char*)malloc(sizeof(char)*tripid_len);
-    memcpy(ret->hops[i].trip_id, trip_ids[i], tripid_len);
-    ret->hops[i].schedule = ret;
+    ret->hops[i] = triphopNew( departs[i], arrives[i], trip_ids[i], calendar, timezone_offset, agency, service_id );
   }
 
   //make sure departure and arrival arrays are sorted, as they're subjected to a binsearch
-  qsort(ret->hops, n, sizeof(TripHop), hopcmp);
+  qsort(ret->hops, n, sizeof(TripHop*), hopcmp);
 
   return ret; // return NULL;
 }
 
 TripHop*
-triphopNew(int depart, int arrive, char* trip_id) {
+triphopNew(int depart, int arrive, char* trip_id, ServiceCalendar* calendar, int timezone_offset, int agency, ServiceId service_id) {
     TripHop* ret = (TripHop*)malloc(sizeof(TripHop));
     
     ret->type = PL_TRIPHOP;
@@ -341,21 +342,12 @@ triphopNew(int depart, int arrive, char* trip_id) {
     int n = strlen(trip_id)+1;
     ret->trip_id = (char*)malloc(sizeof(char)*(n));
     memcpy(ret->trip_id, trip_id, n);
-    ret->schedule = NULL;
+    ret->calendar = calendar;
+    ret->timezone_offset = timezone_offset;
+    ret->agency = agency;
+    ret->service_id = service_id;
     
     return ret;
-}
-
-inline long
-thsSecondsSinceMidnight( TripHopSchedule* this, State* param ) {
-    //difference between utc midnight and local midnight
-    long utc_offset = this->timezone_offset + param->calendars[this->authority]->daylight_savings;
-    //difference between local midnight and calendar day begin
-    long since_midnight_local = (param->calendars[this->authority]->begin_time+utc_offset)%SECONDS_IN_DAY;
-    //seconds since the calendar day began
-    long since_calday_begin = param->time - param->calendars[this->authority]->begin_time;
-    //seconds since local midnight
-    return since_midnight_local + since_calday_begin;
 }
 
 //GEOM FUNTIONS
@@ -410,7 +402,7 @@ thsPrintHops(TripHopSchedule* this) {
   int i;
   printf("--==--\n");
   for(i=0; i<this->n; i++) {
-    printf("Hop: %d, %d, %s\n", this->hops[i].depart, this->hops[i].arrive, this->hops[i].trip_id);
+    printf("Hop: %d, %d, %s\n", this->hops[i]->depart, this->hops[i]->arrive, this->hops[i]->trip_id);
   }
   printf("--==--\n");
 }
@@ -419,14 +411,15 @@ void
 thsDestroy(TripHopSchedule* this) {
     int i;
   	for(i=0; i<this->n; i++) {
-        free( this->hops[i].trip_id );
+        //free( this->hops[i]->trip_id );
+        triphopDestroy(this->hops[i]);
   	}
 
   	free(this->hops);
   	free(this);
 }
 
-CalendarDay*
+ServiceCalendar*
 thsGetCalendar(TripHopSchedule* this ) { return this->calendar; }
 
 void
@@ -462,8 +455,20 @@ triphopTransit( TripHop* this ) { return this->transit; }
 char *
 triphopTripId( TripHop* this ) { return this->trip_id; }
 
+ServiceCalendar*
+triphopCalendar( TripHop* this ) { return this->calendar; }
+
+int
+triphopTimezoneOffset( TripHop* this ) { return this->timezone_offset; }
+
+int
+triphopAuthority( TripHop* this ) { return this->agency; }
+
+int
+triphopServiceId( TripHop* this ) { return this->service_id; }
+
 TripHop*
-thsGetHop(TripHopSchedule* this, int i) { return &this->hops[i]; }
+thsGetHop(TripHopSchedule* this, int i) { return this->hops[i]; }
 
 
 // CUSTOM Payload Functions

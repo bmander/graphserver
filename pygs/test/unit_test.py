@@ -3,7 +3,8 @@ sys.path = [os.path.dirname(os.path.abspath(__file__)) + "/.."] + sys.path
 from graphserver.core import *
 from graphserver.engine import Engine
 import time
-    
+import unittest
+
 import os
 
 def get_mem_usage():
@@ -16,7 +17,7 @@ def get_mem_usage():
     return float(parsed_psout[3]), int( parsed_psout[4] )
 
 import csv
-class TestGraph:
+class TestGraph(unittest.TestCase):
     def test_basic(self):
         g = Graph()
         assert g
@@ -48,7 +49,7 @@ class TestGraph:
         g = Graph()
         v = g.add_vertex("double")
         assert v.label == "double"
-        print g.size == 1
+        assert g.size == 1
         v = g.add_vertex("double")
         assert g.size == 1
         assert v.label == "double"
@@ -217,10 +218,12 @@ class TestGraph:
         g.add_vertex("home")
         g.add_vertex("work")
         
-        cal = CalendarDay(0, 1*3600*24, [1,2], 0)
+        cal = ServiceCalendar()
+        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2], 0) )
+        
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0,authority=0)
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0,agency=0)
         
         g.add_edge("home", "work", ths )
         
@@ -242,10 +245,11 @@ class TestGraph:
         g.add_vertex("home")
         g.add_vertex("work")
         
-        cal = CalendarDay(0, 1*3600*24, [1,2], 0)
+        cal = ServiceCalendar()
+        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2], 0) )
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0,authority=0)
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0,agency=0)
         
         g.add_edge("home", "work", ths )
         
@@ -273,9 +277,7 @@ class TestGraph:
         
         sprime = e.walk(State(g.numauthorities,0))
         
-        print sprime
-        
-        assert str(sprime)=="<state time='Sun Jan  4 06:25:52 1970' weight='2147483647' dist_walked='240000.0' num_transfers='0' prev_edge_type='0' prev_edge_name='helloworld'></state>"
+        assert str(sprime)=="<state time='282352' weight='2147483647' dist_walked='240000.0' num_transfers='0' prev_edge_type='0' prev_edge_name='helloworld'></state>"
 
         g.destroy()
         
@@ -328,8 +330,9 @@ class TestGraph:
         g = Graph()
         
         rawhops = [(10,     20,'Foo to Bar')]
-        cal = CalendarDay(0, 10, [1], 0)
-        ths = TripHopSchedule(hops=rawhops, service_id=2, calendar=cal, timezone_offset=0,authority=0)
+        cal = ServiceCalendar()
+        cal.add_period( ServicePeriod(0, 10, [1], 0) )
+        ths = TripHopSchedule(hops=rawhops, service_id=2, calendar=cal, timezone_offset=0,agency=0)
         
         g.add_vertex("A")
         g.add_vertex("B")
@@ -338,7 +341,7 @@ class TestGraph:
         
         sp = g.shortest_path_tree("A", "B", State(g.numauthorities,0) )
         
-        print sp.vertices
+        assert sp.vertices
         
     def xtestx_shortest_path_bigweight(self):
         g = Graph()
@@ -397,11 +400,12 @@ class TestGraph:
         assert spt.get_vertex("Portland").incoming[0].payload.__class__ == Street
         spt.destroy()
         
-        cal = CalendarDay(0, 86400, [1,2], 0)
+        cal = ServiceCalendar()
+        cal.add_period( ServicePeriod(0, 86400, [1,2], 0) )
         rawhops = [(10,     20,'A'),
                    (15,     30,'B'),
                    (400,   430,'C')]
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0,authority=0)
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0,agency=0)
         
         g.add_edge( "Seattle-busstop", "Portland-busstop", ths )
         
@@ -447,11 +451,12 @@ class TestGraph:
         assert spt.get_vertex("Portland").outgoing[0].payload.__class__ == Street
         spt.destroy()
         
-        cal = CalendarDay(0, 86400, [1,2], 0)
+        cal = ServiceCalendar()
+        cal.add_period( ServicePeriod(0, 86400, [1,2], 0) )
         rawhops = [(10,     20,'A'),
                    (15,     30,'B'),
                    (400,   430,'C')]
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0,authority=0)
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0,agency=0)
         
         g.add_edge( "Seattle-busstop", "Portland-busstop", ths )
         
@@ -502,8 +507,8 @@ class TestGraph:
         spt = g.shortest_path_tree( vBallardAve, vLakeCityWay, State(g.numauthorities,0) )
         vertices, edges = spt.path( vLakeCityWay )
         
-        print spt.get_vertex("124175598").payload.time == 13684
-        print spt.get_vertex("124175598").payload.weight == 6547467
+        assert spt.get_vertex("124175598").payload.time == 13684
+        assert spt.get_vertex("124175598").payload.weight == 6547467
         
         assert( False not in [l==r for l,r in zip( [v.label for v in vertices], idealVertices )] )
         assert( False not in [l==r for l,r in zip( [e.payload.name for e in edges], idealEdges )] )
@@ -518,8 +523,8 @@ class TestGraph:
         spt = g.shortest_path_tree( vSandPointWay, vAirportWay, State(g.numauthorities,0) )
         vertices, edges = spt.path( vAirportWay )
         
-        print spt.get_vertex("60147448").payload.time == 21082
-        print spt.get_vertex("60147448").payload.weight == 17068232
+        assert spt.get_vertex("60147448").payload.time == 21082
+        assert spt.get_vertex("60147448").payload.weight == 17068232
         
         assert( False not in [l==r for l,r in zip( [v.label for v in vertices], idealVertices )] )
         assert( False not in [l==r for l,r in zip( [e.payload.name for e in edges], idealEdges )] )
@@ -605,8 +610,8 @@ class TestGraph:
 
 import time
 from random import randint
-class TestGraphPerformance:
-    def load_performance_test(self):
+class TestGraphPerformance(unittest.TestCase):
+    def test_load_performance(self):
         g = Graph()
         
         reader = csv.reader(open("map.csv"))
@@ -623,7 +628,7 @@ class TestGraphPerformance:
         print "Graph loaded in %f s; limit %f s"%(dt,limit)
         assert dt <= limit
         
-    def spt_performance_test(self):
+    def test_spt_performance(self):
         g = Graph()
         
         reader = csv.reader(open("map.csv"))
@@ -654,7 +659,7 @@ class TestGraphPerformance:
         print "average runtime is %f s; limit %f s"%(average,limit)
         assert average < limit
         
-    def stress_test(self):
+    def test_stress(self):
         g = Graph()
         
         reader = csv.reader(open("map.csv"))
@@ -687,7 +692,7 @@ class TestGraphPerformance:
         
         assert sum(changes) >= -1 #memory usage only increases in one iteration out of all
 
-class TestState:
+class TestState(unittest.TestCase):
     def test_basic(self):
         s = State(1,0)
         assert s.time == 0
@@ -696,8 +701,8 @@ class TestState:
         assert s.num_transfers == 0
         assert s.prev_edge_name == None
         assert s.prev_edge_type == 5
-        assert s.numcalendars == 1
-        assert s.calendar_day(0) == None
+        assert s.num_agencies == 1
+        assert s.service_period(0) == None
         
     def test_basic_multiple_calendars(self):
         s = State(2,0)
@@ -707,13 +712,13 @@ class TestState:
         assert s.num_transfers == 0
         assert s.prev_edge_name == None
         assert s.prev_edge_type == 5
-        assert s.numcalendars == 2
-        assert s.calendar_day(0) == None
-        assert s.calendar_day(1) == None
+        assert s.num_agencies == 2
+        assert s.service_period(0) == None
+        assert s.service_period(1) == None
 
     def test_set_cal(self):
         s = State(1,0)
-        cal = CalendarDay(0, 1*3600*24, [1,2], 0)
+        sp = ServicePeriod(0, 1*3600*24, [1,2], 0)
         
         try:
             s.set_calendar_day(1, cal)
@@ -721,13 +726,13 @@ class TestState:
         except:
             pass
         
-        s.set_calendar_day(0, cal)
+        s.set_service_period(0, sp)
         
-        calout = s.calendar_day(0)
+        spout = s.service_period(0)
         
-        assert calout.begin_time == 0
-        assert calout.end_time == 86400
-        assert calout.service_ids == [1,2]
+        assert spout.begin_time == 0
+        assert spout.end_time == 86400
+        assert spout.service_ids == [1,2]
         
     def test_destroy(self):
         s = State(1)
@@ -749,8 +754,8 @@ class TestState:
     def test_clone(self):
         
         s = State(1,0)
-        cal = CalendarDay(0, 1*3600*24, [1,2], 0)
-        s.set_calendar_day(0,cal)
+        sp = ServicePeriod(0, 1*3600*24, [1,2], 0)
+        s.set_service_period(0,sp)
         
         s2 = s.clone()
         
@@ -762,11 +767,11 @@ class TestState:
         assert s2.num_transfers == 0
         assert s2.prev_edge_name == None
         assert s2.prev_edge_type == 5
-        assert s2.numcalendars == 1
-        assert s2.calendar_day(0).to_xml()=="<calendar begin_time='Thu Jan  1 00:00:00 1970' end_time='Fri Jan  2 00:00:00 1970' service_ids='1,2'/>"
+        assert s2.num_agencies == 1
+        assert s2.service_period(0).to_xml() == "<ServicePeriod begin_time='0' end_time='86400' service_ids='1,2'/>"
 
-class TestStreet:
-    def street_test(self):
+class TestStreet(unittest.TestCase):
+    def test_street(self):
         s = Street("mystreet", 1.1)
         assert s.name == "mystreet"
         assert s.length == 1.1
@@ -778,7 +783,7 @@ class TestStreet:
         
         assert s.soul==None
         
-    def street_test_big_length(self):
+    def test_street_big_length(self):
         s = Street("longstreet", 240000)
         assert s.name == "longstreet"
         assert s.length == 240000
@@ -794,7 +799,7 @@ class TestStreet:
         assert after.dist_walked == 2
         assert after.prev_edge_type == 0
         assert after.prev_edge_name == "longstreet"
-        assert after.numcalendars == 0
+        assert after.num_agencies == 0
         
     def test_walk_back(self):
         s = Street("longstreet", 2)
@@ -806,9 +811,9 @@ class TestStreet:
         assert before.dist_walked == 2.0
         assert before.prev_edge_type == 0
         assert before.prev_edge_name == "longstreet"
-        assert before.numcalendars == 0
+        assert before.num_agencies == 0
         
-class TestPyPayload:
+class TestPyPayload(unittest.TestCase):
     def _minimal_graph(self):
         g = Graph()
         
@@ -882,7 +887,7 @@ class TestPyPayload:
         ed.payload.collapse_back(State(1,0))
 
 
-class TestLink:
+class TestLink(unittest.TestCase):
     def link_test(self):
         l = Link()
         assert l
@@ -894,7 +899,7 @@ class TestLink:
         
         assert l.soul==None
         
-    def name_test(self):
+    def test_name(self):
         l = Link()
         assert l.name == "LINK"
         
@@ -908,7 +913,7 @@ class TestLink:
         assert after.dist_walked==0
         assert after.prev_edge_type==3
         assert after.prev_edge_name=="LINK"
-        assert after.numcalendars == 1
+        assert after.num_agencies == 1
         
     def test_walk_back(self):
         l = Link()
@@ -920,15 +925,17 @@ class TestLink:
         assert before.dist_walked == 0.0
         assert before.prev_edge_type == 3
         assert before.prev_edge_name == "LINK"
-        assert before.numcalendars == 1
+        assert before.num_agencies == 1
 
 from graphserver.core import Wait
-class TestWait:
-    def wait_test(self):
+class TestWait(unittest.TestCase):
+    def test_wait(self):
         waitend = 100
-        w = Wait(waitend)
+        utcoffset = 0
+        w = Wait(waitend, utcoffset)
         assert w.end == waitend
-        assert w.to_xml() == "<Wait end='100' />"
+        assert w.utcoffset == utcoffset
+        assert w.to_xml() == "<Wait end='100' utcoffset='0' />"
 
         s = State(1,0)
         sprime = w.walk(s)
@@ -939,19 +946,38 @@ class TestWait:
         sprime = w.walk_back(s)
         assert sprime.time == 100
         assert sprime.weight == 50
+        
+        s = State(1, 86400)
+        sprime = w.walk(s)
+        assert sprime.time == 86500
+        assert sprime.weight == 100
 
         w.destroy()
+        
+        w = Wait(100, -20)
+        assert w.end == 100
+        assert w.utcoffset == -20
+        s = State(1, 86400)
+        sprime = w.walk(s)
+        print sprime.weight
 
 
-class TestTripHop:
+class TestTripHop(unittest.TestCase):
     
-    def triphop_test(self):
-        th = TripHop(25, 100, "foo")
+    def test_triphop(self):
+        sc = ServiceCalendar()
+        sc.add_period( ServicePeriod( 0, 86400, [1], 0) )
+        
+        th = TripHop(25, 100, "foo", sc, timezone_offset=0, agency=0, service_id=1)
 
         assert th.depart == 25
         assert th.arrive == 100
         assert th.transit == 75
         assert th.trip_id == "foo"
+        assert th.calendar.head.begin_time==0
+        assert th.timezone_offset == 0
+        assert th.agency == 0
+        assert th.service_id == 1
 
         s = State(1,0)
         sprime = th.walk(s)
@@ -963,15 +989,35 @@ class TestTripHop:
         assert sprime
         assert sprime.time==25
         assert sprime.weight==175
+        
+    def test_unixtime(self):
+        sc = ServiceCalendar()
+        sc.add_period( ServicePeriod( 0,86399,[1], 0) )
+        sc.add_period( ServicePeriod( 86400, 86400+86399, [1], 0) )
+        
+        th = TripHop(25,100,"foo",sc, timezone_offset=0, agency=0, service_id=1)
+        
+        time = 25+86400
+        
+        s = State(1,time)  
+        sprime = th.walk(s)
+        assert sprime.weight==75
+        assert sprime.time==time+75
 
-class TestTriphopSchedule:
+class TestTriphopSchedule(unittest.TestCase):
     
-    def triphop_schedule_test(self):
+    def setUp(self):
+        pass
+        
+    def tearDown(self):
+        pass
+    
+    def test_triphop_schedule(self):
         
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
         # using a tuple
-        ths = TripHopSchedule(rawhops, 1, CalendarDay(0, 1*3600*24, [1,2], 0), 0, authority=0)
+        ths = TripHopSchedule(rawhops, 1, ServicePeriod(0, 1*3600*24, [1,2], 0), 0, agency=0)
         
         assert ths.timezone_offset == 0
         
@@ -986,13 +1032,14 @@ class TestTriphopSchedule:
                                
         assert(ths.triphops[0].trip_id == 'Foo to Bar')
         assert(len(ths.triphops) == 2)
-        assert str(ths)=="<TripHopSchedule service_id='1'><TripHop depart='00:00' arrive='01:00' transit='3600' trip_id='Foo to Bar' /><TripHop depart='01:00' arrive='02:00' transit='3600' trip_id='Bar to Cow' /></TripHopSchedule>"
+        assert str(ths)=="<TripHopSchedule service_id='1'><TripHop depart='00:00' arrive='01:00' transit='3600' trip_id='Foo to Bar' service_id='1' agency='0' timezone_offset='0'/><TripHop depart='01:00' arrive='02:00' transit='3600' trip_id='Bar to Cow' service_id='1' agency='0' timezone_offset='0'/></TripHopSchedule>"
     
     def test_destroy(self):
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
-        cal = CalendarDay(0, 1*3600*24, [1,2], 0)
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, authority=0)
+        cal = ServiceCalendar()
+        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2], 0) )
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
         
         ths.destroy()
         
@@ -1001,16 +1048,19 @@ class TestTriphopSchedule:
     def test_get_calendar(self):
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
-        cal = CalendarDay(0, 1*3600*24, [1,2], 0)
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, authority=0)
+        cal = ServiceCalendar()
+        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2], 0) )
         
-        assert ths.calendar.end_time==86400
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
+        
+        assert ths.calendar.head.end_time==86400
         
     def test_get_next_hop(self):
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
-        cal = CalendarDay(0, 1*3600*24, [1,2], 0)
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, authority=0)
+        cal = ServiceCalendar()
+        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2], 0) )
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
         
         assert ths.get_next_hop( 0 ).trip_id == "Foo to Bar"
         assert ths.get_next_hop( 1 ).trip_id == "Bar to Cow"
@@ -1020,8 +1070,9 @@ class TestTriphopSchedule:
     def test_get_last_hop(self):
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
-        cal = CalendarDay(0, 1*3600*24, [1,2], 0)
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, authority=0)
+        cal = ServiceCalendar()
+        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2], 0) )
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
         
         assert ths.get_last_hop( 0 ) == None
         assert ths.get_last_hop( 3600 ).trip_id == "Foo to Bar"
@@ -1033,8 +1084,9 @@ class TestTriphopSchedule:
     def test_walk(self):
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
-        cal = CalendarDay(0, 1*3600*24, [1,2], 0)
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, authority=0)
+        cal = ServiceCalendar()
+        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2], 0) )
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
         
         s = ths.walk(State(2,0))
         
@@ -1044,34 +1096,36 @@ class TestTriphopSchedule:
         assert s.num_transfers == 1
         assert s.prev_edge_type == 2
         assert s.prev_edge_name == "Foo to Bar"
-        assert s.numcalendars == 2
-        assert s.calendar_day(0).service_ids == [1,2]
-        assert s.calendar_day(0).begin_time == 0
-        assert s.calendar_day(0).end_time == 86400
-        assert s.calendar_day(1) == None
-        assert str(s) == "<state time='Thu Jan  1 01:00:00 1970' weight='3600' dist_walked='0.0' num_transfers='1' prev_edge_type='2' prev_edge_name='Foo to Bar'><calendar begin_time='Thu Jan  1 00:00:00 1970' end_time='Fri Jan  2 00:00:00 1970' service_ids='1,2'/></state>"
+        assert s.num_agencies == 2
+        assert s.service_period(0).service_ids == [1,2]
+        assert s.service_period(0).begin_time == 0
+        assert s.service_period(0).end_time == 86400
+        assert s.service_period(1) == None
+        assert str(s) == "<state time='3600' weight='3600' dist_walked='0.0' num_transfers='1' prev_edge_type='2' prev_edge_name='Foo to Bar'><ServicePeriod begin_time='0' end_time='86400' service_ids='1,2'/></state>"
         
         rawhops = [(0,     1*3600,'auth1trip0'),
                    (1*3600,2*3600,'auth1trip1')]
-        cal = CalendarDay(0, 1*3600*24, [3,4], 0)
-        ths = TripHopSchedule(hops=rawhops, service_id=3, calendar=cal, timezone_offset=0, authority=1)
+        cal = ServiceCalendar()
+        cal.add_period( ServicePeriod(0, 1*3600*24, [3,4], 0) )
+        ths = TripHopSchedule(hops=rawhops, service_id=3, calendar=cal, timezone_offset=0, agency=1)
         
         sfinal = ths.walk(s)
         
         assert sfinal.time == 7200
-        assert sfinal.weight == 7203
+        assert sfinal.weight == 7200
         assert sfinal.dist_walked == 0.0
         assert sfinal.prev_edge_type == 2
         assert sfinal.prev_edge_name == "auth1trip1"
-        assert sfinal.calendar_day(0).service_ids == [1,2]
-        assert sfinal.calendar_day(1).service_ids == [3,4]
+        assert sfinal.service_period(0).service_ids == [1,2]
+        assert sfinal.service_period(1).service_ids == [3,4]
     
     
     def test_walk_back(self):
         rawhops = [(1*3600,2*3600,'Foo to Bar'),
                    (2*3600,3*3600,'Bar to Cow')]
-        cal = CalendarDay(0, 1*3600*24, [1,2], 0)
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, authority=0)
+        cal = ServiceCalendar()
+        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2], 0) )
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
         
         assert ths.walk_back(State(1,0)) == None
         assert ths.walk_back(State(1,2*3600-1)) == None
@@ -1083,57 +1137,59 @@ class TestTriphopSchedule:
         assert s.dist_walked == 0.0
         assert s.num_transfers == 1
         assert s.prev_edge_name == "Bar to Cow"
-        assert s.numcalendars == 2
-        assert str(s.calendar_day(0)) == "<calendar begin_time='Thu Jan  1 00:00:00 1970' end_time='Fri Jan  2 00:00:00 1970' service_ids='1,2'/>"
-        assert s.calendar_day(0).service_ids == [1,2]
-        assert s.calendar_day(0).begin_time == 0
-        assert s.calendar_day(0).end_time == 86400
-        assert s.calendar_day(1) == None
+        assert s.num_agencies == 2
+        assert str(s.service_period(0)) == "<ServicePeriod begin_time='0' end_time='86400' service_ids='1,2'/>"
+        assert s.service_period(0).service_ids == [1,2]
+        assert s.service_period(0).begin_time == 0
+        assert s.service_period(0).end_time == 86400
+        assert s.service_period(1) == None
         
         rawhops = [(1*3600,2*3600,'auth1trip0'),
                    (2*3600,3*3600,'auth1trip1')]
-        cal = CalendarDay(0, 1*3600*24, [3,4], 0)
-        ths = TripHopSchedule(hops=rawhops, service_id=3, calendar=cal, timezone_offset=0, authority=1)
+        cal = ServiceCalendar()
+        cal.add_period( ServicePeriod(0, 1*3600*24, [3,4], 0) )
+        ths = TripHopSchedule(hops=rawhops, service_id=3, calendar=cal, timezone_offset=0, agency=1)
         
         sfinal = ths.walk_back(s)
         
         assert sfinal.time == 3600
-        assert sfinal.weight == 7203
+        assert sfinal.weight == 7200
         assert sfinal.dist_walked == 0.0
         assert sfinal.num_transfers == 2
         assert sfinal.prev_edge_type == 2
         assert sfinal.prev_edge_name == "auth1trip0"
-        assert sfinal.numcalendars == 2
-        assert str(sfinal.calendar_day(0))=="<calendar begin_time='Thu Jan  1 00:00:00 1970' end_time='Fri Jan  2 00:00:00 1970' service_ids='1,2'/>"
-        assert str(sfinal.calendar_day(1))=="<calendar begin_time='Thu Jan  1 00:00:00 1970' end_time='Fri Jan  2 00:00:00 1970' service_ids='3,4'/>"
+        assert sfinal.num_agencies == 2
+        assert str(sfinal.service_period(0))=="<ServicePeriod begin_time='0' end_time='86400' service_ids='1,2'/>"
+        assert str(sfinal.service_period(1))=="<ServicePeriod begin_time='0' end_time='86400' service_ids='3,4'/>"
     
     
     def test_walk_wrong_day(self):
         rawhops = [(10,     20,'Foo to Bar')]
-        cal = CalendarDay(0, 10, [1], 0)
-        ths = TripHopSchedule(hops=rawhops, service_id=2, calendar=cal, timezone_offset=0, authority=0)
+        cal = ServiceCalendar()
+        cal.add_period( ServicePeriod(0, 10, [1], 0) )
+        ths = TripHopSchedule(hops=rawhops, service_id=2, calendar=cal, timezone_offset=0, agency=0)
         
         s = ths.walk(State(1,0))
         
         print s == None
     
     def test_collapse_wrong_day(self):
+
+        cal = ServiceCalendar()
+        cal.add_period( ServicePeriod(0, 10, [1], 0) )
         rawhops = [(10,     20,'Foo to Bar')]
-        cal = CalendarDay(0, 10, [1], 0)
-        ths = TripHopSchedule(hops=rawhops, service_id=2, calendar=cal, timezone_offset=0, authority=0)
+        ths = TripHopSchedule(hops=rawhops, service_id=2, calendar=cal, timezone_offset=0, agency=0)
         
         th = ths.collapse(State(1,0))
         
-        assert th==None
-    
-
-        
+        assert th == None
     
     def test_collapse(self):
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
-        cal = CalendarDay(0, 1*3600*24, [1,2], 0)
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, authority=0)
+        cal = ServiceCalendar()
+        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2], 0) )
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
         
         th = ths.collapse(State(1,0))
         
@@ -1143,11 +1199,11 @@ class TestTriphopSchedule:
         assert th.trip_id == "Foo to Bar"
     
 
-class TestListNode:
-    def list_node_test(self):
+class TestListNode(unittest.TestCase):
+    def test_list_node(self):
         l = ListNode()
 
-class TestVertex:
+class TestVertex(unittest.TestCase):
     def test_basic(self):
         v=Vertex("home")
         assert v
@@ -1181,113 +1237,147 @@ class TestVertex:
         v = Vertex("home")
         assert v.to_xml() == "<Vertex degree_out='0' degree_in='0' label='home'/>"
 
-class TestCalendarDay:
-    def calendarday_test(self):
-        c = CalendarDay(0, 1*3600*24, [1,2], 0)
+class TestServicePeriod(unittest.TestCase):
+    def test_service_period(self):
+        c = ServicePeriod(0, 1*3600*24, [1,2], 0)
         assert(c.begin_time == 0)
         assert(c.end_time == 1*3600*24)
         assert(len(c.service_ids) == 2)
         assert(c.service_ids == [1,2])
-        print c
-        print c.append_day(c.end_time+1, c.end_time+1*3600*24, [3,4,5], 0)
-        assert(c.next.service_ids == [3,4,5])
-        print c.next
-        assert(c.previous == None)
-        assert(c.next.previous.soul == c.soul)
-        assert(c.fast_forward().soul == c.next.soul)
-        assert(c.next.rewind().soul == c.soul)
         
-        return c
+    def test_fast_forward_rewind(self):
+        cc = ServiceCalendar()
+        cc.add_period( ServicePeriod( 0, 100, [1,2], 0 ) )
+        cc.add_period( ServicePeriod( 101, 200, [3,4], 0 ) )
+        cc.add_period( ServicePeriod( 201, 300, [5,6], 0 ) )
+        
+        hh = cc.head
+        ff = hh.fast_forward()
+        assert ff.begin_time==201
+        pp = ff.rewind()
+        assert pp.begin_time==0
+        
+    def test_midnight_datum(self):
+        c = ServicePeriod( 0, 1*3600*24, [1], 0 )
+        
+        assert c.datum_midnight(timezone_offset=0) == 0
+        
+        c = ServicePeriod( 500, 1000, [1], 0 )
+        
+        assert c.datum_midnight(timezone_offset=0) == 0
+        
+        c = ServicePeriod( 1*3600*24, 2*3600*24, [1], 0 )
+        
+        assert c.datum_midnight(timezone_offset=0) == 86400
+        assert c.datum_midnight(timezone_offset=-3600) == 3600
+        assert c.datum_midnight(timezone_offset=3600) == 82800
+        
+        c = ServicePeriod( 1*3600*24+50, 1*3600*24+60, [1], 0 )
+        
+        assert c.datum_midnight(timezone_offset=0) == 86400
+        assert c.datum_midnight(timezone_offset=-3600) == 3600
+        
+    def test_normalize_time(self):
+        c = ServicePeriod(0, 1*3600*24, [1,2], 0)
+        
+        assert c.normalize_time( 0, 0 ) == 0
+        assert c.normalize_time( 0, 100 ) == 100
 
-class TestCalendar:
+class TestServiceCalendar(unittest.TestCase):
     def test_basic(self):
-        c = Calendar()
+        c = ServiceCalendar()
         assert( c.head == None )
-        assert( c.tail == None )
         
-        assert( c.day_of_or_before(0) == None )
-        assert( c.day_of_or_after(0) == None )
+        assert( c.period_of_or_before(0) == None )
+        assert( c.period_of_or_after(0) == None )
         
     def test_single(self):
-        c = Calendar()
-        c.add_day(0,1000,['a','b','c'])
+        c = ServiceCalendar()
+        c.add_period( ServicePeriod( 0,1000,[1,2,3],0 ) )
         
         assert c.head
         assert c.head.begin_time == 0
         assert c.head.end_time == 1000
         assert c.head.service_ids == [1,2,3]
-        assert c.tail
-        assert c.tail.begin_time == 0
-        assert c.tail.end_time == 1000
-        assert c.tail.service_ids == [1,2,3]
         
-        assert c.day_of_or_before(-1) == None
-        assert c.day_of_or_before(0).begin_time==0
-        assert c.day_of_or_before(500).begin_time==0
-        assert c.day_of_or_before(1000).begin_time==0
-        assert c.day_of_or_before(50000).begin_time==0
+        assert c.period_of_or_before(-1) == None
+        assert c.period_of_or_before(0).begin_time==0
+        assert c.period_of_or_before(500).begin_time==0
+        assert c.period_of_or_before(1000).begin_time==0
+        assert c.period_of_or_before(50000).begin_time==0
         
-        assert c.day_of_or_after(-1).begin_time==0
-        assert c.day_of_or_after(0).begin_time==0
-        assert c.day_of_or_after(500).begin_time==0
-        assert c.day_of_or_after(1000).begin_time==0
-        assert c.day_of_or_after(1001) == None
+        assert c.period_of_or_after(-1).begin_time==0
+        assert c.period_of_or_after(0).begin_time==0
+        assert c.period_of_or_after(500).begin_time==0
+        assert c.period_of_or_after(1000).begin_time==0
+        assert c.period_of_or_after(1001) == None
         
     def test_multiple(self):
-        c = Calendar()
-        c.add_day(0,1000,[1,2,3])
-        c.add_day(1001,2000,[3,4,5])
+        c = ServiceCalendar()
+        # out of order
+        c.add_period( ServicePeriod(1001,2000,[3,4,5],0) )
+        c.add_period( ServicePeriod(0,1000,[1,2,3],0) )
         
         assert c.head
         assert c.head.begin_time == 0
         assert c.head.end_time == 1000
         assert c.head.service_ids == [1,2,3]
-        assert c.tail
-        assert c.tail.begin_time == 1001
-        assert c.tail.end_time == 2000
-        assert c.tail.service_ids == [3,4,5]
         
         assert c.head.previous == None
         assert c.head.next.begin_time == 1001
         
-        assert c.tail.next == None
-        assert c.tail.previous.begin_time == 0
+        assert c.period_of_or_before(-1) == None
+        assert c.period_of_or_before(0).begin_time == 0
+        assert c.period_of_or_before(1000).begin_time == 0
+        assert c.period_of_or_before(1001).begin_time == 1001
+        assert c.period_of_or_before(2000).begin_time == 1001
+        assert c.period_of_or_before(2001).begin_time == 1001
         
-        assert c.day_of_or_before(-1) == None
-        assert c.day_of_or_before(0).begin_time == 0
-        assert c.day_of_or_before(1000).begin_time == 0
-        assert c.day_of_or_before(1001).begin_time == 1001
-        assert c.day_of_or_before(2000).begin_time == 1001
-        assert c.day_of_or_before(2001).begin_time == 1001
-        
-        assert c.day_of_or_after(-1).begin_time == 0
-        assert c.day_of_or_after(0).begin_time == 0
-        assert c.day_of_or_after(1000).begin_time == 0
-        assert c.day_of_or_after(1001).begin_time == 1001
-        assert c.day_of_or_after(2000).begin_time == 1001
-        assert c.day_of_or_after(2001) == None
+        assert c.period_of_or_after(-1).begin_time == 0
+        assert c.period_of_or_after(0).begin_time == 0
+        assert c.period_of_or_after(1000).begin_time == 0
+        assert c.period_of_or_after(1001).begin_time == 1001
+        assert c.period_of_or_after(2000).begin_time == 1001
+        assert c.period_of_or_after(2001) == None
         
     def test_add_three(self):
-        c = Calendar()
-        c.add_day(0,10,[1,2,3])
-        c.add_day(11,15,[3,4,5])
-        c.add_day(16,20,[4,5,6])
+        c = ServiceCalendar()
+        c.add_period( ServicePeriod(0,10,[1,2,3],0) )
+        #out of order
+        c.add_period( ServicePeriod(16,20,[4,5,6],0) )
+        c.add_period( ServicePeriod(11,15,[3,4,5],0) )
+        
         
         assert c.head.next.next.begin_time == 16
-        assert c.tail.previous.previous.begin_time == 0
         
-    def test_invalid_add(self):
-        c = Calendar()
-        c.add_day(0,1000,[1,2,3])
-        try:
-            c.add_day(900,1000,[2,3,4])
-            assert False #should pop exception by now
-        except:
-            pass
+    def test_periods(self):
+        c = ServiceCalendar()
+        
+        c.add_period( ServicePeriod(0,10,[1,2,3],0) )
+        #out of order
+        c.add_period( ServicePeriod(16,20,[4,5,6],0) )
+        c.add_period( ServicePeriod(11,15,[3,4,5],0) )
+        
+        assert [x.begin_time for x in c.periods] == [0,11,16]
+            
+    def test_to_xml(self):
+        c = ServiceCalendar()
+        
+        c.add_period( ServicePeriod(0,10,[1,2,3],0) )
+        #out of order
+        c.add_period( ServicePeriod(16,20,[4,5,6],0) )
+        c.add_period( ServicePeriod(11,15,[3,4,5],0) )
+        
+        assert c.to_xml() == "<ServiceCalendar><ServicePeriod begin_time='0' end_time='10' service_ids='1,2,3'/><ServicePeriod begin_time='11' end_time='15' service_ids='3,4,5'/><ServicePeriod begin_time='16' end_time='20' service_ids='4,5,6'/></ServiceCalendar>"
 
-from graphserver.ext.osm.osm import OSM
-from graphserver.ext.osm import OSMLoadable
-class TestEngine:
+
+class TestEngine(unittest.TestCase):
+    def test_basic(self):
+        gg = Graph()
+        eng = Engine(gg)
+        
+        assert eng
+        
     def test_basic(self):
         gg = Graph()
         eng = Engine(gg)
@@ -1324,10 +1414,9 @@ class TestEngine:
         
         eng = Engine(gg)
         
-        print eng.walk_edges("A", time=0)
-        assert eng.walk_edges("A", time=0) == "<?xml version='1.0'?><vertex><state time='Thu Jan  1 00:00:00 1970' weight='0' dist_walked='0.0' num_transfers='0' prev_edge_type='5' prev_edge_name='None'></state><outgoing_edges><edge><destination label='C'><state time='Thu Jan  1 00:00:11 1970' weight='22' dist_walked='10.0' num_transfers='0' prev_edge_type='0' prev_edge_name='4'></state></destination><payload><Street name='4' length='10.000000' /></payload></edge><edge><destination label='B'><state time='Thu Jan  1 00:00:11 1970' weight='22' dist_walked='10.0' num_transfers='0' prev_edge_type='0' prev_edge_name='1'></state></destination><payload><Street name='1' length='10.000000' /></payload></edge></outgoing_edges></vertex>"
+        assert eng.walk_edges("A", time=0) == "<?xml version='1.0'?><vertex><state time='0' weight='0' dist_walked='0.0' num_transfers='0' prev_edge_type='5' prev_edge_name='None'></state><outgoing_edges><edge><destination label='C'><state time='11' weight='22' dist_walked='10.0' num_transfers='0' prev_edge_type='0' prev_edge_name='4'></state></destination><payload><Street name='4' length='10.000000' /></payload></edge><edge><destination label='B'><state time='11' weight='22' dist_walked='10.0' num_transfers='0' prev_edge_type='0' prev_edge_name='1'></state></destination><payload><Street name='1' length='10.000000' /></payload></edge></outgoing_edges></vertex>"
 
-    def outgoing_edges_entire_osm(self):
+    def xtest_outgoing_edges_entire_osm(self):
         gg = Graph()
         osm = OSM("sf.osm")
         add_osm_to_graph(gg,osm)
@@ -1336,7 +1425,7 @@ class TestEngine:
         
         assert eng.outgoing_edges("65287655") == "<?xml version='1.0'?><edges><edge><dest><Vertex degree_out='4' degree_in='4' label='65287660'/></dest><payload><Street name='8915843-0' length='218.044876' /></payload></edge></edges>"
         
-    def walk_edges_entire_osm(self):
+    def xtest_walk_edges_entire_osm(self):
         gg = Graph()
         osm = OSM("sf.osm")
         add_osm_to_graph(gg,osm)
@@ -1345,13 +1434,27 @@ class TestEngine:
         
         assert eng.walk_edges("65287655", time=0) == "<?xml version='1.0'?><vertex><state time='Thu Jan  1 00:00:00 1970' weight='0' dist_walked='0.0' num_transfers='0' prev_edge_type='5' prev_edge_name='None'></state><outgoing_edges><edge><destination label='65287660'><state time='Thu Jan  1 00:04:16 1970' weight='512' dist_walked='218.044875866' num_transfers='0' prev_edge_type='0' prev_edge_name='8915843-0'></state></destination><payload><Street name='8915843-0' length='218.044876' /></payload></edge></outgoing_edges></vertex>"
 
-        
-#the problem with this code snippet is that it runs _all_ tests in he same directory, some of which are slow stress tests
-#if __name__=='__main__':
-#    import nose
-#    nose.main()
+if __name__ == '__main__':
+    tl = unittest.TestLoader()
+    
+    testables = [\
+                 TestGraph,
+                 TestGraphPerformance,
+                 TestState,
+                 TestPyPayload,
+                 TestLink,
+                 TestWait,
+                 TestTripHop,
+                 TestTriphopSchedule,
+                 TestStreet,
+                 TestListNode,
+                 TestVertex,
+                 TestServicePeriod,
+                 TestServiceCalendar,
+                 TestEngine,
+                 ]
 
-if __name__=='__main__':
-    mod = TestTripHop()
-    mod.triphop_test()
+    for testable in testables:
+        suite = tl.loadTestsFromTestCase(testable)
+        unittest.TextTestRunner(verbosity=2).run(suite)
 

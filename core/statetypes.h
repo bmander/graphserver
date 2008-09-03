@@ -3,71 +3,90 @@
 
 #include <stdlib.h>
 #include <string.h>
+#define SECS_IN_DAY 86400
 
 typedef int ServiceId;
-typedef struct CalendarDay CalendarDay;
+typedef struct ServicePeriod ServicePeriod;
+typedef struct ServiceCalendar ServiceCalendar;
 
-struct CalendarDay {
-  long begin_time; //the first second on which the day is valid
-  long end_time;   //the last second on which the day is valid
+struct ServiceCalendar {
+    ServicePeriod* head;
+} ; 
+
+struct ServicePeriod {
+  long begin_time; //the first second on which the service period is valid
+  long end_time;   //the last second on which the service_period is valid
   int n_service_ids;
   ServiceId* service_ids;
   int daylight_savings; //number of seconds to shift local time this day
                         //typically +3600 (one hour) in the summer months, 0 in the winter months
-  CalendarDay* prev_day;
-  CalendarDay* next_day;
+  ServicePeriod* prev_period;
+  ServicePeriod* next_period;
 } ;
 
-
-CalendarDay*
-calNew( long begin_time, long end_time, int n_service_ids, ServiceId* service_ids, int daylight_savings );
-
-CalendarDay*
-calAppendDay( CalendarDay* this, long begin_time, long end_time, int n_service_ids, ServiceId* service_ids, int daylight_savings);
+ServiceCalendar*
+scNew( );
 
 void
-calDestroy(CalendarDay* this);
+scAddPeriod( ServiceCalendar* this, ServicePeriod* period );
+
+ServicePeriod*
+scPeriodOfOrAfter( ServiceCalendar* this, long time );
+
+ServicePeriod*
+scPeriodOfOrBefore( ServiceCalendar* this, long time );
+
+ServicePeriod*
+scHead( ServiceCalendar* this );
 
 void
-calDestroyDay( CalendarDay* this );
+scDestroy( ServiceCalendar* this );
+
+ServicePeriod*
+spNew( long begin_time, long end_time, int n_service_ids, ServiceId* service_ids, int daylight_savings );
+
+void
+spDestroyPeriod( ServicePeriod* this );
 
 int
-calDayHasServiceId( CalendarDay* this, ServiceId service_id);
+spPeriodHasServiceId( ServicePeriod* this, ServiceId service_id);
 
-CalendarDay*
-calRewind( CalendarDay* this );
+ServicePeriod*
+spRewind( ServicePeriod* this );
 
-CalendarDay*
-calFastForward( CalendarDay* this );
+ServicePeriod*
+spFastForward( ServicePeriod* this );
 
-CalendarDay*
-calDayOfOrAfter( CalendarDay* this, long time );
 
-CalendarDay*
-calDayOfOrBefore( CalendarDay* this, long time );
 
 long
-calBeginTime( CalendarDay* this );
+spBeginTime( ServicePeriod* this );
 
 long
-calEndTime( CalendarDay* this );
+spEndTime( ServicePeriod* this );
 
 ServiceId*
-calServiceIds( CalendarDay* this, int* count );
+spServiceIds( ServicePeriod* this, int* count );
 
 int 
-calDaylightSavings( CalendarDay* this );
+spDaylightSavings( ServicePeriod* this );
 
-CalendarDay*
-calNextDay(CalendarDay* this);
+ServicePeriod*
+spNextPeriod(ServicePeriod* this);
 
-CalendarDay*
-calPreviousDay(CalendarDay* this);
-
-void
-calPrint( CalendarDay* this );
+ServicePeriod*
+spPreviousPeriod(ServicePeriod* this);
 
 void
-calPrintDay( CalendarDay* this );
+spPrint( ServicePeriod* this );
+
+void
+spPrintPeriod( ServicePeriod* this );
+
+inline long
+spDatumMidnight( ServicePeriod* this, int timezone_offset ) ;
+
+inline long
+spNormalizeTime( ServicePeriod* this, int timezone_offset, long time );
 
 #endif
