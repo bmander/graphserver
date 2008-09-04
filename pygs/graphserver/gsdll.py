@@ -108,7 +108,7 @@ pycapi(lgs.gShortestPathTreeRetro,c_void_p, [c_void_p, c_char_p, c_char_p, c_voi
 pycapi(lgs.gSize,c_void_p, [c_long])
 
 # SERVICE PERIOD API 
-pycapi(lgs.spNew, c_void_p, [c_long, c_long, c_int, c_void_p, c_int])
+pycapi(lgs.spNew, c_void_p, [c_long, c_long, c_int, c_void_p])
 pycapi(lgs.spRewind, c_void_p, [c_void_p])
 pycapi(lgs.spFastForward, c_void_p, [c_void_p])
 pycapi(lgs.spDatumMidnight, c_long, [c_void_p, c_int])

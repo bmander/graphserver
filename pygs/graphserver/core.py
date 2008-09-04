@@ -238,12 +238,10 @@ class ServicePeriod(CShadow):
 
     begin_time = cproperty(lgs.spBeginTime, c_long)
     end_time = cproperty(lgs.spEndTime, c_long)
-    daylight_savings = cproperty(lgs.spDaylightSavings, c_int)
-    
 
-    def __init__(self, begin_time, end_time, service_ids, daylight_savings):
+    def __init__(self, begin_time, end_time, service_ids):
         n, sids = ServicePeriod._py2c_service_ids(service_ids)
-        self.soul = self._cnew(begin_time, end_time, n, sids, daylight_savings)
+        self.soul = self._cnew(begin_time, end_time, n, sids)
     
     @property
     def service_ids(self):

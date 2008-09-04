@@ -86,13 +86,12 @@ scDestroy( ServiceCalendar* this ) {
 
 //SERVICEPERIOD METHODS
 
-ServicePeriod* spNew( long begin_time, long end_time, int n_service_ids, ServiceId* service_ids, int daylight_savings ) {
+ServicePeriod* spNew( long begin_time, long end_time, int n_service_ids, ServiceId* service_ids ) {
   ServicePeriod* ret = (ServicePeriod*)malloc(sizeof(ServicePeriod));
   ret->begin_time    = begin_time;
   ret->end_time      = end_time;
   ret->n_service_ids = n_service_ids;
   ret->service_ids  = (ServiceId*)malloc(n_service_ids*sizeof(ServiceId));
-  ret->daylight_savings = daylight_savings;
   memcpy( ret->service_ids, service_ids, n_service_ids*sizeof(ServiceId) );
   ret->prev_period = NULL;
   ret->next_period = NULL;
@@ -171,11 +170,6 @@ spServiceIds( ServicePeriod* this, int* count ) {
 	return this->service_ids;
 }
 
-int 
-spDaylightSavings( ServicePeriod* this ) {
-	return this->daylight_savings;	
-}
-
 ServicePeriod*
 spNextPeriod(ServicePeriod* this) {
 	return this->next_period;
@@ -195,8 +189,7 @@ spDatumMidnight( ServicePeriod* this, int timezone_offset ) {
       before the beginning of this service peroid. Typically, triphops specify events relative
       to this datum*/
     
-    long utc_offset = timezone_offset + this->daylight_savings;
-    long since_local_midnight = (this->begin_time+utc_offset)%SECS_IN_DAY;
+    long since_local_midnight = (this->begin_time+timezone_offset)%SECS_IN_DAY;
     return this->begin_time - since_local_midnight;
 }
 

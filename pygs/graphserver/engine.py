@@ -250,8 +250,7 @@ class TripPlanEngine(Engine):
                     
         return actions
     
-    def trip_plan(self,from_v,to_v,time,verbose):
-        verbose=verbose.lower()=="true"
+    def trip_plan(self,from_v,to_v,time=None,verbose=False):
         if time is None:
             time=int(now())
         
@@ -270,8 +269,7 @@ class TripPlanEngine(Engine):
         return "".join(ret)
     trip_plan.mime = "text/xml"
     
-    def trip_plan_json(self,from_v,to_v,time,verbose):
-        verbose=verbose.lower()=="true"
+    def trip_plan_json(self,from_v,to_v,time=None,verbose=False):
         if time is None:
             time=int(now())
             

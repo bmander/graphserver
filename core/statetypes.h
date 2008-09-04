@@ -18,8 +18,6 @@ struct ServicePeriod {
   long end_time;   //the last second on which the service_period is valid
   int n_service_ids;
   ServiceId* service_ids;
-  int daylight_savings; //number of seconds to shift local time this day
-                        //typically +3600 (one hour) in the summer months, 0 in the winter months
   ServicePeriod* prev_period;
   ServicePeriod* next_period;
 } ;
@@ -43,7 +41,7 @@ void
 scDestroy( ServiceCalendar* this );
 
 ServicePeriod*
-spNew( long begin_time, long end_time, int n_service_ids, ServiceId* service_ids, int daylight_savings );
+spNew( long begin_time, long end_time, int n_service_ids, ServiceId* service_ids );
 
 void
 spDestroyPeriod( ServicePeriod* this );
@@ -67,9 +65,6 @@ spEndTime( ServicePeriod* this );
 
 ServiceId*
 spServiceIds( ServicePeriod* this, int* count );
-
-int 
-spDaylightSavings( ServicePeriod* this );
 
 ServicePeriod*
 spNextPeriod(ServicePeriod* this);

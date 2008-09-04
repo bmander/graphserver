@@ -69,7 +69,7 @@ class StressTest(unittest.TestCase):
                 (1*3600,2*3600,'Bar to Cow'),
                 (2*3600,3*3600,'four score and seven years'),
                 (3*3600,4*3600,'hoombacha')]
-    cal = ServicePeriod(0, 1*3600*24, [1,2], 0)
+    cal = ServicePeriod(0, 1*3600*24, [1,2])
 
     def test_ths_destroy(self):
         """TripHopSchedule.destroy() completely destroys TripHopSchedule"""

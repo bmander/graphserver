@@ -179,8 +179,6 @@ triphopWalkBack(TripHop* this, State* params, int transferPenalty) {
     
     long adjusted_time = spNormalizeTime( service_period, this->timezone_offset, params->time );
     
-    fprintf(stderr,"adjusted time: %ld\n", adjusted_time);
-    
     long wait;
 #ifndef ROUTE_REVERSE
     wait = (this->depart - adjusted_time);

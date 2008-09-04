@@ -219,7 +219,7 @@ class TestGraph(unittest.TestCase):
         g.add_vertex("work")
         
         cal = ServiceCalendar()
-        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2], 0) )
+        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2]) )
         
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
@@ -246,7 +246,7 @@ class TestGraph(unittest.TestCase):
         g.add_vertex("work")
         
         cal = ServiceCalendar()
-        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2], 0) )
+        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2]) )
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
         ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0,agency=0)
@@ -331,7 +331,7 @@ class TestGraph(unittest.TestCase):
         
         rawhops = [(10,     20,'Foo to Bar')]
         cal = ServiceCalendar()
-        cal.add_period( ServicePeriod(0, 10, [1], 0) )
+        cal.add_period( ServicePeriod(0, 10, [1]) )
         ths = TripHopSchedule(hops=rawhops, service_id=2, calendar=cal, timezone_offset=0,agency=0)
         
         g.add_vertex("A")
@@ -401,7 +401,7 @@ class TestGraph(unittest.TestCase):
         spt.destroy()
         
         cal = ServiceCalendar()
-        cal.add_period( ServicePeriod(0, 86400, [1,2], 0) )
+        cal.add_period( ServicePeriod(0, 86400, [1,2]) )
         rawhops = [(10,     20,'A'),
                    (15,     30,'B'),
                    (400,   430,'C')]
@@ -452,7 +452,7 @@ class TestGraph(unittest.TestCase):
         spt.destroy()
         
         cal = ServiceCalendar()
-        cal.add_period( ServicePeriod(0, 86400, [1,2], 0) )
+        cal.add_period( ServicePeriod(0, 86400, [1,2]) )
         rawhops = [(10,     20,'A'),
                    (15,     30,'B'),
                    (400,   430,'C')]
@@ -718,7 +718,7 @@ class TestState(unittest.TestCase):
 
     def test_set_cal(self):
         s = State(1,0)
-        sp = ServicePeriod(0, 1*3600*24, [1,2], 0)
+        sp = ServicePeriod(0, 1*3600*24, [1,2])
         
         try:
             s.set_calendar_day(1, cal)
@@ -754,7 +754,7 @@ class TestState(unittest.TestCase):
     def test_clone(self):
         
         s = State(1,0)
-        sp = ServicePeriod(0, 1*3600*24, [1,2], 0)
+        sp = ServicePeriod(0, 1*3600*24, [1,2])
         s.set_service_period(0,sp)
         
         s2 = s.clone()
@@ -959,14 +959,27 @@ class TestWait(unittest.TestCase):
         assert w.utcoffset == -20
         s = State(1, 86400)
         sprime = w.walk(s)
-        print sprime.weight
-
+        assert sprime.weight == 120
+        
+    def test_august(self):
+        # noon, -7 hours off UTC, as America/Los_Angeles in summer
+        w = Wait(43200, -25200)
+        
+        # one calendar, noon august 27, America/Los_Angeles
+        s = State(1, 1219863600)
+        
+        assert w.walk(s).time == 1219863600
+        
+        # one calendar, 11:55 AM August 27 2008, America/Los_Angeles
+        s = State(1, 1219863300)
+        assert w.walk(s).time == 1219863600
+        assert w.walk(s).weight == 300
 
 class TestTripHop(unittest.TestCase):
     
     def test_triphop(self):
         sc = ServiceCalendar()
-        sc.add_period( ServicePeriod( 0, 86400, [1], 0) )
+        sc.add_period( ServicePeriod( 0, 86400, [1] ) )
         
         th = TripHop(25, 100, "foo", sc, timezone_offset=0, agency=0, service_id=1)
 
@@ -992,8 +1005,8 @@ class TestTripHop(unittest.TestCase):
         
     def test_unixtime(self):
         sc = ServiceCalendar()
-        sc.add_period( ServicePeriod( 0,86399,[1], 0) )
-        sc.add_period( ServicePeriod( 86400, 86400+86399, [1], 0) )
+        sc.add_period( ServicePeriod( 0,86399,[1]) )
+        sc.add_period( ServicePeriod( 86400, 86400+86399, [1]) )
         
         th = TripHop(25,100,"foo",sc, timezone_offset=0, agency=0, service_id=1)
         
@@ -1003,6 +1016,23 @@ class TestTripHop(unittest.TestCase):
         sprime = th.walk(s)
         assert sprime.weight==75
         assert sprime.time==time+75
+        
+    def test_august(self):
+        sc = ServiceCalendar()
+        #beginning of august 27 to end of august 27, America/Los_Angeles.
+        sc.add_period( ServicePeriod( 1219820400, 1219906799, [1]) ) 
+        
+        #triphop from 12:00 noon to 12:05 PM. timezone offset is -7 hours, corresponding to west coast on daylight savings time
+        th = TripHop( 43200, 43500, "foo", sc, timezone_offset=-7*3600, agency=0, service_id=1 )
+        
+        # noon on august 27th, America/Los_Angeles
+        time = 1219863600
+        
+        s = State(1,time)
+        ret = th.walk(s)
+        assert ret.time == 1219863900 #12:05PM august 27th, America/Los_Angeles
+        
+        
 
 class TestTriphopSchedule(unittest.TestCase):
     
@@ -1017,7 +1047,9 @@ class TestTriphopSchedule(unittest.TestCase):
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
         # using a tuple
-        ths = TripHopSchedule(rawhops, 1, ServicePeriod(0, 1*3600*24, [1,2], 0), 0, agency=0)
+        sc = ServiceCalendar()
+        sc.add_period( ServicePeriod(0, 1*3600*24, [1,2]) )
+        ths = TripHopSchedule(rawhops, 1, sc, 0, agency=0)
         
         assert ths.timezone_offset == 0
         
@@ -1038,7 +1070,7 @@ class TestTriphopSchedule(unittest.TestCase):
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
         cal = ServiceCalendar()
-        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2], 0) )
+        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2]) )
         ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
         
         ths.destroy()
@@ -1049,7 +1081,7 @@ class TestTriphopSchedule(unittest.TestCase):
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
         cal = ServiceCalendar()
-        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2], 0) )
+        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2]) )
         
         ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
         
@@ -1059,7 +1091,7 @@ class TestTriphopSchedule(unittest.TestCase):
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
         cal = ServiceCalendar()
-        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2], 0) )
+        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2]) )
         ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
         
         assert ths.get_next_hop( 0 ).trip_id == "Foo to Bar"
@@ -1071,7 +1103,7 @@ class TestTriphopSchedule(unittest.TestCase):
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
         cal = ServiceCalendar()
-        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2], 0) )
+        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2]) )
         ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
         
         assert ths.get_last_hop( 0 ) == None
@@ -1085,7 +1117,7 @@ class TestTriphopSchedule(unittest.TestCase):
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
         cal = ServiceCalendar()
-        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2], 0) )
+        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2]) )
         ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
         
         s = ths.walk(State(2,0))
@@ -1106,7 +1138,7 @@ class TestTriphopSchedule(unittest.TestCase):
         rawhops = [(0,     1*3600,'auth1trip0'),
                    (1*3600,2*3600,'auth1trip1')]
         cal = ServiceCalendar()
-        cal.add_period( ServicePeriod(0, 1*3600*24, [3,4], 0) )
+        cal.add_period( ServicePeriod(0, 1*3600*24, [3,4]) )
         ths = TripHopSchedule(hops=rawhops, service_id=3, calendar=cal, timezone_offset=0, agency=1)
         
         sfinal = ths.walk(s)
@@ -1124,7 +1156,7 @@ class TestTriphopSchedule(unittest.TestCase):
         rawhops = [(1*3600,2*3600,'Foo to Bar'),
                    (2*3600,3*3600,'Bar to Cow')]
         cal = ServiceCalendar()
-        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2], 0) )
+        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2]) )
         ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
         
         assert ths.walk_back(State(1,0)) == None
@@ -1147,7 +1179,7 @@ class TestTriphopSchedule(unittest.TestCase):
         rawhops = [(1*3600,2*3600,'auth1trip0'),
                    (2*3600,3*3600,'auth1trip1')]
         cal = ServiceCalendar()
-        cal.add_period( ServicePeriod(0, 1*3600*24, [3,4], 0) )
+        cal.add_period( ServicePeriod(0, 1*3600*24, [3,4]) )
         ths = TripHopSchedule(hops=rawhops, service_id=3, calendar=cal, timezone_offset=0, agency=1)
         
         sfinal = ths.walk_back(s)
@@ -1166,7 +1198,7 @@ class TestTriphopSchedule(unittest.TestCase):
     def test_walk_wrong_day(self):
         rawhops = [(10,     20,'Foo to Bar')]
         cal = ServiceCalendar()
-        cal.add_period( ServicePeriod(0, 10, [1], 0) )
+        cal.add_period( ServicePeriod(0, 10, [1]) )
         ths = TripHopSchedule(hops=rawhops, service_id=2, calendar=cal, timezone_offset=0, agency=0)
         
         s = ths.walk(State(1,0))
@@ -1176,7 +1208,7 @@ class TestTriphopSchedule(unittest.TestCase):
     def test_collapse_wrong_day(self):
 
         cal = ServiceCalendar()
-        cal.add_period( ServicePeriod(0, 10, [1], 0) )
+        cal.add_period( ServicePeriod(0, 10, [1]) )
         rawhops = [(10,     20,'Foo to Bar')]
         ths = TripHopSchedule(hops=rawhops, service_id=2, calendar=cal, timezone_offset=0, agency=0)
         
@@ -1188,7 +1220,7 @@ class TestTriphopSchedule(unittest.TestCase):
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
         cal = ServiceCalendar()
-        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2], 0) )
+        cal.add_period( ServicePeriod(0, 1*3600*24, [1,2]) )
         ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
         
         th = ths.collapse(State(1,0))
@@ -1239,7 +1271,7 @@ class TestVertex(unittest.TestCase):
 
 class TestServicePeriod(unittest.TestCase):
     def test_service_period(self):
-        c = ServicePeriod(0, 1*3600*24, [1,2], 0)
+        c = ServicePeriod(0, 1*3600*24, [1,2])
         assert(c.begin_time == 0)
         assert(c.end_time == 1*3600*24)
         assert(len(c.service_ids) == 2)
@@ -1247,9 +1279,9 @@ class TestServicePeriod(unittest.TestCase):
         
     def test_fast_forward_rewind(self):
         cc = ServiceCalendar()
-        cc.add_period( ServicePeriod( 0, 100, [1,2], 0 ) )
-        cc.add_period( ServicePeriod( 101, 200, [3,4], 0 ) )
-        cc.add_period( ServicePeriod( 201, 300, [5,6], 0 ) )
+        cc.add_period( ServicePeriod( 0, 100, [1,2]) )
+        cc.add_period( ServicePeriod( 101, 200, [3,4]) )
+        cc.add_period( ServicePeriod( 201, 300, [5,6]) )
         
         hh = cc.head
         ff = hh.fast_forward()
@@ -1258,27 +1290,27 @@ class TestServicePeriod(unittest.TestCase):
         assert pp.begin_time==0
         
     def test_midnight_datum(self):
-        c = ServicePeriod( 0, 1*3600*24, [1], 0 )
+        c = ServicePeriod( 0, 1*3600*24, [1])
         
         assert c.datum_midnight(timezone_offset=0) == 0
         
-        c = ServicePeriod( 500, 1000, [1], 0 )
+        c = ServicePeriod( 500, 1000, [1])
         
         assert c.datum_midnight(timezone_offset=0) == 0
         
-        c = ServicePeriod( 1*3600*24, 2*3600*24, [1], 0 )
+        c = ServicePeriod( 1*3600*24, 2*3600*24, [1])
         
         assert c.datum_midnight(timezone_offset=0) == 86400
         assert c.datum_midnight(timezone_offset=-3600) == 3600
         assert c.datum_midnight(timezone_offset=3600) == 82800
         
-        c = ServicePeriod( 1*3600*24+50, 1*3600*24+60, [1], 0 )
+        c = ServicePeriod( 1*3600*24+50, 1*3600*24+60, [1])
         
         assert c.datum_midnight(timezone_offset=0) == 86400
         assert c.datum_midnight(timezone_offset=-3600) == 3600
         
     def test_normalize_time(self):
-        c = ServicePeriod(0, 1*3600*24, [1,2], 0)
+        c = ServicePeriod(0, 1*3600*24, [1,2])
         
         assert c.normalize_time( 0, 0 ) == 0
         assert c.normalize_time( 0, 100 ) == 100
@@ -1293,7 +1325,7 @@ class TestServiceCalendar(unittest.TestCase):
         
     def test_single(self):
         c = ServiceCalendar()
-        c.add_period( ServicePeriod( 0,1000,[1,2,3],0 ) )
+        c.add_period( ServicePeriod( 0,1000,[1,2,3]) )
         
         assert c.head
         assert c.head.begin_time == 0
@@ -1315,8 +1347,8 @@ class TestServiceCalendar(unittest.TestCase):
     def test_multiple(self):
         c = ServiceCalendar()
         # out of order
-        c.add_period( ServicePeriod(1001,2000,[3,4,5],0) )
-        c.add_period( ServicePeriod(0,1000,[1,2,3],0) )
+        c.add_period( ServicePeriod(1001,2000,[3,4,5]) )
+        c.add_period( ServicePeriod(0,1000,[1,2,3]) )
         
         assert c.head
         assert c.head.begin_time == 0
@@ -1342,10 +1374,10 @@ class TestServiceCalendar(unittest.TestCase):
         
     def test_add_three(self):
         c = ServiceCalendar()
-        c.add_period( ServicePeriod(0,10,[1,2,3],0) )
+        c.add_period( ServicePeriod(0,10,[1,2,3]) )
         #out of order
-        c.add_period( ServicePeriod(16,20,[4,5,6],0) )
-        c.add_period( ServicePeriod(11,15,[3,4,5],0) )
+        c.add_period( ServicePeriod(16,20,[4,5,6]) )
+        c.add_period( ServicePeriod(11,15,[3,4,5]) )
         
         
         assert c.head.next.next.begin_time == 16
@@ -1353,20 +1385,20 @@ class TestServiceCalendar(unittest.TestCase):
     def test_periods(self):
         c = ServiceCalendar()
         
-        c.add_period( ServicePeriod(0,10,[1,2,3],0) )
+        c.add_period( ServicePeriod(0,10,[1,2,3]) )
         #out of order
-        c.add_period( ServicePeriod(16,20,[4,5,6],0) )
-        c.add_period( ServicePeriod(11,15,[3,4,5],0) )
+        c.add_period( ServicePeriod(16,20,[4,5,6]) )
+        c.add_period( ServicePeriod(11,15,[3,4,5]) )
         
         assert [x.begin_time for x in c.periods] == [0,11,16]
             
     def test_to_xml(self):
         c = ServiceCalendar()
         
-        c.add_period( ServicePeriod(0,10,[1,2,3],0) )
+        c.add_period( ServicePeriod(0,10,[1,2,3]) )
         #out of order
-        c.add_period( ServicePeriod(16,20,[4,5,6],0) )
-        c.add_period( ServicePeriod(11,15,[3,4,5],0) )
+        c.add_period( ServicePeriod(16,20,[4,5,6]) )
+        c.add_period( ServicePeriod(11,15,[3,4,5]) )
         
         assert c.to_xml() == "<ServiceCalendar><ServicePeriod begin_time='0' end_time='10' service_ids='1,2,3'/><ServicePeriod begin_time='11' end_time='15' service_ids='3,4,5'/><ServicePeriod begin_time='16' end_time='20' service_ids='4,5,6'/></ServiceCalendar>"
 
