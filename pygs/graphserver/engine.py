@@ -137,7 +137,9 @@ class Engine(object, Servable):
                 else:
                     collapsed = edge.payload
                 if collapsed:
-                    ret.append(collapsed.walk( init_state ).to_xml())
+		    sprime = collapsed.walk( init_state )
+		    if sprime:
+                        ret.append(sprime.to_xml())
                 else:
                     ret.append("<state/>")
             else:
@@ -146,7 +148,9 @@ class Engine(object, Servable):
                 else:
                     collapsed = edge.payload
                 if collapsed:
-                    ret.append(collapsed.walk_back( init_state ).to_xml())
+		    sprime = collapsed.walk_back( init_state )
+		    if sprime:
+                        ret.append(sprime.to_xml())
                 else:
                     ret.append("<state/>")
             ret.append("</destination>")
