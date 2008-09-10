@@ -9,6 +9,8 @@ from ctypes import Structure, pointer, cast, POINTER, addressof
 from _ctypes import Py_INCREF, Py_DECREF
 from time import asctime, gmtime
 from time import time as now
+import pytz
+import calendar
 
 
 """
@@ -818,6 +820,59 @@ class TripHopSchedule(EdgePayload):
         
     def get_last_hop(self, time):
         return TripHop.from_pointer( self._cget_last_hop(self.soul, time) )
+        
+
+class TimezonePeriod(CShadow):
+    begin_time = cproperty(lgs.tzpBeginTime, c_long)
+    end_time = cproperty(lgs.tzpEndTime, c_long)
+    utc_offset = cproperty(lgs.tzpUtcOffset, c_long)
+    
+    def __init__(self, begin_time, end_time, utc_offset):
+        self.soul = lgs.tzpNew(begin_time, end_time, utc_offset)
+    
+    @property
+    def next_period(self):
+        return TimezonePeriod.from_pointer( lgs.tzpNextPeriod( self.soul ) )
+        
+class Timezone(CShadow):
+    head = cproperty( lgs.tzHead, c_void_p, TimezonePeriod )
+    
+    def __init__(self):
+        self.soul = lgs.tzNew()
+        
+    def add_period(self, timezone_period):
+        lgs.tzAddPeriod( self.soul, timezone_period.soul)
+        
+    def period_of(self, time):
+        tzpsoul = lgs.tzPeriodOf( self.soul, time )
+        return TimezonePeriod.from_pointer( tzpsoul )
+        
+    def utc_offset(self, time):
+        ret = lgs.tzUtcOffset( self.soul, time )
+        
+        if ret==-360000:
+            raise IndexError( "%d lands within no timezone period"%time )
+            
+        return ret
+        
+    @classmethod
+    def generate(cls, timezone_string):
+        ret = Timezone()
+        
+        timezone = pytz.timezone(timezone_string)
+        tz_periods = zip(timezone._utc_transition_times[:-1],timezone._utc_transition_times[1:])
+            
+        #exclude last transition_info entry, as it corresponds with the last utc_transition_time, and not the last period as defined by the last two entries
+        for tz_period, (utcoffset,dstoffset,periodname) in zip( tz_periods, timezone._transition_info[:-1] ):
+            period_begin, period_end = [calendar.timegm( (x.year, x.month, x.day, x.hour, x.minute, x.second) ) for x in tz_period]
+            period_end -= 1 #period_end is the last second the period is active, not the first second it isn't
+            utcoffset = utcoffset.days*24*3600 + utcoffset.seconds
+            
+            ret.add_period( TimezonePeriod( period_begin, period_end, utcoffset ) )
+        
+        return ret
+        
+        
 
 Graph._cnew = lgs.gNew
 Graph._cdel = lgs.gDestroy

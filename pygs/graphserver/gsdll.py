@@ -120,6 +120,21 @@ pycapi(lgs.scPeriodOfOrAfter, c_void_p, [c_void_p, c_int])
 pycapi(lgs.scPeriodOfOrBefore, c_void_p, [c_void_p, c_int])
 pycapi(lgs.scAddPeriod, c_void_p, [c_void_p, c_void_p])
 
+# TIMEZONE PERIOD API
+pycapi(lgs.tzpNew, c_void_p, [c_long, c_long, c_int])
+pycapi(lgs.tzpDestroy, None, [c_void_p])
+pycapi(lgs.tzpUtcOffset, c_int, [c_void_p])
+pycapi(lgs.tzpBeginTime, c_long, [c_void_p])
+pycapi(lgs.tzpEndTime, c_long, [c_void_p])
+pycapi(lgs.tzpNextPeriod, c_void_p, [c_void_p])
+
+# TIMEZONE API
+pycapi(lgs.tzNew, c_void_p, [])
+pycapi(lgs.tzAddPeriod, c_void_p, [c_void_p])
+pycapi(lgs.tzPeriodOf, c_void_p, [c_void_p, c_long])
+pycapi(lgs.tzUtcOffset, c_int, [c_void_p, c_long])
+pycapi(lgs.tzHead, c_void_p, [c_void_p])
+
 # STATE API
 pycapi(lgs.stateNew, c_void_p, [c_int, c_long])
 pycapi(lgs.stateDup, c_void_p)

@@ -3,8 +3,11 @@ import sys
 sys.path = ['..'] + sys.path
 from graphserver.core import Graph, Street, ServicePeriod, TripHopSchedule, ServiceCalendar, State
 from graphserver.ext.gtfs import GTFSLoadable
+import graphserver.ext.gtfs
 import time
 from calendar import timegm
+from datetime import datetime
+import pytz
 
 #NON-DST DATES
 #weekday
@@ -137,6 +140,81 @@ class GTFSTestCase(unittest.TestCase):
             
             assert( expected == found )
         fp.close()
+    
+    def test_load_bart(self):
+        g = TestGTFS()
+        g.load_gtfs( "sample-feed.zip", is_dst=True )
+        
+        def leads_to(x, y):
+            vs = [ edge.to_v.label for edge in g.get_vertex(x).outgoing ]
+            return vs == list(y)
+        
+        # check that the graph is layed out like we'd expect
+        assert leads_to( "gtfsEMSI", ('gtfsDADAN',) )
+        assert leads_to( "gtfsBEATTY_AIRPORT", ('gtfsAMV', 'gtfsBULLFROG') )
+        assert leads_to( "gtfsNADAV", ('gtfsDADAN', 'gtfsNANAA') )
+        assert leads_to( 'gtfsBULLFROG', ('gtfsBEATTY_AIRPORT', 'gtfsFUR_CREEK_RES') )
+        assert leads_to( 'gtfsAMV', ('gtfsBEATTY_AIRPORT',) )
+        assert leads_to( 'gtfsNANAA', ('gtfsNADAV', 'gtfsSTAGECOACH' ) )
+        assert leads_to( 'gtfsDADAN', ('gtfsNADAV', 'gtfsEMSI' ) )
+        assert leads_to( 'gtfsSTAGECOACH', ('gtfsBEATTY_AIRPORT', 'gtfsNANAA') )
+        assert leads_to( 'gtfsFUR_CREEK_RES', ('gtfsBULLFROG',) )
+        
+        s = State(1,1219842000) #6 am august 27, 2008, America/Los_Angeles
+        
+        # walk one edge
+        edge_to_airport = g.get_vertex("gtfsSTAGECOACH").outgoing[0]
+        sprime = edge_to_airport.walk(s)
+        assert sprime.time == 1219843200
+        assert sprime.weight == 1200
+        
+        # find a sample route
+        spt = g.shortest_path_tree( "gtfsSTAGECOACH", None, s )
+        vertices, edges = spt.path("gtfsBULLFROG")
+        assert spt.get_vertex("gtfsBULLFROG").payload.time == 1219849800 #8:10 am wed august 27, 2008, America/Los_Angeles
+        assert [v.label for v in vertices] == ['gtfsSTAGECOACH', 'gtfsBEATTY_AIRPORT', 'gtfsBULLFROG']
+        
+    def xtest_parse_date(self):
+        assert graphserver.ext.gtfs.load_gtfs.parse_date("20080827") == (2008,8,27)
+        
+    def xtest_get_service_ids(self):
+        sched = transitfeed.Loader("google_transit.zip").Load()
+        
+        assert graphserver.ext.gtfs.load_gtfs.get_service_ids(sched, "20080827") == [u'M-FSAT', u'WKDY']
+        assert graphserver.ext.gtfs.load_gtfs.get_service_ids(sched, "20080906" ) == [u'M-FSAT', u'SAT']
+        assert graphserver.ext.gtfs.load_gtfs.get_service_ids(sched, "20080907" ) == [u'SUN', u'SUNAB']
+        assert graphserver.ext.gtfs.load_gtfs.get_service_ids(sched, "20081225" ) == [u'SUN', u'SUNAB']
+        assert graphserver.ext.gtfs.load_gtfs.get_service_ids(sched, datetime(2008,8,27)) == [u'M-FSAT', u'WKDY']
+        assert graphserver.ext.gtfs.load_gtfs.get_service_ids(sched, datetime(2008,9,6)) == [u'M-FSAT', u'SAT']
+        assert graphserver.ext.gtfs.load_gtfs.get_service_ids(sched, datetime(2008,9,7)) == [u'SUN', u'SUNAB']
+        assert graphserver.ext.gtfs.load_gtfs.get_service_ids(sched, datetime(2008,12,25)) == [u'SUN', u'SUNAB']
+        
+    def xtest_timezone_from_agency(self):
+        sched = transitfeed.Loader("google_transit.zip").Load()
+        
+        assert graphserver.ext.gtfs.load_gtfs.timezone_from_agency(sched, "BART") == pytz.timezone("America/Los_Angeles")
+        assert graphserver.ext.gtfs.load_gtfs.timezone_from_agency(sched, "AirBART") == pytz.timezone("America/Los_Angeles")
+    
+    def xtest_day_bounds_from_sched(self):
+        sched = transitfeed.Loader("google_transit.zip").Load()
+        
+        assert graphserver.ext.gtfs.load_gtfs.day_bounds_from_sched(sched) == (13860, 92100)
+        
+    def xtest_schedule_to_service_calendar(self):
+        sched = transitfeed.Loader("google_transit.zip").Load()
+        
+        sc = graphserver.ext.gtfs.load_gtfs.schedule_to_service_calendar(sched, "BART")
+        
+        sp = sc.period_of_or_after( 1219863600 )#noon august 27 2008, America/Los_Angeles
+        assert sp.service_ids == [1,2]
+        assert sp.begin_time == 1219834260
+        assert sp.end_time == 1219912500
+        
+        sp = sc.period_of_or_after( 1220727600 ) #noon september 6 2008, America/Los_Angeles
+        assert sp.service_ids == [1, 3]
+        
+        sp = sc.period_of_or_after( 1220814000 )
+        assert sp.service_ids == [4, 5]
     
 if __name__=='__main__':
     tl = unittest.TestLoader()

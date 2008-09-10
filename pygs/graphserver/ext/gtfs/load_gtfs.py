@@ -1,44 +1,64 @@
 import transitfeed
 import time
 from pytz import timezone
+import pytz
 import sys
 import datetime
 sys.path.append("../../..")
 from graphserver.core import Graph, Street, ServicePeriod, TripHopSchedule, ServiceCalendar, State
+from graphserver.util import TimeHelpers
 import csv
 import calendar
 import os
 from datetime import date, timedelta
 
-if transitfeed.__version__ != "1.1.5":
-    raise Exception("transitfeed.__version__ != 1.1.5")
+if transitfeed.__version__ != "1.1.6":
+    raise Exception("transitfeed.__version__ != 1.1.6")
     
 def parse_date(date):
     return (int(date[0:4]), int(date[4:6]), int(date[6:8]))
 
 def get_service_ids(sched, date):
-    sids = []
-    
-    if type(date)==datetime.date:
+    if type(date)==datetime.date or type(date)==datetime.datetime:
         date = "%0.4d%0.2d%0.2d"%(date.year,date.month,date.day)
         
-    for sp in sched.GetServicePeriodList():
-        start_date, end_date = sp.GetDateRange()
+    return [sp.service_id for sp in filter(lambda x:x.IsActiveOn(date), sched.GetServicePeriodList())]
         
-        # if date is in the service_period's date range
-        if int(date) <= int(end_date) and int(date) >= int(start_date):
-            runs = sp.day_of_week[ calendar.weekday( *parse_date(date) ) ]
-            
-            if date in sp.date_exceptions:
-                if sp.date_exceptions[date]==1:
-                    runs = True
-                elif sp.date_exceptions[date]==2:
-                    runs = False
-                    
-            if runs:
-                sids.append( sp.service_id )
-                
-    return sids
+def timezone_from_agency(sched, agency_id):
+    #try getting agency by agency_id. If that fails, try getting by agency nama
+    try:
+        agency = sched.GetAgency(agency_id)
+    except KeyError:
+        agency = filter(lambda x:x.agency_name==agency_id, sched.GetAgencyList())[0]
+        
+    return pytz.timezone( agency.agency_timezone )
+    
+def day_bounds_from_sched(sched):
+    sid_start = min( [trip.GetStartTime() for trip in sched.GetTripList()] )
+    sid_end   = max( [trip.GetEndTime() for trip in sched.GetTripList()] )
+        
+    return (sid_start, sid_end)
+
+def schedule_to_service_calendar(sched, agency_id):
+    timezone = timezone_from_agency(sched, agency_id)
+    
+    day_start, day_end = day_bounds_from_sched(sched)
+    
+    startdate, enddate = [ datetime.datetime( *parse_date(x) ) for x in sched.GetDateRange() ]
+     
+    cal = ServiceCalendar()
+     
+    for currdate in iter_dates(startdate, enddate):
+        local_dt = timezone.localize(currdate)
+        
+        service_ids = get_service_ids( sched, currdate )
+    
+        this_day_begins = timezone.normalize( local_dt + timedelta(seconds=day_start) )
+        this_day_ends = timezone.normalize( local_dt + timedelta(seconds=day_end)  )
+    
+        cal.add_period( ServicePeriod( TimeHelpers.datetime_to_unix(this_day_begins), TimeHelpers.datetime_to_unix(this_day_ends), cal.int_sids(service_ids) ) )
+        
+    return cal
     
 def iter_dates(startdate, enddate):
     currdate = startdate
@@ -47,10 +67,11 @@ def iter_dates(startdate, enddate):
         currdate += timedelta(1)
 
 class GTFSLoadable:
-    def _triphops_from_stop(self, stop):
+    def _triphops_from_stop(self, stop, agency):
         ret = []
         
-        for trip,ix in stop.trip_index:
+        for time, (trip,ix), is_timepoint in stop.GetStopTimeTrips():
+            
             stoptimes = trip.GetStopTimes()
             if ix != len(stoptimes)-1:
                 ret.append( (trip, stoptimes[ix], stoptimes[ix+1], trip.route_id ) )
@@ -78,70 +99,37 @@ class GTFSLoadable:
             
         return thss
         
-    def _raw_triphopschedules_from_stop(self, stop):
-        triphops = self._triphops_from_stop(stop)
+    def _raw_triphopschedules_from_stop(self, stop, agency):
+        triphops = self._triphops_from_stop(stop, agency)
         thss = self._group_triphops(triphops)
         
         return thss
 
-    def _raw_calendar(self, sched):
-        startdate, enddate = [ date( *parse_date(x) ) for x in sched.GetDateRange() ]
-        
-        return [ (currdate, get_service_ids( sched, currdate )) for currdate in iter_dates(startdate, enddate) ]
-        
-    def _date_to_secs(self, adate):
-        return calendar.timegm( (adate.year,adate.month,adate.day,0,0,0,0,0,0) )
-        
-    def _is_dst(self, adate):
-        return time.localtime( time.mktime((adate.year,adate.month,adate.day,0,0,0,0,0,-1)) )[-1]
-
-    def load_gtfs(self, sched_or_datadir, prefix="gtfs", authority=0):
+    def load_gtfs(self, sched_or_datadir, is_dst=False, prefix="gtfs"):
         
         if type(sched_or_datadir)==str:
             sched = transitfeed.Loader(sched_or_datadir).Load()
         else:
             sched = sched_or_datadir
 
-        # get timezone offset for all agencies
-        agency_offsets = {}
-        for agency in sched.GetAgencyList():
-            td = timezone(agency.agency_timezone.encode('ascii')).utcoffset(None)
-            agency_offsets[agency.agency_id] = td.days*3600*24 + td.seconds
-
-        #just set the local timezone from a random entry in the agency list
-        import os
-        agencytz = sched.GetAgencyList()[0].agency_timezone
-        os.environ['TZ'] = agencytz
-        time.tzset()
-        dst_offset = 3600 #KNOWN BUG: the daylight savings time offset is not always an hour
-
-        # create calendar
-
-        #get service bounds
-        sid_start = min( [trip.GetStartTime() for trip in sched.GetTripList()] )
-        sid_end   = max( [trip.GetEndTime() for trip in sched.GetTripList()] )
-
-        rawcalendar = self._raw_calendar( sched )
-
-        cal = ServiceCalendar()
-        for day, service_ids in rawcalendar:
-            local_daystart = self._date_to_secs(day)+time.timezone
-            #if daylight savings is in effect
-            if self._is_dst(day):
-                local_daystart -= dst_offset
-                daylight_savings = dst_offset
-            else:
-                daylight_savings = 0
-
-            cal.add_period( ServicePeriod( local_daystart+sid_start, local_daystart+sid_end, cal.int_sids(service_ids), daylight_savings) )
-
         #add all vertices
         for stop in sched.GetStopList():
             self.add_vertex(prefix+stop.stop_id)
 
-        #add all tripstops
+        for agency, i in zip( sched.GetAgencyList(), range(len(sched.GetAgencyList())) ):
+            self._load_agency(sched, agency, i, is_dst, prefix)
+                    
+    def _load_agency(self, sched, agency, agency_int, is_dst, prefix):
+        cal = schedule_to_service_calendar(sched, agency.agency_id)
+
+        timezone = timezone_from_agency( sched, agency.agency_id )
+        dt = timezone._utcoffset
+        offset = dt.days*24*3600 + dt.seconds
+        if is_dst:
+            offset += 3600
+
         for stop in sched.GetStopList():
-            rawtriphopschedules = self._raw_triphopschedules_from_stop(stop)
+            rawtriphopschedules = self._raw_triphopschedules_from_stop(stop, agency)
             
             for rawtriphopschedule in rawtriphopschedules:
                 hops = [(fromv.departure_secs, tov.arrival_secs, trip.trip_id.encode("ascii")) for trip,fromv,tov in rawtriphopschedule]
@@ -149,7 +137,7 @@ class GTFSLoadable:
                 str_service_id = rawtriphopschedule[0][0].service_id #service_id in string form
                 service_id = cal.service_id_directory[str_service_id]
                     
-                ths = TripHopSchedule( hops, service_id, cal.head, -time.timezone, authority )
+                ths = TripHopSchedule( hops, service_id, cal, offset, agency_int )
                 e = self.add_edge( prefix+fromv.stop_id, prefix+tov.stop_id, ths )
 
 

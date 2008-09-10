@@ -8,6 +8,8 @@
 typedef int ServiceId;
 typedef struct ServicePeriod ServicePeriod;
 typedef struct ServiceCalendar ServiceCalendar;
+typedef struct Timezone Timezone;
+typedef struct TimezonePeriod TimezonePeriod;
 
 struct ServiceCalendar {
     ServicePeriod* head;
@@ -55,33 +57,60 @@ spRewind( ServicePeriod* this );
 ServicePeriod*
 spFastForward( ServicePeriod* this );
 
-
-
-long
-spBeginTime( ServicePeriod* this );
-
-long
-spEndTime( ServicePeriod* this );
-
-ServiceId*
-spServiceIds( ServicePeriod* this, int* count );
-
-ServicePeriod*
-spNextPeriod(ServicePeriod* this);
-
-ServicePeriod*
-spPreviousPeriod(ServicePeriod* this);
+void
+spPrint( ServicePeriod* this ) ;
 
 void
-spPrint( ServicePeriod* this );
+spPrintPeriod( ServicePeriod* this ) ;
+
+inline long
+spNormalizeTime( ServicePeriod* this, int timezone_offset, long time ) ;
+
+struct Timezone {
+    TimezonePeriod* head;
+} ; 
+
+struct TimezonePeriod {
+  long begin_time; //the first second on which the service_period is valid
+  long end_time;   //the last second on which the service_period is valid
+  int utc_offset;
+  TimezonePeriod* next_period;
+} ;
+
+Timezone*
+tzNew( );
 
 void
-spPrintPeriod( ServicePeriod* this );
+tzAddPeriod( Timezone* this, TimezonePeriod* period );
 
-inline long
-spDatumMidnight( ServicePeriod* this, int timezone_offset ) ;
+TimezonePeriod*
+tzPeriodOf( Timezone* this, long time);
 
-inline long
-spNormalizeTime( ServicePeriod* this, int timezone_offset, long time );
+int
+tzUtcOffset( Timezone* this, long time);
+
+TimezonePeriod*
+tzHead( Timezone* this );
+
+void
+tzDestroy( Timezone* this );
+
+TimezonePeriod*
+tzpNew( long begin_time, long end_time, int utc_offset );
+
+void
+tzpDestroy( TimezonePeriod* this );
+
+int
+tzpUtcOffset( TimezonePeriod* this );
+
+long
+tzpBeginTime( TimezonePeriod* this );
+
+long
+tzpEndTime( TimezonePeriod* this );
+
+TimezonePeriod*
+tzpNextPeriod(TimezonePeriod* this);
 
 #endif
