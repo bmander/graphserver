@@ -177,7 +177,7 @@ triphopWalkBack(TripHop* this, State* params, int transferPenalty) {
     
     State* ret = stateDup( params );
     
-    long adjusted_time = spNormalizeTime( service_period, this->timezone_offset, params->time );
+    long adjusted_time = spNormalizeTime( service_period, tzUtcOffset(this->timezone, params->time), params->time );
     
     long wait;
 #ifndef ROUTE_REVERSE
@@ -264,7 +264,7 @@ thsCollapseBack(TripHopSchedule* this, State* params) {
       return NULL;
     }
     
-    long adjusted_time = spNormalizeTime( service_period, this->timezone_offset, params->time );
+    long adjusted_time = spNormalizeTime( service_period, tzUtcOffset(this->timezone, params->time), params->time );
 
 #ifndef ROUTE_REVERSE
     return thsGetNextHop(this, adjusted_time);

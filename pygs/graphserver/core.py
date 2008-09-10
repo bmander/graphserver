@@ -718,7 +718,55 @@ class Street(EdgePayload):
         
         return "<Street name='%s' length='%f' />" % (self.name, self.length)
 
-
+class TimezonePeriod(CShadow):
+    begin_time = cproperty(lgs.tzpBeginTime, c_long)
+    end_time = cproperty(lgs.tzpEndTime, c_long)
+    utc_offset = cproperty(lgs.tzpUtcOffset, c_long)
+    
+    def __init__(self, begin_time, end_time, utc_offset):
+        self.soul = lgs.tzpNew(begin_time, end_time, utc_offset)
+    
+    @property
+    def next_period(self):
+        return TimezonePeriod.from_pointer( lgs.tzpNextPeriod( self.soul ) )
+        
+class Timezone(CShadow):
+    head = cproperty( lgs.tzHead, c_void_p, TimezonePeriod )
+    
+    def __init__(self):
+        self.soul = lgs.tzNew()
+        
+    def add_period(self, timezone_period):
+        lgs.tzAddPeriod( self.soul, timezone_period.soul)
+        
+    def period_of(self, time):
+        tzpsoul = lgs.tzPeriodOf( self.soul, time )
+        return TimezonePeriod.from_pointer( tzpsoul )
+        
+    def utc_offset(self, time):
+        ret = lgs.tzUtcOffset( self.soul, time )
+        
+        if ret==-360000:
+            raise IndexError( "%d lands within no timezone period"%time )
+            
+        return ret
+        
+    @classmethod
+    def generate(cls, timezone_string):
+        ret = Timezone()
+        
+        timezone = pytz.timezone(timezone_string)
+        tz_periods = zip(timezone._utc_transition_times[:-1],timezone._utc_transition_times[1:])
+            
+        #exclude last transition_info entry, as it corresponds with the last utc_transition_time, and not the last period as defined by the last two entries
+        for tz_period, (utcoffset,dstoffset,periodname) in zip( tz_periods, timezone._transition_info[:-1] ):
+            period_begin, period_end = [calendar.timegm( (x.year, x.month, x.day, x.hour, x.minute, x.second) ) for x in tz_period]
+            period_end -= 1 #period_end is the last second the period is active, not the first second it isn't
+            utcoffset = utcoffset.days*24*3600 + utcoffset.seconds
+            
+            ret.add_period( TimezonePeriod( period_begin, period_end, utcoffset ) )
+        
+        return ret
 
 class TripHop(EdgePayload):
     
@@ -727,32 +775,32 @@ class TripHop(EdgePayload):
     transit = cproperty( lgs.triphopTransit, c_int )
     trip_id = cproperty( lgs.triphopTripId, c_char_p )
     calendar = cproperty( lgs.triphopCalendar, c_void_p, ServiceCalendar )
-    timezone_offset = cproperty( lgs.triphopTimezoneOffset, c_int )
+    timezone = cproperty( lgs.triphopTimezone, c_void_p, Timezone )
     agency = cproperty( lgs.triphopAuthority, c_int )
     service_id = cproperty( lgs.triphopServiceId, c_int )
 
     SEC_IN_HOUR = 3600
     SEC_IN_MINUTE = 60
     
-    def __init__(self, depart, arrive, trip_id, calendar, timezone_offset, agency, service_id ):
-        self.soul = lgs.triphopNew(depart, arrive, trip_id, calendar.soul, c_int(timezone_offset), c_int(agency), ServiceIdType(service_id))
+    def __init__(self, depart, arrive, trip_id, calendar, timezone, agency, service_id ):
+        self.soul = lgs.triphopNew(depart, arrive, trip_id, calendar.soul, timezone.soul, c_int(agency), ServiceIdType(service_id))
     
     @classmethod
     def _daysecs_to_str(cls,daysecs):
         return "%02d:%02d"%(int(daysecs/cls.SEC_IN_HOUR), int(daysecs%cls.SEC_IN_HOUR/cls.SEC_IN_MINUTE))
 
     def to_xml(self):
-        return "<TripHop depart='%s' arrive='%s' transit='%s' trip_id='%s' service_id='%d' agency='%d' timezone_offset='%d'/>" % \
+        return "<TripHop depart='%s' arrive='%s' transit='%s' trip_id='%s' service_id='%d' agency='%d'/>" % \
                         (self._daysecs_to_str(self.depart),
                         self._daysecs_to_str(self.arrive),
-                        self.transit, self.trip_id,self.service_id,self.agency,self.timezone_offset)
+                        self.transit, self.trip_id,self.service_id,self.agency)
     
 class TripHopSchedule(EdgePayload):
     
     calendar = cproperty( lgs.thsGetCalendar, c_void_p, ServiceCalendar )
-    timezone_offset = cproperty( lgs.thsGetTimezoneOffset, c_int )
+    timezone = cproperty( lgs.thsGetTimezone, c_void_p, Timezone )
     
-    def __init__(self, hops, service_id, calendar, timezone_offset, agency):
+    def __init__(self, hops, service_id, calendar, timezone, agency):
         #TripHopSchedule* thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, ServicePeriod* calendar, int timezone_offset );
         
         n = len(hops)
@@ -764,7 +812,7 @@ class TripHopSchedule(EdgePayload):
             arrives[i] = hops[i][1]
             trip_ids[i] = c_char_p(hops[i][2])
             
-        self.soul = lgs.thsNew(departs, arrives, trip_ids, n, ServiceIdType(service_id), calendar.soul, c_int(timezone_offset), c_int(agency) )
+        self.soul = lgs.thsNew(departs, arrives, trip_ids, n, ServiceIdType(service_id), calendar.soul, timezone.soul, c_int(agency) )
     
     n = cproperty(lgs.thsGetN, c_int)
     service_id = cproperty(lgs.thsGetServiceId, c_int)
@@ -822,55 +870,7 @@ class TripHopSchedule(EdgePayload):
         return TripHop.from_pointer( self._cget_last_hop(self.soul, time) )
         
 
-class TimezonePeriod(CShadow):
-    begin_time = cproperty(lgs.tzpBeginTime, c_long)
-    end_time = cproperty(lgs.tzpEndTime, c_long)
-    utc_offset = cproperty(lgs.tzpUtcOffset, c_long)
-    
-    def __init__(self, begin_time, end_time, utc_offset):
-        self.soul = lgs.tzpNew(begin_time, end_time, utc_offset)
-    
-    @property
-    def next_period(self):
-        return TimezonePeriod.from_pointer( lgs.tzpNextPeriod( self.soul ) )
-        
-class Timezone(CShadow):
-    head = cproperty( lgs.tzHead, c_void_p, TimezonePeriod )
-    
-    def __init__(self):
-        self.soul = lgs.tzNew()
-        
-    def add_period(self, timezone_period):
-        lgs.tzAddPeriod( self.soul, timezone_period.soul)
-        
-    def period_of(self, time):
-        tzpsoul = lgs.tzPeriodOf( self.soul, time )
-        return TimezonePeriod.from_pointer( tzpsoul )
-        
-    def utc_offset(self, time):
-        ret = lgs.tzUtcOffset( self.soul, time )
-        
-        if ret==-360000:
-            raise IndexError( "%d lands within no timezone period"%time )
-            
-        return ret
-        
-    @classmethod
-    def generate(cls, timezone_string):
-        ret = Timezone()
-        
-        timezone = pytz.timezone(timezone_string)
-        tz_periods = zip(timezone._utc_transition_times[:-1],timezone._utc_transition_times[1:])
-            
-        #exclude last transition_info entry, as it corresponds with the last utc_transition_time, and not the last period as defined by the last two entries
-        for tz_period, (utcoffset,dstoffset,periodname) in zip( tz_periods, timezone._transition_info[:-1] ):
-            period_begin, period_end = [calendar.timegm( (x.year, x.month, x.day, x.hour, x.minute, x.second) ) for x in tz_period]
-            period_end -= 1 #period_end is the last second the period is active, not the first second it isn't
-            utcoffset = utcoffset.days*24*3600 + utcoffset.seconds
-            
-            ret.add_period( TimezonePeriod( period_begin, period_end, utcoffset ) )
-        
-        return ret
+
         
         
 

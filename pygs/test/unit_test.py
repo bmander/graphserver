@@ -223,7 +223,9 @@ class TestGraph(unittest.TestCase):
         
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0,agency=0)
+        tz = Timezone()
+        tz.add_period( TimezonePeriod( 0, 1*3600*24, 0 ) )
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone=tz,agency=0)
         
         g.add_edge("home", "work", ths )
         
@@ -249,7 +251,9 @@ class TestGraph(unittest.TestCase):
         cal.add_period( ServicePeriod(0, 1*3600*24, [1,2]) )
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0,agency=0)
+        tz = Timezone()
+        tz.add_period( TimezonePeriod( 0, 1*3600*24, 0 ) )
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone=tz,agency=0)
         
         g.add_edge("home", "work", ths )
         
@@ -332,7 +336,9 @@ class TestGraph(unittest.TestCase):
         rawhops = [(10,     20,'Foo to Bar')]
         cal = ServiceCalendar()
         cal.add_period( ServicePeriod(0, 10, [1]) )
-        ths = TripHopSchedule(hops=rawhops, service_id=2, calendar=cal, timezone_offset=0,agency=0)
+        tz = Timezone()
+        tz.add_period( TimezonePeriod( 0, 10, 0 ) )
+        ths = TripHopSchedule(hops=rawhops, service_id=2, calendar=cal, timezone=tz,agency=0)
         
         g.add_vertex("A")
         g.add_vertex("B")
@@ -405,7 +411,9 @@ class TestGraph(unittest.TestCase):
         rawhops = [(10,     20,'A'),
                    (15,     30,'B'),
                    (400,   430,'C')]
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0,agency=0)
+        tz = Timezone()
+        tz.add_period( TimezonePeriod( 0, 86400, 0 ) )
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone=tz,agency=0)
         
         g.add_edge( "Seattle-busstop", "Portland-busstop", ths )
         
@@ -456,7 +464,9 @@ class TestGraph(unittest.TestCase):
         rawhops = [(10,     20,'A'),
                    (15,     30,'B'),
                    (400,   430,'C')]
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0,agency=0)
+        tz = Timezone()
+        tz.add_period( TimezonePeriod( 0, 86400, 0 ) )
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone=tz,agency=0)
         
         g.add_edge( "Seattle-busstop", "Portland-busstop", ths )
         
@@ -981,14 +991,16 @@ class TestTripHop(unittest.TestCase):
         sc = ServiceCalendar()
         sc.add_period( ServicePeriod( 0, 86400, [1] ) )
         
-        th = TripHop(25, 100, "foo", sc, timezone_offset=0, agency=0, service_id=1)
+        tz = Timezone()
+        tz.add_period( TimezonePeriod( 0, 86400, 0 ) )
+        th = TripHop(25, 100, "foo", sc, timezone=tz, agency=0, service_id=1)
 
         assert th.depart == 25
         assert th.arrive == 100
         assert th.transit == 75
         assert th.trip_id == "foo"
         assert th.calendar.head.begin_time==0
-        assert th.timezone_offset == 0
+        assert th.timezone.soul == tz.soul
         assert th.agency == 0
         assert th.service_id == 1
 
@@ -1008,7 +1020,9 @@ class TestTripHop(unittest.TestCase):
         sc.add_period( ServicePeriod( 0,86399,[1]) )
         sc.add_period( ServicePeriod( 86400, 86400+86399, [1]) )
         
-        th = TripHop(25,100,"foo",sc, timezone_offset=0, agency=0, service_id=1)
+        tz = Timezone()
+        tz.add_period( TimezonePeriod( 0, 86400+86399, 0 ) )
+        th = TripHop(25,100,"foo",sc, timezone=tz, agency=0, service_id=1)
         
         time = 25+86400
         
@@ -1020,10 +1034,11 @@ class TestTripHop(unittest.TestCase):
     def test_august(self):
         sc = ServiceCalendar()
         #beginning of august 27 to end of august 27, America/Los_Angeles.
-        sc.add_period( ServicePeriod( 1219820400, 1219906799, [1]) ) 
+        sc.add_period( ServicePeriod( 1219820400, 1219906799, [1]) )
+        tz = Timezone.generate("America/Los_Angeles")
         
         #triphop from 12:00 noon to 12:05 PM. timezone offset is -7 hours, corresponding to west coast on daylight savings time
-        th = TripHop( 43200, 43500, "foo", sc, timezone_offset=-7*3600, agency=0, service_id=1 )
+        th = TripHop( 43200, 43500, "foo", sc, timezone=tz, agency=0, service_id=1 )
         
         # noon on august 27th, America/Los_Angeles
         time = 1219863600
@@ -1049,9 +1064,11 @@ class TestTriphopSchedule(unittest.TestCase):
         # using a tuple
         sc = ServiceCalendar()
         sc.add_period( ServicePeriod(0, 1*3600*24, [1,2]) )
-        ths = TripHopSchedule(rawhops, 1, sc, 0, agency=0)
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        ths = TripHopSchedule(rawhops, 1, sc, tz, agency=0)
         
-        assert ths.timezone_offset == 0
+        assert ths.timezone.soul == tz.soul
         
         h1 = ths.triphops[0]
         assert h1.depart == 0
@@ -1064,14 +1081,14 @@ class TestTriphopSchedule(unittest.TestCase):
                                
         assert(ths.triphops[0].trip_id == 'Foo to Bar')
         assert(len(ths.triphops) == 2)
-        assert str(ths)=="<TripHopSchedule service_id='1'><TripHop depart='00:00' arrive='01:00' transit='3600' trip_id='Foo to Bar' service_id='1' agency='0' timezone_offset='0'/><TripHop depart='01:00' arrive='02:00' transit='3600' trip_id='Bar to Cow' service_id='1' agency='0' timezone_offset='0'/></TripHopSchedule>"
+        assert str(ths)=="<TripHopSchedule service_id='1'><TripHop depart='00:00' arrive='01:00' transit='3600' trip_id='Foo to Bar' service_id='1' agency='0'/><TripHop depart='01:00' arrive='02:00' transit='3600' trip_id='Bar to Cow' service_id='1' agency='0'/></TripHopSchedule>"
     
     def test_destroy(self):
         rawhops = [(0,     1*3600,'Foo to Bar'),
                    (1*3600,2*3600,'Bar to Cow')]
         cal = ServiceCalendar()
         cal.add_period( ServicePeriod(0, 1*3600*24, [1,2]) )
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone=Timezone(), agency=0)
         
         ths.destroy()
         
@@ -1083,7 +1100,7 @@ class TestTriphopSchedule(unittest.TestCase):
         cal = ServiceCalendar()
         cal.add_period( ServicePeriod(0, 1*3600*24, [1,2]) )
         
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone=Timezone(), agency=0)
         
         assert ths.calendar.head.end_time==86400
         
@@ -1092,7 +1109,7 @@ class TestTriphopSchedule(unittest.TestCase):
                    (1*3600,2*3600,'Bar to Cow')]
         cal = ServiceCalendar()
         cal.add_period( ServicePeriod(0, 1*3600*24, [1,2]) )
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone=Timezone(), agency=0)
         
         assert ths.get_next_hop( 0 ).trip_id == "Foo to Bar"
         assert ths.get_next_hop( 1 ).trip_id == "Bar to Cow"
@@ -1104,7 +1121,7 @@ class TestTriphopSchedule(unittest.TestCase):
                    (1*3600,2*3600,'Bar to Cow')]
         cal = ServiceCalendar()
         cal.add_period( ServicePeriod(0, 1*3600*24, [1,2]) )
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone=Timezone(), agency=0)
         
         assert ths.get_last_hop( 0 ) == None
         assert ths.get_last_hop( 3600 ).trip_id == "Foo to Bar"
@@ -1118,7 +1135,9 @@ class TestTriphopSchedule(unittest.TestCase):
                    (1*3600,2*3600,'Bar to Cow')]
         cal = ServiceCalendar()
         cal.add_period( ServicePeriod(0, 1*3600*24, [1,2]) )
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
+        tz = Timezone()
+        tz.add_period( TimezonePeriod( 0, 1*3600*24, 0 ) )
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone=tz, agency=0)
         
         s = ths.walk(State(2,0))
         
@@ -1139,7 +1158,7 @@ class TestTriphopSchedule(unittest.TestCase):
                    (1*3600,2*3600,'auth1trip1')]
         cal = ServiceCalendar()
         cal.add_period( ServicePeriod(0, 1*3600*24, [3,4]) )
-        ths = TripHopSchedule(hops=rawhops, service_id=3, calendar=cal, timezone_offset=0, agency=1)
+        ths = TripHopSchedule(hops=rawhops, service_id=3, calendar=cal, timezone=tz, agency=1)
         
         sfinal = ths.walk(s)
         
@@ -1157,7 +1176,9 @@ class TestTriphopSchedule(unittest.TestCase):
                    (2*3600,3*3600,'Bar to Cow')]
         cal = ServiceCalendar()
         cal.add_period( ServicePeriod(0, 1*3600*24, [1,2]) )
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone=tz, agency=0)
         
         assert ths.walk_back(State(1,0)) == None
         assert ths.walk_back(State(1,2*3600-1)) == None
@@ -1180,7 +1201,7 @@ class TestTriphopSchedule(unittest.TestCase):
                    (2*3600,3*3600,'auth1trip1')]
         cal = ServiceCalendar()
         cal.add_period( ServicePeriod(0, 1*3600*24, [3,4]) )
-        ths = TripHopSchedule(hops=rawhops, service_id=3, calendar=cal, timezone_offset=0, agency=1)
+        ths = TripHopSchedule(hops=rawhops, service_id=3, calendar=cal, timezone=tz, agency=1)
         
         sfinal = ths.walk_back(s)
         
@@ -1199,18 +1220,18 @@ class TestTriphopSchedule(unittest.TestCase):
         rawhops = [(10,     20,'Foo to Bar')]
         cal = ServiceCalendar()
         cal.add_period( ServicePeriod(0, 10, [1]) )
-        ths = TripHopSchedule(hops=rawhops, service_id=2, calendar=cal, timezone_offset=0, agency=0)
+        ths = TripHopSchedule(hops=rawhops, service_id=2, calendar=cal, timezone=Timezone(), agency=0)
         
         s = ths.walk(State(1,0))
         
-        print s == None
+        assert s == None
     
     def test_collapse_wrong_day(self):
 
         cal = ServiceCalendar()
         cal.add_period( ServicePeriod(0, 10, [1]) )
         rawhops = [(10,     20,'Foo to Bar')]
-        ths = TripHopSchedule(hops=rawhops, service_id=2, calendar=cal, timezone_offset=0, agency=0)
+        ths = TripHopSchedule(hops=rawhops, service_id=2, calendar=cal, timezone=Timezone(), agency=0)
         
         th = ths.collapse(State(1,0))
         
@@ -1221,7 +1242,7 @@ class TestTriphopSchedule(unittest.TestCase):
                    (1*3600,2*3600,'Bar to Cow')]
         cal = ServiceCalendar()
         cal.add_period( ServicePeriod(0, 1*3600*24, [1,2]) )
-        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone_offset=0, agency=0)
+        ths = TripHopSchedule(hops=rawhops, service_id=1, calendar=cal, timezone=Timezone(), agency=0)
         
         th = ths.collapse(State(1,0))
         
@@ -1618,20 +1639,20 @@ if __name__ == '__main__':
     tl = unittest.TestLoader()
     
     testables = [\
-                 #TestGraph,
-                 #TestGraphPerformance,
-                 #TestState,
-                 #TestPyPayload,
-                 #TestLink,
-                 #TestWait,
-                 #TestTripHop,
-                 #TestTriphopSchedule,
-                 #TestStreet,
-                 #TestListNode,
-                 #TestVertex,
-                 #TestServicePeriod,
-                 #TestServiceCalendar,
-                 #TestEngine,
+                 TestGraph,
+                 TestGraphPerformance,
+                 TestState,
+                 TestPyPayload,
+                 TestLink,
+                 TestWait,
+                 TestTripHop,
+                 TestTriphopSchedule,
+                 TestStreet,
+                 TestListNode,
+                 TestVertex,
+                 TestServicePeriod,
+                 TestServiceCalendar,
+                 TestEngine,
                  TestTimezone,
                  TestTimezonePeriod,
                  ]

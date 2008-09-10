@@ -203,7 +203,7 @@ typedef struct TripHop {
   int transit;
   char* trip_id;
   ServiceCalendar* calendar;
-  int timezone_offset;
+  Timezone* timezone;
   int agency;
   ServiceId service_id;
 } TripHop;
@@ -214,18 +214,18 @@ struct TripHopSchedule {
   TripHop** hops;
   ServiceId service_id;
   ServiceCalendar* calendar;
-  int timezone_offset; //number of seconds this schedule is offset from GMT, eg. -8*3600=-28800 for US West Coast
+  Timezone* timezone;
   int agency;
 };
 
 TripHopSchedule*
-thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, ServiceCalendar* calendar, int timezone_offset, int agency );
+thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int agency );
 
 void
 thsDestroy(TripHopSchedule* this);
 
 TripHop*
-triphopNew( int depart, int arrive, char* trip_id, ServiceCalendar* calendar, int timezone_offset, int agency, ServiceId service_id );
+triphopNew( int depart, int arrive, char* trip_id, ServiceCalendar* calendar, Timezone* timezone, int agency, ServiceId service_id );
 
 void
 triphopDestroy( TripHop* this );
@@ -245,8 +245,8 @@ triphopTripId( TripHop* this );
 ServiceCalendar*
 triphopCalendar( TripHop* this );
 
-int
-triphopTimezoneOffset( TripHop* this );
+Timezone*
+triphopTimezone( TripHop* this );
 
 int
 triphopAuthority( TripHop* this );
@@ -295,8 +295,8 @@ thsGetHop(TripHopSchedule* this, int i);
 ServiceCalendar*
 thsGetCalendar(TripHopSchedule* this );
 
-int
-thsGetTimezoneOffset(TripHopSchedule* this );
+Timezone*
+thsGetTimezone(TripHopSchedule* this );
 
 typedef struct PayloadMethods {
 	void (*destroy)(void*);

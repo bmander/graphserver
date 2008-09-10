@@ -57,6 +57,6 @@ if __name__=='__main__':
     assert TimeHelpers.localtime_to_unix(2008,8,27,12,0,0,"America/Los_Angeles") == 1219863600
     assert str(TimeHelpers.unix_to_localtime(1219863600, "America/Los_Angeles")) == "2008-08-27 12:00:00-07:00"
 
-    print TimeHelpers.localtime_to_unix(2008,3,9,1,59,59,"America/Los_Angeles")
-    print TimeHelpers.unix_to_localtime(1205056800, "America/Los_Angeles") 
+    print TimeHelpers.localtime_to_unix(2008,2,13,6,0,0,"America/Los_Angeles")
+    print TimeHelpers.unix_to_localtime(1202919000, "America/Los_Angeles") 
     print TimeHelpers.unixtime_to_daytimes(1219834260, "America/Los_Angeles")

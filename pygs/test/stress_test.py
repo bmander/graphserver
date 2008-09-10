@@ -74,8 +74,12 @@ class StressTest(unittest.TestCase):
     def test_ths_destroy(self):
         """TripHopSchedule.destroy() completely destroys TripHopSchedule"""
         
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 100000, 0 ) )
+        
         def func():
-            s = TripHopSchedule(hops=self.rawhops, service_id=1, calendar=self.cal, timezone_offset=0,agency=0)
+
+            s = TripHopSchedule(hops=self.rawhops, service_id=1, calendar=self.cal, timezone=tz,agency=0)
             s.destroy()
             
         grind(func, 100000)
@@ -103,6 +107,9 @@ class StressTest(unittest.TestCase):
     def test_min_edge_graph_delete(self):
         """Graph.destroy() completely destroys Graph with a smattering of edge payloads"""
         
+        tz = Timezone()
+        tz.add_period( TimezonePeriod( 0, 100000, 0 ) )
+        
         def func():
             s = Graph()
             s.add_vertex("A")
@@ -113,8 +120,8 @@ class StressTest(unittest.TestCase):
             s.add_edge("A","B",Street("2",2.2))
             s.add_edge("A","B",Street("3",3.3))
             s.add_edge("B","A",Link())
-            s.add_edge("B","C",TripHopSchedule(hops=self.rawhops, service_id=1, calendar=self.cal, timezone_offset=0,agency=0))
-            s.add_edge("B","C",TripHopSchedule(hops=self.rawhops, service_id=1, calendar=self.cal, timezone_offset=0,agency=0))
+            s.add_edge("B","C",TripHopSchedule(hops=self.rawhops, service_id=1, calendar=self.cal, timezone=tz,agency=0))
+            s.add_edge("B","C",TripHopSchedule(hops=self.rawhops, service_id=1, calendar=self.cal, timezone=tz,agency=0))
             s.destroy()
             
         grind(func, 100000)

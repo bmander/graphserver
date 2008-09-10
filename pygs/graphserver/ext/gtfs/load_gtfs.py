@@ -5,7 +5,7 @@ import pytz
 import sys
 import datetime
 sys.path.append("../../..")
-from graphserver.core import Graph, Street, ServicePeriod, TripHopSchedule, ServiceCalendar, State
+from graphserver.core import Graph, Street, ServicePeriod, TripHopSchedule, ServiceCalendar, State, Timezone
 from graphserver.util import TimeHelpers
 import csv
 import calendar
@@ -25,7 +25,7 @@ def get_service_ids(sched, date):
     return [sp.service_id for sp in filter(lambda x:x.IsActiveOn(date), sched.GetServicePeriodList())]
         
 def timezone_from_agency(sched, agency_id):
-    #try getting agency by agency_id. If that fails, try getting by agency nama
+    #try getting agency by agency_id. If that fails, try getting by agency name
     try:
         agency = sched.GetAgency(agency_id)
     except KeyError:
@@ -122,11 +122,7 @@ class GTFSLoadable:
     def _load_agency(self, sched, agency, agency_int, is_dst, prefix):
         cal = schedule_to_service_calendar(sched, agency.agency_id)
 
-        timezone = timezone_from_agency( sched, agency.agency_id )
-        dt = timezone._utcoffset
-        offset = dt.days*24*3600 + dt.seconds
-        if is_dst:
-            offset += 3600
+        gs_tz = Timezone.generate(agency.agency_timezone)
 
         for stop in sched.GetStopList():
             rawtriphopschedules = self._raw_triphopschedules_from_stop(stop, agency)
@@ -137,7 +133,7 @@ class GTFSLoadable:
                 str_service_id = rawtriphopschedule[0][0].service_id #service_id in string form
                 service_id = cal.service_id_directory[str_service_id]
                     
-                ths = TripHopSchedule( hops, service_id, cal, offset, agency_int )
+                ths = TripHopSchedule( hops, service_id, cal, gs_tz, agency_int )
                 e = self.add_edge( prefix+fromv.stop_id, prefix+tov.stop_id, ths )
 
 

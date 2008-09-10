@@ -173,6 +173,18 @@ class GTFSTestCase(unittest.TestCase):
         vertices, edges = spt.path("gtfsBULLFROG")
         assert spt.get_vertex("gtfsBULLFROG").payload.time == 1219849800 #8:10 am wed august 27, 2008, America/Los_Angeles
         assert [v.label for v in vertices] == ['gtfsSTAGECOACH', 'gtfsBEATTY_AIRPORT', 'gtfsBULLFROG']
+            
+        s = State(1,1202911200) #6am feb 13, 2008, America/Los_Angeles
+        edge_to_airport = g.get_vertex("gtfsSTAGECOACH").outgoing[0]
+        sprime = edge_to_airport.walk(s)
+        assert sprime.time == 1202912400
+        assert sprime.weight == 1200
+        
+        spt = g.shortest_path_tree( "gtfsSTAGECOACH", None, s )
+        vertices, edges = spt.path("gtfsBULLFROG")
+        print spt.get_vertex("gtfsBULLFROG").payload.time == 1202919000 #8:10 am feb 13, 2008, America/Los_Angeles
+        assert [v.label for v in vertices] == ['gtfsSTAGECOACH', 'gtfsBEATTY_AIRPORT', 'gtfsBULLFROG']
+        
         
     def xtest_parse_date(self):
         assert graphserver.ext.gtfs.load_gtfs.parse_date("20080827") == (2008,8,27)

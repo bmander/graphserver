@@ -310,19 +310,19 @@ int hopcmp(const void* a, const void* b) {
  */
 
 TripHopSchedule*
-thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, ServiceCalendar* calendar, int timezone_offset, int agency ) {
+thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int agency ) {
   TripHopSchedule* ret = (TripHopSchedule*)malloc(sizeof(TripHopSchedule));
   ret->type = PL_TRIPHOPSCHED;
   ret->hops = (TripHop**)malloc(n*sizeof(TripHop*));
   ret->n = n;
   ret->service_id = service_id;
   ret->calendar = calendar;
-  ret->timezone_offset = timezone_offset;
+  ret->timezone = timezone;
   ret->agency = agency;
 
   int i;
   for(i=0; i<n; i++) {
-    ret->hops[i] = triphopNew( departs[i], arrives[i], trip_ids[i], calendar, timezone_offset, agency, service_id );
+    ret->hops[i] = triphopNew( departs[i], arrives[i], trip_ids[i], calendar, timezone, agency, service_id );
   }
 
   //make sure departure and arrival arrays are sorted, as they're subjected to a binsearch
@@ -332,7 +332,7 @@ thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id
 }
 
 TripHop*
-triphopNew(int depart, int arrive, char* trip_id, ServiceCalendar* calendar, int timezone_offset, int agency, ServiceId service_id) {
+triphopNew(int depart, int arrive, char* trip_id, ServiceCalendar* calendar, Timezone* timezone, int agency, ServiceId service_id) {
     TripHop* ret = (TripHop*)malloc(sizeof(TripHop));
     
     ret->type = PL_TRIPHOP;
@@ -343,7 +343,7 @@ triphopNew(int depart, int arrive, char* trip_id, ServiceCalendar* calendar, int
     ret->trip_id = (char*)malloc(sizeof(char)*(n));
     memcpy(ret->trip_id, trip_id, n);
     ret->calendar = calendar;
-    ret->timezone_offset = timezone_offset;
+    ret->timezone = timezone;
     ret->agency = agency;
     ret->service_id = service_id;
     
@@ -438,9 +438,9 @@ thsGetServiceId(TripHopSchedule* this) {
     return this->service_id;
 }
 
-int
-thsGetTimezoneOffset(TripHopSchedule* this) {
-    return this->timezone_offset;
+Timezone*
+thsGetTimezone(TripHopSchedule* this) {
+    return this->timezone;
 }
 
 int
@@ -458,8 +458,8 @@ triphopTripId( TripHop* this ) { return this->trip_id; }
 ServiceCalendar*
 triphopCalendar( TripHop* this ) { return this->calendar; }
 
-int
-triphopTimezoneOffset( TripHop* this ) { return this->timezone_offset; }
+Timezone*
+triphopTimezone( TripHop* this ) { return this->timezone; }
 
 int
 triphopAuthority( TripHop* this ) { return this->agency; }
