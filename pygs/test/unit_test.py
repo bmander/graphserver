@@ -1648,7 +1648,7 @@ if __name__ == '__main__':
                  #TestState,
                  #TestPyPayload,
                  #TestLink,
-                 TestWait,
+                 #TestWait,
                  #TestTripHop,
                  #TestTriphopSchedule,
                  #TestStreet,
@@ -1656,7 +1656,7 @@ if __name__ == '__main__':
                  #TestVertex,
                  #TestServicePeriod,
                  #TestServiceCalendar,
-                 #TestEngine,
+                 TestEngine,
                  #TestTimezone,
                  #TestTimezonePeriod,
                  ]

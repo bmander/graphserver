@@ -254,11 +254,11 @@ class TripPlanEngine(Engine):
                     
         return actions
     
-    def trip_plan(self,from_v,to_v,time=None,verbose=False):
+    def trip_plan(self,from_v,to_v,time=None,verbose=False,forward=True):
         if time is None:
             time=int(now())
         
-        spt, vertices, edges = self._shortest_path_raw( True, from_v, to_v, time, doubleback=False, tp=1 )
+        spt, vertices, edges = self._shortest_path_raw( forward, from_v, to_v, time, doubleback=False, tp=1 )
         
         actions = self._actions_from_path(vertices,edges,verbose)
 
@@ -273,11 +273,11 @@ class TripPlanEngine(Engine):
         return "".join(ret)
     trip_plan.mime = "text/xml"
     
-    def trip_plan_json(self,from_v,to_v,time=None,verbose=False):
+    def trip_plan_json(self,from_v,to_v,time=None,verbose=False,forward=True):
         if time is None:
             time=int(now())
             
-        spt, vertices, edges = self._shortest_path_raw( True, from_v, to_v, time, doubleback=False, tp=1 )
+        spt, vertices, edges = self._shortest_path_raw( forward, from_v, to_v, time, doubleback=False, tp=1 )
         actions = self._actions_from_path(vertices,edges,verbose)
         ret = simplejson.dumps(actions)
         spt.destroy()
