@@ -138,11 +138,11 @@ linkGetName(Link* this);
 typedef struct Wait {
     edgepayload_t type;
     long end;
-    int utcoffset;
+    Timezone* timezone;
 } Wait;
 
 Wait*
-waitNew(long end, int utcoffset);
+waitNew(long end, Timezone* timezone);
 
 void
 waitDestroy(Wait* tokill);
@@ -156,8 +156,8 @@ waitWalkBack(Wait* this, State* param, int transfer_penalty);
 long
 waitGetEnd(Wait* this);
 
-int
-waitGetUTCOffset(Wait* this);
+Timezone*
+waitGetTimezone(Wait* this);
 
 //---------------DECLARATIONS FOR STREET  CLASS---------------------
 

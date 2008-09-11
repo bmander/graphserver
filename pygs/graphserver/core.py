@@ -694,17 +694,7 @@ class Link(EdgePayload):
         
         return "<Link name='%s'/>" % (self.name)
         
-class Wait(EdgePayload):
-    end = cproperty(lgs.waitGetEnd, c_long)
-    utcoffset = cproperty(lgs.waitGetUTCOffset, c_int)
-    
-    def __init__(self, end, utcoffset):
-        self.soul = self._cnew( end, utcoffset )
-        
-    def to_xml(self):
-        self.check_destroyed()
-        
-        return "<Wait end='%ld' utcoffset='%d' />"%(self.end,self.utcoffset)
+
     
 class Street(EdgePayload):
     length = cproperty(lgs.streetGetLength, c_double)
@@ -767,6 +757,18 @@ class Timezone(CShadow):
             ret.add_period( TimezonePeriod( period_begin, period_end, utcoffset ) )
         
         return ret
+
+class Wait(EdgePayload):
+    end = cproperty(lgs.waitGetEnd, c_long)
+    timezone = cproperty(lgs.waitGetTimezone, c_void_p, Timezone)
+    
+    def __init__(self, end, timezone):
+        self.soul = self._cnew( end, timezone.soul )
+        
+    def to_xml(self):
+        self.check_destroyed()
+        
+        return "<Wait end='%ld' />"%(self.end)
 
 class TripHop(EdgePayload):
     
@@ -868,10 +870,6 @@ class TripHopSchedule(EdgePayload):
         
     def get_last_hop(self, time):
         return TripHop.from_pointer( self._cget_last_hop(self.soul, time) )
-        
-
-
-        
         
 
 Graph._cnew = lgs.gNew

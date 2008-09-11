@@ -263,11 +263,11 @@ streetGetLength(Street* this) {
 
 //WAIT FUNCTIONS
 Wait*
-waitNew(long end, int utcoffset) {
+waitNew(long end, Timezone* timezone) {
     Wait* ret = (Wait*)malloc(sizeof(Wait));
     ret->type = PL_WAIT;
     ret->end = end;
-    ret->utcoffset = utcoffset;
+    ret->timezone = timezone;
     
     return ret;
 }
@@ -282,9 +282,9 @@ waitGetEnd(Wait* this) {
     return this->end;
 }
 
-int
-waitGetUTCOffset(Wait* this) {
-    return this->utcoffset;
+Timezone*
+waitGetTimezone(Wait* this) {
+    return this->timezone;
 }
 
 //TRIPHOP FUNCTIONS

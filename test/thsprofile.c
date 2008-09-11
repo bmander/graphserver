@@ -35,7 +35,7 @@ int main() {
             //printf( "%d\n", service_id);
         }
         
-        scAddPeriod( cal, spNew( daystart, dayend, nserviceids, serviceids, daylightsavings ) );
+        scAddPeriod( cal, spNew( daystart, dayend, nserviceids, serviceids ) );
     }
     
     //Load up vertices
@@ -51,6 +51,9 @@ int main() {
     }
     
 
+    Timezone* tz = tzNew();
+    TimezonePeriod* tzp = tzpNew(0, 1581602400, -8*3600);
+    tzAddPeriod(tz, tzp);
     
     //Load up triphopschedules
     //for each vertex
@@ -90,7 +93,7 @@ int main() {
                 trip_ids[k] = trip_id;
             }
             
-            TripHopSchedule* ths = thsNew( departs, arrives, trip_ids, nhops, service_id, cal, timezone_offset, 0 );
+            TripHopSchedule* ths = thsNew( departs, arrives, trip_ids, nhops, service_id, cal, tz, 0 );
             
             gAddEdge( gg, label, destlabel, (EdgePayload*)ths );
             
@@ -108,6 +111,8 @@ int main() {
     gDestroy(gg, 1, 1);
 
     scDestroy( cal );
+    
+    tzDestroy( tz );
     
     
     

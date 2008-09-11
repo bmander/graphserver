@@ -36,7 +36,7 @@ waitWalk(Wait* this, State* params, int transfer_penalty) {
     
     ret->prev_edge_type = PL_WAIT;
     
-    long secs_since_local_midnight = (params->time+this->utcoffset)%SECS_IN_DAY;
+    long secs_since_local_midnight = (params->time+tzUtcOffset(this->timezone, params->time))%SECS_IN_DAY;
     long wait_time = this->end - secs_since_local_midnight;
     if(wait_time<0) {
         wait_time += SECS_IN_DAY;
@@ -58,7 +58,7 @@ waitWalkBack(Wait* this, State* params, int transfer_penalty) {
     
     ret->prev_edge_type = PL_WAIT;
     
-    long secs_since_local_midnight = (params->time+this->utcoffset)%SECS_IN_DAY;
+    long secs_since_local_midnight = (params->time+tzUtcOffset(this->timezone, params->time))%SECS_IN_DAY;
     long wait_time = secs_since_local_midnight - this->end;
     if(wait_time<0) {
         wait_time += SECS_IN_DAY;
