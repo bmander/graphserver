@@ -248,6 +248,7 @@ thsCollapseBack(TripHopSchedule* this, State* params) {
     // this way, the user doesn't need to worry about it
     
     ServicePeriod* service_period = params->service_periods[this->agency];
+    
     if( !service_period )
 #ifndef ROUTE_REVERSE
         service_period = scPeriodOfOrAfter( this->calendar, params->time );
@@ -265,7 +266,7 @@ thsCollapseBack(TripHopSchedule* this, State* params) {
     }
     
     long adjusted_time = spNormalizeTime( service_period, tzUtcOffset(this->timezone, params->time), params->time );
-
+    
 #ifndef ROUTE_REVERSE
     return thsGetNextHop(this, adjusted_time);
 #else

@@ -21,13 +21,13 @@ class Engine(object, Servable):
     def _graph(self):
         return self.gg
 
-    def _parse_init_state(self, numauthorities, time ):
+    def _parse_init_state(self, numagencies, time ):
         if time is None:
             time = int(now())
         else:
             time = int(time)
         
-        return State(numauthorities, time)
+        return State(numagencies, time)
 
     def _shortest_path_raw(self,dir_forward,from_v,to_v,time,doubleback=True,tp=0):
         """returns (spt,vertices,edges). You need to destroy spt when you're done with the path"""
@@ -37,7 +37,7 @@ class Engine(object, Servable):
         tp = int(tp)
         doubleback = (str(doubleback).lower()=="true")
         
-        init_state = self._parse_init_state(self.gg.numauthorities, time)
+        init_state = self._parse_init_state(self.gg.numagencies, time)
         
         if not dir_forward:
             spt = self.gg.shortest_path_tree_retro(from_v, to_v, init_state, tp)
@@ -46,7 +46,7 @@ class Engine(object, Servable):
                 if origin is not None:
                     departure_time = origin.payload.time
                     spt.destroy()
-                    spt = self.gg.shortest_path_tree( from_v, to_v, State(self.gg.numauthorities, departure_time),tp )
+                    spt = self.gg.shortest_path_tree( from_v, to_v, State(self.gg.numagencies, departure_time),tp )
                     vertices, edges = spt.path(to_v)
                 else:
                     spt.destroy()
@@ -60,7 +60,7 @@ class Engine(object, Servable):
                 if dest is not None:
                     arrival_time = dest.payload.time
                     spt.destroy()
-                    spt = self.gg.shortest_path_tree_retro( from_v, to_v, State(self.gg.numauthorities, arrival_time),tp )
+                    spt = self.gg.shortest_path_tree_retro( from_v, to_v, State(self.gg.numagencies, arrival_time),tp )
                     vertices, edges = spt.path_retro(from_v)
                 else:
                     spt.destroy()
@@ -122,7 +122,7 @@ class Engine(object, Servable):
 
     def _walk_edges_general(self, forward_dir, label, time):
         vertex = self.gg.get_vertex( label )
-        init_state = self._parse_init_state(self.gg.numauthorities, time)
+        init_state = self._parse_init_state(self.gg.numagencies, time)
 
         ret = ["<?xml version='1.0'?>"]
         ret.append("<vertex>")
@@ -137,19 +137,19 @@ class Engine(object, Servable):
                 else:
                     collapsed = edge.payload
                 if collapsed:
-		    sprime = collapsed.walk( init_state )
-		    if sprime:
+                    sprime = collapsed.walk( init_state )
+                    if sprime:
                         ret.append(sprime.to_xml())
-                else:
-                    ret.append("<state/>")
+                    else:
+                        ret.append("<state/>")
             else:
                 if hasattr( edge.payload, 'collapse_back' ):
                     collapsed = edge.payload.collapse_back( init_state )
                 else:
                     collapsed = edge.payload
                 if collapsed:
-		    sprime = collapsed.walk_back( init_state )
-		    if sprime:
+                    sprime = collapsed.walk_back( init_state )
+                    if sprime:
                         ret.append(sprime.to_xml())
                 else:
                     ret.append("<state/>")
@@ -175,7 +175,7 @@ class Engine(object, Servable):
         
     def collapse_edges(self, label, time):
         vertex = self.gg.get_vertex( label )
-        init_state = self._parse_init_state(self.gg.numauthorities, time)
+        init_state = self._parse_init_state(self.gg.numagencies, time)
         ret = ["<?xml version='1.0'?>"]
         ret.append("<vertex>")
         ret.append(init_state.to_xml())
@@ -194,6 +194,30 @@ class Engine(object, Servable):
         return "".join(ret)
     collapse_edges.path = r'/vertex/outgoing/collapsed$'
     collapse_edges.mime = "text/xml"
+    
+    def calendar_period(self,label,edge,time):
+        edge = int(edge)
+        time = int(time)
+        
+        vv = self.gg.get_vertex(label)
+        
+        ret = ["<?xml version='1.0'?>"]
+        e = vv.outgoing[edge]
+        cc = e.payload.calendar
+        ret.append( str( cc.period_of_or_after( time ) ) )
+            
+        return "".join(ret)
+    calendar_period.path = r'/calendar_period'
+    calendar_period.mime = "text/xml"
+    
+    def calendar(self,label,edge):
+        edge = int(edge)
+        
+        vv = self.gg.get_vertex(label)
+        
+        return vv.outgoing[edge].payload.calendar.to_xml()
+    calendar.path = "/calendar$"
+    calendar.mime = "text/xml"
 
 class Action:
     action = "action"

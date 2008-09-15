@@ -52,9 +52,9 @@ class Graph(CShadow):
     
     size = cproperty(lgs.gSize, c_long)
     
-    def __init__(self, numauthorities=1):
+    def __init__(self, numagencies=1):
         self.soul = self._cnew()
-        self.numauthorities = numauthorities #a central point that keeps track of how large the list of calendards need ot be in the state variables.
+        self.numagencies = numagencies #a central point that keeps track of how large the list of calendards need ot be in the state variables.
         
     def destroy(self, free_vertex_payloads=1, free_edge_payloads=1):
         #void gDestroy( Graph* this, int free_vertex_payloads, int free_edge_payloads );

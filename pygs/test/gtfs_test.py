@@ -2,6 +2,7 @@ import transitfeed
 import sys
 sys.path = ['..'] + sys.path
 from graphserver.core import Graph, Street, ServicePeriod, TripHopSchedule, ServiceCalendar, State
+from graphserver.engine import Engine
 from graphserver.ext.gtfs import GTFSLoadable
 import graphserver.ext.gtfs
 import time
@@ -141,9 +142,9 @@ class GTFSTestCase(unittest.TestCase):
             assert( expected == found )
         fp.close()
     
-    def test_load_bart(self):
+    def test_load_sample(self):
         g = TestGTFS()
-        g.load_gtfs( "sample-feed.zip", is_dst=True )
+        g.load_gtfs( "sample-feed.zip")
         
         def leads_to(x, y):
             vs = [ edge.to_v.label for edge in g.get_vertex(x).outgoing ]
@@ -182,14 +183,14 @@ class GTFSTestCase(unittest.TestCase):
         
         spt = g.shortest_path_tree( "gtfsSTAGECOACH", None, s )
         vertices, edges = spt.path("gtfsBULLFROG")
-        print spt.get_vertex("gtfsBULLFROG").payload.time == 1202919000 #8:10 am feb 13, 2008, America/Los_Angeles
+        assert spt.get_vertex("gtfsBULLFROG").payload.time == 1202919000 #8:10 am feb 13, 2008, America/Los_Angeles
         assert [v.label for v in vertices] == ['gtfsSTAGECOACH', 'gtfsBEATTY_AIRPORT', 'gtfsBULLFROG']
         
         
-    def xtest_parse_date(self):
+    def test_parse_date(self):
         assert graphserver.ext.gtfs.load_gtfs.parse_date("20080827") == (2008,8,27)
         
-    def xtest_get_service_ids(self):
+    def test_get_service_ids(self):
         sched = transitfeed.Loader("google_transit.zip").Load()
         
         assert graphserver.ext.gtfs.load_gtfs.get_service_ids(sched, "20080827") == [u'M-FSAT', u'WKDY']
@@ -201,18 +202,18 @@ class GTFSTestCase(unittest.TestCase):
         assert graphserver.ext.gtfs.load_gtfs.get_service_ids(sched, datetime(2008,9,7)) == [u'SUN', u'SUNAB']
         assert graphserver.ext.gtfs.load_gtfs.get_service_ids(sched, datetime(2008,12,25)) == [u'SUN', u'SUNAB']
         
-    def xtest_timezone_from_agency(self):
+    def test_timezone_from_agency(self):
         sched = transitfeed.Loader("google_transit.zip").Load()
         
         assert graphserver.ext.gtfs.load_gtfs.timezone_from_agency(sched, "BART") == pytz.timezone("America/Los_Angeles")
         assert graphserver.ext.gtfs.load_gtfs.timezone_from_agency(sched, "AirBART") == pytz.timezone("America/Los_Angeles")
     
-    def xtest_day_bounds_from_sched(self):
+    def test_day_bounds_from_sched(self):
         sched = transitfeed.Loader("google_transit.zip").Load()
         
         assert graphserver.ext.gtfs.load_gtfs.day_bounds_from_sched(sched) == (13860, 92100)
         
-    def xtest_schedule_to_service_calendar(self):
+    def test_schedule_to_service_calendar(self):
         sched = transitfeed.Loader("google_transit.zip").Load()
         
         sc = graphserver.ext.gtfs.load_gtfs.schedule_to_service_calendar(sched, "BART")
@@ -227,12 +228,26 @@ class GTFSTestCase(unittest.TestCase):
         
         sp = sc.period_of_or_after( 1220814000 )
         assert sp.service_ids == [4, 5]
+        
+class TestBART(unittest.TestCase):
+    def test_bart(self):
+        g = TestGTFS()
+        g.load_gtfs("google_transit.zip")
+        
+        # just a basic sanity test
+        s1 = State(g.numagencies, 1219863720)
+        s2 = g.get_vertex("gtfsMONT").outgoing[1].walk(s1)
+        assert s2.time == 1219864320
+        
+        #e = Engine(g)
+        #e.run_test_server()
     
 if __name__=='__main__':
     tl = unittest.TestLoader()
     
     testables = [\
                  GTFSTestCase,
+                 TestBART,
                  ]
 
     for testable in testables:

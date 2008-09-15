@@ -67,19 +67,20 @@ def iter_dates(startdate, enddate):
         currdate += timedelta(1)
 
 class GTFSLoadable:
-    def _triphops_from_stop(self, stop, agency):
+    def _triphops_from_stop(self, sched, stop, agency):
         ret = []
         
         for time, (trip,ix), is_timepoint in stop.GetStopTimeTrips():
+            route = sched.routes[trip.route_id]
             
             stoptimes = trip.GetStopTimes()
-            if ix != len(stoptimes)-1:
+            if ix != len(stoptimes)-1 and route.agency_id == agency.agency_id:
                 ret.append( (trip, stoptimes[ix], stoptimes[ix+1], trip.route_id ) )
             
         return ret
         
     def _group_triphops(self, raw_triphops):
-        """Takes a bunch of tuples of (trip,stoptime,stoptime). Returns them grouped by trip.trip_id && trip.service_id"""
+        """Takes a bunch of tuples of (trip,stoptime,stoptime). Returns them grouped by trip,fromv,tov,routeid"""
         
         #Get dictionary with keys corresponding to a destination stop_id,service_id pair, and initialize to []
         trip_ids = dict.fromkeys( ["%s+%s+%s"%(tov.stop.stop_id,trip.service_id,routeid) for trip,fromv,tov,routeid in raw_triphops] )
@@ -99,13 +100,13 @@ class GTFSLoadable:
             
         return thss
         
-    def _raw_triphopschedules_from_stop(self, stop, agency):
-        triphops = self._triphops_from_stop(stop, agency)
+    def _raw_triphopschedules_from_stop(self, sched, stop, agency):
+        triphops = self._triphops_from_stop(sched, stop, agency)
         thss = self._group_triphops(triphops)
         
         return thss
 
-    def load_gtfs(self, sched_or_datadir, is_dst=False, prefix="gtfs"):
+    def load_gtfs(self, sched_or_datadir, prefix="gtfs"):
         
         if type(sched_or_datadir)==str:
             sched = transitfeed.Loader(sched_or_datadir).Load()
@@ -115,17 +116,19 @@ class GTFSLoadable:
         #add all vertices
         for stop in sched.GetStopList():
             self.add_vertex(prefix+stop.stop_id)
+            
+        self.numagencies = len(sched.GetAgencyList())
 
         for agency, i in zip( sched.GetAgencyList(), range(len(sched.GetAgencyList())) ):
-            self._load_agency(sched, agency, i, is_dst, prefix)
+            self._load_agency(sched, agency, i, prefix)
                     
-    def _load_agency(self, sched, agency, agency_int, is_dst, prefix):
+    def _load_agency(self, sched, agency, agency_int, prefix):
         cal = schedule_to_service_calendar(sched, agency.agency_id)
 
         gs_tz = Timezone.generate(agency.agency_timezone)
 
         for stop in sched.GetStopList():
-            rawtriphopschedules = self._raw_triphopschedules_from_stop(stop, agency)
+            rawtriphopschedules = self._raw_triphopschedules_from_stop(sched, stop, agency)
             
             for rawtriphopschedule in rawtriphopschedules:
                 hops = [(fromv.departure_secs, tov.arrival_secs, trip.trip_id.encode("ascii")) for trip,fromv,tov in rawtriphopschedule]
