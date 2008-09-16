@@ -85,7 +85,7 @@ gVertices( Graph* this, long* num_vertices ) {
 
   long i=0;
   struct hashtable_itr *itr = hashtable_iterator(this->vertices);
-  int next_exists=1;
+  int next_exists=nn; //next_exists is false when number of vertices is 0
 
   while(itr && next_exists) {
     Vertex* vtx = hashtable_iterator_value( itr );
