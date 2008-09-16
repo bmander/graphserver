@@ -1,7 +1,7 @@
 import transitfeed
 import sys
 sys.path = ['..'] + sys.path
-from graphserver.core import Graph, Street, ServicePeriod, TripHopSchedule, ServiceCalendar, State
+from graphserver.core import Graph, Street, ServicePeriod, TripHopSchedule, ServiceCalendar, State, Wait
 from graphserver.engine import Engine
 from graphserver.ext.gtfs import GTFSLoadable
 import graphserver.ext.gtfs
@@ -241,6 +241,22 @@ class TestBART(unittest.TestCase):
         
         #e = Engine(g)
         #e.run_test_server()
+        
+class TestBART_DAG(unittest.TestCase):
+    def test_bart_dag(self):
+        g = TestGTFS()
+        g.load_gtfs_dag("google_transit.zip", "America/Los_Angeles")
+        
+        #this works
+        s1 = State(2, 1219863240)
+        # http://localhost:8080/shortest_path?from_v=%2219TH@42840%22&to_v=%22ASBY@43200%22&time=1219863240
+        spt = g.shortest_path_tree( "19TH@42840", None, s1 )
+        assert spt.get_vertex("ASBY@43200").payload.time == 1219863600
+        # http://localhost:8080/shortest_path?from_v=%22gtfs19TH%22&to_v=%22gtfsASBY%22&time=1219863240
+        spt = g.shortest_path_tree( "gtfs19TH", None, s1 )
+        assert spt.get_vertex("gtfsASBY").payload.time == 1219863600
+        # http://localhost:8080/shortest_path?from_v=%22gtfsFRMT%22&to_v=%22gtfsMLBR%22&time=1219863240
+        assert spt.get_vertex("gtfsMLBR").payload.time == 1219866720
     
 if __name__=='__main__':
     tl = unittest.TestLoader()
@@ -248,6 +264,7 @@ if __name__=='__main__':
     testables = [\
                  GTFSTestCase,
                  TestBART,
+                 TestBART_DAG
                  ]
 
     for testable in testables:

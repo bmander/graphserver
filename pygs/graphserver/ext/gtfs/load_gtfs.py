@@ -5,7 +5,7 @@ import pytz
 import sys
 import datetime
 sys.path.append("../../..")
-from graphserver.core import Graph, Street, ServicePeriod, TripHopSchedule, ServiceCalendar, State, Timezone
+from graphserver.core import Graph, Street, ServicePeriod, TripHopSchedule, ServiceCalendar, State, Timezone, Wait, TripHop, TimezonePeriod
 from graphserver.util import TimeHelpers
 import csv
 import calendar
@@ -60,11 +60,52 @@ def schedule_to_service_calendar(sched, agency_id):
         
     return cal
     
+def group(ary, groupfunc=lambda x:x):
+    clumper = {}
+    for item in ary:
+        grouplabel = groupfunc(item)
+        if grouplabel not in clumper:
+            clumper[grouplabel] = []
+        clumper[grouplabel].append( item )
+        
+    return clumper.values()
+    
 def iter_dates(startdate, enddate):
     currdate = startdate
     while currdate <= enddate:
         yield currdate
         currdate += timedelta(1)
+        
+def stoptimes_from_stoptimetrips(stts):
+    """return transitfeed StopTime objects from the tuple list returned from stop.GetStopTimeTrips()"""
+    
+    for time,(trip,trindex),is_tp in stts:
+        yield trip.GetStopTimes()[trindex]
+        
+def eventtimes_from_stoptimetrips(stts):
+    """return all events (arrivals and departures) that occur at this stop, given this stop's stop.GetStopTimeTrips() list of tuples"""
+    
+    for stoptime in stoptimes_from_stoptimetrips(stts):
+        yield stoptime.arrival_secs
+        yield stoptime.departure_secs
+
+def distinct(ary):
+    """eliminate duplicate items from list"""
+    return list(set(ary))
+
+def unique_eventtimes_from_stoptimetrips(stts):
+    """return a sorted list of all departure and arrival times occurring at this stop, given the stops's stop.GetStopTimeTrips() list of tuples"""
+    eventtimes = distinct(eventtimes_from_stoptimetrips(stts))
+    eventtimes.sort()
+    return eventtimes
+    
+def cons(ary):
+    """return all pairs of consecutive elements"""
+    for x,y in zip(ary[:-1],ary[1:]):
+        yield (x,y)
+        
+def route_for_trip(trip):
+    return trip._schedule.routes[ trip.route_id ]
 
 class GTFSLoadable:
     def _triphops_from_stop(self, sched, stop, agency):
@@ -138,5 +179,62 @@ class GTFSLoadable:
                     
                 ths = TripHopSchedule( hops, service_id, cal, gs_tz, agency_int )
                 e = self.add_edge( prefix+fromv.stop_id, prefix+tov.stop_id, ths )
+                
+    def load_gtfs_dag(self, sched_or_datadir, stops_timezone_name, prefix="gtfs"):
+        
+        if type(sched_or_datadir)==str:
+            sched = transitfeed.Loader(sched_or_datadir).Load()
+        else:
+            sched = sched_or_datadir
 
+        gs_tz = Timezone.generate(stops_timezone_name)
+
+        #add all vertices
+        for stop in sched.GetStopList():
+            print "laying down beanstock for stop %s"%stop.stop_id
+            self.add_vertex(prefix+stop.stop_id)
+            
+            stts = stop.GetStopTimeTrips()
+            eventtimes = list(unique_eventtimes_from_stoptimetrips(stts))
+            for eventtime in eventtimes:
+                self.add_vertex( "%s@%s"%(stop.stop_id,eventtime) )
+                self.add_edge( prefix+stop.stop_id, "%s@%s"%(stop.stop_id,eventtime), Wait(eventtime, gs_tz) )
+                self.add_edge( "%s@%s"%(stop.stop_id,eventtime), prefix+stop.stop_id, Wait(eventtime, gs_tz) )
+                
+            for startwait,endwait in cons(eventtimes):
+                self.add_edge( "%s@%s"%(stop.stop_id,startwait), "%s@%s"%(stop.stop_id,endwait), Wait(endwait, gs_tz) )
+            
+        self.numagencies = len(sched.GetAgencyList())
+
+        for agency, i in zip( sched.GetAgencyList(), range(len(sched.GetAgencyList())) ):
+            self._load_agency_dag(sched, agency, i, prefix)
+            
+    def _load_agency_dag(self, sched, agency, agency_int, prefix):
+        cal = schedule_to_service_calendar(sched, agency.agency_id)
+        
+        gs_tz = Timezone.generate(agency.agency_timezone)
+
+        for stop in sched.GetStopList():
+            print "adding triphops leaving stop %s for agency %s"%(stop.stop_id, agency.agency_id)
+            
+            stts = stop.GetStopTimeTrips()
+            
+            # for each trip touching this stop
+            for time,(trip,trindex),is_st in stts:
+                
+                # the trip's route must be of the current agency
+                if route_for_trip(trip).agency_id != agency.agency_id:
+                    continue
+                
+                stoptimes = trip.GetStopTimes()
+                
+                # there is no outbound triphop if this is the last stoptime on the route
+                if trindex == len(stoptimes)-1:
+                    continue
+                    
+                fromst = stoptimes[trindex]
+                tost = stoptimes[trindex+1]
+                
+                th = TripHop(fromst.departure_secs, tost.arrival_secs, trip.trip_id.encode("ascii"), cal, gs_tz, agency_int, cal.int_sid(trip.service_id))
+                self.add_edge( "%s@%s"%(fromst.stop.stop_id, fromst.departure_secs), "%s@%s"%(tost.stop.stop_id, tost.arrival_secs), th )
 
