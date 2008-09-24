@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "hashtable_gs.h"
 #define SECS_IN_DAY 86400
 
 typedef int ServiceId;
@@ -12,7 +13,20 @@ typedef struct Timezone Timezone;
 typedef struct TimezonePeriod TimezonePeriod;
 
 struct ServiceCalendar {
+    /* TripHops have service types, and the ServiceCalendar provides the correspondance between points in time and lists of service_ids.
+    *  For example, A triphop that has a service_id attribute with the value "WKDY" will only run during service periods
+    *  associated with the service_id "WKDY", which the service calendar will show corresponds roughly with weekdays. (Or, more literally, 
+    *  the daytime periods of every day except two days on a seven day cycle.) As an optimization, triphop structs do not have a string attribute
+    *  service_id, but an integer which corresponds to the service_id. Because most transit agencies use short strings for their service_ids,
+    *  and talking about the service_id "weekday" is way easier than service_id 5, the service calendar has a lookup and reverse lookup table for string
+    *  service_ids to integer service_ids.
+    */
+    
     ServicePeriod* head;
+    
+    int num_sids;
+    struct hashtable* sid_str_to_int;
+    char** sid_int_to_str;
 } ; 
 
 struct ServicePeriod {
@@ -26,6 +40,18 @@ struct ServicePeriod {
 
 ServiceCalendar*
 scNew( );
+
+int
+scAddServiceId( ServiceCalendar* this, char* service_id );
+
+char*
+scGetServiceIdString( ServiceCalendar* this, int service_id );
+
+int
+scGetServiceIdInt( ServiceCalendar* this, char* service_id );
+
+int
+scGetOrAddServiceIdInt( ServiceCalendar* this, char* service_id );
 
 void
 scAddPeriod( ServiceCalendar* this, ServicePeriod* period );

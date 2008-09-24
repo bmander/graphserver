@@ -119,6 +119,8 @@ pycapi(lgs.scNew, c_void_p, [])
 pycapi(lgs.scPeriodOfOrAfter, c_void_p, [c_void_p, c_int])
 pycapi(lgs.scPeriodOfOrBefore, c_void_p, [c_void_p, c_int])
 pycapi(lgs.scAddPeriod, c_void_p, [c_void_p, c_void_p])
+pycapi(lgs.scGetServiceIdInt, c_int, [c_void_p, c_char_p])
+pycapi(lgs.scGetServiceIdString, c_char_p, [c_void_p, c_int])
 
 # TIMEZONE PERIOD API
 pycapi(lgs.tzpNew, c_void_p, [c_long, c_long, c_int])

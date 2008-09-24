@@ -272,13 +272,13 @@ class ServicePeriod(CShadow):
     def __str__(self):
         return self.to_xml()
     
-    def to_xml(self):
-        #return "<ServicePeriod begin_time='%s' end_time='%s' service_ids='%s'/>" % \
-        #    (asctime(gmtime(self.begin_time)), asctime(gmtime(self.end_time)), 
-        #     ",".join(map(str, self.service_ids)))
-        return "<ServicePeriod begin_time='%d' end_time='%d' service_ids='%s'/>" %( \
-            self.begin_time, self.end_time, 
-             ",".join(map(str, self.service_ids)))
+    def to_xml(self, cal=None):
+        if cal is not None:
+            sids = [cal.get_service_id_string(x) for x in self.service_ids]
+        else:
+            sids = [str(x) for x in self.service_ids]
+
+        return "<ServicePeriod begin_time='%d' end_time='%d' service_ids='%s'/>" %( self.begin_time, self.end_time, ",".join(sids))
     
     def datum_midnight(self, timezone_offset):
         return lgs.spDatumMidnight( self.soul, timezone_offset )
@@ -300,40 +300,25 @@ class ServiceCalendar(CShadow):
     head = cproperty( lgs.scHead, c_void_p, ServicePeriod )
        
     def __init__(self):
-        self.service_id_directory = {}
         self.soul = lgs.scNew()
+    
+    def get_service_id_int( self, service_id ):
+        if type(service_id)!=type("string"):
+            raise TypeError("service_id is supposed to be a string")
         
-    def int_sid(self, service_id):
-        if service_id not in self.service_id_directory:
-            self.service_id_directory[service_id]=len(self.service_id_directory)+1
-            
-        return self.service_id_directory[service_id]
+        return lgs.scGetServiceIdInt( self.soul, service_id );
         
-    def int_sids(self, service_ids):
-        return [self.int_sid(sid) for sid in service_ids]
+    def get_service_id_string( self, service_id ):
+        if type(service_id)!=type(1):
+            raise TypeError("service_id is supposed to be an int, in this case")
         
-    def add_period(self, service_period):
-        lgs.scAddPeriod(self.soul, service_period.soul)
+        return lgs.scGetServiceIdString( self.soul, service_id )
         
-    """def add_day(self, begin_time, end_time, service_ids, daylight_savings=0):
+    def add_period(self, begin_time, end_time, service_ids):
+        sp = ServicePeriod( begin_time, end_time, [self.get_service_id_int(x) for x in service_ids] )
+        
+        lgs.scAddPeriod(self.soul, sp.soul)
 
-        if self.head is not None and (begin_time <= self.tail.end_time):
-            raise Exception( "begin_time (%d) is not after the tail's end_time (%d)"%(begin_time,self.tail.end_time) )
-
-        #translate service_ids to numbers
-        for service_id in service_ids:
-            if service_id not in self.service_id_directory:
-                self.service_id_directory[service_id]=len(self.service_id_directory)+1
-        service_ids = [self.service_id_directory[x] for x in service_ids]
-
-        if self.head is None:
-            cday = ServicePeriod(begin_time,end_time,service_ids,daylight_savings)
-            self.head = cday
-            self.tail = cday
-        else:
-            self.tail.append_day( begin_time, end_time, service_ids, daylight_savings )
-            self.tail = self.tail.next
-    """
     def period_of_or_after(self,time):
         soul = lgs.scPeriodOfOrAfter(self.soul, time)
         return ServicePeriod.from_pointer(soul)
@@ -352,7 +337,7 @@ class ServiceCalendar(CShadow):
     def to_xml(self):
         ret = ["<ServiceCalendar>"]
         for period in self.periods:
-            ret.append( period.to_xml() )
+            ret.append( period.to_xml(self) )
         ret.append( "</ServiceCalendar>" )
         return "".join(ret)
 
@@ -779,20 +764,29 @@ class TripHop(EdgePayload):
     calendar = cproperty( lgs.triphopCalendar, c_void_p, ServiceCalendar )
     timezone = cproperty( lgs.triphopTimezone, c_void_p, Timezone )
     agency = cproperty( lgs.triphopAuthority, c_int )
-    service_id = cproperty( lgs.triphopServiceId, c_int )
+    int_service_id = cproperty( lgs.triphopServiceId, c_int )
 
     SEC_IN_HOUR = 3600
     SEC_IN_MINUTE = 60
     
     def __init__(self, depart, arrive, trip_id, calendar, timezone, agency, service_id ):
-        self.soul = lgs.triphopNew(depart, arrive, trip_id, calendar.soul, timezone.soul, c_int(agency), ServiceIdType(service_id))
+        if type(service_id)!=type('string'):
+            raise TypeError("service_id is supposed to be a string")
+            
+        int_sid = calendar.get_service_id_int( service_id )
+        self.soul = lgs.triphopNew(depart, arrive, trip_id.encode("ascii"), calendar.soul, timezone.soul, c_int(agency), ServiceIdType(int_sid))
     
     @classmethod
     def _daysecs_to_str(cls,daysecs):
         return "%02d:%02d"%(int(daysecs/cls.SEC_IN_HOUR), int(daysecs%cls.SEC_IN_HOUR/cls.SEC_IN_MINUTE))
+        
+    @property
+    def service_id(self):
+        return self.calendar.get_service_id_string( self.int_service_id )
 
     def to_xml(self):
-        return "<TripHop depart='%s' arrive='%s' transit='%s' trip_id='%s' service_id='%d' agency='%d'/>" % \
+        print self.service_id
+        return "<TripHop depart='%s' arrive='%s' transit='%s' trip_id='%s' service_id='%s' agency='%d'/>" % \
                         (self._daysecs_to_str(self.depart),
                         self._daysecs_to_str(self.arrive),
                         self.transit, self.trip_id,self.service_id,self.agency)
@@ -813,11 +807,15 @@ class TripHopSchedule(EdgePayload):
             departs[i] = hops[i][0]
             arrives[i] = hops[i][1]
             trip_ids[i] = c_char_p(hops[i][2])
-            
-        self.soul = lgs.thsNew(departs, arrives, trip_ids, n, ServiceIdType(service_id), calendar.soul, timezone.soul, c_int(agency) )
+        
+        self.soul = lgs.thsNew(departs, arrives, trip_ids, n, calendar.get_service_id_int( service_id ), calendar.soul, timezone.soul, c_int(agency) )
     
     n = cproperty(lgs.thsGetN, c_int)
-    service_id = cproperty(lgs.thsGetServiceId, c_int)
+    service_id_int = cproperty(lgs.thsGetServiceId, c_int)
+    
+    @property
+    def service_id(self):
+        return self.calendar.get_service_id_string( self.service_id_int )
         
     def triphop(self, i):
         self.check_destroyed()

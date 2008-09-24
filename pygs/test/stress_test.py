@@ -69,7 +69,8 @@ class StressTest(unittest.TestCase):
                 (1*3600,2*3600,'Bar to Cow'),
                 (2*3600,3*3600,'four score and seven years'),
                 (3*3600,4*3600,'hoombacha')]
-    cal = ServicePeriod(0, 1*3600*24, [1,2])
+    cal = ServiceCalendar()
+    cal.add_period( 0, 1*3600*24, ["1","2"] )
 
     def test_ths_destroy(self):
         """TripHopSchedule.destroy() completely destroys TripHopSchedule"""
@@ -79,7 +80,7 @@ class StressTest(unittest.TestCase):
         
         def func():
 
-            s = TripHopSchedule(hops=self.rawhops, service_id=1, calendar=self.cal, timezone=tz,agency=0)
+            s = TripHopSchedule(hops=self.rawhops, service_id="1", calendar=self.cal, timezone=tz,agency=0)
             s.destroy()
             
         grind(func, 100000)
@@ -120,8 +121,8 @@ class StressTest(unittest.TestCase):
             s.add_edge("A","B",Street("2",2.2))
             s.add_edge("A","B",Street("3",3.3))
             s.add_edge("B","A",Link())
-            s.add_edge("B","C",TripHopSchedule(hops=self.rawhops, service_id=1, calendar=self.cal, timezone=tz,agency=0))
-            s.add_edge("B","C",TripHopSchedule(hops=self.rawhops, service_id=1, calendar=self.cal, timezone=tz,agency=0))
+            s.add_edge("B","C",TripHopSchedule(hops=self.rawhops, service_id="1", calendar=self.cal, timezone=tz,agency=0))
+            s.add_edge("B","C",TripHopSchedule(hops=self.rawhops, service_id="1", calendar=self.cal, timezone=tz,agency=0))
             s.destroy()
             
         grind(func, 100000)

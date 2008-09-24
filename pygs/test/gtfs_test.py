@@ -219,15 +219,15 @@ class GTFSTestCase(unittest.TestCase):
         sc = graphserver.ext.gtfs.load_gtfs.schedule_to_service_calendar(sched, "BART")
         
         sp = sc.period_of_or_after( 1219863600 )#noon august 27 2008, America/Los_Angeles
-        assert sp.service_ids == [1,2]
+        assert sp.service_ids == [0,1]
         assert sp.begin_time == 1219834260
         assert sp.end_time == 1219912500
         
         sp = sc.period_of_or_after( 1220727600 ) #noon september 6 2008, America/Los_Angeles
-        assert sp.service_ids == [1, 3]
+        assert sp.service_ids == [0, 2]
         
         sp = sc.period_of_or_after( 1220814000 )
-        assert sp.service_ids == [4, 5]
+        assert sp.service_ids == [3, 4]
         
 class TestBART(unittest.TestCase):
     def test_bart(self):
@@ -247,16 +247,19 @@ class TestBART_DAG(unittest.TestCase):
         g = TestGTFS()
         g.load_gtfs_dag("google_transit.zip", "America/Los_Angeles")
         
+        #e = Engine(g)
+        #e.run_test_server()
+        
         #this works
         s1 = State(2, 1219863240)
         # http://localhost:8080/shortest_path?from_v=%2219TH@42840%22&to_v=%22ASBY@43200%22&time=1219863240
         spt = g.shortest_path_tree( "19TH@42840", None, s1 )
         assert spt.get_vertex("ASBY@43200").payload.time == 1219863600
         # http://localhost:8080/shortest_path?from_v=%22gtfs19TH%22&to_v=%22gtfsASBY%22&time=1219863240
-        spt = g.shortest_path_tree( "gtfs19TH", None, s1 )
-        assert spt.get_vertex("gtfsASBY").payload.time == 1219863600
+        spt = g.shortest_path_tree( "19TH", None, s1 )
+        assert spt.get_vertex("ASBY").payload.time == 1219863600
         # http://localhost:8080/shortest_path?from_v=%22gtfsFRMT%22&to_v=%22gtfsMLBR%22&time=1219863240
-        assert spt.get_vertex("gtfsMLBR").payload.time == 1219866720
+        assert spt.get_vertex("MLBR").payload.time == 1219866720
     
 if __name__=='__main__':
     tl = unittest.TestLoader()
