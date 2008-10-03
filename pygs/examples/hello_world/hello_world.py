@@ -1,11 +1,11 @@
 try:
-    from pygs.engine import Engine
-    from pygs.structures import TripHopSchedule, CalendarDay, Street, Link, State, Graph
+    from engine import Engine
+    from core import TripHopSchedule, ServiceCalendar, Timezone, Street, Link, State, Graph
 except ImportError:
     import sys
     sys.path.append("../..")
-    from engine import Engine
-    from graphserver import TripHopSchedule, CalendarDay, Street, Link, State, Graph
+    from graphserver.engine import Engine
+    from graphserver.core import TripHopSchedule, ServiceCalendar, Timezone, Street, Link, State, Graph
 
 class HelloWorldEngine(Engine):
 
@@ -14,12 +14,17 @@ class HelloWorldEngine(Engine):
     #====Create a Calendar Object====
     # Why no params?
     # calendar = CalendarDay()
-    
+
     day_begin = 0               #In unix time - Midnight UTC, January 1st 1970
     day_end = 86400             #Also unix time - Midnight UTC, January 2nd 1970
-    service_ids = [0]           #One bus service type runs this day, called "0"
+    #service_ids = [0]           #One bus service type runs this day, called "0"
+    service_ids = ["0"]           #One bus service type runs this day, called "0"
+    """
     daylight_savings_offset = 0 #The daylight savings time offset for this day is 0 seconds
     calendar = CalendarDay(day_begin, day_end, service_ids, daylight_savings_offset)
+    """
+    calendar = ServiceCalendar()
+    calendar.add_period(day_begin, day_end, service_ids)
     # Why append?
     #calendar.append_day( day_begin, day_end, service_ids, daylight_savings_offset )
 
@@ -35,9 +40,13 @@ class HelloWorldEngine(Engine):
     #====Create TripHopSchedule object====
     #A TripHopSchedule represents the unevaluated weight of an edge containing schedule information
 
-    service_id = 0   #The service type for this day is "0". Service_ids are integers, but stand in for "weekday" or "saturday" etc.
+    #service_id = 0   #The service type for this day is "0". Service_ids are integers, but stand in for "weekday" or "saturday" etc.
+    service_id = "0"   #The service type for this day is "0". Service_ids are integers, but stand in for "weekday" or "saturday" etc.
+    timezone = Timezone()
+    """
     tz_offset = 0    #The timezone offset in seconds. US West coast is -28800 (-8 hours) for instance.
-    ths = TripHopSchedule( sched, service_id, calendar, tz_offset )
+    ths = TripHopSchedule( sched, service_id, calendar, tz_offset ) """
+    ths = TripHopSchedule( sched, service_id, calendar, timezone, 0 )
 
     # add the pertinent vertices to the ExampleServer's member variable Graph object:
     self.gg.add_vertex( "Seattle-busstop" )
@@ -47,12 +56,12 @@ class HelloWorldEngine(Engine):
 
     self.gg.add_edge( "Seattle-busstop", "Portland-busstop", ths )
 
-  
+
 
   def load_street_data(self):
 
     #Street-style data is simpler
-    
+
     self.gg.add_vertex( "Seattle" )
     self.gg.add_vertex( "Portland" )
 
@@ -61,14 +70,14 @@ class HelloWorldEngine(Engine):
     self.gg.add_edge( "Seattle", "Portland", Street( "I-5", 240000 ) )
     self.gg.add_edge( "Portland", "Seattle", Street( "I-5", 250000 ) ) #say the return trip is longer, for some reason
 
-  
+
 
   def load_links(self):
 
     #You can link two vertices together as if they're in the same place
 
     #They're one-way
-    
+
     self.gg.add_edge( "Seattle", "Seattle-busstop", Link() )
     self.gg.add_edge( "Seattle-busstop", "Seattle", Link() )
 
@@ -80,7 +89,7 @@ class HelloWorldEngine(Engine):
     self.load_scheduled_data()
     self.load_street_data()
     self.load_links()
-  
+
 
 if __name__ == '__main__':
     from xml.dom import minidom
@@ -95,7 +104,7 @@ if __name__ == '__main__':
             print "\n\n"
         except ExpatError, e:
             raise "Invalid XML: " + content
-        
+
     h = HelloWorldEngine()
     pretty("all_vertex_labels", h.all_vertex_labels())
     pretty("outgoing_edges?label=Seattle", h.outgoing_edges("Seattle"))
