@@ -31,8 +31,12 @@ class Engine(object, Servable):
 
     def _shortest_path_raw(self,dir_forward,from_v,to_v,time,doubleback=True,tp=0):
         """returns (spt,vertices,edges). You need to destroy spt when you're done with the path"""
-        if not self.gg.get_vertex(from_v) and self.gg.get_vertex(to_v):
-            raise
+        
+        if not self.gg.get_vertex(from_v):
+        	raise Exception( "Graph does not contain origin vertex, with label '%s'"%from_v )
+        
+        if not self.gg.get_vertex(to_v):
+            raise Exception( "Graph does not contain destination vertex, with label '%s'"%to_v )
         
         tp = int(tp)
         doubleback = (str(doubleback).lower()=="true")
@@ -67,6 +71,9 @@ class Engine(object, Servable):
                     spt, vertices, edges = None, None, None
             else:
                 vertices, edges = spt.path(to_v)
+                
+        if vertices is None or edges is None:
+        	raise Exception( "Path could not be found from %s to %s"%(from_v, to_v) )
                 
         return spt, vertices, edges
         
@@ -108,6 +115,9 @@ class Engine(object, Servable):
         ret = ["<?xml version='1.0'?>"]
         
         v = self.gg.get_vertex(label)
+        
+        if v is None:
+            raise Exception( "The graph does not contain a vertex with label '%s'"%label )
         
         ret.append("<edges>")
         for e in v.outgoing:
@@ -302,6 +312,7 @@ class TripPlanEngine(Engine):
             time=int(now())
             
         spt, vertices, edges = self._shortest_path_raw( forward, from_v, to_v, time, doubleback=False, tp=1 )
+        
         actions = self._actions_from_path(vertices,edges,verbose)
         ret = simplejson.dumps(actions)
         spt.destroy()
