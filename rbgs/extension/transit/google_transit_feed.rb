@@ -23,6 +23,8 @@ module GoogleTransitFeed
                 ["shapes",          ["shape_id","shape_pt_lat","shape_pt_lon","shape_pt_sequence"]]]
   OPTIONAL_FEED_FILES = [["calendar",    ["service_id","monday","tuesday","wednesday","thursday","friday","saturday","sunday","start_date","end_date"]],
                          ["frequencies", ["trip_id","start_time","end_time","headway_secs"]]]
+  #IDs that should be unique in its namespace
+  U_IDS = ["stop_id", "route_id", "service_id", "trip_id", "fare_id", "shape_id"]
 
   class GoogleTransitFeed
     attr_reader :namespace
