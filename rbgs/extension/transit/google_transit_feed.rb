@@ -25,8 +25,16 @@ module GoogleTransitFeed
                          ["frequencies", ["trip_id","start_time","end_time","headway_secs"]]]
 
   class GoogleTransitFeed
+    attr_reader :namespace
+
     def initialize directory, verbose=false
       @files = {}
+
+      #The namespace of the feed is the first agency of the agency.txt file
+      f = File.new("#{directory}/agency.txt")
+      @namespace = f.read.split("\n")[1].split( "," )[0]
+      puts "Namespace for the feed = #{@namespace}"
+      f.close
 
       FEED_FILES.each do |file, fields|
         @files[file] = GoogleTransitFeedFile.new "#{directory}/#{file}.txt", fields
@@ -43,6 +51,7 @@ module GoogleTransitFeed
     def [] file
       @files[file]
     end
+
   end
 
   class GoogleTransitFeedFile
