@@ -123,6 +123,9 @@ epDestroy( EdgePayload* this ) {
     case PL_WAIT:
       waitDestroy( (Wait*)this );
       break;
+    case PL_HEADWAY:
+      headwayDestroy( (Headway*)this );
+      break;
     default:
       free( this );
   }
@@ -149,10 +152,10 @@ epWalk( EdgePayload* this, State* params, int transferPenalty ) {
       return linkWalk((Link*)this, params);
     case PL_EXTERNVALUE:
       return cpWalk( (CustomPayload*)this, params );
-      break;
     case PL_WAIT:
       return waitWalk( (Wait*)this, params, transferPenalty );
-      break;
+    case PL_HEADWAY:
+      return headwayWalk( (Headway*)this, params, transferPenalty );
     default:
       return NULL;
   }
@@ -176,6 +179,8 @@ epWalkBack( EdgePayload* this, State* params, int transferPenalty ) {
       return cpWalkBack( (CustomPayload*)this, params );
     case PL_WAIT:
       return waitWalkBack( (Wait*)this, params, transferPenalty );
+    case PL_HEADWAY:
+      return headwayWalkBack( (Headway*)this, params, transferPenalty );
     default:
       return NULL;
   }
@@ -286,6 +291,61 @@ Timezone*
 waitGetTimezone(Wait* this) {
     return this->timezone;
 }
+
+//HEADWAY FUNCTIONS
+
+Headway*
+headwayNew(int begin_time, int end_time, int wait_period, int transit, char* trip_id, ServiceCalendar* calendar, Timezone* timezone, int agency, ServiceId service_id) {
+    Headway* ret = (Headway*)malloc(sizeof(Headway));
+    
+    ret->type = PL_HEADWAY;
+    ret->begin_time = begin_time;
+    ret->end_time = end_time;
+    ret->wait_period = wait_period;
+    ret->transit = transit;
+    int n = strlen(trip_id)+1;
+    ret->trip_id = (char*)malloc(sizeof(char)*(n));
+    memcpy(ret->trip_id, trip_id, n);
+    ret->calendar = calendar;
+    ret->timezone = timezone;
+    ret->agency = agency;
+    ret->service_id = service_id;
+    
+    return ret;
+}
+
+void
+headwayDestroy(Headway* tokill) {
+  free(tokill->trip_id);
+  free(tokill);
+}
+
+int
+headwayBeginTime(Headway* this) { return this->begin_time; }
+
+int
+headwayEndTime(Headway* this) { return this->end_time; }
+
+int
+headwayWaitPeriod(Headway* this) { return this->wait_period; }
+
+int
+headwayTransit(Headway* this) { return this->transit; }
+
+char*
+headwayTripId(Headway* this) { return this->trip_id; }
+
+ServiceCalendar*
+headwayCalendar(Headway* this) { return this->calendar; }
+
+Timezone*
+headwayTimezone(Headway* this) { return this->timezone; }
+
+int
+headwayAgency(Headway* this) { return this->agency; }
+
+ServiceId
+headwayServiceId(Headway* this) { return this->service_id; }
 
 //TRIPHOP FUNCTIONS
 

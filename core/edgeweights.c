@@ -178,6 +178,9 @@ triphopWalkBack(TripHop* this, State* params, int transferPenalty) {
     State* ret = stateDup( params );
     
     long adjusted_time = spNormalizeTime( service_period, tzUtcOffset(this->timezone, params->time), params->time );
+    //fprintf(stderr, "time:%ld\n", params->time);
+    //fprintf(stderr, "tzUtcOffset(tz, time):%d\n", tzUtcOffset(this->timezone, params->time));
+    //fprintf(stderr, "adjusted_time:%ld\n", adjusted_time);
     
     long wait;
 #ifndef ROUTE_REVERSE
@@ -185,6 +188,8 @@ triphopWalkBack(TripHop* this, State* params, int transferPenalty) {
 #else
     wait = (adjusted_time - this->arrive);
 #endif
+    
+    //fprintf(stderr, "wait:%ld\n", wait);
   
     long transfer_penalty=0;
     //if this is a transfer
@@ -230,6 +235,108 @@ triphopWalkBack(TripHop* this, State* params, int transferPenalty) {
 #endif
     ret->dist_walked    = 0;
     ret->prev_edge_type = PL_TRIPHOP;
+    ret->prev_edge_name = this->trip_id;
+
+    //fprintf(stderr, "%ld\n", ret->weight);
+    
+    return ret;
+}
+
+inline State*
+#ifndef ROUTE_REVERSE
+headwayWalk(Headway* this, State* params, int transferPenalty) {
+#else
+headwayWalkBack(Headway* this, State* params, int transferPenalty) {
+#endif
+    
+    // if the params->service_period is NULL, use the params->time to find the service_period
+    // the service_period is actually a denormalization of the params->time
+    // this way, the user doesn't need to worry about it
+    
+    ServicePeriod* service_period = params->service_periods[this->agency];
+    if( !service_period )
+#ifndef ROUTE_REVERSE
+        service_period = scPeriodOfOrAfter( this->calendar, params->time );
+#else
+        service_period = scPeriodOfOrBefore( this->calendar, params->time );
+#endif
+    params->service_periods[this->agency] = service_period;
+    
+    // if the schedule never runs
+    // or if the schedule does not run on this day
+    // this link goes nowhere
+    if( !service_period ||
+        !spPeriodHasServiceId( service_period, this->service_id) ) {
+      return NULL;
+    }
+    
+    State* ret = stateDup( params );
+    
+    long adjusted_time = spNormalizeTime( service_period, tzUtcOffset(this->timezone, params->time), params->time );
+  
+    long transfer_penalty=0;
+    //if this is a transfer
+    if( params->prev_edge_type != PL_TRIPHOP  ||    //the last edge wasn't a bus
+        !params->prev_edge_name               ||    //it was a bus, but the trip_id was NULL
+        strcmp( params->prev_edge_name, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
+
+      //add a weight penalty to the transfer under some conditions
+      //if( wait < MIN_TRANSFER_TIME && 
+      //    params->num_transfers > 0) {
+      //  transfer_penalty = (MIN_TRANSFER_TIME-wait)*TRANSFER_PENALTY;
+      //}
+      transfer_penalty = transferPenalty; //penalty of making a transfer; flat rate. "all things being equal, transferring costs a little"
+
+      ret->num_transfers += 1;
+    }
+
+    int i;
+    long wait=0;
+#ifndef ROUTE_REVERSE
+    if( adjusted_time > this->end_time ) {
+        return NULL;
+    }
+    
+    if( adjusted_time <= this->begin_time ) {
+        wait = this->begin_time - adjusted_time;
+    } else if( !(params->prev_edge_type == PL_TRIPHOP || params->prev_edge_type == PL_HEADWAY)  ||    //the last edge wasn't a bus
+        !params->prev_edge_name               ||    //it was a bus, but the trip_id was NULL
+        strcmp( params->prev_edge_name, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
+        wait = this->wait_period;
+    }
+    
+    ret->time   += wait + this->transit;
+    ret->weight += wait + this->transit + transfer_penalty;
+    
+    for(i=0; i<params->n_agencies; i++) {
+        if( ret->service_periods[i] && ret->time >= ret->service_periods[i]->end_time) {
+          ret->service_periods[i] = ret->service_periods[i]->next_period;
+        }
+    }
+#else
+    if( adjusted_time < this->begin_time ) {
+        return NULL;
+    }
+    
+    if( adjusted_time >= this->end_time ) {
+        wait = adjusted_time - this->begin_time;
+    } else if( !(params->prev_edge_type == PL_TRIPHOP || params->prev_edge_type == PL_HEADWAY)  ||    //the last edge wasn't a bus
+        !params->prev_edge_name               ||    //it was a bus, but the trip_id was NULL
+        strcmp( params->prev_edge_name, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
+        wait = this->wait_period;
+    }
+    
+    ret->time   -= wait + this->transit;
+    ret->weight += wait + this->transit + transfer_penalty;
+    
+    for(i=0; i<params->n_agencies; i++) {
+        if( ret->service_periods[i] && ret->time < ret->service_periods[i]->begin_time) {
+          ret->service_periods[i] = ret->service_periods[i]->prev_period;
+        }
+    }
+#endif
+    ret->dist_walked    = 0;
+    ret->prev_edge_type = PL_HEADWAY;
     ret->prev_edge_name = this->trip_id;
 
     return ret;

@@ -193,6 +193,10 @@ pycapi(lgs.thsGetLastHop, c_void_p, [c_void_p, c_long])
 pycapi(lgs.triphopWalk, c_void_p, [c_void_p, c_void_p, c_int])
 pycapi(lgs.triphopWalkBack, c_void_p, [c_void_p, c_void_p, c_int])
 
+#HEADWAY API
+pycapi(lgs.headwayWalk, c_void_p, [c_void_p, c_void_p, c_int])
+pycapi(lgs.headwayWalkBack, c_void_p, [c_void_p, c_void_p, c_int])
+
 #CUSTOM TYPE API
 class PayloadMethodTypes:
     """ Enumerates the ctypes of the function pointers."""

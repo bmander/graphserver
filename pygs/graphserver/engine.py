@@ -4,7 +4,10 @@ except ImportError:
     from core import Graph, State
 from time import time as now
 
-import simplejson
+try:
+    import simplejson
+except ImportError:
+    import json as simplejson #support for python2.6
 
 from servable import Servable
 
@@ -134,35 +137,46 @@ class Engine(object, Servable):
         vertex = self.gg.get_vertex( label )
         init_state = self._parse_init_state(self.gg.numagencies, time)
 
-        ret = ["<?xml version='1.0'?>"]
-        ret.append("<vertex>")
-        ret.append(init_state.to_xml())
-        ret.append("<outgoing_edges>")
+        dest_states = []
         for edge in vertex.outgoing:
-            ret.append("<edge>")
-            ret.append("<destination label='%s'>" % edge.to_v.label)
             if forward_dir:
                 if hasattr( edge.payload, 'collapse' ):
                     collapsed = edge.payload.collapse( init_state )
                 else:
                     collapsed = edge.payload
                 if collapsed:
-                    sprime = collapsed.walk( init_state )
-                    if sprime:
-                        ret.append(sprime.to_xml())
-                    else:
-                        ret.append("<state/>")
+                    dest_states.append( (edge, collapsed, collapsed.walk( init_state )) )
             else:
                 if hasattr( edge.payload, 'collapse_back' ):
                     collapsed = edge.payload.collapse_back( init_state )
                 else:
                     collapsed = edge.payload
                 if collapsed:
-                    sprime = collapsed.walk_back( init_state )
-                    if sprime:
-                        ret.append(sprime.to_xml())
-                else:
-                    ret.append("<state/>")
+                    dest_states.append( (edge, collapsed, collapsed.walk_back( init_state )) )
+        
+        def sort_states(x,y):
+            if x[2] is None:
+                return 1
+            if y[2] is None:
+                return -1
+            else:
+                return cmp(x[2].weight, y[2].weight)
+        
+        dest_states.sort(cmp=sort_states) #sort by weight of final state
+        
+        #====================
+
+        ret = ["<?xml version='1.0'?>"]
+        ret.append("<vertex>")
+        ret.append(init_state.to_xml())
+        ret.append("<outgoing_edges>")
+        for edge, collapsed, sprime in dest_states:
+            ret.append("<edge>")
+            ret.append("<destination label='%s'>" % edge.to_v.label)
+            if sprime:
+                ret.append(sprime.to_xml())
+            else:
+                ret.append("<state/>")
             ret.append("</destination>")
             if collapsed:
                 ret.append("<payload>%s</payload>" % collapsed.to_xml())

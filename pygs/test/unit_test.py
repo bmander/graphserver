@@ -1057,6 +1057,87 @@ class TestTripHop(unittest.TestCase):
         ret = th.walk(s)
         assert ret.time == 1219863900 #12:05PM august 27th, America/Los_Angeles
         
+class TestHeadway(unittest.TestCase):
+    def test_basic(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        headway = Headway( 0, 1*3600*24, 60, 120, "HEADWAY", sc, tz, 0, "WKDY" )
+        
+        assert headway.begin_time == 0
+        assert headway.end_time == 1*3600*24
+        assert headway.wait_period == 60
+        assert headway.transit == 120
+        assert headway.trip_id == "HEADWAY"
+        assert headway.calendar.soul == sc.soul
+        assert headway.timezone.soul == tz.soul
+        assert headway.agency == 0
+        assert headway.int_service_id == 0
+        assert headway.service_id == "WKDY"
+        
+    def test_walk(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24-1, ['WKDY'] )
+        sc.add_period( 1*3600*25, 2*3600*25-1, ['SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        headway = Headway( 3600, 2*3600, 60, 120, "HEADWAY", sc, tz, 0, "WKDY" )
+        
+        #wrong day
+        s = State(1, 1*3600*24)
+        ret = headway.walk( s )
+        assert ret == None
+        
+        #before headway
+        s = State(1, 0)
+        ret = headway.walk( s )
+        assert ret.time == 3720
+        assert ret.weight == 3720
+        assert ret.num_transfers == 1
+        assert ret.prev_edge_type == 7
+        assert ret.prev_edge_name == "HEADWAY"
+        
+        #right at beginning of headway
+        s = State(1, 3600)
+        ret = headway.walk( s )
+        assert ret.time == 3720
+        assert ret.weight == 120
+        assert ret.num_transfers == 1
+        assert ret.prev_edge_type == 7
+        assert ret.prev_edge_name == "HEADWAY"
+        
+        #in the middle of the headway
+        s = State(1, 4000)
+        ret = headway.walk( s )
+        assert ret.time == 4000+60+120
+        assert ret.weight == 60+120
+        assert ret.num_transfers == 1
+        assert ret.prev_edge_type == 7
+        assert ret.prev_edge_name == "HEADWAY"
+        
+        #the last second of the headway
+        s = State(1, 2*3600)
+        ret = headway.walk( s )
+        assert ret.time == 2*3600+60+120
+        assert ret.weight == 60+120
+        assert ret.num_transfers == 1
+        assert ret.prev_edge_type == 7
+        assert ret.prev_edge_name == "HEADWAY"
+        
+        #no-transfer
+        s = State(1, 4000)
+        s.prev_edge_name = "HEADWAY"
+        s.prev_edge_type = 7
+        ret = headway.walk( s )
+        assert ret.time == 4000+120
+        assert ret.weight == 120
+        assert ret.num_transfers == 1
+        assert ret.prev_edge_type == 7
+        assert ret.prev_edge_name == "HEADWAY"
+        
         
 
 class TestTriphopSchedule(unittest.TestCase):
@@ -1562,7 +1643,7 @@ class TestTimezone(unittest.TestCase):
             tz.utc_offset( -1 )
             raise Exception("never make it this far")
         except Exception, ex:
-            assert ex.message == "-1 lands within no timezone period"
+            assert str(ex) == "-1 lands within no timezone period"
             
         assert tz.utc_offset(0) == -8*3600
         assert tz.utc_offset(50) == -8*3600
@@ -1572,7 +1653,7 @@ class TestTimezone(unittest.TestCase):
             tz.utc_offset( 101 )
             raise Exception("never make it this far")
         except Exception, ex:
-            assert ex.message == "101 lands within no timezone period"
+            assert str(ex) == "101 lands within no timezone period"
             
     def test_add_multiple(self):
         tz = Timezone()
@@ -1628,7 +1709,7 @@ class TestTimezone(unittest.TestCase):
             tz.utc_offset(-1)
             raise Exception( "next make it this far" )
         except Exception, ex:
-            assert ex.message == "-1 lands within no timezone period"
+            assert str(ex) == "-1 lands within no timezone period"
             
         assert tz.utc_offset(0) == -8*3600
         assert tz.utc_offset(99) == -8*3600
@@ -1637,7 +1718,7 @@ class TestTimezone(unittest.TestCase):
             tz.utc_offset(150)
             raise Exception( "next make it this far" )
         except Exception, ex:
-            assert ex.message == "150 lands within no timezone period"
+            assert str(ex) == "150 lands within no timezone period"
             
         assert tz.utc_offset(550) == -8*3600
         
@@ -1645,7 +1726,7 @@ class TestTimezone(unittest.TestCase):
             tz.utc_offset(600)
             raise Exception( "next make it this far" )
         except Exception, ex:
-            assert ex.message == "600 lands within no timezone period"
+            assert str(ex) == "600 lands within no timezone period"
             
     def test_generate(self):
         
@@ -1679,6 +1760,7 @@ if __name__ == '__main__':
                  TestTripHop,
                  TestTriphopSchedule,
                  TestStreet,
+                 TestHeadway,
                  TestListNode,
                  TestVertex,
                  TestServicePeriod,

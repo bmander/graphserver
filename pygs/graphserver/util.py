@@ -60,3 +60,5 @@ if __name__=='__main__':
     print TimeHelpers.localtime_to_unix(2008,9,21,5,16,0,"America/New_York")
     print TimeHelpers.unix_to_localtime(1199181360, "America/New_York") 
     print TimeHelpers.unixtime_to_daytimes(1219834260, "America/Los_Angeles")
+    print TimeHelpers.unix_to_localtime(1224619590, "America/Chicago")
+    print TimeHelpers.unixtime_to_daytimes(1224619590, "America/Chicago")

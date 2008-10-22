@@ -399,7 +399,7 @@ class State(CShadow):
     weight         = cproperty(lgs.stateGetWeight, c_long, setter=lgs.stateSetWeight)
     dist_walked    = cproperty(lgs.stateGetDistWalked, c_double, setter=lgs.stateSetDistWalked)
     num_transfers  = cproperty(lgs.stateGetNumTransfers, c_int, setter=lgs.stateSetNumTransfers)
-    prev_edge_type = cproperty(lgs.stateGetPrevEdgeType, c_int) # should not use: setter=lgs.stateSetPrevEdgeType)
+    prev_edge_type = cproperty(lgs.stateGetPrevEdgeType, c_int, setter=lgs.stateSetPrevEdgeType) # should not use: setter=lgs.stateSetPrevEdgeType)
     prev_edge_name = cproperty(lgs.stateGetPrevEdgeName, c_char_p, setter=lgs.stateSetPrevEdgeName)
     num_agencies     = cproperty(lgs.stateGetNumAgencies, c_int)
         
@@ -778,7 +778,7 @@ class TripHop(EdgePayload):
     
     @classmethod
     def _daysecs_to_str(cls,daysecs):
-        return "%02d:%02d"%(int(daysecs/cls.SEC_IN_HOUR), int(daysecs%cls.SEC_IN_HOUR/cls.SEC_IN_MINUTE))
+        return "%02d:%02d:%02d"%(int(daysecs/cls.SEC_IN_HOUR), int(daysecs%cls.SEC_IN_HOUR/cls.SEC_IN_MINUTE), int(daysecs%cls.SEC_IN_MINUTE))
         
     @property
     def service_id(self):
@@ -790,6 +790,30 @@ class TripHop(EdgePayload):
                         (self._daysecs_to_str(self.depart),
                         self._daysecs_to_str(self.arrive),
                         self.transit, self.trip_id,self.service_id,self.agency)
+                    
+class Headway(EdgePayload):
+    
+    begin_time = cproperty( lgs.headwayBeginTime, c_int )
+    end_time = cproperty( lgs.headwayEndTime, c_int )
+    wait_period = cproperty( lgs.headwayWaitPeriod, c_int )
+    transit = cproperty( lgs.headwayTransit, c_int )
+    trip_id = cproperty( lgs.headwayTripId, c_char_p )
+    calendar = cproperty( lgs.headwayCalendar, c_void_p, ServiceCalendar )
+    timezone = cproperty( lgs.headwayTimezone, c_void_p, Timezone )
+    agency = cproperty( lgs.headwayAgency, c_int )
+    int_service_id = cproperty( lgs.headwayServiceId, c_int )
+    
+    def __init__(self, begin_time, end_time, wait_period, transit, trip_id, calendar, timezone, agency, service_id):
+        if type(service_id)!=type('string'):
+            raise TypeError("service_id is supposed to be a string")
+            
+        int_sid = calendar.get_service_id_int( service_id )
+        
+        self.soul = lgs.headwayNew(begin_time, end_time, wait_period, transit, trip_id.encode("ascii"),  calendar.soul, timezone.soul, c_int(agency), ServiceIdType(int_sid))
+        
+    @property
+    def service_id(self):
+        return self.calendar.get_service_id_string( self.int_service_id )
     
 class TripHopSchedule(EdgePayload):
     
