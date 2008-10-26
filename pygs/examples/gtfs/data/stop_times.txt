@@ -1,4 +1,4 @@
-trip_id,arrival_time,departure_time,stop_id,stop_sequence,stop_headsign,pickup_type,drop_off_time
+trip_id,arrival_time,departure_time,stop_id,stop_sequence,stop_headsign,pickup_type,drop_off_type
 M-FSAT1DN,5:00:00,5:00:00,COLS,1,,,
 M-FSAT1DN,5:20:00,5:20:00,OAK,2,,,
 M-FSAT1UP,5:00:00,5:00:00,OAK,1,,,

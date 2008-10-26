@@ -1,9 +1,14 @@
 """Converts GTFS into a simple format, easy for parsing in a sample C program. Such a program could then be used to memory profile libgraphserver's triphopschedule components."""
 
-import sys
-sys.path.append('../..')
-from graphserver.core import Graph, Street, CalendarDay, TripHopSchedule, Calendar, State
-from graphserver.ext.gtfs import GTFSLoadable
+try:
+    from core import TripHopSchedule, ServiceCalendar, Street, State, Graph
+    from ext.gtfs import GTFSLoadable
+except ImportError:
+    import sys
+    sys.path.append("../..")
+    from graphserver.core import TripHopSchedule, ServiceCalendar, Street, State, Graph
+    from graphserver.ext.gtfs import GTFSLoadable
+
 import transitfeed
 
 class SimplifyGTFS(Graph, GTFSLoadable):
@@ -50,5 +55,5 @@ for v in g.vertices:
         for triphop in e.payload.triphops:
             fp.write( "%d %d %s\n"%(triphop.depart, triphop.arrive, triphop.trip_id) )
             #print triphop.depart, triphop.arrive, triphop.trip_id
-            
+
 fp.close()
