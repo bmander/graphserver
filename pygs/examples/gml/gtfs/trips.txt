@@ -1,0 +1,13 @@
+route_id,service_id,trip_id,trip_headsign,direction_id,block_id,shape_id
+1.11,1.11.1,1.11.1,Bétera-Villanueva de Castellón,,,
+1.12,1.12.1,1.12.1,Llíria-Torrent Avinguda,,,
+1.13,1.13.1,1.13.1,Aeroport - Rafelbunyol,,,
+1.15,1.15.1,1.15.1,Neptú - Torrent Avinguda,,,
+1.16,1.16.1,1.16.1,Aeroport - Neptú,,,
+1.211,1.211.1,1.211.1,Villanueva de Castellón-Bétera,,,
+1.212,1.212.1,1.212.1,Torrent Avinguda-Llíria,,,
+1.213,1.213.1,1.213.1,Rafelbunyol - Aeroport,,,
+1.215,1.215.1,1.215.1,Torrent Avinguda - Neptú,,,
+1.216,1.216.1,1.216.1,Neptú - Aeroport,,,
+2.4,2.4.1,2.4.1,Mas del Rosari - Dr. Lluch,,,
+2.14,2.14.1,2.14.1,Dr. Lluch - Mas del Rosari,,,

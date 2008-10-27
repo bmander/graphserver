@@ -1,0 +1,11 @@
+fare_id,price,currency_type,payment_method,transfers,transfer_duration
+mv_A,1.25,EUR,1,,3000
+mv_B,1.25,EUR,1,,3000
+mv_C,1.25,EUR,1,,3000
+mv_D,1.25,EUR,1,,3000
+mv_AB,1.70,EUR,1,,3000
+mv_BC,1.70,EUR,1,,3000
+mv_CD,1.70,EUR,1,,3000
+mv_ABC,2.40,EUR,1,,3000
+mv_BCD,2.40,EUR,1,,3000
+mv_ABCD,3.40,EUR,1,,3000

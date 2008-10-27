@@ -1,0 +1,13 @@
+route_id,route_short_name,route_long_name,route_type,agency_id,route_desc,route_url,route_color,route_text_color
+1.11,L1,Linea 1: Bétera - Villanueva de Castellón,1,mv,,,,
+1.12,L1,Linea 1: Llíria - Torrent Avinguda,1,mv,,,,
+1.13,L3,Linea 3: Aeroport - Rafelbunyol,1,mv,,,,
+1.15,L5,Linea 5: Neptú - Torrent Avinguda,1,mv,,,,
+1.16,L5,Linea 5: Aeroport - Neptú,1,mv,,,,
+1.211,L1,Linea 1: Villanueva de Castellón - Bétera,1,mv,,,,
+1.212,L1,Linea 1: Torrent Avinguda - Llíria,1,mv,,,,
+1.213,L3,Linea 3: Rafelbunyol - Aeroport,1,mv,,,,
+1.215,L5,Linea 5: Torrent Avinguda - Neptú,1,mv,,,,
+1.216,L5,Linea 5: Neptú - Aeroport,1,mv,,,,
+2.4,L4,Linea 4: Mas del Rosari - Dr. Lluch,0,mv,,,,
+2.14,L4,Linea 4: Dr. Lluch - Mas del Rosari,0,mv,,,,
