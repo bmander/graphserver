@@ -91,7 +91,7 @@ class Graphserver
     # Converts approximately from meters to degrees
     search_range = search_range.to_f / (6371000*(Math::PI/180))
     count = 0
-    total = conn.exec("SELECT COUNT(*) FROM gtf_stops").getvalue(0,0)
+    total = conn.exec("SELECT COUNT(*) FROM gtf_stops").getvalue(0,0).to_i
     stops_linked = 0
     stops_isolated = 0
     isolated = []
