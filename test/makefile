@@ -1,5 +1,5 @@
 
-SRCS = testsetparent.c streetprofile.c testdestroystates.c thsprofile.c test_batch_create.c
+SRCS = testsetparent.c streetprofile.c testdestroystates.c thsprofile.c test_batch_create.c deadend.c
 TESTS = $(SRCS:.c=)
 
 all: $(TESTS)
