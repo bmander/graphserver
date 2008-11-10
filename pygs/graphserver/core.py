@@ -941,6 +941,7 @@ ListNode._cdata = ccast(lgs.liGetData, Edge)
 ListNode._cnext = ccast(lgs.liGetNext, ListNode)
 
 TripHop._cnew = lgs.triphopNew
+TripHop._cdel = lgs.triphopDestroy
 TripHop._cwalk = lgs.triphopWalk
 TripHop._cwalk_back = lgs.triphopWalkBack
 
