@@ -14,7 +14,7 @@ for i in xrange(1000000):
 print get_mem_usage()
 """
 
-def grind(func, n):
+def grind(func, n, threshold=10):
     mperc, m0 = get_mem_usage()
 
     g = Graph()
@@ -25,7 +25,7 @@ def grind(func, n):
     
     print m0, m1
     #assert m1 - m0 < n/1024 #the difference between the two memories is less than 1 byte*number of iterations
-    assert m1 <= m0+10
+    assert m1 <= m0+threshold
 
 import unittest
 class StressTest(unittest.TestCase):
@@ -64,6 +64,7 @@ class StressTest(unittest.TestCase):
             s.destroy()
             
         grind(func, 1000000)
+        
 
     rawhops = [(0,     1*3600,'Foo to Bar'),
                 (1*3600,2*3600,'Bar to Cow'),
@@ -159,7 +160,102 @@ class StressTest(unittest.TestCase):
             spt.destroy()
             
         grind(func, 50000)
+
+class WaitStressTest(unittest.TestCase):
+    def test_wait_destroy(self):
+        """Wait.destroy() completely destroys Wait"""
+        
+        tz = Timezone.generate( "America/Los_Angeles" )
+        
+        def func():
+            s = Wait(60, tz)
+            s.destroy()
+            
+        grind(func, 1000000)
+        
+class TripHopStressTest(unittest.TestCase):
+    def test_triphop_destroy(self):
+        """Wait.destroy() completely destroys TripHop"""
+        
+        tz = Timezone()
+        tz.add_period( TimezonePeriod( 0, 100000, 0 ) )
+        cal = ServiceCalendar()
+        cal.add_period( 0, 1*3600*24, ["WKDY","WKND"] )
+        
+        def func():
+            s = TripHop(01, 20, "AA", cal, tz, 0, "WKDY")
+            s.destroy()
+            
+        grind(func, 1000000)
+        
+class DAGStressTest(unittest.TestCase):
     
+    def test_dag_destroy(self):
+        """completely destroys DAG"""
+        
+        tz = Timezone()
+        tz.add_period( TimezonePeriod( 0, 100000, 0 ) )
+        cal = ServiceCalendar()
+        cal.add_period( 0, 1*3600*24, ["WKDY","WKND"] )
+        
+        s = Graph()
+        s.add_vertex("A")
+        s.add_vertex("A@10")
+        s.add_vertex("A@20")
+        s.add_vertex("A@30")
+        s.add_edge( "A@10", "A@20", Wait(20, tz) )
+        s.add_edge( "A@20", "A@30", Wait(30, tz) )
+        s.add_edge( "A", "A@10", Wait(10, tz) )
+        s.add_edge( "A", "A@20", Wait(20, tz) )
+        s.add_edge( "A", "A@30", Wait(30, tz) )
+        s.add_edge( "A@10", "A", Wait(10, tz) )
+        s.add_edge( "A@20", "A", Wait(20, tz) )
+        s.add_edge( "A@30", "A", Wait(30, tz) )
+        
+        s.add_vertex("B")
+        s.add_vertex("B@10")
+        s.add_vertex("B@20")
+        s.add_vertex("B@30")
+        s.add_edge( "B@10", "B@20", Wait(20, tz) )
+        s.add_edge( "B@20", "B@30", Wait(30, tz) )
+        s.add_edge( "B", "B@10", Wait(10, tz) )
+        s.add_edge( "B", "B@20", Wait(20, tz) )
+        s.add_edge( "B", "B@30", Wait(30, tz) )
+        s.add_edge( "B@10", "B", Wait(10, tz) )
+        s.add_edge( "B@20", "B", Wait(20, tz) )
+        s.add_edge( "B@30", "B", Wait(30, tz) )
+        
+        s.add_edge( "A@10", "B@20", TripHop( 10, 20, "A1", cal, tz, 0, "WKDY" ) )
+        s.add_edge( "A@20", "B@30", TripHop( 20, 30, "A2", cal, tz, 0, "WKDY" ) )
+        s.add_edge( "B@10", "A@20", TripHop( 10, 20, "B1", cal, tz, 0, "WKDY" ) )
+        s.add_edge( "B@20", "A@30", TripHop( 20, 30, "B2", cal, tz, 0, "WKDY" ) )
+        
+        def func():
+            spt = s.shortest_path_tree("A", None, State(1,0))
+            spt.destroy()
+            
+        grind(func, 500000)
+        
+class DeadendStressTest(unittest.TestCase):
+    
+    def test_dag_destroy(self):
+        """completely destroys DAG"""
+        
+        tz = Timezone()
+        tz.add_period( TimezonePeriod( 0, 100000, 0 ) )
+        cal = ServiceCalendar()
+        cal.add_period( 0, 1*3600*24, ["A"] )
+        
+        s = Graph()
+        s.add_vertex("A")
+        s.add_vertex("B")
+        s.add_edge( "A", "B", TripHop( 10, 20, "A1", cal, tz, 0, "A" ) )
+        
+        def func():
+            spt = s.shortest_path_tree("A", "B", State(1,20))
+            spt.destroy()
+            
+        grind(func, 100000)
 
 from random import randint
 def random_graph(nvertices, nedges):
@@ -186,7 +282,11 @@ if __name__=='__main__':
     tl = unittest.TestLoader()
     
     testables = [\
-                 StressTest,
+                 #StressTest,
+                 #WaitStressTest,
+                 #DAGStressTest,
+                 #TripHopStressTest,
+                 DeadendStressTest,
                  ]
 
     for testable in testables:
