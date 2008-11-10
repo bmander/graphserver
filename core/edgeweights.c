@@ -178,9 +178,6 @@ triphopWalkBack(TripHop* this, State* params, int transferPenalty) {
     State* ret = stateDup( params );
     
     long adjusted_time = spNormalizeTime( service_period, tzUtcOffset(this->timezone, params->time), params->time );
-    //fprintf(stderr, "time:%ld\n", params->time);
-    //fprintf(stderr, "tzUtcOffset(tz, time):%d\n", tzUtcOffset(this->timezone, params->time));
-    //fprintf(stderr, "adjusted_time:%ld\n", adjusted_time);
     
     long wait;
 #ifndef ROUTE_REVERSE
@@ -188,8 +185,6 @@ triphopWalkBack(TripHop* this, State* params, int transferPenalty) {
 #else
     wait = (adjusted_time - this->arrive);
 #endif
-    
-    //fprintf(stderr, "wait:%ld\n", wait);
   
     long transfer_penalty=0;
     //if this is a transfer
@@ -211,6 +206,7 @@ triphopWalkBack(TripHop* this, State* params, int transferPenalty) {
 #ifndef ROUTE_REVERSE
     ret->time           += wait + this->transit;
     if(adjusted_time>this->depart) {
+        stateDestroy( ret );
         return NULL;
     } else {
         ret->weight += wait + this->transit + transfer_penalty;
@@ -223,6 +219,7 @@ triphopWalkBack(TripHop* this, State* params, int transferPenalty) {
 #else
     ret->time           -= (wait + this->transit);
     if(adjusted_time<this->arrive) {
+        stateDestroy( ret );
         return NULL;
     } else {
         ret->weight += wait + this->transit + transfer_penalty;
@@ -236,8 +233,6 @@ triphopWalkBack(TripHop* this, State* params, int transferPenalty) {
     ret->dist_walked    = 0;
     ret->prev_edge_type = PL_TRIPHOP;
     ret->prev_edge_name = this->trip_id;
-
-    //fprintf(stderr, "%ld\n", ret->weight);
     
     return ret;
 }
@@ -294,6 +289,7 @@ headwayWalkBack(Headway* this, State* params, int transferPenalty) {
     long wait=0;
 #ifndef ROUTE_REVERSE
     if( adjusted_time > this->end_time ) {
+        stateDestroy( ret );
         return NULL;
     }
     
@@ -315,6 +311,7 @@ headwayWalkBack(Headway* this, State* params, int transferPenalty) {
     }
 #else
     if( adjusted_time < this->begin_time ) {
+        stateDestroy( ret );
         return NULL;
     }
     

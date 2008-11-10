@@ -242,6 +242,7 @@ spNormalizeTime( ServicePeriod* this, int timezone_offset, long time ) {
     /* Normalizes unix time to seconds since the last midnight before the beginning of the service period */
     
     long midnight = spDatumMidnight( this, timezone_offset );
+    
     return time-midnight;
 }
 
@@ -296,6 +297,8 @@ tzPeriodOf( Timezone* this, long time) {
 
 int
 tzUtcOffset( Timezone* this, long time) {
+    //Returns seconds offset UTC for this timezone, at the given time
+    
     TimezonePeriod* now = tzPeriodOf( this, time );
     
     if( !now ) {
