@@ -96,7 +96,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, in
 
       // States cannot have weights lower than their parent State.
       if(new_dv->weight < du->weight) {
-        fprintf(stderr, "Negative weight (%s -> %s)(%ld) = %ld\n",edge->from->label, edge->to->label, du->weight, new_dv->weight);
+        fprintf(stderr, "Negative weight (%s(%ld) -> %s(%ld))\n",edge->from->label, du->weight, edge->to->label, new_dv->weight);
         edges = edges->next;
         continue;
       }

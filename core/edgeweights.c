@@ -271,7 +271,7 @@ headwayWalkBack(Headway* this, State* params, int transferPenalty) {
   
     long transfer_penalty=0;
     //if this is a transfer
-    if( params->prev_edge_type != PL_TRIPHOP  ||    //the last edge wasn't a bus
+    if( params->prev_edge_type != PL_HEADWAY  ||    //the last edge wasn't a bus
         !params->prev_edge_name               ||    //it was a bus, but the trip_id was NULL
         strcmp( params->prev_edge_name, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
 
@@ -295,7 +295,7 @@ headwayWalkBack(Headway* this, State* params, int transferPenalty) {
     
     if( adjusted_time <= this->begin_time ) {
         wait = this->begin_time - adjusted_time;
-    } else if( !(params->prev_edge_type == PL_TRIPHOP || params->prev_edge_type == PL_HEADWAY)  ||    //the last edge wasn't a bus
+    } else if( !(params->prev_edge_type == PL_HEADWAY || params->prev_edge_type == PL_HEADWAY)  ||    //the last edge wasn't a bus
         !params->prev_edge_name               ||    //it was a bus, but the trip_id was NULL
         strcmp( params->prev_edge_name, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
         wait = this->wait_period;
@@ -317,7 +317,7 @@ headwayWalkBack(Headway* this, State* params, int transferPenalty) {
     
     if( adjusted_time >= this->end_time ) {
         wait = adjusted_time - this->begin_time;
-    } else if( !(params->prev_edge_type == PL_TRIPHOP || params->prev_edge_type == PL_HEADWAY)  ||    //the last edge wasn't a bus
+    } else if( !(params->prev_edge_type == PL_HEADWAY || params->prev_edge_type == PL_HEADWAY)  ||    //the last edge wasn't a bus
         !params->prev_edge_name               ||    //it was a bus, but the trip_id was NULL
         strcmp( params->prev_edge_name, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
         wait = this->wait_period;
