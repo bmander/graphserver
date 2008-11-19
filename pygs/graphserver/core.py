@@ -773,6 +773,9 @@ class TripHop(EdgePayload):
         if type(service_id)!=type('string'):
             raise TypeError("service_id is supposed to be a string")
             
+        if arrive < depart:
+            raise Exception("The triphop cannot arrive earlier than it departs. depart:%d arrive:%d"%(depart, arrive))
+            
         int_sid = calendar.get_service_id_int( service_id )
         self.soul = lgs.triphopNew(depart, arrive, trip_id.encode("ascii"), calendar.soul, timezone.soul, c_int(agency), ServiceIdType(int_sid))
     
@@ -814,6 +817,17 @@ class Headway(EdgePayload):
     @property
     def service_id(self):
         return self.calendar.get_service_id_string( self.int_service_id )
+        
+    def to_xml(self):
+        return "<Headway begin_time='%d' end_time='%d' wait_period='%d' transit='%d' trip_id='%s' agency='%d' int_service_id='%d' />"% \
+                       (self.begin_time,
+                        self.end_time,
+                        self.wait_period,
+                        self.transit,
+                        self.trip_id,
+                        self.agency,
+                        self.int_service_id)
+                                                                                        
     
 class TripHopSchedule(EdgePayload):
     
@@ -916,7 +930,7 @@ Edge._cwalk = ccast(lgs.eWalk, State)
 Edge._cwalk_back = lgs.eWalkBack
 
 
-EdgePayload._subtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,4:GenericPyPayload,5:None,6:Wait}
+EdgePayload._subtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,4:GenericPyPayload,5:None,6:Wait,7:Headway}
 EdgePayload._cget_type = lgs.epGetType
 EdgePayload._cwalk = lgs.epWalk
 EdgePayload._cwalk_back = lgs.epWalkBack

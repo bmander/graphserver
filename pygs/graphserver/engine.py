@@ -1,5 +1,5 @@
 try:
-    from graphserver.core import Graph, State, TripHop
+    from graphserver.core import Graph, State, TripHop, Headway
 except ImportError:
     from core import Graph, State
 from time import time as now
@@ -265,12 +265,23 @@ class Board(Action):
     def describe(cls,vertex,lastedge,nextedge):
         return (cls.action,"%s at %s"%(nextedge.payload.trip_id, vertex.label),TripHop._daysecs_to_str(nextedge.payload.depart),None)
         
+class BoardHeadway(Action):
+    action="board"
+    
+    @classmethod
+    def applies(cls,vertex,lastedge,nextedge,verbose=False):
+        return nextedge is not None and nextedge.payload.__class__==Headway and (lastedge is None or lastedge.payload.__class__!=Headway or lastedge.payload.trip_id!=nextedge.payload.trip_id)
+        
+    @classmethod
+    def describe(cls,vertex,lastedge,nextedge):
+        return (cls.action,"%s at %s"%(nextedge.payload.trip_id, vertex.label),"about %d+%d"%(vertex.payload.time,nextedge.payload.wait_period),None)
+        
 class Pass(Action):
     action="pass"
     
     @classmethod
     def applies(cls,vertex,lastedge,nextedge,verbose=False):
-        return verbose and lastedge is not None and nextedge is not None and lastedge.payload.__class__==TripHop and nextedge.payload.__class__==TripHop and lastedge.payload.trip_id==nextedge.payload.trip_id
+        return verbose and lastedge is not None and nextedge is not None and (lastedge.payload.__class__==TripHop or lastedge.payload.__class__==Headway) and (nextedge.payload.__class__==TripHop or nextedge.payload.__class__==Headway) and lastedge.payload.trip_id==nextedge.payload.trip_id
 
     @classmethod
     def describe(cls,vertex,lastedge,nextedge):
@@ -286,6 +297,17 @@ class Alight(Action):
     @classmethod
     def describe(cls,vertex,lastedge,nextedge):
         return (cls.action,"%s at %s"%(lastedge.payload.trip_id, vertex.label),TripHop._daysecs_to_str(lastedge.payload.arrive),None)
+        
+class AlightHeadway(Action):
+    action="alight"
+    
+    @classmethod
+    def applies(cls,vertex,lastedge,nextedge,verbose=False):
+        return lastedge is not None and lastedge.payload.__class__==Headway and (nextedge is None or nextedge.payload.__class__!=Headway or lastedge.payload.trip_id!=nextedge.payload.trip_id)
+
+    @classmethod
+    def describe(cls,vertex,lastedge,nextedge):
+        return (cls.action,"%s at %s"%(lastedge.payload.trip_id, vertex.label),"%d"%(vertex.payload.time),None)
 
 class TripPlanEngine(Engine):
     def __init__(self, gg, action_handlers=(Alight,Board,Pass)):
@@ -313,7 +335,7 @@ class TripPlanEngine(Engine):
         ret = ["<?xml version='1.0'?>"]
         ret.append( "<trip_plan>" )
         for action,location,when,latlon in actions:
-            ret.append( "<action what='%s' where='%s' when='%s'/>"%(action,location,when) )
+            ret.append( "<action what=\"%s\" where=\"%s\" when=\"%s\"/>"%(action,location,when) )
         ret.append( "</trip_plan>" )
         
         spt.destroy()
