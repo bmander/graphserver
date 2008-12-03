@@ -12,8 +12,8 @@ import calendar
 import os
 from datetime import date, timedelta
 
-if transitfeed.__version__ != "1.1.6":
-    raise Exception("transitfeed.__version__ != 1.1.6")
+if [int(x) for x in transitfeed.__version__.split('.')] >= [1,1,6]:
+    raise Exception("transitfeed.__version__ < 1.1.6")
 
 def parse_date(date):
     return (int(date[0:4]), int(date[4:6]), int(date[6:8]))
