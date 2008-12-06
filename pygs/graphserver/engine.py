@@ -1,5 +1,5 @@
 try:
-    from graphserver.core import Graph, State, TripHop, Headway
+    from graphserver.core import Graph, State, TripHop, Headway, Street
 except ImportError:
     from core import Graph, State
 from time import time as now
@@ -308,9 +308,27 @@ class AlightHeadway(Action):
     @classmethod
     def describe(cls,vertex,lastedge,nextedge):
         return (cls.action,"%s at %s"%(lastedge.payload.trip_id, vertex.label),"%d"%(vertex.payload.time),None)
+        
+class StartWalking(Action):
+    @classmethod
+    def applies(cls,vertex,lastedge,nextedge,verbose=False):
+        return nextedge is not None and nextedge.payload.__class__==Street
+        
+    @classmethod
+    def describe(cls,vertex,lastedge,nextedge):
+        return ("start walking", vertex.label, str(vertex.payload.time), None)
+        
+class FinishWalking(Action):
+    @classmethod
+    def applies(cls,vertex,lastedge,nextedge,verbose=False):
+        return lastedge is not None and lastedge.payload.__class__==Street
+        
+    @classmethod
+    def describe(cls,vertex,lastedge,nextedge):
+        return ("finish walking", vertex.label, str(vertex.payload.time), None)
 
 class TripPlanEngine(Engine):
-    def __init__(self, gg, action_handlers=(Alight,Board,Pass)):
+    def __init__(self, gg, action_handlers=(AlightHeadway,Alight,BoardHeadway,Board,Pass)):
         Engine.__init__(self, gg)
         self.action_handlers = action_handlers
     
