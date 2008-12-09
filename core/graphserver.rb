@@ -8,7 +8,7 @@ require 'cgi'
 
 #Overrides class Calendar to add to_xml function
 class Calendar
-  def to_xml
+  def to_xml (conn = nil) # optional connection parameter
     "<calendar begin_time='#{Time.at(begin_time)}' end_time='#{Time.at(end_time)}' service_ids='#{service_ids.join(", ")}' />"
   end
 end
@@ -17,25 +17,25 @@ end
 
 #Overrides class Link to add to_xml function
 class Link
-  def to_xml
+  def to_xml (conn = nil) # optional connection parameter
     "<link/>"
   end
 end
 
 #Overrides class Street to add to_xml function
 class Street
-  def to_xml
-    "<street name='#{name}' length='#{length}' />"
+  def to_xml (conn = nil) # optional connection parameter
+    "<street name=\"#{name}\" length='#{length}' />"
   end
 end
 
 #Overrides class TripHopSchedule to add to_xml function
 class TripHopSchedule
-  def to_xml
+  def to_xml (conn = nil) # optional connection parameter
     ret = ["<triphopschedule service_id='#{service_id}'>"]
     #Para cada triphop inserta su transformacion a xml
     triphops.each do |triphop|
-      ret << triphop.to_xml
+      ret << triphop.to_xml(conn)
     end
     ret << "</triphopschedule>"
 
@@ -48,16 +48,43 @@ class TripHop
   SEC_IN_HOUR = 3600
   SEC_IN_MINUTE = 60
 
-  def to_xml
+  def to_xml (conn = nil) # optional connection parameter
     s_depart = "#{sprintf("%02d", depart/SEC_IN_HOUR)}:#{sprintf("%02d", (depart%SEC_IN_HOUR)/SEC_IN_MINUTE)}:#{sprintf("%02d", depart%SEC_IN_MINUTE)}"
     s_arrive = "#{sprintf("%02d", arrive/SEC_IN_HOUR)}:#{sprintf("%02d", (arrive%SEC_IN_HOUR)/SEC_IN_MINUTE)}:#{sprintf("%02d", arrive%SEC_IN_MINUTE)}"
+    if (conn) then
+      trip_data = conn.exec <<-SQL
+        SELECT agency.agency_name,
+               agency.agency_url,
+               routes.route_short_name,
+               routes.route_long_name,
+               routes.route_type
+        FROM gtf_trips AS trips,
+             gtf_routes AS routes,
+             gtf_agency AS agency
+        WHERE trips.trip_id = '#{trip_id}' AND
+              routes.route_id = trips.route_id AND
+              agency.agency_id = routes.agency_id
+        ORDER BY trips.trip_id
+        LIMIT 1
+      SQL
+      agency_name = trip_data[0][0]
+      agency_url = trip_data[0][1]
+      route_short_name = trip_data[0][2]
+      route_long_name = trip_data[0][3]
+      route_type = trip_data[0][4]
+      ret =  "<triphop depart='#{s_depart}' arrive='#{s_arrive}' transit='#{transit}' "
+      ret << "trip_id='#{trip_id}' agency_name='#{agency_name}' agency_url='#{agency_url}' "
+      ret << "route_short_name='#{route_short_name}' route_long_name='#{route_long_name}' "
+      ret << "route_type='#{route_type}' />"
+      return ret
+    end
     "<triphop depart='#{s_depart}' arrive='#{s_arrive}' transit='#{transit}' trip_id='#{trip_id}' />"
   end
 end
 
 #Overrides class State to add to_xml function
 class State
-  def to_xml
+  def to_xml (conn=nil) # optional connection parameter
     #Abre la cabecera del elemento state
     ret = "<state "
     #Insercion de atributos. Convierte la instancia de State
@@ -79,7 +106,7 @@ class State
     #Insercion de subelementos. Para cada par clave-valor
     #que tenga un metodo to_xml, inserta el resultado de to_xml
     self.to_hash.each_pair do |name, value|
-      ret << value.to_xml if value.public_methods.include? "to_xml"
+      ret << value.to_xml(conn) if value.public_methods.include? "to_xml"
     end
 
     #Cierra el elemento state, en este caso ya es un String
@@ -90,13 +117,29 @@ end
 
 #Overrides class Vertex to add to_xml function
 class Vertex
-  def to_xml
-    ret = ["<vertex label='#{label}'>"]
+  def to_xml (conn=nil) # optional connection parameter
+    if (conn and label.include? "gtfs") then # if vertex is a gtfs stop
+      stop_id = label.gsub!("gtfs","") # the stop_id is the vertex label without gtfs prefix
+      stop_names = conn.exec <<-SQL
+        SELECT stop_name
+        FROM gtf_stops
+        WHERE 'gtfs' || stop_id = '#{label}'
+        LIMIT 1
+      SQL
+      if stop_names.num_tuples > 0 then
+        stop_name = stop_names[0][0]
+      else
+        stop_name = "Stop name not found"
+      end
+      ret = ["<vertex label='#{label}' stop_name=\"#{stop_name}\">"]
+    else
+      ret = ["<vertex label='#{label}'>"]
+    end
     #La siguiente instruccion es una comparacion del resultado
     #de una asignacion (= en lugar de ==)
     #Si el objeto Vertex tiene payload lo transforma a xml
     if pl=payload then #to avoid calling payload twice. instantiating a variable may actually be more expensive.
-      ret << pl.to_xml
+      ret << pl.to_xml(conn)
     end
     ret << "</vertex>"
     return ret.join
@@ -105,12 +148,12 @@ end
 
 #Overrides class Edge to add to_xml function
 class Edge
-  def to_xml verbose=true
+  def to_xml ( conn=nil, verbose=true ) # optional connection parameter
     if geom=="" then ret = "<edge>"
     else ret = "<edge geom='#{geom}'>"
     end
     #Si verbose=true inserta el payload transformado a xml
-    ret << payload.to_xml if verbose
+    ret << payload.to_xml(conn) if verbose
     ret << "</edge>"
   end
 end
@@ -230,7 +273,9 @@ class Graphserver
       #Read input parameters
       from = request.query['from']
       to = request.query['to']
-      format = parse_format( request )
+      format = (request.query['format'] or "xml") #breaks without the extra parens
+      dir = (request.query['dir'] or "fw") #breaks without the extra parens
+#      format = parse_format( request )
       init_state = parse_init_state( request )
       ret = []
 
@@ -275,26 +320,32 @@ class Graphserver
               @gg.add_edge_geom( v1[2]['label'], "destination_#{ts}", Link.new, coords12)
             else
               #If no vertices are returned then probably the GS has not street data
-              #In that case we look for the 2 closest stops
-              s0 = get_closest_stops(lat0, lon0, 2)
-              s1 = get_closest_stops(lat1, lon1, 2)
+              raise RuntimeError # throw exception
 
-              #Adds a new vertex in the closest point in the edge
-              #and in the origin point and connects them
-              @gg.add_vertex( "origin_#{ts}" )
-              @gg.add_vertex( "destination_#{ts}" )
-              coords01 = "#{lon0},#{lat0} #{s0[0]['lon']},#{s0[0]['lat']}"
-              coords02 = "#{lon0},#{lat0} #{s0[1]['lon']},#{s0[1]['lat']}"
-              coords11 = "#{lon1},#{lat1} #{s1[0]['lon']},#{s1[0]['lat']}"
-              coords12 = "#{lon1},#{lat1} #{s1[1]['lon']},#{s1[1]['lat']}"
-              @gg.add_edge_geom( "origin_#{ts}", s0[0]['label'], Link.new, coords01)
-              @gg.add_edge_geom( "origin_#{ts}", s0[1]['label'], Link.new, coords02)
-              @gg.add_edge_geom( s1[0]['label'], "destination_#{ts}", Link.new, coords11)
-              @gg.add_edge_geom( s1[1]['label'], "destination_#{ts}", Link.new, coords12)
+#              #In that case we look for the 2 closest stops
+#              s0 = get_closest_stops(lat0, lon0, 2)
+#              s1 = get_closest_stops(lat1, lon1, 2)
+#
+#              #Adds a new vertex in the closest point in the edge
+#              #and in the origin point and connects them
+#              @gg.add_vertex( "origin_#{ts}" )
+#              @gg.add_vertex( "destination_#{ts}" )
+#              coords01 = "#{lon0},#{lat0} #{s0[0]['lon']},#{s0[0]['lat']}"
+#              coords02 = "#{lon0},#{lat0} #{s0[1]['lon']},#{s0[1]['lat']}"
+#              coords11 = "#{lon1},#{lat1} #{s1[0]['lon']},#{s1[0]['lat']}"
+#              coords12 = "#{lon1},#{lat1} #{s1[1]['lon']},#{s1[1]['lat']}"
+#              @gg.add_edge_geom( "origin_#{ts}", s0[0]['label'], Link.new, coords01)
+#              @gg.add_edge_geom( "origin_#{ts}", s0[1]['label'], Link.new, coords02)
+#              @gg.add_edge_geom( s1[0]['label'], "destination_#{ts}", Link.new, coords11)
+#              @gg.add_edge_geom( s1[1]['label'], "destination_#{ts}", Link.new, coords12)
             end
 
             #Calculates the shortest path
-            vertices, edges = @gg.shortest_path("origin_#{ts}", "destination_#{ts}", init_state )      #Throws RuntimeError if no shortest path found.
+            if (dir == "fw") then
+              vertices, edges = @gg.shortest_path("origin_#{ts}", "destination_#{ts}", init_state )      #Throws RuntimeError if no shortest path found.
+            else
+              vertices, edges = @gg.shortest_path_retro("origin_#{ts}", "destination_#{ts}", init_state )      #Throws RuntimeError if no shortest path found.
+            end
             ret << ( format_shortest_path vertices, edges, format )
           else
             #If only one input parameter is a pair of coordinates
@@ -312,10 +363,10 @@ class Graphserver
 
         #Catch alike sentence for RuntimeError
         rescue RuntimeError                                               #TODO: change exception type, RuntimeError is too vague.
-          ret << "Couldn't find a shortest path from #{from} to #{to}"
+          ret << "<route>ERROR: Couldn't find a shortest path from #{from} to #{to}</route>"
         #Catch alike sentence for ArgumentError
         rescue ArgumentError
-          ret << "ERROR: Invalid parameters."
+          ret << "<route>ERROR: Invalid parameters.</route>"
       end
 
       response.body = ret.join

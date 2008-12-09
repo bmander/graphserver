@@ -81,6 +81,7 @@ module GoogleTransitFeed
           n -= 1
         end
         fields[i].strip!
+        fields[i].gsub!(/"/,"")
         i += 1
       end
 

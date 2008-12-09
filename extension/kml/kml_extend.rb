@@ -1,14 +1,12 @@
 #Overrides class Calendar to add to_kml function
 class Calendar
   def to_kml
-#    "<calendar begin_time='#{Time.at(begin_time)}' end_time='#{Time.at(end_time)}' service_ids='#{service_ids.join(", ")}' />"
   end
 end
 
 #Overrides class Link to add to_kml function
 class Link
   def to_kml
-#    "<link/>"
   end
 end
 
@@ -22,32 +20,13 @@ end
 #Overrides class TripHopSchedule to add to_kml function
 class TripHopSchedule
   def to_kml
-#    ret = ["<triphopschedule service_id='#{service_id}'>"]
-#    #Para cada triphop inserta su transformacion a xml
-#    triphops.each do |triphop|
-#      #Ret es un Array, << añade un elemento al final de este
-#      ret << triphop.to_xml
-#    end
-#    ret << "</triphopschedule>"
-#
-#    #Convierte el Array a String
-#    return ret.join
   end
 end
 
 #Overrides class TripHop to add to_kml function
 class TripHop
-#  SEC_IN_HOUR = 3600
-#  SEC_IN_MINUTE = 60
 
   def to_kml
-#    s_depart = "#{sprintf("%02d", depart/SEC_IN_HOUR)}:#{sprintf("%02d", (depart%SEC_IN_HOUR)/SEC_IN_MINUTE)}:#{sprintf("%02d", depart%SEC_IN_MINUTE)}"
-#    s_arrive = "#{sprintf("%02d", arrive/SEC_IN_HOUR)}:#{sprintf("%02d", (arrive%SEC_IN_HOUR)/SEC_IN_MINUTE)}:#{sprintf("%02d", arrive%SEC_IN_MINUTE)}"
-#    "<triphop depart='#{s_depart}' arrive='#{s_arrive}' transit='#{transit}' trip_id='#{trip_id}' />"
-#    ret = ["Trip id: #{trip_id}<br>"]
-#    ret << "Departure: #{s_depart}<br>"
-#    ret << "Arrival: #{s_arrive}"
-#    return ret.join
     "#{trip_id}"
   end
 end
@@ -55,48 +34,12 @@ end
 #Overrides class State to add to_kml function
 class State
   def to_kml
-#    #Abre la cabecera del elemento state
-#    ret = "<state "
-#    #Insercion de atributos. Convierte la instancia de State
-#    #en un hash y, para cada pareja clave-valor
-#    self.to_hash.each_pair do |name, value|
-#      if name == "time" then #TODO kludge alert
-#        #Si la clave es "time", inserta "time='value'"
-#        #formateando value como tiempo
-#        ret << "time='#{Time.at( value ).inspect}' "
-#      else
-#        #En caso contrario escrive "name='value'"
-#        #a menos que el objeto value posea un mÃ©todo to_xml
-#        ret << "#{name}='#{CGI.escape(value.to_s)}' " unless value.public_methods.include? "to_xml"
-#      end
-#    end
-#    #Cierra la cabecera del elemento state
-#    ret << ">"
-#
-#    #Insercion de subelementos. Para cada par clave-valor
-#    #que tenga un metodo to_xml, inserta el resultado de to_xml
-#    self.to_hash.each_pair do |name, value|
-#      ret << value.to_xml if value.public_methods.include? "to_xml"
-#    end
-#
-#    #Cierra el elemento state, en este caso ya es un String
-#    #y no necesita convertir de Array a String con join
-#    ret << "</state>"
   end
 end
 
 #Overrides class Vertex to add to_kml function
 class Vertex
   def to_kml
-#    ret = ["<vertex label='#{label}'>"]
-#    #La siguiente instruccion es una comparacion del resultado
-#    #de una asignacion (= en lugar de ==)
-#    #Si el objeto Vertex tiene payload lo transforma a xml
-#    if pl=payload then #to avoid calling payload twice. instantiating a variable may actually be more expensive.
-#      ret << pl.to_xml
-#    end
-#    ret << "</vertex>"
-#    return ret.join
   end
 end
 
@@ -179,8 +122,6 @@ class Edge
 
   #Render the edge in kml format
   def to_kml verbose=true
-#    ret = ""
-#    name = ""
     type = payload.class
     if type == Street then
       name = payload.name
@@ -197,11 +138,6 @@ class Edge
       if not @@first then
         @@end_time = Time.at( self.to.payload["time"] )
         ret = print_placemark
-#        #Compare with the last geom which is supposed to be ordered
-#        #to check if the new geom is reversed
-#        if (coords.last == @@coords.last) then
-#          coords.reverse!
-#        end
       else
         @@first = false
       end
@@ -219,25 +155,6 @@ class Edge
       if (coords.first == @@coords.last) then
         #Delete first point
         coords.shift
-#      else
-#        if (coords.last == @@coords.last) then
-#          #Reverse and delete first point
-#          coords.reverse!
-#          coords.shift
-#        else
-#          if (coords.first == @@coords.first) then
-#            #Reverse the added geometry and delete first point of the new one
-#            @@coords.reverse!
-#            coords.shift
-#          else
-#            if (coords.last == @@coords.first) then
-#              #Reverse both geometrys and delete first point of the new one
-#              @@coords.reverse!
-#              coords.reverse!
-#              coords.shift
-#            end
-#          end
-#        end
       end
       #Append the coordinates of the last stretch to the added geom
       @@coords.concat(coords)
@@ -249,35 +166,6 @@ end
 
 #Overrides class Graphserver to override format_shortest_path
 class Graphserver
-
-  #Doesn't work! can't change geom and to from edge
-#  def consolidate_path! vertices, edges
-#    vertices2 = []
-#    edges2 = []
-#    last_name = ""
-#    last_type = ""
-#    vertices2 << vertices.shift
-#    e = edges[0]
-#    edges.each do |edge|
-#      name = edge.payload.name
-#      type = edge.payload.class
-#      if type==last_type and name==last_name then
-#        #Add coordinates
-#        e.geom += " #{edge.geom}"
-#        e.to = edge.to
-#      else
-#        edges2 << e
-#        vertices2 << e.to
-#        e = edge
-#      end
-#      last_name = name
-#      last_type = type
-#    end
-#    vertices = vertices2
-#    edges = edges2
-#    puts "Edges2 length: #{edges2.length}"
-#    puts "Edges length: #{edges.length}"
-#  end
 
   #Formats a shortest path response depending on the format parameter
   def format_shortest_path vertices, edges, format
@@ -402,9 +290,9 @@ class Graphserver
       ret << vertices.shift.to_xml
       edges.each do |edge|
         #For each edge, converts the edge to xml
-        ret << edge.to_xml
+        ret << edge.to_xml(@conn)
         #Shifts to the next vertex and converts to xml
-        ret << vertices.shift.to_xml
+        ret << vertices.shift.to_xml(@conn)
       end
       ret << "</route>"
     end
