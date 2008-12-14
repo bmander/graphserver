@@ -67,18 +67,18 @@ class TripHop
         ORDER BY trips.trip_id
         LIMIT 1
       SQL
-      agency_name = trip_data[0][0]
-      agency_url = trip_data[0][1]
-      route_short_name = trip_data[0][2]
-      route_long_name = trip_data[0][3]
-      route_type = trip_data[0][4]
-      ret =  "<triphop depart='#{s_depart}' arrive='#{s_arrive}' transit='#{transit}' "
-      ret << "trip_id='#{trip_id}' agency_name='#{agency_name}' agency_url='#{agency_url}' "
-      ret << "route_short_name='#{route_short_name}' route_long_name='#{route_long_name}' "
-      ret << "route_type='#{route_type}' />"
+      agency_name = CGI.escapeHTML( trip_data[0][0] )
+      agency_url = CGI.escapeHTML( trip_data[0][1] )
+      route_short_name = CGI.escapeHTML( trip_data[0][2] )
+      route_long_name = CGI.escapeHTML( trip_data[0][3] )
+      route_type = CGI.escapeHTML(trip_data[0][4] )
+      ret =  "<triphop depart=\"#{s_depart}\" arrive=\"#{s_arrive}\" transit=\"#{transit}\" "
+      ret << "trip_id=\"#{trip_id}\" agency_name=\"#{agency_name}\" agency_url=\"#{agency_url}\" "
+      ret << "route_short_name=\"#{route_short_name}\" route_long_name=\"#{route_long_name}\" "
+      ret << "route_type=\"#{route_type}\" />"
       return ret
     end
-    "<triphop depart='#{s_depart}' arrive='#{s_arrive}' transit='#{transit}' trip_id='#{trip_id}' />"
+    "<triphop depart=\"#{s_depart}\" arrive=\"#{s_arrive}\" transit=\"#{transit}\" trip_id=\"#{trip_id}\" />"
   end
 end
 
