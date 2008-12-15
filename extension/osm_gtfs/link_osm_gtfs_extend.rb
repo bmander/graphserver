@@ -165,7 +165,7 @@ class Graphserver
 
       -- a table to store osm modified segments
       create table osm_gtfs_segments (
-        seg_id      text PRIMARY KEY,
+        seg_id      text NOT NULL,
         name        text,
         from_id     text NOT NULL,
         to_id       text NOT NULL
