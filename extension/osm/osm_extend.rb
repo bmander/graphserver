@@ -226,12 +226,13 @@ class Graphserver
 
       @name = "#{way.tags['name'] || 'Unnamed'}".gsub(/'/,"''") #Substitute ' by '' for SQL queries
       @type = "#{way.tags['highway']}"
-      #type = "#{way.tags['highway'] || way.tags['railway'] || way.tags['aerialway'] || way.tags['route'] || "Other"}"
       # If the oneway tag is not set or it is set to none, set oneway to false
+      # Also consider roundabouts always as oneway segments
+      oneway = true
       if not way.tags['oneway'] or way.tags['oneway']=='false' or way.tags['oneway']=='no' then
-        oneway = false
-      else
-        oneway = true
+        if not (way.tags['junction'] and way.tags['junction']=='roundabout') then
+          oneway = false
+        end
       end
 
       # Puts the street in the osm_ways table
@@ -522,7 +523,14 @@ class Graphserver
 
 
   # Builds the graph from the osm tables in the db
-  def load_osm_from_db file=nil, directional=false
+  def load_osm_from_db file=nil, directional=false, weights={}
+    # Parse weights hash if is of type String
+    # TODO Don't parse if it's already a hash
+    # TODO Also parse from file
+    p = String.new( weights )
+    w = s = {}
+    $3?(s[$1], s = s[$1] ? s[$1].to_a << $3.to_f : $3.to_f, w):s = s[$1] ||= {} while p.gsub!(/^[\{\[]?(\w+)\]?(=>([^,;]*).?)?/, '')
+
     query = "SELECT id, from_id, to_id, name, type, oneway, "
     query << "length_spheroid(geom, 'SPHEROID[\"GRS_1980\",6378137,298.257222101]'), "
     query << "AsText(geom), AsText(Reverse(geom))"
@@ -533,8 +541,8 @@ class Graphserver
     total = res.num_tuples
     count = 0
 
-
     res.each do |id, from_id, to_id, name, type, oneway, length, coords, rcoords|
+      ww = (w[type]?w[type]:1) # default weight is 1
       count += 1
       if count%1000==0 then $stderr.print( sprintf("\rProcessed %d/%d osm segments (%d%%)", count, total, (count.to_f/total)*100) ) end
       #In KML LineStrings have the spaces and the comas swapped with respect to postgis
@@ -543,9 +551,9 @@ class Graphserver
       rcoords.gsub!(/[ ,()A-Z]/) {|s| if (s==' ') then ',' else if (s==',') then ' ' end end}
       @gg.add_vertex( OSM_PREFIX+from_id )
       @gg.add_vertex( OSM_PREFIX+to_id )
-      @gg.add_edge_geom( OSM_PREFIX+from_id, OSM_PREFIX+to_id, Street.new(name, Float(length)), coords )
+      @gg.add_edge_geom( OSM_PREFIX+from_id, OSM_PREFIX+to_id, Street.new(name, Float(length)/ww), coords )
       if not directional or oneway=="false"
-        @gg.add_edge_geom( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new(name, Float(length)), rcoords )
+        @gg.add_edge_geom( OSM_PREFIX+to_id, OSM_PREFIX+from_id, Street.new(name, Float(length)/ww), rcoords )
       end
 
     end

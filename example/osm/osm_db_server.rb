@@ -11,5 +11,5 @@ if ARGV.size < 1 then
 end
 
 gs = Graphserver.new
-gs.load_osm_from_db file=nil, directional=(ARGV[0]=="true")
+gs.load_osm_from_db file=nil, directional=(ARGV[0]=="true"), weights=ARGV[1]
 gs.start

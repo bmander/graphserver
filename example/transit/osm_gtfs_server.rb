@@ -23,7 +23,7 @@ print "Loading GTFS data\n"
 gs.load_google_transit_feed
 #load osm data
 print "Loading OSM street data\n"
-gs.load_osm_from_db file=nil, directional=(ARGV[0]=="false")
+gs.load_osm_from_db file=nil, directional=(ARGV[0]=="true"), weights=ARGV[1]
 #load links
 print "Linking GTFS and OSM data\n"
 gs.load_osm_gtfs_links

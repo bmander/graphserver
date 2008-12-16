@@ -71,7 +71,7 @@ class TripHop
       agency_url = CGI.escapeHTML( trip_data[0][1] )
       route_short_name = CGI.escapeHTML( trip_data[0][2] )
       route_long_name = CGI.escapeHTML( trip_data[0][3] )
-      route_type = trip_data[0][4]
+      route_type = (trip_data[0][4]).to_i
       ret =  "<triphop depart=\"#{s_depart}\" arrive=\"#{s_arrive}\" transit=\"#{transit}\" "
       ret << "trip_id=\"#{trip_id}\" agency_name=\"#{agency_name}\" agency_url=\"#{agency_url}\" "
       ret << "route_short_name=\"#{route_short_name}\" route_long_name=\"#{route_long_name}\" "
