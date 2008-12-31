@@ -4,6 +4,7 @@ from graphserver.core import *
 from graphserver.engine import Engine
 import time
 import unittest
+import pickle
 
 import os
 
@@ -829,6 +830,11 @@ class TestStreet(unittest.TestCase):
         assert before.prev_edge_name == "longstreet"
         assert before.num_agencies == 0
         
+    def test_getstate(self):
+        s = Street("longstreet", 2)
+        
+        assert s.__getstate__() == ('longstreet', 2)
+        
 class TestPyPayload(unittest.TestCase):
     def _minimal_graph(self):
         g = Graph()
@@ -942,6 +948,10 @@ class TestLink(unittest.TestCase):
         assert before.prev_edge_type == 3
         assert before.prev_edge_name == "LINK"
         assert before.num_agencies == 1
+        
+    def test_getstate(self):
+        l = Link()
+        assert l.__getstate__() == tuple([])
 
 from graphserver.core import Wait
 class TestWait(unittest.TestCase):
@@ -994,6 +1004,13 @@ class TestWait(unittest.TestCase):
         s = State(1, 1219863300)
         assert w.walk(s).time == 1219863600
         assert w.walk(s).weight == 300
+        
+    def test_getstate(self):
+        # noon, -7 hours off UTC, as America/Los_Angeles in summer
+        tz = Timezone.generate("America/Los_Angeles")
+        w = Wait(43200, tz)
+        
+        assert w.__getstate__() == (43200, tz.soul)
 
 class TestTripHop(unittest.TestCase):
     
@@ -1056,6 +1073,16 @@ class TestTripHop(unittest.TestCase):
         s = State(1,time)
         ret = th.walk(s)
         assert ret.time == 1219863900 #12:05PM august 27th, America/Los_Angeles
+        
+    def test_getstate(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 86400, ["WEEKDAY"] )
+        
+        tz = Timezone()
+        tz.add_period( TimezonePeriod( 0, 86400, 0 ) )
+        th = TripHop(25, 100, "foo", sc, timezone=tz, agency=0, service_id="WEEKDAY")
+        
+        assert th.__getstate__() == (25, 100, "foo", sc.soul, tz.soul, 0, "WEEKDAY")
         
 class TestHeadway(unittest.TestCase):
     def test_basic(self):
@@ -1134,11 +1161,19 @@ class TestHeadway(unittest.TestCase):
         ret = headway.walk( s )
         assert ret.time == 4000+120
         assert ret.weight == 120
-        assert ret.num_transfers == 1
+        assert ret.num_transfers == 0
         assert ret.prev_edge_type == 7
         assert ret.prev_edge_name == "HEADWAY"
         
+    def test_getstate(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
         
+        headway = Headway( 0, 1*3600*24, 60, 120, "HEADWAY", sc, tz, 0, "WKDY" )
+        
+        assert headway.__getstate__() == (0, 1*3600*24, 60, 120, "HEADWAY", sc.soul, tz.soul, 0, "WKDY")
 
 class TestTriphopSchedule(unittest.TestCase):
     
@@ -1172,7 +1207,7 @@ class TestTriphopSchedule(unittest.TestCase):
                                
         assert(ths.triphops[0].trip_id == 'Foo to Bar')
         assert(len(ths.triphops) == 2)
-        assert str(ths)=="<TripHopSchedule service_id='WKDY'><TripHop depart='00:00' arrive='01:00' transit='3600' trip_id='Foo to Bar' service_id='WKDY' agency='0'/><TripHop depart='01:00' arrive='02:00' transit='3600' trip_id='Bar to Cow' service_id='WKDY' agency='0'/></TripHopSchedule>"
+        assert str(ths)=="<TripHopSchedule service_id='WKDY'><TripHop depart='00:00:00' arrive='01:00:00' transit='3600' trip_id='Foo to Bar' service_id='WKDY' agency='0'/><TripHop depart='01:00:00' arrive='02:00:00' transit='3600' trip_id='Bar to Cow' service_id='WKDY' agency='0'/></TripHopSchedule>"
     
     def test_destroy(self):
         rawhops = [(0,     1*3600,'Foo to Bar'),
@@ -1426,6 +1461,15 @@ class TestServicePeriod(unittest.TestCase):
         
         assert c.normalize_time( 0, 0 ) == 0
         assert c.normalize_time( 0, 100 ) == 100
+        
+    def test_pickle(self):
+        cc = ServicePeriod(0, 100, [1,2,3,4,5])
+        
+        ss = pickle.dumps( cc )
+        laz = pickle.loads( ss )
+        
+        assert laz.__getstate__() == cc.__getstate__()
+        
 
 class TestServiceCalendar(unittest.TestCase):
     def test_basic(self):
@@ -1535,6 +1579,16 @@ class TestServiceCalendar(unittest.TestCase):
         
         assert c.to_xml() == "<ServiceCalendar><ServicePeriod begin_time='0' end_time='10' service_ids='A,B,C'/><ServicePeriod begin_time='11' end_time='15' service_ids='C,D,E'/><ServicePeriod begin_time='16' end_time='20' service_ids='D,E,F'/></ServiceCalendar>"
 
+    def test_pickle(self):
+        cc = ServiceCalendar()
+        cc.add_period( 0, 100, ["A","B"] )
+        cc.add_period( 101, 200, ["C","D"] )
+        cc.add_period( 201, 300, ["E","F"] )
+        
+        ss = pickle.dumps( cc )
+        laz = pickle.loads( ss )
+        
+        assert cc.__getstate__() == laz.__getstate__()
 
 class TestEngine(unittest.TestCase):
     def test_basic(self):
@@ -1737,6 +1791,23 @@ class TestTimezone(unittest.TestCase):
         
         print tz.utc_offset(1205056799) == -8*3600 #second before DST
         print tz.utc_offset(1205056800) == -7*3600 #second after DST
+        
+    def test_pickle(self):
+        tz = Timezone()
+        p1 = TimezonePeriod(0, 99, -8*3600)
+        p2 = TimezonePeriod(200, 299, -7*3600)
+        p3 = TimezonePeriod(500, 599, -8*3600)
+        tz.add_period( p1 )
+        tz.add_period( p2 )
+        tz.add_period( p3 )
+        
+        assert tz.__getstate__() == [(0, 99, -28800), (200, 299, -25200), (500, 599, -28800)]
+        
+        ss = pickle.dumps( tz )
+        laz = pickle.loads( ss )
+        assert laz.period_of( 50 ).__getstate__() == (0, 99, -8*3600)
+        assert laz.period_of( 250 ).__getstate__() == (200, 299, -7*3600)
+        assert laz.period_of( 550 ).__getstate__() == (500, 599, -8*3600)
     
 class TestTimezonePeriod(unittest.TestCase):
     def test_basic(self):
@@ -1746,28 +1817,39 @@ class TestTimezonePeriod(unittest.TestCase):
         assert tzp.begin_time == 0
         assert tzp.end_time == 100
         assert tzp.utc_offset == -10
+        
+    def test_dict(self):
+        tzp = TimezonePeriod(3, 7, -11)
+        
+        assert tzp.__getstate__() == (3, 7, -11)
+        
+        ss = pickle.dumps( tzp )
+        laz = pickle.loads( ss )
+        assert laz.begin_time == 3
+        assert laz.end_time == 7
+        assert laz.utc_offset == -11
 
 if __name__ == '__main__':
     tl = unittest.TestLoader()
     
     testables = [\
-                 TestGraph,
-                 TestGraphPerformance,
-                 TestState,
-                 TestPyPayload,
-                 TestLink,
-                 TestWait,
-                 TestTripHop,
-                 TestTriphopSchedule,
-                 TestStreet,
+                 #TestGraph,
+                 #TestGraphPerformance,
+                 #TestState,
+                 #TestPyPayload,
+                 #TestLink,
+                 #TestWait,
+                 #TestTripHop,
+                 #TestTriphopSchedule,
+                 #TestStreet,
                  TestHeadway,
-                 TestListNode,
-                 TestVertex,
-                 TestServicePeriod,
-                 TestServiceCalendar,
-                 TestEngine,
-                 TestTimezone,
-                 TestTimezonePeriod,
+                 #TestListNode,
+                 #TestVertex,
+                 #TestServicePeriod,
+                 #TestServiceCalendar,
+                 #TestEngine,
+                 #TestTimezone,
+                 #TestTimezonePeriod,
                  ]
 
     for testable in testables:

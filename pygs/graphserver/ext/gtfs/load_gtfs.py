@@ -190,18 +190,24 @@ class GTFSLoadable:
                   ths = TripHopSchedule( hops, service_id, cal, gs_tz, agency_int )
                   e = self.add_edge( prefix+fromv.stop_id, prefix+tov.stop_id, ths )
 
-    def load_gtfs_dag(self, sched_or_datadir, stops_timezone_name, prefix="gtfs"):
+    def load_gtfs_dag(self, sched_or_datadir, stops_timezone_name=None, prefix="gtfs"):
 
         if type(sched_or_datadir)==str:
             sched = transitfeed.Loader(sched_or_datadir).Load()
         else:
             sched = sched_or_datadir
 
-        stz = Timezone.generate( stops_timezone_name )
+        
 
         tzs = dict( [(agency.agency_id, Timezone.generate(agency.agency_timezone)) for agency in sched.GetAgencyList()] )
         scs = dict( [(agency.agency_id, schedule_to_service_calendar(sched, agency.agency_id)) for agency in sched.GetAgencyList()] )
         agints = dict( zip([x.agency_id for x in sched.GetAgencyList()], range(len(sched.GetAgencyList())) ))
+        
+        if stops_timezone_name is None:
+            default_agency = sched.GetDefaultAgency() or sched.GetAgencyList()[0]
+            stz = scs[default_agency.agency_id]
+        else:
+            stz = Timezone.generate( stops_timezone_name )
 
         stop_times = dict( [(x.stop_id, set()) for x in sched.GetStopList()] )
 

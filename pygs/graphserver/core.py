@@ -286,6 +286,12 @@ class ServicePeriod(CShadow):
     def normalize_time(self, timezone_offset, time):
         return lgs.spNormalizeTime(self.soul, timezone_offset, time)
         
+    def __getstate__(self):
+        return (self.begin_time, self.end_time, self.service_ids)
+        
+    def __setstate__(self, state):
+        self.__init__(*state)
+        
     @staticmethod
     def _py2c_service_ids(service_ids):
         ns = len(service_ids)
@@ -340,6 +346,22 @@ class ServiceCalendar(CShadow):
             ret.append( period.to_xml(self) )
         ret.append( "</ServiceCalendar>" )
         return "".join(ret)
+        
+    def __getstate__(self):
+        ret = []
+        curs = self.head
+        while curs:
+            start, end, sids = curs.__getstate__()
+            sids = [self.get_service_id_string(sid) for sid in sids]
+            ret.append( (start,end,sids) )
+            curs = curs.next
+        return ret
+        
+    def __setstate__(self, state):
+        self.__init__()
+        for sp_state in state:
+            self.add_period( *sp_state )
+        
 
 class State(CShadow):
     
@@ -679,7 +701,11 @@ class Link(EdgePayload):
         
         return "<Link name='%s'/>" % (self.name)
         
-
+    def __getstate__(self):
+        return tuple([])
+        
+    def __setstate__(self, state):
+        self.__init__()
     
 class Street(EdgePayload):
     length = cproperty(lgs.streetGetLength, c_double)
@@ -692,6 +718,12 @@ class Street(EdgePayload):
         self.check_destroyed()
         
         return "<Street name='%s' length='%f' />" % (self.name, self.length)
+        
+    def __getstate__(self):
+        return (self.name, self.length)
+        
+    def __setstate__(self, state):
+        self.__init__(*state)
 
 class TimezonePeriod(CShadow):
     begin_time = cproperty(lgs.tzpBeginTime, c_long)
@@ -704,6 +736,13 @@ class TimezonePeriod(CShadow):
     @property
     def next_period(self):
         return TimezonePeriod.from_pointer( lgs.tzpNextPeriod( self.soul ) )
+        
+    def __getstate__(self):
+        return (self.begin_time, self.end_time, self.utc_offset)
+    
+    def __setstate__(self, state):
+        self.__init__(*state)
+                
         
 class Timezone(CShadow):
     head = cproperty( lgs.tzHead, c_void_p, TimezonePeriod )
@@ -742,6 +781,19 @@ class Timezone(CShadow):
             ret.add_period( TimezonePeriod( period_begin, period_end, utcoffset ) )
         
         return ret
+        
+    def __getstate__(self):
+        ret = []
+        curs = self.head
+        while curs:
+            ret.append( curs.__getstate__() )
+            curs = curs.next_period
+        return ret
+        
+    def __setstate__(self, state):
+        self.__init__()
+        for tzpargs in state:
+            self.add_period( TimezonePeriod(*tzpargs) )
 
 class Wait(EdgePayload):
     end = cproperty(lgs.waitGetEnd, c_long)
@@ -754,6 +806,9 @@ class Wait(EdgePayload):
         self.check_destroyed()
         
         return "<Wait end='%ld' />"%(self.end)
+        
+    def __getstate__(self):
+        return (self.end, self.timezone.soul)
 
 class TripHop(EdgePayload):
     
@@ -793,7 +848,10 @@ class TripHop(EdgePayload):
                         (self._daysecs_to_str(self.depart),
                         self._daysecs_to_str(self.arrive),
                         self.transit, self.trip_id,self.service_id,self.agency)
-                    
+    
+    def __getstate__(self):
+        return (self.depart, self.arrive, self.trip_id, self.calendar.soul, self.timezone.soul, self.agency, self.calendar.get_service_id_string(self.int_service_id))
+    
 class Headway(EdgePayload):
     
     begin_time = cproperty( lgs.headwayBeginTime, c_int )
@@ -827,7 +885,9 @@ class Headway(EdgePayload):
                         self.trip_id,
                         self.agency,
                         self.int_service_id)
-                                                                                        
+    
+    def __getstate__(self):
+        return (self.begin_time, self.end_time, self.wait_period, self.transit, self.trip_id, self.calendar.soul, self.timezone.soul, self.agency, self.calendar.get_service_id_string(self.int_service_id))
     
 class TripHopSchedule(EdgePayload):
     
@@ -971,12 +1031,12 @@ TripHopSchedule._cget_next_hop = lgs.thsGetNextHop
 
 Street._cnew = lgs.streetNew
 Street._cdel = lgs.streetDestroy
-Street._cwalk = lgs.streetWalk
+Street._cwalk = lgs.epWalk
 Street._cwalk_back = lgs.streetWalkBack
 
 Link._cnew = lgs.linkNew
 Link._cdel = lgs.linkDestroy
-Link._cwalk = lgs.linkWalk
+Link._cwalk = lgs.epWalk
 Link._cwalk_back = lgs.linkWalkBack
 
 Wait._cnew = lgs.waitNew
