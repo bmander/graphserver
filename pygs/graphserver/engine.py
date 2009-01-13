@@ -285,7 +285,9 @@ class Pass(Action):
 
     @classmethod
     def describe(cls,vertex,lastedge,nextedge):
-        return (cls.action,vertex.label,TripHop._daysecs_to_str(lastedge.payload.arrive),None)
+        #displays different time format for Headway and TripHop; a crude patch so Headway lastedges don't crash things
+        strt = lastedge.payload.__class__ == Headway and str(vertex.payload.time) or TripHop._daysecs_to_str(lastedge.payload.arrive)
+        return (cls.action,vertex.label,strt,None)
 
 class Alight(Action):
     action="alight"
