@@ -1,0 +1,127 @@
+  <html>
+  <head>
+    <script type="text/javascript" src="jquery"></script>
+  
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+    <title>Transit Shed: Everywhere You Can Get</title>
+    <script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=%s"
+      type="text/javascript"></script>
+    <script type="text/javascript">
+
+    //<![CDATA[
+
+    var map;
+    var busy = false;
+    var boundary
+
+    function gpolylineize_contour( contour, color, width ) {
+      coords = [];
+      for(i=0; i<contour.length; i++) {
+        coords.push( new GLatLng( contour[i][1], contour[i][0] ) );
+      }
+      coords.push( new GLatLng( contour[0][1], contour[0][0] ) )
+      
+      return new GPolyline( coords, color, width );
+    }
+    
+    function gpolygonize_contours( data, color, width ) {
+        ret = []
+    
+        for(cc=0; cc<data.length; cc++) {
+           ret.push( gpolylineize_contour( data[cc], color, width ) )
+        }
+        
+        return ret
+    }
+    
+    function display_contours(contours) {
+          for(var cc=0; cc<contours.length; cc++) {
+            map.addOverlay( contours[cc] );
+          }
+    }
+
+    function get_and_display_contours( overlay, latlng ) {
+        range = $("#range")[0].value
+        depart = $("#depart")[0].value
+        
+        if( range > 2700 || range < 0 ) {
+          alert( "Range must be between 0 and 2700 (45 minutes)" )
+          return
+        }
+        
+        if( depart > 86400 || range < 0 ) {
+          alert( "Depart time must be between 0 and 86400 (midnight to midnight the next day)" )
+          return
+        }
+    
+        if( !busy ) {
+          busy = true;
+          map.clearOverlays();
+          map.addOverlay( boundary );
+          map.addOverlay(new GMarker(latlng, {clickable: false}));
+          $("#status").html( "Hold on a moment. It can take as long as 45 seconds." )
+          $.getJSON("/contour?lat="+latlng.lat()+"&lon="+latlng.lng()+"&starttime="+depart+"&cutoff="+range,
+          function(data){
+            if( data == "NO NEARBY INTERSECTION" ) {
+              alert( "No nearby intersection!" );
+            } else {
+              $("#status").html( "success!" )
+              next_contours = gpolygonize_contours( data, "#ff0000", 5 )
+              display_contours( next_contours )
+            }
+            busy = false;
+          });
+        } else {
+          $("#status").html( "whoa there, clicky" )
+        }
+    }
+
+    function load() {
+      if (GBrowserIsCompatible()) {
+
+        $.getJSON("/bounds",
+          function(data){
+            map = new GMap2(document.getElementById("map"));
+            map.addControl( new GLargeMapControl() );
+            
+            map.disableDoubleClickZoom()
+            GEvent.addListener(map,"click", get_and_display_contours);
+            
+            left = data[0];
+            bottom = data[1];
+            right = data[2];
+            top = data[3];
+            
+            boundary = new GPolyline( [new GLatLng(bottom,left), new GLatLng(bottom,right), new GLatLng(top,right), new GLatLng(top,left), new GLatLng(bottom,left)], "#0000ff", 3 )
+            map.addOverlay( boundary )
+            map.setCenter(new GLatLng((top+bottom)/2, (left+right)/2), 11);
+          });
+        
+      }
+    }
+
+    //]]>
+    </script>
+
+    
+    <script type="text/javascript">
+
+    $(document).ready(function(){
+      // stuff to do
+    });
+
+    </script>
+  </head>
+  <body onload="load()" onunload="GUnload()">
+    <h2>Transit Shed</h2>
+    Click on the map to see everywhere you can get using the Trimet transit system, on a weekday, within given a range and departure time<br>
+    <br>
+    <div style="color:red" id="status"></div>
+    <div id="map" style="width:700px;height:500px"></div>
+    <table>
+    <tr><td>Range (seconds):</td><td><input id="range" type="text" value="1800"/></td></tr>
+    <tr><td>Depart time (seconds since midnight)</td><td><input id="depart" type="text" value="43200"/></td></tr>
+    </table>
+  </body>
+
+  </html>
