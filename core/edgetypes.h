@@ -7,7 +7,7 @@
 #include "hashtable_itr.h"
 #include "statetypes.h"
 
-typedef enum {
+typedef enum {    
   PL_STREET,
   PL_TRIPHOPSCHED,
   PL_TRIPHOP,
@@ -15,7 +15,10 @@ typedef enum {
   PL_EXTERNVALUE,
   PL_NONE,
   PL_WAIT,
-  PL_HEADWAY
+  PL_HEADWAY,
+  PL_TRIPBOARD,
+  PL_CROSSING,
+  PL_ALIGHT,
 } edgepayload_t;
 
 //---------------DECLARATIONS FOR STATE CLASS---------------------
@@ -89,6 +92,8 @@ stateSetPrevEdgeName( State* this, char* name );
 
 typedef struct EdgePayload {
   edgepayload_t type;
+  State* (*walk)(struct EdgePayload*, struct State*, int);
+  State* (*walkBack)(struct EdgePayload*, struct State*, int);
 } EdgePayload;
 
 EdgePayload*
@@ -116,6 +121,9 @@ epCollapseBack( EdgePayload* this, State* param );
 
 typedef struct Link {
   edgepayload_t type;
+  State* (*walk)(struct EdgePayload*, struct State*, int);
+  State* (*walkBack)(struct EdgePayload*, struct State*, int);
+    
   char* name;
 } Link;
 
@@ -126,18 +134,22 @@ void
 linkDestroy(Link* tokill);
 
 inline State*
-linkWalk(Link* this, State* param);
+linkWalk(EdgePayload* this, State* param, int env);
 
 inline State*
-linkWalkBack(Link* this, State* param);
+linkWalkBack(EdgePayload* this, State* param, int env);
 
 char*
 linkGetName(Link* this);
+
 
 //---------------DECLARATIONS FOR HEADWAY  CLASS---------------------
 
 typedef struct Headway {
   edgepayload_t type;
+  State* (*walk)(struct EdgePayload*, struct State*, int);
+  State* (*walkBack)(struct EdgePayload*, struct State*, int);
+    
   int begin_time;
   int end_time;
   int wait_period;
@@ -156,10 +168,10 @@ void
 headwayDestroy(Headway* tokill);
 
 inline State*
-headwayWalk(Headway* this, State* param, int transfer_penalty);
+headwayWalk(EdgePayload* this, State* param, int transfer_penalty);
 
 inline State*
-headwayWalkBack(Headway* this, State* param, int transfer_penalty);
+headwayWalkBack(EdgePayload* this, State* param, int transfer_penalty);
 
 int
 headwayBeginTime(Headway* this);
@@ -192,6 +204,9 @@ headwayServiceId(Headway* this);
 
 typedef struct Wait {
     edgepayload_t type;
+    State* (*walk)(struct EdgePayload*, struct State*, int);
+    State* (*walkBack)(struct EdgePayload*, struct State*, int);
+    
     long end;
     Timezone* timezone;
 } Wait;
@@ -203,10 +218,10 @@ void
 waitDestroy(Wait* tokill);
 
 inline State*
-waitWalk(Wait* this, State* param, int transfer_penalty);
+waitWalk(EdgePayload* superthis, State* param, int transfer_penalty);
 
 inline State*
-waitWalkBack(Wait* this, State* param, int transfer_penalty);
+waitWalkBack(EdgePayload* superthis, State* param, int transfer_penalty);
 
 long
 waitGetEnd(Wait* this);
@@ -218,6 +233,9 @@ waitGetTimezone(Wait* this);
 
 typedef struct Street {
    edgepayload_t type;
+   State* (*walk)(struct EdgePayload*, struct State*, int);
+   State* (*walkBack)(struct EdgePayload*, struct State*, int);
+    
    char* name;
    double length;
 } Street;
@@ -229,16 +247,108 @@ void
 streetDestroy(Street* tokill);
 
 inline State*
-streetWalk(Street* this, State* params);
+streetWalk(EdgePayload* superthis, State* params, int env);
 
 inline State*
-streetWalkBack(Street* this, State* params);
+streetWalkBack(EdgePayload* superthis, State* params, int env);
 
 char*
 streetGetName(Street* this);
 
 double
 streetGetLength(Street* this);
+
+//---------------DECLARATIONS FOR TRIPBOARD CLASS------------------------------------------
+
+typedef struct TripBoard {
+    edgepayload_t type;
+    State* (*walk)(struct EdgePayload*, struct State*, int);
+    
+    int n;
+    int* departs;
+    char** trip_ids;
+    
+    ServiceCalendar* calendar;
+    Timezone* timezone;
+    int agency;
+    ServiceId service_id;
+} TripBoard;
+
+TripBoard*
+tbNew( ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int agency );
+
+void
+tbDestroy(TripBoard* this);
+
+ServiceCalendar*
+tbGetCalendar( TripBoard* this );
+
+Timezone*
+tbGetTimezone( TripBoard* this );
+
+int
+tbGetAgency( TripBoard* this );
+
+ServiceId
+tbGetServiceId( TripBoard* this );
+
+int
+tbGetNumBoardings(TripBoard* this);
+
+void
+tbAddBoarding(TripBoard* this, char* trip_id, int depart);
+
+char*
+tbGetBoardingTripId(TripBoard* this, int i);
+
+int
+tbGetBoardingDepart(TripBoard* this, int i);
+
+int
+tbSearchBoardingsList(TripBoard* this, int time);
+
+int
+tbGetNextBoardingIndex(TripBoard* this, int time);
+
+inline State*
+tbWalk( EdgePayload* superthis, State* params, int transferPenalty );
+
+//---------------DECLARATIONS FOR CROSSING CLASS-------------------------------------------
+
+typedef struct Crossing {
+    edgepayload_t type;
+    State* (*walk)(struct EdgePayload*, struct State*, int);
+    
+    int crossing_time;
+} Crossing;
+
+Crossing*
+crNew( int crossing_time );
+
+void
+crDestroy(Crossing* this);
+
+int
+crGetCrossingTime(Crossing* this);
+
+inline State*
+crWalk( EdgePayload* superthis, State* params, int transferPenalty );
+
+//---------------DECLARATIONS FOR ALIGHT CLASS---------------------------------------------
+
+typedef struct Alight {
+  edgepayload_t type;
+  State* (*walk)(struct EdgePayload*, struct State*, int);
+} Alight;
+
+Alight*
+alNew();
+
+void
+alDestroy(Alight* this);
+
+inline State*
+alWalk(EdgePayload* this, State* params, int transferPenalty);
 
 //---------------DECLARATIONS FOR TRIPHOPSCHEDULE and TRIPHOP  CLASSES---------------------
 
@@ -253,6 +363,9 @@ typedef struct TripHopSchedule TripHopSchedule;
 
 typedef struct TripHop {
   edgepayload_t type;
+  State* (*walk)(struct EdgePayload*, struct State*, int);
+  State* (*walkBack)(struct EdgePayload*, struct State*, int);
+    
   int depart;
   int arrive;
   int transit;
@@ -265,6 +378,9 @@ typedef struct TripHop {
 
 struct TripHopSchedule {
   edgepayload_t type;
+  State* (*walk)(struct EdgePayload*, struct State*, int);
+  State* (*walkBack)(struct EdgePayload*, struct State*, int);
+    
   int n;
   TripHop** hops;
   ServiceId service_id;
@@ -311,16 +427,16 @@ triphopServiceId( TripHop* this );
 
 
 inline State*
-thsWalk(TripHopSchedule* this, State* params, int transferPenalty);
+thsWalk(EdgePayload* superthis, State* params, int transferPenalty);
 
 inline State*
-thsWalkBack(TripHopSchedule* this, State* params, int transferPenalty);
+thsWalkBack(EdgePayload* superthis, State* params, int transferPenalty);
 
 inline State*
-triphopWalk( TripHop* this, State* params, int transferPenalty );
+triphopWalk( EdgePayload* superthis, State* params, int transferPenalty );
 
 inline State*
-triphopWalkBack( TripHop* this, State* params, int transferPenalty );
+triphopWalkBack( EdgePayload* superthis, State* params, int transferPenalty );
 
 inline TripHop*
 thsCollapse( TripHopSchedule* this, State* params );

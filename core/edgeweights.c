@@ -17,21 +17,24 @@
 
 inline State*
 #ifndef ROUTE_REVERSE
-linkWalk(Link* this, State* params) {
+linkWalk(EdgePayload* this, State* params, int env) {
 #else
-linkWalkBack(Link* this, State* params) {
+linkWalkBack(EdgePayload* this, State* params, int env) {
 #endif
+    
   State* ret = stateDup( params );
 
   ret->prev_edge_type = PL_LINK;
-  ret->prev_edge_name = this->name;
+  ret->prev_edge_name = ((Link*)this)->name;
 
   return ret;
 }
 
 #ifndef ROUTE_REVERSE
 inline State*
-waitWalk(Wait* this, State* params, int transfer_penalty) {
+waitWalk(EdgePayload* superthis, State* params, int transfer_penalty) {
+    Wait* this = (Wait*)superthis;
+    
     State* ret = stateDup( params );
     
     ret->prev_edge_type = PL_WAIT;
@@ -53,7 +56,9 @@ waitWalk(Wait* this, State* params, int transfer_penalty) {
 }
 #else
 inline State*
-waitWalkBack(Wait* this, State* params, int transfer_penalty) {
+waitWalkBack(EdgePayload* superthis, State* params, int transfer_penalty) {
+    Wait* this = (Wait*)superthis;
+    
     State* ret = stateDup( params );
     
     ret->prev_edge_type = PL_WAIT;
@@ -77,10 +82,11 @@ waitWalkBack(Wait* this, State* params, int transfer_penalty) {
 
 inline State*
 #ifndef ROUTE_REVERSE
-streetWalk(Street* this, State* params) {
+streetWalk(EdgePayload* superthis, State* params, int env) {
 #else
-streetWalkBack(Street* this, State* params) {
+streetWalkBack(EdgePayload* superthis, State* params, int env) {
 #endif
+  Street* this = (Street*)superthis;
   State* ret = stateDup( params );
 
   double end_dist = params->dist_walked + this->length;
@@ -122,10 +128,11 @@ streetWalkBack(Street* this, State* params) {
 // by a higher-level langauge for the purpose of debugging.
 inline State*
 #ifndef ROUTE_REVERSE
-thsWalk(TripHopSchedule* this, State* params, int transferPenalty) {
+thsWalk(EdgePayload* superthis, State* params, int transferPenalty) {
 #else
-thsWalkBack(TripHopSchedule* this, State* params, int transferPenalty) {
+thsWalkBack(EdgePayload* superthis, State* params, int transferPenalty) {
 #endif
+    TripHopSchedule* this = (TripHopSchedule*)superthis;
     
     TripHop* th;
 #ifndef ROUTE_REVERSE
@@ -139,9 +146,9 @@ thsWalkBack(TripHopSchedule* this, State* params, int transferPenalty) {
     
     State* ret;
 #ifndef ROUTE_REVERSE
-    ret = triphopWalk(th, params, transferPenalty);
+    ret = th->walk((EdgePayload*)th, params, transferPenalty);
 #else
-    ret = triphopWalkBack(th, params, transferPenalty);
+    ret = th->walkBack((EdgePayload*)th, params, transferPenalty);
 #endif
     
     return ret;
@@ -149,10 +156,12 @@ thsWalkBack(TripHopSchedule* this, State* params, int transferPenalty) {
 
 inline State*
 #ifndef ROUTE_REVERSE
-triphopWalk(TripHop* this, State* params, int transferPenalty) {
+triphopWalk(EdgePayload* superthis, State* params, int transferPenalty) {
 #else
-triphopWalkBack(TripHop* this, State* params, int transferPenalty) {
+triphopWalkBack(EdgePayload* superthis, State* params, int transferPenalty) {
 #endif
+    
+    TripHop* this = (TripHop*)superthis;
     
     // if the params->service_period is NULL, use the params->time to find the service_period
     // the service_period is actually a denormalization of the params->time
@@ -239,10 +248,11 @@ triphopWalkBack(TripHop* this, State* params, int transferPenalty) {
 
 inline State*
 #ifndef ROUTE_REVERSE
-headwayWalk(Headway* this, State* params, int transferPenalty) {
+headwayWalk(EdgePayload* superthis, State* params, int transferPenalty) {
 #else
-headwayWalkBack(Headway* this, State* params, int transferPenalty) {
+headwayWalkBack(EdgePayload* superthis, State* params, int transferPenalty) {
 #endif
+    Headway* this = (Headway*)superthis;
     
     // if the params->service_period is NULL, use the params->time to find the service_period
     // the service_period is actually a denormalization of the params->time
