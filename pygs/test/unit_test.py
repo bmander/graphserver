@@ -136,6 +136,24 @@ class TestGraph(unittest.TestCase):
         spt.destroy()
         g.destroy()
         
+    def test_aborts_at_maxtime(self):
+        g = Graph()
+        
+        g.add_vertex( "A" )
+        g.add_vertex( "B" )
+        g.add_vertex( "C" )
+        g.add_vertex( "D" )
+        
+        g.add_edge( "A", "B", Crossing(100) )
+        g.add_edge( "B", "C", Crossing(100) )
+        g.add_edge( "C", "D", Crossing(100) )
+        
+        spt = g.shortest_path_tree( "A", "D", State(1,0) )
+        assert [v.label for v in spt.vertices] == ['A', 'B', 'C', 'D']
+        
+        spt = g.shortest_path_tree( "A", "D", State(1,0), maxtime=100 )
+        assert [v.label for v in spt.vertices] == ['A', 'B', 'C']
+        
     def test_bogus_origin(self):
         g = Graph()
         

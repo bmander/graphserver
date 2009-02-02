@@ -1,9 +1,10 @@
 Graph*
 #ifndef RETRO
-gShortestPathTree( Graph* this, char *from, char *to, State* init_state, int transferPenalty ) {
+gShortestPathTree( Graph* this, char *from, char *to, State* init_state, int transferPenalty, long maxtime ) {
 #else
-gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, int transferPenalty ) {
+gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, int transferPenalty, long mintime ) {
 #endif
+    
 /*
  *  VARIABLE SETUP
  */
@@ -47,7 +48,16 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, in
       break;
 
     spt_u = gGetVertex( spt, u->label );             //get corresponding SPT Vertex,
+    
     du = (State*)spt_u->payload;                     //and get State of u 'du'.
+    
+#ifndef RETRO
+    if( du->time > maxtime )
+      break;
+#else
+    if( du->time < mintime )
+      break;
+#endif
 
 #ifndef RETRO
     ListNode* edges = vGetOutgoingEdgeList( u );

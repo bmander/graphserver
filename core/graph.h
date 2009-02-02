@@ -79,14 +79,14 @@ Vertex**
 gVertices( Graph* this, long* num_vertices );
 
 Graph*
-gShortestPathTree( Graph* this, char *from, char *to, State* init_state, int transferPenalty );
+gShortestPathTree( Graph* this, char *from, char *to, State* init_state, int transferPenalty, long maxtime );
 
 Graph*
-gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, int transferPenalty );
+gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, int transferPenalty, long mintime );
 
 //direction specifies forward or retro routing
 State*
-gShortestPath( Graph* this, char *from, char *to, State* init_state, int direction, long *size, int transferPenalty );
+gShortestPath( Graph* this, char *from, char *to, State* init_state, int direction, long *size, int transferPenalty, long timelimit );
 
 long
 gSize( Graph* this );

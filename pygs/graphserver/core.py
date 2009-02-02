@@ -116,19 +116,19 @@ class Graph(CShadow):
                 edges.append(e)
         return edges    
     
-    def shortest_path_tree(self, fromv, tov, initstate, transfer_penalty=0):
+    def shortest_path_tree(self, fromv, tov, initstate, transfer_penalty=0, maxtime=2000000000):
         #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
         self.check_destroyed()
         if not tov:
             tov = "*bogus^*^vertex*"
-        return self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, transfer_penalty )
+        return self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, transfer_penalty, c_long(maxtime) )
         
-    def shortest_path_tree_retro(self, fromv, tov, finalstate, transfer_penalty=0):
+    def shortest_path_tree_retro(self, fromv, tov, finalstate, transfer_penalty=0, mintime=0):
         #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
         self.check_destroyed()
         if not fromv:
             fromv = "*bogus^*^vertex*"        
-        return self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, transfer_penalty )
+        return self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, transfer_penalty, c_long(mintime) )
 
     def to_dot(self):
         self.check_destroyed()
