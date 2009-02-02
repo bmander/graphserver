@@ -66,12 +66,47 @@ class StressTest(unittest.TestCase):
         grind(func, 1000000)
         
 
+        
+
     rawhops = [(0,     1*3600,'Foo to Bar'),
                 (1*3600,2*3600,'Bar to Cow'),
                 (2*3600,3*3600,'four score and seven years'),
                 (3*3600,4*3600,'hoombacha')]
     cal = ServiceCalendar()
     cal.add_period( 0, 1*3600*24, ["1","2"] )
+
+    def test_trip_board_destroy(self):
+        """TripBoard.destroy() completely destroys TripBoard"""
+        
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24-1, ['WKDY'] )
+        sc.add_period( 1*3600*25, 2*3600*25-1, ['SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        def func():
+            tb = TripBoard( "WKDY", sc, tz, 0 )
+            tb.add_boarding( "1111", 50 )
+            tb.add_boarding( "2222", 100 )
+            tb.add_boarding( "3333", 200 )
+            
+            tb.destroy()
+            
+        grind( func, 100000 )
+        
+    def test_crossing_destroy(self):
+        def func():
+            cr = Crossing(10)
+            cr.destroy()
+            
+        grind( func, 100000 )
+        
+    def test_alight_destroy(self):
+        def func():
+            al = Alight()
+            al.destroy()
+            
+        grind( func, 100000 )
 
     def test_ths_destroy(self):
         """TripHopSchedule.destroy() completely destroys TripHopSchedule"""
@@ -282,11 +317,11 @@ if __name__=='__main__':
     tl = unittest.TestLoader()
     
     testables = [\
-                 #StressTest,
+                 StressTest,
                  #WaitStressTest,
                  #DAGStressTest,
                  #TripHopStressTest,
-                 DeadendStressTest,
+                 #DeadendStressTest,
                  ]
 
     for testable in testables:

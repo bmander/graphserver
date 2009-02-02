@@ -19,6 +19,7 @@ def get_mem_usage():
 
 import csv
 class TestGraph(unittest.TestCase):
+    
     def test_basic(self):
         g = Graph()
         assert g
@@ -623,6 +624,54 @@ class TestGraph(unittest.TestCase):
         
         print "executed %d iterations in %s seconds"%(n,(t1-t0))
 
+    def test_board_alight_graph(self):
+        g = Graph()
+        
+        g.add_vertex( "A" )
+        g.add_vertex( "B" )
+        g.add_vertex( "A-1" )
+        g.add_vertex( "B-1" )
+        
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24-1, ['WKDY'] )
+        sc.add_period( 1*3600*25, 2*3600*25-1, ['SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        tb = TripBoard( "WKDY", sc, tz, 0 )
+        tb.add_boarding( "1", 50 )
+        tb.add_boarding( "2", 100 )
+        tb.add_boarding( "3", 200 )
+        
+        g.add_edge( "A", "A-1", tb )
+        g.add_edge( "A-1", "B-1", Crossing(10) )
+        g.add_edge( "B-1", "B", Alight() )
+        
+        spt = g.shortest_path_tree( "A", "B", State(1,0) )
+                
+        verts, edges =  spt.path( "B" )
+        assert [vert.label for vert in verts] == ["A", "A-1", "B-1", "B"]
+        assert [vert.payload.weight for vert in verts] == [0, 51, 61, 61]
+        assert [vert.payload.time for vert in verts] == [0, 50, 60, 60]
+        spt.destroy()
+            
+        spt = g.shortest_path_tree( "A", "B", State(1,50) )
+        verts, edges =  spt.path( "B" )
+        assert [vert.label for vert in verts] == ["A", "A-1", "B-1", "B"]
+        assert [vert.payload.weight for vert in verts] == [0, 1, 11, 11]
+        assert [vert.payload.time for vert in verts] == [50, 50, 60, 60]
+        spt.destroy()
+        
+        spt = g.shortest_path_tree( "A", "B", State(1,51) )
+        verts, edges =  spt.path( "B" )
+        assert [vert.label for vert in verts] == ["A", "A-1", "B-1", "B"]
+        assert [vert.payload.weight for vert in verts] == [0, 50, 60, 60]
+        assert [vert.payload.time for vert in verts] == [51, 100, 110, 110]
+        spt.destroy()
+        
+        spt = g.shortest_path_tree( "A", "B", State(1,201) )
+        assert spt.get_vertex( "B" ) == None
+        spt.destroy()
 
 
 import time
@@ -1828,12 +1877,379 @@ class TestTimezonePeriod(unittest.TestCase):
         assert laz.begin_time == 3
         assert laz.end_time == 7
         assert laz.utc_offset == -11
+        
+class TestTripBoard(unittest.TestCase):
+    def test_basic(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        tb = TripBoard("WKDY", sc, tz, 0)
+        
+        assert tb.int_service_id == 0
+        assert tb.timezone.soul == tz.soul
+        assert tb.calendar.soul == sc.soul
+        assert tb.agency == 0
+        
+        assert tb.num_boardings == 0
+        
+        assert tb.type==8
+        assert tb.soul
+        tb.destroy()
+        try:
+            print tb
+            raise Exception( "should have failed by now" )
+        except:
+            pass
+            
+    def test_add_single_trip(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        tb = TripBoard("WKDY", sc, tz, 0)
+    
+        try:
+            tb.get_boarding( 0 )
+            raise Exception( "should have popped error by now" )
+        except Exception, ex:
+            assert str(ex) == "Index 0 out of bounds"
+    
+        tb.add_boarding( "morning", 0 )
+        
+        assert tb.num_boardings == 1
+        
+        assert tb.get_boarding( 0 ) == ("morning", 0)
+        
+        try:
+            tb.get_boarding( -1 )
+            raise Exception( "should have popped error by now" )
+        except Exception, ex:
+            assert str(ex) == "Index -1 out of bounds"
+            
+        try:
+            tb.get_boarding( 1 )
+            raise Exception( "should have popped error by now" )
+        except Exception, ex:
+            assert str(ex) == "Index 1 out of bounds"
+            
+    def test_add_several_in_order(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        tb = TripBoard("WKDY", sc, tz, 0)
+    
+        try:
+            tb.get_boarding( 0 )
+            raise Exception( "should have popped error by now" )
+        except Exception, ex:
+            assert str(ex) == "Index 0 out of bounds"
+    
+        tb.add_boarding( "first", 0 )
+        
+        assert tb.num_boardings == 1
+        assert tb.get_boarding( 0 ) == ('first', 0)
+        
+        tb.add_boarding( "second", 50 )
+        assert tb.num_boardings == 2
+        
+        assert tb.get_boarding( 0 ) == ('first', 0)
+        assert tb.get_boarding( 1 ) == ('second', 50)
+        
+        try:
+            tb.get_boarding( -1 )
+            raise Exception( "should have popped error by now" )
+        except Exception, ex:
+            assert str(ex) == "Index -1 out of bounds"
+            
+        try:
+            tb.get_boarding( 2 )
+            raise Exception( "should have popped error by now" )
+        except Exception, ex:
+            assert str(ex) == "Index 2 out of bounds"
+
+        tb.add_boarding( "third", 150 )
+        assert tb.num_boardings == 3
+        
+        assert tb.get_boarding( 0 ) == ('first', 0)
+        assert tb.get_boarding( 1 ) == ('second', 50)
+        assert tb.get_boarding( 2 ) == ('third', 150)
+        
+        try:
+            tb.get_boarding( -1 )
+            raise Exception( "should have popped error by now" )
+        except Exception, ex:
+            assert str(ex) == "Index -1 out of bounds"
+            
+        try:
+            tb.get_boarding( 3 )
+            raise Exception( "should have popped error by now" )
+        except Exception, ex:
+            assert str(ex) == "Index 3 out of bounds"
+            
+        tb.add_boarding( "fourth", 150 )
+        assert tb.num_boardings == 4
+        
+        assert tb.get_boarding( 0 ) == ('first', 0)
+        assert tb.get_boarding( 1 ) == ('second', 50)
+        assert tb.get_boarding( 2 ) == ('third', 150) or tb.get_boarding( 2 ) == ('fourth', 150)
+        assert tb.get_boarding( 3 ) == ('third', 150) or tb.get_boarding( 3 ) == ('fourth', 150)
+            
+    def test_add_several_out_of_order(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        tb = TripBoard("WKDY", sc, tz, 0)
+    
+        try:
+            tb.get_boarding( 0 )
+            raise Exception( "should have popped error by now" )
+        except Exception, ex:
+            assert str(ex) == "Index 0 out of bounds"
+    
+        tb.add_boarding( "fourth", 150 )
+        
+        assert tb.num_boardings == 1
+        assert tb.get_boarding( 0 ) == ('fourth', 150)
+        
+        tb.add_boarding( "first", 0 )
+        assert tb.num_boardings == 2
+        
+        assert tb.get_boarding( 0 ) == ('first', 0)
+        assert tb.get_boarding( 1 ) == ('fourth', 150)
+        
+        try:
+            tb.get_boarding( -1 )
+            raise Exception( "should have popped error by now" )
+        except Exception, ex:
+            assert str(ex) == "Index -1 out of bounds"
+            
+        try:
+            tb.get_boarding( 2 )
+            raise Exception( "should have popped error by now" )
+        except Exception, ex:
+            assert str(ex) == "Index 2 out of bounds"
+
+        tb.add_boarding( "third", 150 )
+        assert tb.num_boardings == 3
+        
+        assert tb.get_boarding( 0 ) == ('first', 0)
+        assert tb.get_boarding( 1 ) == ('third', 150)
+        assert tb.get_boarding( 2 ) == ('fourth', 150)
+        
+        try:
+            tb.get_boarding( -1 )
+            raise Exception( "should have popped error by now" )
+        except Exception, ex:
+            assert str(ex) == "Index -1 out of bounds"
+            
+        try:
+            tb.get_boarding( 3 )
+            raise Exception( "should have popped error by now" )
+        except Exception, ex:
+            assert str(ex) == "Index 3 out of bounds"
+        
+        tb.add_boarding( "second", 50 )
+        assert tb.num_boardings == 4
+        
+        assert tb.get_boarding( 0 ) == ('first', 0)
+        assert tb.get_boarding( 1 ) == ('second', 50)
+        assert tb.get_boarding( 2 ) == ('third', 150) or tb.get_boarding( 2 ) == ('fourth', 150)
+        assert tb.get_boarding( 3 ) == ('third', 150) or tb.get_boarding( 3 ) == ('fourth', 150)
+        
+    def test_add_several_random(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        tb = TripBoard("WKDY", sc, tz, 0)
+        
+        for i in range(1000):
+            tb.add_boarding( str(i), randint(0,10000) )
+            
+        last_depart = -1
+        for i in range(tb.num_boardings):
+            trip_id, depart = tb.get_boarding(i)
+            assert last_depart <= depart
+            last_depart = depart
+    
+    def test_search_boardings_list_single(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        tb = TripBoard("WKDY", sc, tz, 0)
+        
+        assert tb.search_boardings_list(0) == 0
+        
+        tb.add_boarding( "morning", 15 )
+        
+        assert tb.search_boardings_list(5) == 0
+        assert tb.search_boardings_list(15) == 0
+        assert tb.search_boardings_list(20) == 1
+        
+    def test_get_next_boarding_index_single(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        tb = TripBoard("WKDY", sc, tz, 0)
+        
+        assert tb.get_next_boarding_index(0) == -1
+        
+        tb.add_boarding( "morning", 15 )
+        
+        assert tb.get_next_boarding_index(5) == 0
+        assert tb.get_next_boarding_index(15) == 0
+        assert tb.get_next_boarding_index(20) == -1
+        
+    def test_get_next_boarding_single(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        tb = TripBoard("WKDY", sc, tz, 0)
+        
+        assert tb.get_next_boarding(0) == None
+        
+        tb.add_boarding( "morning", 15 )
+        
+        assert tb.get_next_boarding(5) == ( "morning", 15 )
+        assert tb.get_next_boarding(15) == ( "morning", 15 )
+        assert tb.get_next_boarding(20) == None
+        
+    def test_get_next_boarding_several(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        tb = TripBoard("WKDY", sc, tz, 0)
+        
+        assert tb.get_next_boarding(0) == None
+        
+        tb.add_boarding( "1", 15 )
+        
+        assert tb.get_next_boarding(5) == ( "1", 15 )
+        assert tb.get_next_boarding(15) == ( "1", 15 )
+        assert tb.get_next_boarding(20) == None
+        
+        tb.add_boarding( "2", 25 )
+        
+        assert tb.get_next_boarding(5) == ( "1", 15 )
+        assert tb.get_next_boarding(15) == ( "1", 15 )
+        assert tb.get_next_boarding(20) == ( "2", 25 )
+        assert tb.get_next_boarding(25) == ( "2", 25 )
+        assert tb.get_next_boarding(30) == None
+        
+    def test_walk(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24-1, ['WKDY'] )
+        sc.add_period( 1*3600*25, 2*3600*25-1, ['SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        tb = TripBoard( "WKDY", sc, tz, 0 )
+        tb.add_boarding( "1", 50 )
+        tb.add_boarding( "2", 100 )
+        tb.add_boarding( "3", 200 )
+        
+        #wrong day
+        s = State(1, 1*3600*24)
+        ret = tb.walk( s )
+        assert ret == None
+        
+        s = State(1, 0)
+        ret = tb.walk(s)
+        assert ret.time == 50
+        assert ret.weight == 51
+        assert ret.num_transfers == 1
+        assert ret.dist_walked == 0.0
+        
+        s = State(1, 2)
+        ret = tb.walk(s)
+        assert ret.time == 50
+        assert ret.weight == 49
+        assert ret.num_transfers == 1
+        assert ret.dist_walked == 0.0
+        
+        s = State(1, 50)
+        ret = tb.walk(s)
+        assert ret.time == 50
+        assert ret.weight == 1
+        assert ret.num_transfers == 1
+        assert ret.dist_walked == 0.0
+        
+        s = State(1, 100)
+        ret = tb.walk(s)
+        assert ret.time == 100
+        assert ret.weight == 1
+        assert ret.num_transfers == 1
+        assert ret.dist_walked == 0.0
+        
+        s = State(1, 200)
+        ret = tb.walk(s)
+        assert ret.time == 200
+        assert ret.weight == 1
+        assert ret.num_transfers == 1
+        assert ret.dist_walked == 0.0
+        
+        s = State(1, 201)
+        ret = tb.walk(s)
+        assert ret == None
+        
+class TestCrossing(unittest.TestCase):
+    
+    def test_basic(self):
+        
+        cr = Crossing(10)
+        
+        assert cr
+        assert cr.soul
+        assert cr.crossing_time == 10
+        
+    def test_walk(self):
+        
+        cr = Crossing(10)
+        
+        s = State(1, 0)
+        ret = cr.walk(s)
+        assert ret.time == 10
+        assert ret.weight == 10
+        
+class TestAlight(unittest.TestCase):
+    
+    def test_basic(self):
+        
+        al = Alight()
+        
+        assert al
+        assert al.soul
+        
+    def test_walk(self):
+        
+        al = Alight()
+        
+        s = State(1, 0)
+        ret = al.walk(s)
+        assert ret.time == 0
+        assert ret.weight == 0
 
 if __name__ == '__main__':
     tl = unittest.TestLoader()
     
     testables = [\
-                 #TestGraph,
+                 TestGraph,
                  #TestGraphPerformance,
                  #TestState,
                  #TestPyPayload,
@@ -1842,7 +2258,7 @@ if __name__ == '__main__':
                  #TestTripHop,
                  #TestTriphopSchedule,
                  #TestStreet,
-                 TestHeadway,
+                 #TestHeadway,
                  #TestListNode,
                  #TestVertex,
                  #TestServicePeriod,
@@ -1850,6 +2266,9 @@ if __name__ == '__main__':
                  #TestEngine,
                  #TestTimezone,
                  #TestTimezonePeriod,
+                 #TestTripBoard,
+                 #TestCrossing,
+                 #TestAlight,
                  ]
 
     for testable in testables:
