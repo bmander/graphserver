@@ -12,6 +12,7 @@ import calendar
 import os
 from datetime import date, timedelta
 
+
 if [int(x) for x in transitfeed.__version__.split('.')] < [1,1,6]:
     raise Exception("transitfeed.__version__ < 1.1.6")
 
