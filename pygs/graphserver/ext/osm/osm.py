@@ -2,9 +2,11 @@ import xml.sax
 import copy
 from math import *
 
+INFINITY = float('inf')
+
 def download_osm(left,bottom,right,top):
     """ Return a filehandle to the downloaded data."""
-    from urllib import urlopen
+    from urllib.request import urlopen
     fp = urlopen( "http://api.openstreetmap.org/api/0.5/map?bbox=%f,%f,%f,%f"%(left,bottom,right,top) )
     return fp
 
@@ -33,13 +35,38 @@ class Node:
         self.lat = lat
         self.tags = {}
 
+    def __repr__(self):
+        return "<Node id='%s' (%s, %s) n_tags=%d>"%(self.id, self.lon, self.lat, len(self.tags))
+        
 class Way:
     def __init__(self, id, osm):
         self.osm = osm
         self.id = id
-        self.nds = []
+        self.nd_ids = []
         self.tags = {}
-
+    
+    @property
+    def nds(self):
+        for nd_id in self.nd_ids:
+            yield self.osm.nodes[nd_id]
+            
+    @property
+    def geom(self):
+        return [(nd.lon, nd.lat) for nd in self.nds]
+            
+    @property
+    def bbox(self):
+        l = INFINITY
+        b = INFINITY
+        r = -INFINITY
+        t = -INFINITY
+        for x,y in self.geom:
+            l = min(l,x)
+            r = max(r,x)
+            b = min(b,y)
+            t = max(t,y)
+        return (l,b,r,t)
+    
     def split(self, dividers):
         # slice the node-array using this nifty recursive function
         def slice_array(ar, dividers):
@@ -54,7 +81,7 @@ class Way:
                     return [left]+rightsliced
             return [ar]
 
-        slices = slice_array(self.nds, dividers)
+        slices = slice_array(self.nd_ids, dividers)
 
         # create a way object for each node-array slice
         ret = []
@@ -62,7 +89,7 @@ class Way:
         for slice in slices:
             littleway = copy.copy( self )
             littleway.id += "-%d"%i
-            littleway.nds = slice
+            littleway.nd_ids = slice
             ret.append( littleway )
             i += 1
 
@@ -72,7 +99,7 @@ class Way:
         """nodedir is a dictionary of nodeid->node objects. If reprojection_func is None, returns unprojected points"""
         ret = []
 
-        for nodeid in self.nds:
+        for nodeid in self.nd_ids:
             node = self.osm.nodes[ nodeid ]
             ret.append( reprojection_func(node.lon,node.lat) )
 
@@ -88,9 +115,9 @@ class Way:
         """nodedir is a dictionary of nodeid->node objects"""
         ret = 0
 
-        for i in range(len(self.nds)-1):
-            thisnode = self.osm.nodes[ self.nds[i] ]
-            nextnode = self.osm.nodes[ self.nds[i+1] ]
+        for i in range(len(self.nd_ids)-1):
+            thisnode = self.osm.nodes[ self.nd_ids[i] ]
+            nextnode = self.osm.nodes[ self.nd_ids[i+1] ]
 
             fromx, fromy = reprojection_func(thisnode.lon,thisnode.lat)
             tox, toy = reprojection_func(nextnode.lon,nextnode.lat)
@@ -111,11 +138,14 @@ class Way:
 
     @property
     def fromv(self):
-        return self.nds[0]
+        return self.nd_ids[0]
 
     @property
     def tov(self):
-        return self.nds[-1]
+        return self.nd_ids[-1]
+        
+    def __repr__(self):
+        return "<Way id='%s' n_nds=%d n_tags=%d>"%(self.id, len(self.nd_ids), len(self.tags))
 
 class OSM:
 
@@ -148,7 +178,7 @@ class OSM:
                 elif name=='tag':
                     self.currElem.tags[attrs['k']] = attrs['v']
                 elif name=='nd':
-                    self.currElem.nds.append( attrs['ref'] )
+                    self.currElem.nd_ids.append( attrs['ref'] )
 
             @classmethod
             def endElement(self,name):
@@ -168,16 +198,22 @@ class OSM:
 
         #count times each node is used
         node_histogram = dict.fromkeys( self.nodes.keys(), 0 )
+        
+        todel = []
         for way in self.ways.values():
-            if len(way.nds) < 2:       #if a way has only one node, delete it out of the osm collection
-                del self.ways[way.id]
-            else:
-                for node in way.nds:
-                    node_histogram[node] += 1
+            if len(way.nd_ids) < 2:       #if a way has only one node, delete it out of the osm collection
+                todel.append( way.id )
+        #have to do it in two passes, or else you change the size of dict during iteration
+        for way_id in todel:
+            del self.ways[way_id]
 
+        for way in self.ways.values():
+            for node in way.nd_ids:
+                node_histogram[node] += 1
+        
         #use that histogram to split all ways, replacing the member set of ways
         new_ways = {}
-        for id, way in self.ways.iteritems():
+        for id, way in self.ways.items():
             split_ways = way.split(node_histogram)
             for split_way in split_ways:
                 new_ways[split_way.id] = split_way
@@ -192,7 +228,7 @@ class OSM:
             ret[way.fromv] = self.nodes[way.fromv]
             ret[way.tov] = self.nodes[way.tov]
 
-        return ret
+        return ret.values()
 
     @classmethod
     def download_from_bbox(cls, left, bottom, right, top ):
@@ -204,13 +240,23 @@ class OSM:
 
     def find_nearest_node(self, lng, lat):
         """ Brute force effort to find the nearest start or end node based on lat/lng distances."""
-        best = self.nodes[self.ways[self.ways.keys()[0]].nds[0]]
+        best = self.nodes[self.ways[self.ways.keys()[0]].nd_ids[0]]
         bdist = dist(best.lon, best.lat, lng, lat)
         for id, way in self.ways.iteritems():
             for i in (0,-1):
-                nd = self.nodes[way.nds[i]]
+                nd = self.nodes[way.nd_ids[i]]
                 d = dist(lng, lat, nd.lon, nd.lat)
                 if d < bdist:
                     bdist = d
                     best = nd
         return best
+        
+if __name__=='__main__':
+    fp = download_osm( -122.326884, 47.684496, -122.319417, 47.689638 )
+    osm = OSM( fp )
+    for way in osm.ways.values():
+        print( way.length() )
+        print( way.fromv )
+        print( way.tov )
+    for node in osm.nodes:
+        print( node )
