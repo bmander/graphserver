@@ -31,7 +31,7 @@ class ContourServer(Servable):
         starttime = 1233172800
         
         t0 = time.time()
-        spt = self.graph.shortest_path_tree( vertex_label, None, State(1,starttime) )
+        spt = self.graph.shortest_path_tree( vertex_label, None, State(1,starttime), maxtime=starttime+int(cutoff*1.25) )
         t1 = time.time()
         print t1-t0
         
@@ -106,6 +106,6 @@ if __name__=='__main__':
     # a fine example node for bart: "ASBY" @ 1233172800
     # for trimet: "10071" @ 1233172800
     
-    #cserver = ContourServer("streetstrimet.db", "../package_graph/bigportland.sqlite")
-    cserver = ContourServer("streetsbart.db", "../package_graph/bartarea.sqlite")
+    cserver = ContourServer("streetstrimet.db", "../package_graph/bigportland.sqlite")
+    #cserver = ContourServer("streetsbart.db", "../package_graph/bartarea.sqlite")
     cserver.run_test_server()
