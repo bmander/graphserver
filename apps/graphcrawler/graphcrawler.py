@@ -1,5 +1,5 @@
 from servable import Servable
-from graphdb import GraphDatabase
+from graphserver.graphdb import GraphDatabase
 import cgi
 from graphserver.core import State
 import time
@@ -46,5 +46,5 @@ if __name__ == '__main__':
     # a fine example node for bart: "ASBY" @ 1233172800
     # for trimet: "10071" @ 1233172800
     
-    gc = GraphCrawler("streetstrimet.db")
+    gc = GraphCrawler("../package_graph/bartheadway.db")
     gc.run_test_server()
