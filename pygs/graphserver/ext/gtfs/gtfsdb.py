@@ -123,8 +123,13 @@ class GTFSDatabase:
                              ("agency_name", None, None),
                              ("agency_url", None, None),
                              ("agency_timezone", None, None)) )
+                             
+    FREQUENCIES_DEF = ("frequencies", (("trip_id", None, None),
+                                       ("start_time", "INTEGER", parse_gtfs_time),
+                                       ("end_time", "INTEGER", parse_gtfs_time),
+                                       ("headway_secs", "INTEGER", None)) )
     
-    GTFS_DEF = (TRIPS_DEF, STOP_TIMES_DEF, STOPS_DEF, CALENDAR_DEF, CAL_DATES_DEF, AGENCY_DEF)
+    GTFS_DEF = (TRIPS_DEF, STOP_TIMES_DEF, STOPS_DEF, CALENDAR_DEF, CAL_DATES_DEF, AGENCY_DEF, FREQUENCIES_DEF)
     
     def __init__(self, sqlite_filename, overwrite=False):
         if overwrite:
