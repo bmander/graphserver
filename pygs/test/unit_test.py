@@ -2263,11 +2263,66 @@ class TestAlight(unittest.TestCase):
         assert ret.time == 0
         assert ret.weight == 0
 
+class TestHeadwayBoard(unittest.TestCase):
+    def test_basic(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        hb = HeadwayBoard("WKDY", sc, tz, 0, "hwtrip1", 0, 1000, 100)
+        
+        assert hb.calendar.soul == sc.soul
+        assert hb.timezone.soul == tz.soul
+        
+        assert hb.agency == 0
+        assert hb.int_service_id == 0
+        
+        assert hb.trip_id == "hwtrip1"
+        
+        assert hb.start_time == 0
+        assert hb.end_time == 1000
+        assert hb.headway_secs == 100
+        
+        hb.destroy()
+        
+    def test_walk(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24, ['WKDY'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        hb = HeadwayBoard("WKDY", sc, tz, 0, "tr1", 200, 1000, 50)
+        
+        s0 = State(1,0)
+        s1 = hb.walk(s0)
+        assert s1.time == 250
+        assert s1.weight == 251
+        
+        s0 = State(1,200)
+        s1 = hb.walk(s0)
+        assert s1.time == 250
+        assert s1.weight == 51
+        
+        s0 = State(1, 500)
+        s1 = hb.walk(s0)
+        assert s1.time == 550
+        assert s1.weight == 51
+        
+        s0 = State(1, 1000)
+        s1 = hb.walk(s0)
+        assert s1.time == 1050
+        assert s1.weight == 51
+        
+        s0 = State(1, 1001)
+        s1 = hb.walk(s0)
+        assert s1 == None
+
 if __name__ == '__main__':
     tl = unittest.TestLoader()
     
     testables = [\
-                 TestGraph,
+                 #TestGraph,
                  #TestGraphPerformance,
                  #TestState,
                  #TestPyPayload,
@@ -2284,9 +2339,10 @@ if __name__ == '__main__':
                  #TestEngine,
                  #TestTimezone,
                  #TestTimezonePeriod,
-                 #TestTripBoard,
+                 TestTripBoard,
                  #TestCrossing,
                  #TestAlight,
+                 TestHeadwayBoard,
                  ]
 
     for testable in testables:

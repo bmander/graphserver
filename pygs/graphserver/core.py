@@ -992,7 +992,63 @@ class TripBoard(EdgePayload):
             ret.add_boarding( trip_id, depart )
             
         return ret
+        
+class HeadwayBoard(EdgePayload):
+    calendar = cproperty( lgs.hbGetCalendar, c_void_p, ServiceCalendar )
+    timezone = cproperty( lgs.hbGetTimezone, c_void_p, Timezone )
+    agency = cproperty( lgs.hbGetAgency, c_int )
+    int_service_id = cproperty( lgs.hbGetServiceId, c_int )
+    trip_id = cproperty( lgs.hbGetTripId, c_char_p )
+    start_time = cproperty( lgs.hbGetStartTime, c_int )
+    end_time = cproperty( lgs.hbGetEndTime, c_int )
+    headway_secs = cproperty( lgs.hbGetHeadwaySecs, c_int )
+    
+    def __init__(self, service_id, calendar, timezone, agency, trip_id, start_time, end_time, headway_secs):
+        service_id = service_id if type(service_id)==int else calendar.get_service_id_int(service_id)
+        
+        self.soul = self._cnew(service_id, calendar.soul, timezone.soul, agency, trip_id, start_time, end_time, headway_secs)
+        
+    def __repr__(self):
+        return "<HeadwayBoard calendar=%d timezone=%d agency=%d service_id=%d trip_id=\"%s\" start_time=%d end_time=%d headway_secs=%d>"%(self.calendar.soul,
+                                                                                                                                          self.timezone.soul,
+                                                                                                                                          self.agency,
+                                                                                                                                          self.int_service_id,
+                                                                                                                                          self.trip_id,
+                                                                                                                                          self.start_time,
+                                                                                                                                          self.end_time,
+                                                                                                                                          self.headway_secs)
+                                                                                                                                          
+    def __getstate__(self):
+        state = {}
+        state['calendar'] = self.calendar.soul
+        state['timezone'] = self.timezone.soul
+        state['agency'] = self.agency
+        state['int_sid'] = self.int_service_id
+        state['trip_id'] = self.trip_id
+        state['start_time'] = self.start_time
+        state['end_time'] = self.end_time
+        state['headway_secs'] = self.headway_secs
+        return state
+        
+    def __resources__(self):
+        return ((str(self.calendar.soul), self.calendar),
+                (str(self.timezone.soul), self.timezone))
+    
+    @classmethod
+    def reconstitute(cls, state, resolver):
+        calendar = resolver.resolve( state['calendar'] )
+        timezone = resolver.resolve( state['timezone'] )
+        int_sid = state['int_sid']
+        agency = state['agency']
+        trip_id = state['trip_id']
+        start_time = state['start_time']
+        end_time = state['end_time']
+        headway_secs = state['headway_secs']
+        
+        ret = HeadwayBoard(int_sid, calendar, timezone, agency, trip_id, start_time, end_time, headway_secs)
             
+        return ret
+    
 class Crossing(EdgePayload):
     crossing_time = cproperty( lgs.crGetCrossingTime, c_int )
     
@@ -1044,7 +1100,7 @@ Edge._cpayload = ccast(lgs.eGetPayload, EdgePayload)
 Edge._cwalk = ccast(lgs.eWalk, State)
 Edge._cwalk_back = lgs.eWalkBack
 
-EdgePayload._subtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,4:GenericPyPayload,5:None,6:Wait,7:Headway,8:TripBoard,9:Crossing,10:Alight}
+EdgePayload._subtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,4:GenericPyPayload,5:None,6:Wait,7:Headway,8:TripBoard,9:Crossing,10:Alight,11:HeadwayBoard}
 EdgePayload._cget_type = lgs.epGetType
 EdgePayload._cwalk = lgs.epWalk
 EdgePayload._cwalk_back = lgs.epWalkBack
@@ -1108,6 +1164,10 @@ Crossing._cdel = lgs.crDestroy
 
 Alight._cnew = lgs.alNew
 Alight._cdel = lgs.alDestroy
+
+HeadwayBoard._cnew = lgs.hbNew
+HeadwayBoard._cdel = lgs.hbDestroy
+HeadwayBoard._cwalk = lgs.epWalk
 
 GenericPyPayload._cnew = lgs.cpNew
 GenericPyPayload._cdel = lgs.cpDestroy
