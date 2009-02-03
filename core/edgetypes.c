@@ -528,11 +528,6 @@ tbWalk( EdgePayload* superthis, State* params, int transferPenalty ) {
       return NULL;
     }
     
-    // Dupe state and advance time by the waiting time
-    State* ret = stateDup( params );
-    
-    ret->num_transfers += 1;
-    
     long adjusted_time = spNormalizeTime( service_period, tzUtcOffset(this->timezone, params->time), params->time );
     
     int next_boarding_index = tbGetNextBoardingIndex( this, adjusted_time );
@@ -541,8 +536,132 @@ tbWalk( EdgePayload* superthis, State* params, int transferPenalty ) {
         return NULL;
     }
     
+    // Dupe state and advance time by the waiting time
+    State* ret = stateDup( params );
+    
+    ret->num_transfers += 1;
+    
     int next_boarding_time = this->departs[next_boarding_index];
     int wait = (next_boarding_time - adjusted_time);
+    
+    ret->time   += wait;
+    ret->weight += wait + 1; //transfer penalty
+    
+    // Make sure the service period caches are updated if we've traveled over a service period boundary
+    int i;
+    for(i=0; i<params->n_agencies; i++) {
+        if( ret->service_periods[i] && ret->time >= ret->service_periods[i]->end_time) {
+          ret->service_periods[i] = ret->service_periods[i]->next_period;
+        }
+    }
+    
+    return ret;
+    
+}
+
+// HEADWAYBOARD FUNCTIONS
+
+HeadwayBoard*
+hbNew(  ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int agency, char* trip_id, int start_time, int end_time, int headway_secs ) {
+  HeadwayBoard* ret = (HeadwayBoard*)malloc(sizeof(HeadwayBoard));
+  ret->type = PL_HEADWAYBOARD;
+
+  int n = strlen(trip_id)+1;
+  ret->trip_id = (char*)malloc(sizeof(char)*(n));
+  memcpy(ret->trip_id, trip_id, n);
+  ret->start_time = start_time;
+  ret->end_time = end_time;
+  ret->headway_secs = headway_secs;
+    
+  ret->calendar = calendar;
+  ret->timezone = timezone;
+  ret->agency = agency;
+  ret->service_id = service_id;
+    
+  ret->walk = &hbWalk;
+    
+  return ret;
+}
+
+void
+hbDestroy(HeadwayBoard* this) {
+  free( this->trip_id );
+  free( this );
+}
+
+ServiceCalendar*
+hbGetCalendar( HeadwayBoard* this ) {
+  return this->calendar;
+}
+
+Timezone*
+hbGetTimezone( HeadwayBoard* this ) {
+  return this->timezone;
+}
+
+int
+hbGetAgency( HeadwayBoard* this ) {
+  return this->agency;
+}
+
+ServiceId
+hbGetServiceId( HeadwayBoard* this ) {
+  return this->service_id;
+}
+
+char*
+hbGetTripId( HeadwayBoard* this ) {
+  return this->trip_id;
+}
+
+int
+hbGetStartTime( HeadwayBoard* this ) {
+  return this->start_time;
+}
+
+int
+hbGetEndTime( HeadwayBoard* this ) {
+  return this->end_time;
+}
+
+int
+hbGetHeadwaySecs( HeadwayBoard* this ) {
+  return this->headway_secs;
+}
+
+inline State*
+hbWalk( EdgePayload* superthis, State* params, int transferPenalty ) {
+    HeadwayBoard* this = (HeadwayBoard*)superthis;
+    
+    //Get service period cached in travel state. If it doesn't exist, figure it out and cache it
+    ServicePeriod* service_period = params->service_periods[this->agency];
+    if( !service_period )
+        service_period = scPeriodOfOrAfter( this->calendar, params->time );
+        params->service_periods[this->agency] = service_period;
+    
+    // if the schedule never runs
+    // or if the schedule does not run on this day
+    // this link goes nowhere
+    if( !service_period ||
+        !spPeriodHasServiceId( service_period, this->service_id) ) {
+      return NULL;
+    }
+    
+    long adjusted_time = spNormalizeTime( service_period, tzUtcOffset(this->timezone, params->time), params->time );
+    
+    if (adjusted_time > this->end_time ) {
+        return NULL;
+    }
+    
+    // Dupe state and advance time by the waiting time
+    State* ret = stateDup( params );
+    
+    ret->num_transfers += 1;
+    
+    int wait = this->headway_secs; //you could argue the correct wait is headway_secs/2
+    
+    if (adjusted_time < this->start_time )
+        wait += (this->start_time - adjusted_time);
     
     ret->time   += wait;
     ret->weight += wait + 1; //transfer penalty

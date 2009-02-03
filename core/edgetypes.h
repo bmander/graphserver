@@ -19,6 +19,7 @@ typedef enum {
   PL_TRIPBOARD,
   PL_CROSSING,
   PL_ALIGHT,
+  PL_HEADWAYBOARD,
 } edgepayload_t;
 
 //---------------DECLARATIONS FOR STATE CLASS---------------------
@@ -312,6 +313,56 @@ tbGetNextBoardingIndex(TripBoard* this, int time);
 
 inline State*
 tbWalk( EdgePayload* superthis, State* params, int transferPenalty );
+
+//---------------DECLARATIONS FOR HEADWAYBOARD CLASS---------------------------------------
+
+typedef struct HeadwayBoard {
+    edgepayload_t type;
+    State* (*walk)(struct EdgePayload*, struct State*, int);
+    
+    ServiceId service_id;
+    char* trip_id;
+    int start_time;
+    int end_time;
+    int headway_secs;
+    
+    ServiceCalendar* calendar;
+    Timezone* timezone;
+    int agency;
+} HeadwayBoard;
+
+HeadwayBoard*
+hbNew(  ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int agency, char* trip_id, int start_time, int end_time, int headway_secs );
+
+void
+hbDestroy(HeadwayBoard* this);
+
+ServiceCalendar*
+hbGetCalendar( HeadwayBoard* this );
+
+Timezone*
+hbGetTimezone( HeadwayBoard* this );
+
+int
+hbGetAgency( HeadwayBoard* this );
+
+ServiceId
+hbGetServiceId( HeadwayBoard* this );
+
+char*
+hbGetTripId( HeadwayBoard* this );
+
+int
+hbGetStartTime( HeadwayBoard* this );
+
+int
+hbGetEndTime( HeadwayBoard* this );
+
+int
+hbGetHeadwaySecs( HeadwayBoard* this );
+
+inline State*
+hbWalk( EdgePayload* superthis, State* params, int transferPenalty );
 
 //---------------DECLARATIONS FOR CROSSING CLASS-------------------------------------------
 
