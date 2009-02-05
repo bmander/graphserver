@@ -1,9 +1,11 @@
 #define WALKING_SPEED 0.85    //meters per second
 #define MIN_TRANSFER_TIME 1//300 //five minutes
 #define TRANSFER_PENALTY 3    //rough measure of how bad a close transfer is
-#define MAX_WALK 1200         //in meters; he better part of a mile
+//#define MAX_WALK 1200         //in meters; he better part of a mile
+#define MAX_WALK 10000
 #define WALKING_OVERAGE 0.1   //hassle/second/meter
-#define WALKING_RELUCTANCE 2  //hassle/second
+//#define WALKING_RELUCTANCE 2  //hassle/second
+#define WALKING_RELUCTANCE 1
 #define ABSOLUTE_MAX_WALK 100000 //meters. 100 km. prevents overflow
 #define MAX_LONG 2147483647
 #define WAITING_RELUCTANCE 1
