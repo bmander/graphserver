@@ -22,6 +22,6 @@ setup( name='graphserver',
                    'graphserver.ext.osm.osm', 
                    'graphserver.ext.osm.graph', 
                    'graphserver.ext.osm.engine', 
-                   'graphserver.ext.osm.load_osm,',
+                   'graphserver.ext.osm.load_osm',
                    'graphserver.ext.osm.osmdb',],
        data_files=[('/usr/lib',[LIBSO])])
