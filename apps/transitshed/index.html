@@ -11,8 +11,9 @@
     //<![CDATA[
 
     var map;
-    var busy = false;
-    var boundary
+    var boundary;
+    var target;
+    var marker = null;
 
     function gpolylineize_contour( contour, color, width ) {
       coords = [];
@@ -34,58 +35,80 @@
         return ret
     }
     
+    function gpolygonize_contour_stack( data, color, width ) {
+        ret = [];
+        
+        //alert( data.length );
+        
+        for(var cc=0; cc<data.length-1; cc++) {
+            ret = ret.concat( gpolygonize_contours( data[cc], "#ff1111", 2 ) );
+        }
+        
+        ret = ret.concat( gpolygonize_contours( data[data.length-1], "#ee0000", 4 ) );
+        
+        return ret;
+    }
+    
     function display_contours(contours) {
+          
           for(var cc=0; cc<contours.length; cc++) {
             map.addOverlay( contours[cc] );
           }
     }
 
     function get_and_display_contours( overlay, latlng ) {
-        range = $("#range")[0].value
-        depart = $("#depart")[0].value
+        target = latlng
+    
+        range = ($("#range")[0].value)*60
+        //depart = $("#depart")[0].value
         
-        if( range > 2700 || range < 0 ) {
-          alert( "Range must be between 0 and 2700 (45 minutes)" )
-          return
-        }
+        year = $("#year")[0].value
+        month = $("#month")[0].value
+        day = $("#day")[0].value
+        hour = $("#hour")[0].value
+        minute = $("#minute")[0].value
+        second = $("#second")[0].value
         
-        if( depart > 86400 || range < 0 ) {
-          alert( "Depart time must be between 0 and 86400 (midnight to midnight the next day)" )
+        if( range > 3600 || range < 0 ) {
+          alert( "Range must be between 0 and 60 minutes" )
           return
         }
     
-        if( !busy ) {
-          busy = true;
-          map.clearOverlays();
-          map.addOverlay( boundary );
-          map.addOverlay(new GMarker(latlng, {clickable: false}));
-          $("#status").html( "Hold on a moment. It can take as long as 45 seconds." )
-          $.getJSON("/contour?lat="+latlng.lat()+"&lon="+latlng.lng()+"&starttime="+depart+"&cutoff="+range,
+
+          if( marker ) {
+            map.removeOverlay( marker );
+          }
+          marker = new GMarker(latlng, {clickable: false});
+          map.addOverlay(marker);
+          
+          $.getJSON("/contour?lat="+latlng.lat()+"&lon="+latlng.lng()+"&year="+year+"&month="+month+"&day="+day+"&hour="+hour+"&minute="+minute+"&second="+second+"&cutoff="+range,
           function(data){
             if( data == "NO NEARBY INTERSECTION" ) {
               alert( "No nearby intersection!" );
             } else {
-              $("#status").html( "success!" )
-              next_contours = gpolygonize_contours( data, "#ff0000", 5 )
+              next_contours = gpolygonize_contour_stack( data, "#ff0000", 3 )
+              map.clearOverlays();
+              map.addOverlay( boundary );
+              marker = new GMarker(latlng, {clickable: false})
+              map.addOverlay(marker);
               display_contours( next_contours )
             }
             busy = false;
           });
-        } else {
-          $("#status").html( "whoa there, clicky" )
-        }
     }
 
     function load() {
       if (GBrowserIsCompatible()) {
 
+        map = new GMap2(document.getElementById("map"));
+        map.setCenter(new GLatLng(%f, %f), 11);
+        map.addControl( new GLargeMapControl() );
+            
+        map.disableDoubleClickZoom()
+        GEvent.addListener(map,"click", get_and_display_contours);
+        
         $.getJSON("/bounds",
           function(data){
-            map = new GMap2(document.getElementById("map"));
-            map.addControl( new GLargeMapControl() );
-            
-            map.disableDoubleClickZoom()
-            GEvent.addListener(map,"click", get_and_display_contours);
             
             left = data[0];
             bottom = data[1];
@@ -94,7 +117,6 @@
             
             boundary = new GPolyline( [new GLatLng(bottom,left), new GLatLng(bottom,right), new GLatLng(top,right), new GLatLng(top,left), new GLatLng(bottom,left)], "#0000ff", 3 )
             map.addOverlay( boundary )
-            map.setCenter(new GLatLng((top+bottom)/2, (left+right)/2), 11);
           });
         
       }
@@ -116,11 +138,16 @@
     <h2>Transit Shed</h2>
     Click on the map to see everywhere you can get using the Trimet transit system, on a weekday, within given a range and departure time<br>
     <br>
-    <div style="color:red" id="status"></div>
     <div id="map" style="width:700px;height:500px"></div>
     <table>
-    <tr><td>Range (seconds):</td><td><input id="range" type="text" value="1800"/></td></tr>
-    <tr><td>Depart time (seconds since midnight)</td><td><input id="depart" type="text" value="43200"/></td></tr>
+    <tr><td>Range (minutes):</td><td><input id="range" type="text" value="30"/><span onclick="javascript:$('#range')[0].value=parseInt($('#range')[0].value)+1;get_and_display_contours(null,target);">[+]</span> <span onclick="javascript:$('#range')[0].value=parseInt($('#range')[0].value)-1;get_and_display_contours(null,target);">[-]</span></td></tr>
+    <tr><td>Depart time (YYYY/MM/DD hh:mm:ss)</td><td>
+      <input id="year" type="text" value="2009" maxlength=4 size=4/>/
+      <input id="month" type="text" value="2" maxlength=2 size=2/>/
+      <input id="day" type="text" value="1" maxlength=2 size=2/>
+      <input id="hour" type="text" value="12" maxlength=2 size=2/>:
+      <input id="minute" type="text" value="0" maxlength=2 size=2/>:
+      <input id="second" type="text" value="0" maxlength=2 size=2/></td></tr>
     </table>
   </body>
 
