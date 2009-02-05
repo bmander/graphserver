@@ -45,7 +45,7 @@ def bounds(points):
         
     return (l,b,r,t)
 
-def travel_time_contour(points, cutoff=30*60, fudge=1.1, margin=2, closure_tolerance=0.05, cellsize=0.005):
+def travel_time_contour(points, cutoff=30*60, fudge=1.1, margin=2, closure_tolerance=0.05, cellsize=0.004, step=None):
     l, b, r, t = bounds(points)
     xspan = r-l
     yspan = t-b
@@ -56,10 +56,20 @@ def travel_time_contour(points, cutoff=30*60, fudge=1.1, margin=2, closure_toler
     mat = sg.to_matrix()
     for i, row in enumerate(mat):
         for j, (x,y,z) in enumerate(row): # x, y, height
-            if z > cutoff or numpy.isnan(z):
+            if numpy.isnan(z):
                 sg.setZ(i,j,cutoff*fudge)
+            #if z > cutoff or numpy.isnan(z):
+            #    sg.setZ(i,j,cutoff*fudge)
     
-    return sg.contour( cutoff, closure_tolerance=0.05 )
+    ret = []
+    
+    if step is not None:
+        for i in range( step, cutoff, step ):
+            ret.append( sg.contour( i, closure_tolerance=0.05) )
+            
+    ret.append( sg.contour( cutoff, closure_tolerance=0.05 ) )
+    
+    return ret
 
 if __name__=='__main__':
     points = Times("portland.times").times
