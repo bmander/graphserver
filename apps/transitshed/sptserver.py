@@ -4,17 +4,22 @@ import time
 from graphserver import core
 from graphserver.core import State
 from graphserver.ext.osm.osmdb import OSMDB
+from graphserver.util import TimeHelpers
 from contour import travel_time_contour
 import json
+from rtree import Rtree
 
 class ContourServer(Servable):
-    def __init__(self, graphdb_filename, osmdb_filename):
+    def __init__(self, graphdb_filename, osmdb_filename, home_point):
+        self.home_point = home_point
 
         # create cache of osm-node positions
         self.osmdb = OSMDB( osmdb_filename )
         self.node_positions = {}
+        self.index = Rtree()
         for node_id, tags, lat, lon in self.osmdb.nodes():
             self.node_positions[node_id] = (lon,lat)
+            self.index.add( int(node_id), (lon,lat,lon,lat) )
         
         # incarnate graph from graphdb
         graphdb = GraphDatabase( graphdb_filename )
@@ -26,12 +31,12 @@ class ContourServer(Servable):
     def vertices(self):
         return "\n".join( [vv.label for vv in self.graph.vertices] )
     
-    def _contour(self, vertex_label, starttime, cutoff):
-        #starttime = starttime or time.time()
-        starttime = 1233172800
+    def _contour(self, vertex_label, starttime, cutoff, step=None):
+        starttime = starttime or time.time()
+        #starttime = 1233172800
         
         t0 = time.time()
-        spt = self.graph.shortest_path_tree( vertex_label, None, State(1,starttime), maxtime=starttime+int(cutoff*1.25) )
+        spt = self.graph.shortest_path_tree( vertex_label, None, State(1,starttime) , maxtime=starttime+int(cutoff*1.25) )
         t1 = time.time()
         print t1-t0
         
@@ -51,7 +56,7 @@ class ContourServer(Servable):
         print "creating contour...",
         
         t0 = time.time()
-        contours = travel_time_contour( points, cutoff=cutoff )
+        contours = travel_time_contour( points, cutoff=cutoff, cellsize=0.004, fudge=1.7, step=step )
         print "%s sec"%(time.time()-t0)
         
         print "done. here you go..."
@@ -62,23 +67,42 @@ class ContourServer(Servable):
         
         return self._contour( vertex_label, starttime, cutoff )
         
-    def contour(self, lat, lon, starttime, cutoff):
+    def contour(self, lat, lon, year, month, day, hour, minute, second, cutoff, step=None):
+        if step is not None and step < 600:
+            raise Exception( "Step cannot be less than 600 seconds" )
+        
+        starttime = TimeHelpers.localtime_to_unix( year, month, day, hour, minute, second, "America/Los_Angeles" )
+        
         #=== get osm vertex ==
         print( "getting nearest vertex" )
         
-        vlabel, vlat, vlon, vdist = self.osmdb.nearest_node( lat, lon )
+        #find osmid of origin intersection
+        t0 = time.time()
+        range = 0.001
+        bbox = (lon-range, lat-range, lon+range, lat+range)
+        candidates = self.index.intersection( bbox )
+        vlabel, vlat, vlon, vdist = self.osmdb.nearest_of( lat, lon, candidates )
+        t1 = time.time()
+        print( "done, took %s seconds"%(t1-t0) )
+        
+        #vlabel, vlat, vlon, vdist = self.osmdb.nearest_node( lat, lon )
         
         if vlabel is None:
             return json.dumps( "NO NEARBY INTERSECTION" )
         
         print( "found - %s"%vlabel )
         
-        return self._contour( "osm"+vlabel, starttime, cutoff )
+        return self._contour( "osm"+vlabel, starttime, cutoff, step )
         
     def nodes(self):
         return "\n".join( ["%s-%s"%(k,v) for k,v in self.node_positions.items()] )
             
     def nearest_node(self, lat, lon):
+        range = 0.005
+        bbox = (lon-range, lat-range, lon+range, lat+range)
+        print bbox
+        print self.index.intersection( bbox )
+        
         return json.dumps(self.osmdb.nearest_node( lat, lon ))
         
     def index(self):
@@ -90,7 +114,7 @@ class ContourServer(Servable):
         apikey = fp.read()
         fp.close() 
 
-        return indexhtml%apikey 
+        return indexhtml%(apikey, self.home_point[0], self.home_point[1])
     index.mime = "text/html"
     
     def jquery(self):
@@ -106,6 +130,7 @@ if __name__=='__main__':
     # a fine example node for bart: "ASBY" @ 1233172800
     # for trimet: "10071" @ 1233172800
     
-    cserver = ContourServer("streetstrimet.db", "../package_graph/bigportland.sqlite")
-    #cserver = ContourServer("streetsbart.db", "../package_graph/bartarea.sqlite")
+    #cserver = ContourServer("streetstrimet.db", "../package_graph/bigportland.sqlite", (45.521439,-122.673512))
+    cserver = ContourServer("../package_graph/bartheadway.db", "../package_graph/bartarea.sqlite", (37.787466,-122.398853))
+    #cserver = ContourServer("streetsbart.db", "../package_graph/bartarea.sqlite", (37.787466,-122.398853))
     cserver.run_test_server()
