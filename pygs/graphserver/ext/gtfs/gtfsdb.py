@@ -6,6 +6,15 @@ from zipfile import ZipFile
 from codecs import iterdecode
 import datetime
 
+class UTF8TextFile(object):
+    def __init__(self, fp):
+        self.fp = fp
+        
+    def next(self):
+        return self.fp.next().encode( "ascii", "backslashreplace" )
+        
+    def __iter__(self):
+        return self
 
 def cons(ary):
     for i in range(len(ary)-1):
@@ -26,7 +35,8 @@ def load_gtfs_table_to_sqlite(fp, gtfs_basename, cc, header=None):
     """header is iterable of (fieldname, fieldtype, processing_function). For example, (("stop_sequence", "INTEGER", int),). 
     "TEXT" is default fieldtype. Default processing_function is lambda x:x"""
     
-    rd = csv.reader( fp )
+    ur = UTF8TextFile( fp )
+    rd = csv.reader( ur )
 
     # create map of field locations in gtfs header to field locations as specified by the table definition
     gtfs_header = next(rd)
@@ -297,7 +307,8 @@ class GTFSDatabase:
             if exception_type == 1:
                 sids.add( exception_sid )
             elif exception_type == 2:
-                sids.remove( exception_sid )
+                if exception_sid in sids:
+                    sids.remove( exception_sid )
                 
         return list(sids)
         
