@@ -173,23 +173,14 @@ def load_transit_street_links_to_graph( g, osmdb, gtfsdb, reporter=None ):
             g.add_edge( stop_id, "osm"+osm_id, Link( ) )
             g.add_edge( "osm"+osm_id, stop_id, Link( ) )
 
-def process_transit_graph():
-    GTFSDB_FILENAME = "ext/gtfs/bart.gtfsdb"
-    AGENCY_ID = "BART"
-    GRAPHDB_FILENAME = "bart.db" 
-    
-    #GTFSDB_FILENAME = "ext/gtfs/trimet.gtfsdb"
-    #AGENCY_ID = "TriMet"
-    #ORIGIN_VERTEX_ID = "10071"
-    #GRAPHDB_FILENAME = "trimet.db" 
-    
-    gtfsdb = GTFSDatabase( GTFSDB_FILENAME )
+def process_transit_graph(gtfsdb_filename, agency_id, graphdb_filename):
+    gtfsdb = GTFSDatabase( gtfsdb_filename )
     
     g = Graph()
     service_ids = [x.encode("ascii") for x in gtfsdb.service_ids()]
-    load_gtfsdb_to_boardalight_graph(g, gtfsdb, agency_id=AGENCY_ID, service_ids=service_ids)
+    load_gtfsdb_to_boardalight_graph(g, gtfsdb, agency_id=agency_id, service_ids=service_ids)
     
-    graphdb = GraphDatabase( GRAPHDB_FILENAME, overwrite=True )
+    graphdb = GraphDatabase( graphdb_filename, overwrite=True )
     graphdb.populate( g, reporter=sys.stdout )
     
 def process_street_graph():
@@ -230,13 +221,28 @@ def process_transit_street_graph(graphdb_filename, gtfsdb_filename, agency_id, o
     graphdb.populate( g, reporter=sys.stdout )
 
 import sys
+from sys import argv
 if __name__=='__main__':
 
     #process_transit_graph()
     #process_street_graph()
-    process_transit_street_graph("bartheadway.db", "headwaybart.gtfsdb", "BART", "bartarea.sqlite", 26910 )
+    #process_transit_street_graph("bartheadway.db", "headwaybart.gtfsdb", "BART", "bartarea.sqlite", 26910 )
     #process_transit_street_graph("streetstrimet.db", "trimet.gtfsdb", "TriMet", "bigportland.sqlite", 26910 )
 
+    usage = """usage:
+    python package_graphs.py transit <gtfsdb_filename> <agency_id> <graphdb_filename>"""
+    
+    if len(argv)<2:
+        print usage
+        quit()
+
+    if argv[1] == "transit":
+        gtfsdb_filename = argv[2]
+        agency_id = argv[3]
+        graphdb_filename = argv[4]
+        
+        
+        process_transit_graph( gtfsdb_filename, agency_id, graphdb_filename )
     
     
 
