@@ -45,3 +45,6 @@ install:
 	cp hashtable_utility.h /usr/include/graphserver
 	cp hashtable_private.h /usr/include/graphserver
 	cp statetypes.h /usr/include/graphserver
+
+clean:
+	rm -f *.o *.so *~ *.d
