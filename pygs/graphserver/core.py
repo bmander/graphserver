@@ -11,7 +11,14 @@ from time import asctime, gmtime
 from time import time as now
 import pytz
 import calendar
+from util import TimeHelpers
 
+def indent( a, n ):
+    return "\n".join( [" "*n+x for x in a.split("\n")] )
+        
+#TODO this is probably defined somewhere else, too
+def unparse_secs(secs):
+    return "%02d:%02d:%02d"%(secs/3600, (secs%3600)/60, secs%60)
 
 """
 
@@ -557,6 +564,9 @@ class ServicePeriod(CShadow):
     def __setstate__(self, state):
         self.__init__(*state)
         
+    def __repr__(self):
+        return "(%s %s->%s)"%(self.service_ids, self.begin_time, self.end_time)
+        
     @staticmethod
     def _py2c_service_ids(service_ids):
         ns = len(service_ids)
@@ -626,6 +636,19 @@ class ServiceCalendar(CShadow):
         self.__init__()
         for sp_state in state:
             self.add_period( *sp_state )
+            
+    def __repr__(self):
+        return "<ServiceCalendar periods=%s>"%repr(list(self.periods))
+        
+    def expound(self, timezone_name):
+        periodstrs = []
+        
+        for period in self.periods:
+            begin_time = TimeHelpers.unix_to_localtime( period.begin_time, timezone_name )
+            end_time = TimeHelpers.unix_to_localtime( period.end_time, timezone_name )
+            periodstrs.append( "sids:%s active from %d (%s) to %d (%s)"%(period.service_ids, period.begin_time, begin_time, period.end_time, end_time) )
+        
+        return "\n".join( periodstrs )
     
 class TimezonePeriod(CShadow):
     begin_time = cproperty(lgs.tzpBeginTime, c_long)
@@ -696,6 +719,9 @@ class Timezone(CShadow):
         self.__init__()
         for tzpargs in state:
             self.add_period( TimezonePeriod(*tzpargs) )
+            
+    def expound(self):
+        return "Timezone"
     
 #=============================================================================#
 # Edge Types                                                                  #
@@ -992,6 +1018,30 @@ class TripBoard(EdgePayload):
             ret.add_boarding( trip_id, depart )
             
         return ret
+        
+    def expound(self):
+        boardingstrs = []
+        
+        for i in range(self.num_boardings):
+            trip_id, departure_secs = self.get_boarding(i)
+            boardingstrs.append( "on trip id='%s' at %s"%(trip_id, unparse_secs(departure_secs)) )
+        
+        ret = """TripBoard
+   agency (internal id): %d
+   service_id (internal id): %d
+   calendar:
+%s
+   timezone:
+%s
+   boardings:
+%s"""%( self.agency,
+        self.int_service_id,
+        indent( self.calendar.expound("America/Chicago"), 6 ),
+        indent( self.timezone.expound(), 6 ),
+        indent( "\n".join(boardingstrs), 6 ) )
+
+        return ret
+        
         
 class HeadwayBoard(EdgePayload):
     calendar = cproperty( lgs.hbGetCalendar, c_void_p, ServiceCalendar )
