@@ -273,6 +273,8 @@ typedef struct TripBoard {
     Timezone* timezone;
     int agency;
     ServiceId service_id;
+    
+    int overage; //number of seconds schedules past midnight of the last departure. If it's at 12:00:00, the overage is 0.
 } TripBoard;
 
 TripBoard*
@@ -310,6 +312,9 @@ tbSearchBoardingsList(TripBoard* this, int time);
 
 int
 tbGetNextBoardingIndex(TripBoard* this, int time);
+
+int
+tbGetOverage(TripBoard* this);
 
 inline State*
 tbWalk( EdgePayload* superthis, State* params, int transferPenalty );

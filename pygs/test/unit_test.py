@@ -1909,6 +1909,7 @@ class TestTripBoard(unittest.TestCase):
         assert tb.timezone.soul == tz.soul
         assert tb.calendar.soul == sc.soul
         assert tb.agency == 0
+        assert tb.overage == 0
         
         assert tb.num_boardings == 0
         
@@ -1920,6 +1921,28 @@ class TestTripBoard(unittest.TestCase):
             raise Exception( "should have failed by now" )
         except:
             pass
+            
+    def test_overage(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        tb = TripBoard("WKDY", sc, tz, 0)
+        
+        assert tb.overage == 0
+        
+        tb.add_boarding( "midnight", 24*3600 )
+        
+        assert tb.overage == 0
+        
+        tb.add_boarding( "nightowl1", 24*3600+1 )
+        
+        assert tb.overage == 1
+        
+        tb.add_boarding( "nightowl2", 24*3600+3600 )
+        
+        assert tb.overage == 3600
             
     def test_add_single_trip(self):
         sc = ServiceCalendar()

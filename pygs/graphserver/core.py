@@ -951,6 +951,7 @@ class TripBoard(EdgePayload):
     agency = cproperty( lgs.tbGetAgency, c_int )
     int_service_id = cproperty( lgs.tbGetServiceId, c_int )
     num_boardings = cproperty( lgs.tbGetNumBoardings, c_int )
+    overage = cproperty( lgs.tbGetOverage, c_int )
     
     def __init__(self, service_id, calendar, timezone, agency):
         service_id = service_id if type(service_id)==int else calendar.get_service_id_int(service_id)

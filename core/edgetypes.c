@@ -359,6 +359,8 @@ tbNew( ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int 
     
   ret->walk = &tbWalk;
     
+  ret->overage = 0;
+    
   return ret;
 }
 
@@ -404,7 +406,8 @@ tbGetNumBoardings(TripBoard* this) {
 
 void
 tbAddBoarding(TripBoard* this, char* trip_id, int depart) {
-    
+    if (depart > SECS_IN_DAY+this->overage)
+        this->overage = depart-SECS_IN_DAY;
     
     // init the trip_id, depart list
     if(this->n==0) {
@@ -509,6 +512,29 @@ tbGetNextBoardingIndex(TripBoard* this, int time) {
     
     return index;
 }
+
+int
+tbGetOverage(TripBoard* this) {
+    return this->overage;
+}
+
+/*
+given TripBoard with service ID of friday, list of boardings going until 3 AM, and schedule, gets time corresponding to saturday at 2 AM.
+
+The on-board service calendar would resolve 2AM to saturday to the saturday service ID, which does not match the friday service ID; the conclusion
+is that the current is not in the service day served by this vehicle, and so a NULL is returned.
+
+In fact times do run until 3 AM saturday, so you could catch any train on this TripBoard's boarding schedule between 2 AM and 3 AM.
+
+I think the trick is for the TripBoard to realize that it should cut the State some slack, because it's going over from 2 to 3.
+
+So the TripBoard knows the last departure is three hours after the end of the day. The TripHop can add 24 hours to the time-since-midnight of the 
+State and check yesterday's schedule. The TripHop will find the next departure that way.
+
+This appears to b e _always_ a safe thing to do. If the service day of the State does not match the TripId and the time-since-midnight of the State is
+smaller than the overage of the TripBoard, roll back the day by the number of days of the overage (probably always one) and increment the state time by the same
+number of days, and check again.
+*/
 
 inline State*
 tbWalk( EdgePayload* superthis, State* params, int transferPenalty ) {
