@@ -28,6 +28,9 @@ def gtfsdb_to_service_calendar(gtfsdb, agency_id):
     # grab date, day service bounds
     day_start, day_end = gtfsdb.day_bounds()
     start_date, end_date = gtfsdb.date_range()
+    
+    if day_end > day_start + 24*3600:
+        raise Exception( "Service days overlap by %d seconds"%(day_end-24*3600-day_start) )
 
     # init empty calendar
     cal = ServiceCalendar()
@@ -49,7 +52,7 @@ def gtfsdb_to_service_calendar(gtfsdb, agency_id):
 
     return cal
 
-def load_bundle_to_boardalight_graph(g, bundle_id, bundle, service_id, sc, tz):
+def load_bundle_to_boardalight_graph(g, bundle, service_id, sc, tz):
     stop_time_bundles = list(bundle.stop_time_bundles(service_id))
     
     # If there's less than two stations on this trip bundle, the trip bundle doesn't actually span two places
@@ -57,33 +60,34 @@ def load_bundle_to_boardalight_graph(g, bundle_id, bundle, service_id, sc, tz):
         return
         
     #add board edges
-    for stop_time_bundle in stop_time_bundles[:-1]:
+    for i, stop_time_bundle in enumerate(stop_time_bundles[:-1]):
         
         if len(stop_time_bundle)==0:
             return
         
         trip_id, departure_time, arrival_time, stop_id, stop_sequence = stop_time_bundle[0]
         
-        bundlestop_label = "%d-%s-%s"%(bundle_id,stop_id,service_id)
-        g.add_vertex( bundlestop_label )
+        patternstop_vx_name = "%03d-%03d-%s"%(bundle.pattern.pattern_id,i,service_id)
+        
+        g.add_vertex( patternstop_vx_name )
         
         b = TripBoard(service_id, sc, tz, 0)
         for trip_id, departure_time, arrival_time, stop_id, stop_sequence in stop_time_bundle:
             b.add_boarding( trip_id, departure_time )
             
-        g.add_edge( stop_id, bundlestop_label, b )
+        g.add_edge( stop_id, patternstop_vx_name, b )
         
     #add alight edges
-    for stop_id in bundle.stop_ids[1:]:
-        bundlestop_label = "%d-%s-%s"%(bundle_id,stop_id,service_id)
-        g.add_vertex( bundlestop_label )
+    for i, stop_id in enumerate(bundle.pattern.stop_ids[1:]):
+        patternstop_vx_name = "%03d-%03d-%s"%(bundle.pattern.pattern_id,i+1,service_id)
+        g.add_vertex( patternstop_vx_name )
             
-        g.add_edge( bundlestop_label, stop_id, Alight() )
+        g.add_edge( patternstop_vx_name, stop_id, Alight() )
     
     # add crossing edges
-    for j, crossing_time in enumerate(bundle.crossings):
+    for j, crossing_time in enumerate(bundle.pattern.crossings):
         c = Crossing( crossing_time )
-        g.add_edge( "%d-%s-%s"%(bundle_id,bundle.stop_ids[j],service_id), "%d-%s-%s"%(bundle_id,bundle.stop_ids[j+1],service_id), c )
+        g.add_edge( "%03d-%03d-%s"%(bundle.pattern.pattern_id,j,service_id), "%03d-%03d-%s"%(bundle.pattern.pattern_id,j+1,service_id), c )
 
 def load_gtfsdb_to_boardalight_graph(g, gtfsdb, agency_id, service_ids, reporter=sys.stdout):
     
@@ -102,11 +106,11 @@ def load_gtfsdb_to_boardalight_graph(g, gtfsdb, agency_id, service_ids, reporter
     # load bundles to graph
     if reporter: reporter.write( "Loading trip bundles into graph...\n" )
     n_bundles = len(bundles)
-    for bundle_num, bundle in enumerate( bundles ):
-        if reporter and bundle_num%((n_bundles//100)+1)==0: reporter.write( "%d/%d trip bundles loaded\n"%(bundle_num, n_bundles) )
+    for i, bundle in enumerate(bundles):
+        if reporter and i%((n_bundles//100)+1)==0: reporter.write( "%d/%d trip bundles loaded\n"%(i, n_bundles) )
         
         for service_id in service_ids:
-            load_bundle_to_boardalight_graph(g, bundle_num, bundle, service_id, sc, tz)
+            load_bundle_to_boardalight_graph(g, bundle, service_id, sc, tz)
             
     # load headways
     if reporter: reporter.write( "Loading headways trips to graph...\n" )
@@ -131,6 +135,30 @@ def load_gtfsdb_to_boardalight_graph(g, gtfsdb, agency_id, service_ids, reporter
         #add crossing edges
         for (trip_id1, arrival_time1, departure_time1, stop_id1, stop_sequence1), (trip_id2, arrival_time2, departure_time2, stop_id2, stop_sequence2) in cons(stoptimes):
             g.add_edge( "%s-hw-%s"%(stop_id1, trip_id1), "%s-hw-%s"%(stop_id2, trip_id2), Crossing(arrival_time2-departure_time1) )
+            
+def link_nearby_stops(g, gtfsdb, epsg, range=0.05, obstruction=1.4):
+    """Adds Street links of length obstruction*dist(A,B) directly between all station pairs closer than <range>"""
+
+    print "Linking nearby stops..."
+    
+    proj = Proj(init='epsg:%d'%epsg)
+
+    for stop_id1, stop_name1, lat1, lon1 in gtfsdb.stops():
+        g.add_vertex( stop_id1 )
+        
+        for stop_id2, stop_name2, lat2, lon2 in gtfsdb.nearby_stops(lat1, lon1, range):
+            if stop_id1 == stop_id2:
+                continue
+            
+            print "linking %s to %s"%(stop_id1, stop_id2)
+            
+            g.add_vertex( stop_id2 )
+            
+            dd = obstruction*dist( (lon1,lat1), (lon2,lat2), proj=proj )
+            print dd
+            
+            g.add_edge( stop_id1, stop_id2, Street("walk", dd) )
+            g.add_edge( stop_id2, stop_id1, Street("walk", dd) )
             
 
 def dist(p1, p2, proj=lambda x,y:(x,y)):
@@ -173,12 +201,15 @@ def load_transit_street_links_to_graph( g, osmdb, gtfsdb, reporter=None ):
             g.add_edge( stop_id, "osm"+osm_id, Link( ) )
             g.add_edge( "osm"+osm_id, stop_id, Link( ) )
 
-def process_transit_graph(gtfsdb_filename, agency_id, graphdb_filename):
+def process_transit_graph(gtfsdb_filename, agency_id, graphdb_filename, link=False, epsg=26915):
     gtfsdb = GTFSDatabase( gtfsdb_filename )
     
     g = Graph()
     service_ids = [x.encode("ascii") for x in gtfsdb.service_ids()]
     load_gtfsdb_to_boardalight_graph(g, gtfsdb, agency_id=agency_id, service_ids=service_ids)
+    
+    if link:
+        link_nearby_stops( g, gtfsdb, epsg )
     
     graphdb = GraphDatabase( graphdb_filename, overwrite=True )
     graphdb.populate( g, reporter=sys.stdout )
@@ -230,7 +261,7 @@ if __name__=='__main__':
     #process_transit_street_graph("streetstrimet.db", "trimet.gtfsdb", "TriMet", "bigportland.sqlite", 26910 )
 
     usage = """usage:
-    python package_graphs.py transit <gtfsdb_filename> <agency_id> <graphdb_filename>"""
+    python package_graphs.py transit <gtfsdb_filename> <agency_id> <graphdb_filename> [link]"""
     
     if len(argv)<2:
         print usage
@@ -242,7 +273,7 @@ if __name__=='__main__':
         graphdb_filename = argv[4]
         
         
-        process_transit_graph( gtfsdb_filename, agency_id, graphdb_filename )
+        process_transit_graph( gtfsdb_filename, agency_id, graphdb_filename, link=("link" in argv) )
     
     
 
