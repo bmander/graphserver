@@ -662,6 +662,9 @@ class TimezonePeriod(CShadow):
     def next_period(self):
         return TimezonePeriod.from_pointer( lgs.tzpNextPeriod( self.soul ) )
         
+    def time_since_midnight(self, time):
+        return lgs.tzpTimeSinceMidnight( self.soul, c_long(time) )
+        
     def __getstate__(self):
         return (self.begin_time, self.end_time, self.utc_offset)
     

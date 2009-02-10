@@ -130,6 +130,9 @@ tzpDestroy( TimezonePeriod* this );
 int
 tzpUtcOffset( TimezonePeriod* this );
 
+int
+tzpTimeSinceMidnight( TimezonePeriod* this, long time );
+
 long
 tzpBeginTime( TimezonePeriod* this );
 

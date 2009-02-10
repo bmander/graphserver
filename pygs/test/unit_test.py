@@ -2,6 +2,7 @@ import sys, os
 sys.path = [os.path.dirname(os.path.abspath(__file__)) + "/.."] + sys.path
 from graphserver.core import *
 from graphserver.engine import Engine
+from graphserver import util
 import time
 import unittest
 import pickle
@@ -1896,6 +1897,27 @@ class TestTimezonePeriod(unittest.TestCase):
         assert laz.end_time == 7
         assert laz.utc_offset == -11
         
+    def test_time_since_midnight(self):
+        tzp = TimezonePeriod(0, 24*3600*256, -8*3600)
+        
+        assert tzp.time_since_midnight( 8*3600 ) == 0
+        
+        summer_tzp = TimezonePeriod( util.TimeHelpers.localtime_to_unix( 2008,6,1,0,0,0, "America/Los_Angeles" ),
+                                     util.TimeHelpers.localtime_to_unix( 2008,9,1,0,0,0, "America/Los_Angeles" ),
+                                     -7*3600 )
+                                     
+        assert summer_tzp.time_since_midnight( util.TimeHelpers.localtime_to_unix( 2008, 7,1,0,0,0,"America/Los_Angeles" ) ) == 0
+        assert summer_tzp.time_since_midnight( util.TimeHelpers.localtime_to_unix( 2008, 7, 2, 2, 0, 0, "America/Los_Angeles" ) ) == 3600*2
+        
+        winter_tzp = TimezonePeriod( util.TimeHelpers.localtime_to_unix( 2008,1,1,0,0,0, "America/Los_Angeles" ),
+                                     util.TimeHelpers.localtime_to_unix( 2008,4,1,0,0,0, "America/Los_Angeles" ),
+                                     -8*3600 )
+                                     
+        assert winter_tzp.time_since_midnight( util.TimeHelpers.localtime_to_unix( 2008, 2,1,0,0,0,"America/Los_Angeles" ) ) == 0
+        assert winter_tzp.time_since_midnight( util.TimeHelpers.localtime_to_unix( 2008, 2, 2, 2, 0, 0, "America/Los_Angeles" ) ) == 3600*2
+        
+        
+        
 class TestTripBoard(unittest.TestCase):
     def test_basic(self):
         sc = ServiceCalendar()
@@ -2361,11 +2383,11 @@ if __name__ == '__main__':
                  #TestServiceCalendar,
                  #TestEngine,
                  #TestTimezone,
-                 #TestTimezonePeriod,
-                 TestTripBoard,
+                 TestTimezonePeriod,
+                 #TestTripBoard,
                  #TestCrossing,
                  #TestAlight,
-                 TestHeadwayBoard,
+                 #TestHeadwayBoard,
                  ]
 
     for testable in testables:

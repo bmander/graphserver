@@ -348,6 +348,11 @@ tzpUtcOffset( TimezonePeriod* this ) {
     return this->utc_offset;
 }
 
+int
+tzpTimeSinceMidnight( TimezonePeriod* this, long time ) {
+    return (time+this->utc_offset)%SECS_IN_DAY;
+}
+
 long
 tzpBeginTime( TimezonePeriod* this ) {
     return this->begin_time;
