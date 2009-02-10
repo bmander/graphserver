@@ -550,9 +550,47 @@ tbWalk( EdgePayload* superthis, State* params, int transferPenalty ) {
         if( !service_period )
             return NULL;
     
+    //long time_since_midnight = tzTimeSinceMidnight( tz, params->time );
+    
+    // Backtrack 
+/*
+    BREAKBREAK
+        
+    int backtrack = 0
+    while( backtrack < this->overage ) {
+        if( spPeriodHasServiceId( service_period, this->service_id ) ) {
+            break
+        }
+        
+        backtrack += SECS_IN_DAY
+        service_period = service_period->prev_period;
+    }
+    
+    if( backtrack < this->overage ) {
+        return 
+    }
+        
+    int ttl = this->overage;
+    while(1) {
+        if( spPeriodHasServiceId( service_period, this->service_id ) ) {
+            break;
+        } else {
+            if ttl <= 0 {
+                return NULL;
+            }
+            
+            ttl -= SECS_IN_DAY;
+            time_since_midnight += SECS_IN_DAY
+            service_period = service_period->prev_period;
+            if(!service_period)
+                return NULL;
+        }
+    }
+*/
+        
     // if the schedule does not run on this day this link goes nowhere
     if( !spPeriodHasServiceId( service_period, this->service_id) ) {
-      return NULL;
+        return NULL;
     }
     
     long adjusted_time = spNormalizeTime( service_period, tzUtcOffset(this->timezone, params->time), params->time );
