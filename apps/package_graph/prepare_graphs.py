@@ -26,7 +26,6 @@ def gtfsdb_to_service_calendar(gtfsdb, agency_id):
     timezone = pytz.timezone( timezone_name )
 
     # grab date, day service bounds
-    day_start, day_end = gtfsdb.day_bounds()
     start_date, end_date = gtfsdb.date_range()
     
     if day_end > day_start + 24*3600:
@@ -44,8 +43,8 @@ def gtfsdb_to_service_calendar(gtfsdb, agency_id):
         # figure datetime.datetime bounds of this service day
         currdate_start = datetime.combine(currdate, time(0))
         currdate_local_start = timezone.localize(currdate_start)
-        service_period_begins = timezone.normalize( currdate_local_start + timedelta(seconds=day_start) )
-        service_period_ends = timezone.normalize( currdate_local_start + timedelta(seconds=day_end)  )
+        service_period_begins = timezone.normalize( currdate_local_start )
+        service_period_ends = timezone.normalize( currdate_local_start + timedelta(hours=24)  )
 
         # enter as entry in service calendar
         cal.add_period( TimeHelpers.datetime_to_unix(service_period_begins), TimeHelpers.datetime_to_unix(service_period_ends), service_ids )
