@@ -546,11 +546,12 @@ tbWalk( EdgePayload* superthis, State* params, int transferPenalty ) {
         service_period = scPeriodOfOrAfter( this->calendar, params->time );
         params->service_periods[this->agency] = service_period;
     
-    // if the schedule never runs
-    // or if the schedule does not run on this day
-    // this link goes nowhere
-    if( !service_period ||
-        !spPeriodHasServiceId( service_period, this->service_id) ) {
+        //If still can't find service_period, params->time is beyond service calendar, so bail
+        if( !service_period )
+            return NULL;
+    
+    // if the schedule does not run on this day this link goes nowhere
+    if( !spPeriodHasServiceId( service_period, this->service_id) ) {
       return NULL;
     }
     
