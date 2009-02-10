@@ -63,4 +63,5 @@ Public and pirate feeds here: http://www.gtfs-data-exchange.com/
  
  $ cd /home/transitshed
  Edit sptserver.py. A third problem!
+ Create GMAPS_API_KEY file containing only an API key for your domain
  $ python sptserver.py
