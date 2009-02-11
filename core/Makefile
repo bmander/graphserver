@@ -1,36 +1,36 @@
+all: libgraphserver.so
 
-all: libgraphserver
+OBJECTS= dirfibheap.o \
+	edgetypes.o \
+	fibheap.o \
+	graph.o \
+	hashtable.o \
+	hashtable_gs.o \
+	hashtable_itr.o \
+	hashtable_utility.o \
+	statetypes.o 
 
 # You know what? Honestly? I don't know what most of these switches do.
-libgraphserver: dirfibheap edgetypes hashtable_itr fibheap statetypes dirfibheap graph edgetypes hashtable_gs hashtable_utility hashtable
-	cc -shared -o libgraphserver.so hashtable_itr.o  fibheap.o statetypes.o dirfibheap.o graph.o edgetypes.o hashtable_gs.o hashtable_utility.o hashtable.o -L. -Bsymbolic-functions -rdynamic -Wall -export-dynamic -ldl -lcrypt -lm -lc
+CFLAGS=-g -fno-strict-aliasing -O2 -fPIC -Wall
+LDFLAGS= -L. -Bsymbolic-functions -rdynamic -Wall -export-dynamic -ldl \
+	 -lcrypt -lm -lc
 
-dirfibheap: dirfibheap.c dirfibheap.h
-	cc -I. -g -fno-strict-aliasing -O2 -fPIC -Wall -c dirfibheap.c
+# This complicated-looking rule will autogenerate the appropriate dependancies
+# for each source file, ensuring that they are recompiled when the headers
+# they include change
+# see: http://www.cs.berkeley.edu/~smcpeak/autodepend/autodepend.html
+%.o: %.c
+	cc $*.c -c -o $@ $(CFLAGS)
+	cc $*.c -MM $(CFLAGS) > $*.d
+	@mv -f $*.d $*.d.tmp
+	@sed -e 's|.*:|$*.o:|' < $*.d.tmp > $*.d
+	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
+	  sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
+	@rm -f $*.d.tmp
+-include $(OBJECTS:.o=.d)
 
-edgetypes: edgetypes.c edgeweights.c edgetypes.h
-	cc -I. -g -fno-strict-aliasing -O2 -fPIC -Wall -c edgetypes.c
-
-hashtable_itr: hashtable_itr.c hashtable_itr.h
-	cc -I. -g -fno-strict-aliasing -O2 -fPIC -Wall -c hashtable_itr.c
-
-fibheap: fibheap.c fibheap.h
-	cc -I. -g -fno-strict-aliasing -O2 -fPIC -Wall -c fibheap.c
-
-statetypes: statetypes.c statetypes.h
-	cc -I. -g -fno-strict-aliasing -O2 -fPIC -Wall -c statetypes.c
-
-graph: graph.c graph.h
-	cc -I. -g -fno-strict-aliasing -O2 -fPIC -Wall -c graph.c
-
-hashtable_gs: hashtable_gs.c hashtable_gs.h
-	cc -I. -g -fno-strict-aliasing -O2 -fPIC -Wall -c hashtable_gs.c
-
-hashtable_utility: hashtable_utility.c hashtable_utility.h
-	cc -I. -g -fno-strict-aliasing -O2 -fPIC -Wall -c hashtable_utility.c
-
-hashtable: hashtable.c hashtable.h
-	cc -I. -g -fno-strict-aliasing -O2 -fPIC -Wall -c hashtable.c
+libgraphserver.so: $(OBJECTS)
+	cc -shared -o $@ $(OBJECTS) $(LDFLAGS)
 
 install:
 	cp libgraphserver.so /usr/lib
@@ -45,3 +45,6 @@ install:
 	cp hashtable_utility.h /usr/include/graphserver
 	cp hashtable_private.h /usr/include/graphserver
 	cp statetypes.h /usr/include/graphserver
+
+clean:
+	rm -f *.o *.so *~ *.d

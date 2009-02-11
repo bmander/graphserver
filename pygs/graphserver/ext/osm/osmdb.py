@@ -193,7 +193,19 @@ class OSMDB:
             return (None, None, None, None)
             
         return min( dists, key = lambda x:x[3] )
-    
+
+    def nearest_of( self, lat, lon, nodes ):
+        c = self.conn.cursor()
+        
+        c.execute( "SELECT id, lat, lon FROM nodes WHERE id IN (%s)"%",".join([str(x) for x in nodes]) )
+        
+        dists = [(nid, nlat, nlon, ((nlat-lat)**2+(nlon-lon)**2)**0.5) for nid, nlat, nlon in c]
+            
+        if len(dists)==0:
+            return (None, None, None, None)
+            
+        return min( dists, key = lambda x:x[3] )
+
     def nearby_ways(self, lat, lon, range=0.005):
         c = self.conn.cursor()
         
