@@ -56,7 +56,7 @@ scAddPeriod( ServiceCalendar* this, ServicePeriod* period ) {
         ServicePeriod* prev = NULL;
         ServicePeriod* curs = this->head;
         
-        while(curs && period->begin_time > curs->end_time ) {
+        while(curs && period->begin_time >= curs->end_time ) {
             prev = curs;
             curs = curs->next_period;
         }
@@ -83,7 +83,7 @@ ServicePeriod*
 scPeriodOfOrAfter( ServiceCalendar* this, long time ) {
   ServicePeriod* period = this->head;
 
-  while( period && period->end_time < time ) {
+  while( period && period->end_time <= time ) {
     period = period->next_period;
   }
   

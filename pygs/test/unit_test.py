@@ -1586,8 +1586,43 @@ class TestServiceCalendar(unittest.TestCase):
         assert c.period_of_or_after(-1).begin_time==0
         assert c.period_of_or_after(0).begin_time==0
         assert c.period_of_or_after(500).begin_time==0
-        assert c.period_of_or_after(1000).begin_time==0
+        assert c.period_of_or_after(1000)==None
         assert c.period_of_or_after(1001) == None
+        
+    def test_overlap_a_little(self):
+        
+        c = ServiceCalendar()
+        c.add_period( 0, 1000, ["A"] )
+        c.add_period( 1000, 2000, ["B"] )
+        
+        assert c.head.begin_time == 0
+        assert c.head.end_time == 1000
+        
+        assert c.period_of_or_before(-1) == None
+        assert c.period_of_or_before(0).begin_time==0
+        assert c.period_of_or_before(999).begin_time==0
+        assert c.period_of_or_before(1000).begin_time==1000
+        
+        c = ServiceCalendar()
+        c.add_period(1000,2000,["B"])
+        c.add_period(0,1000,["A"])
+        
+        assert c.head.begin_time == 0
+        assert c.head.end_time == 1000
+        
+        assert c.period_of_or_before(-1) == None
+        assert c.period_of_or_before(0).begin_time==0
+        assert c.period_of_or_before(999).begin_time==0
+        assert c.period_of_or_before(1000).begin_time==1000
+        
+        #--==--
+    
+        sc = ServiceCalendar()
+        sc.add_period(0, 1*3600*24, ['A'])
+        sc.add_period(1*3600*24,2*3600*24, ['B'])
+        
+        assert sc.period_of_or_after( 1*3600*24 ).begin_time == 86400
+        
         
     def test_multiple(self):
         c = ServiceCalendar()
@@ -1612,9 +1647,9 @@ class TestServiceCalendar(unittest.TestCase):
         
         assert c.period_of_or_after(-1).begin_time == 0
         assert c.period_of_or_after(0).begin_time == 0
-        assert c.period_of_or_after(1000).begin_time == 0
+        assert c.period_of_or_after(1000).begin_time == 1001
         assert c.period_of_or_after(1001).begin_time == 1001
-        assert c.period_of_or_after(2000).begin_time == 1001
+        assert c.period_of_or_after(2000) == None
         assert c.period_of_or_after(2001) == None
         
     def test_add_three(self):
@@ -1990,6 +2025,70 @@ class TestTripBoard(unittest.TestCase):
         tb.add_boarding( "nightowl2", 24*3600+3600 )
         
         assert tb.overage == 3600
+        
+    def test_tripboard_over_midnight(self):
+        
+        sc = ServiceCalendar()
+        sc.add_period(0, 1*3600*24, ['WKDY'])
+        sc.add_period(1*3600*24,2*3600*24, ['SAT'])
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0,2*3600*24,0) )
+        
+        tb = TripBoard( "WKDY", sc, tz, 0 )
+        tb.add_boarding( "eleven", 23*3600 )
+        tb.add_boarding( "midnight", 24*3600 )
+        tb.add_boarding( "one", 25*3600 )
+        tb.add_boarding( "two", 26*3600 )
+        
+        s0 = State(1, 0)
+        s1 = tb.walk(s0)
+        assert s1.weight == 82801
+        assert s1.service_period(0).service_ids == [0]
+        
+        s0 = State(1, 23*3600 )
+        s1 = tb.walk(s0)
+        assert s1.weight == 1
+        assert s1.service_period(0).service_ids == [0]
+        
+        s0 = State(1, 24*3600 )
+        s1 = tb.walk(s0)
+        assert s1.weight == 1
+        assert s1.service_period(0).service_ids == [1]
+        
+        s0 = State(1, 25*3600 )
+        s1 = tb.walk(s0)
+        assert s1.time == 25*3600
+        assert s1.weight == 1
+        assert s1.service_period(0).service_ids == [1]
+        
+        s0 = State(1, 26*3600 )
+        s1 = tb.walk(s0)
+        assert s1.time == 26*3600
+        assert s1.weight == 1
+        assert s1.service_period(0).service_ids == [1]
+        
+        s0 = State(1, 26*3600+1)
+        s1 = tb.walk(s0)
+        assert s1 == None
+        
+    def test_tripboard_over_midnight_without_hope(self):
+        
+        sc = ServiceCalendar()
+        sc.add_period(0, 1*3600*24, ['WKDY'])
+        sc.add_period(1*3600*24,2*3600*24, ['SAT'])
+        sc.add_period(2*3600*24,3*3600*24, ['SUN'])
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0,3*3600*24,0) )
+        
+        tb = TripBoard( "WKDY", sc, tz, 0 )
+        tb.add_boarding( "eleven", 23*3600 )
+        tb.add_boarding( "midnight", 24*3600 )
+        tb.add_boarding( "one", 25*3600 )
+        tb.add_boarding( "two", 26*3600 )
+        
+        s0 = State(1,3*3600*24) #midnight sunday
+        s1 = tb.walk(s0)
+        assert s1 == None
             
     def test_add_single_trip(self):
         sc = ServiceCalendar()
@@ -2407,9 +2506,9 @@ if __name__ == '__main__':
                  #TestServicePeriod,
                  #TestServiceCalendar,
                  #TestEngine,
-                 TestTimezone,
+                 #TestTimezone,
                  #TestTimezonePeriod,
-                 #TestTripBoard,
+                 TestTripBoard,
                  #TestCrossing,
                  #TestAlight,
                  #TestHeadwayBoard,
