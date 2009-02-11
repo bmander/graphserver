@@ -550,52 +550,33 @@ tbWalk( EdgePayload* superthis, State* params, int transferPenalty ) {
         if( !service_period )
             return NULL;
     
-    //long time_since_midnight = tzTimeSinceMidnight( tz, params->time );
-    
-    // Backtrack 
-/*
-    BREAKBREAK
+    long time_since_midnight = tzTimeSinceMidnight( this->timezone, params->time );
         
-    int backtrack = 0
-    while( backtrack < this->overage ) {
-        if( spPeriodHasServiceId( service_period, this->service_id ) ) {
-            break
-        }
+    if( !spPeriodHasServiceId( service_period, this->service_id ) ) {
         
-        backtrack += SECS_IN_DAY
-        service_period = service_period->prev_period;
-    }
-    
-    if( backtrack < this->overage ) {
-        return 
-    }
+        /* If the boarding schedule extends past midnight - for example, you can board a train on the Friday schedule until
+         * 2 AM Saturday morning - and the travel_state.time_since_midnight is less than this overage - for example, 1 AM, but
+         * the travel_state.service_period will show Saturday and not Friday, then:
+         * 
+         * Check if the boarding schedule service_id is running in the travel_state's yesterday period. If it is, simply advance the 
+         * time_since_midnight by a day and continue. If not, this boarding schedule was not running today or yesterday, so as far
+         * as we're concerned, it's not running at all
+         *
+         * TODO - figure out an algorithm for the general cse
+         */
         
-    int ttl = this->overage;
-    while(1) {
-        if( spPeriodHasServiceId( service_period, this->service_id ) ) {
-            break;
+        if( this->overage >= time_since_midnight &&
+            service_period->prev_period &&
+            spPeriodHasServiceId( service_period->prev_period, this->service_id )) {
+                
+            time_since_midnight += SECS_IN_DAY;
         } else {
-            if ttl <= 0 {
-                return NULL;
-            }
-            
-            ttl -= SECS_IN_DAY;
-            time_since_midnight += SECS_IN_DAY
-            service_period = service_period->prev_period;
-            if(!service_period)
-                return NULL;
+            return NULL;
         }
-    }
-*/
         
-    // if the schedule does not run on this day this link goes nowhere
-    if( !spPeriodHasServiceId( service_period, this->service_id) ) {
-        return NULL;
     }
     
-    long adjusted_time = spNormalizeTime( service_period, tzUtcOffset(this->timezone, params->time), params->time );
-    
-    int next_boarding_index = tbGetNextBoardingIndex( this, adjusted_time );
+    int next_boarding_index = tbGetNextBoardingIndex( this, time_since_midnight );
     
     if( next_boarding_index == -1 ) {
         return NULL;
@@ -607,7 +588,7 @@ tbWalk( EdgePayload* superthis, State* params, int transferPenalty ) {
     ret->num_transfers += 1;
     
     int next_boarding_time = this->departs[next_boarding_index];
-    int wait = (next_boarding_time - adjusted_time);
+    int wait = (next_boarding_time - time_since_midnight);
     
     ret->time   += wait;
     ret->weight += wait + 1; //transfer penalty
