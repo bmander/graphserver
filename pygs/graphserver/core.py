@@ -693,6 +693,14 @@ class Timezone(CShadow):
             
         return ret
         
+    def time_since_midnight(self, time):
+        ret = lgs.tzTimeSinceMidnight( self.soul, c_long(time) )
+        
+        if ret==-1:
+            raise IndexError( "%d lands within no timezone period"%time )
+            
+        return ret
+        
     @classmethod
     def generate(cls, timezone_string):
         ret = Timezone()

@@ -308,6 +308,17 @@ tzUtcOffset( Timezone* this, long time) {
     return tzpUtcOffset( now );
 }
 
+int
+tzTimeSinceMidnight( Timezone* this, long time ) {
+    TimezonePeriod* now = tzPeriodOf( this, time );
+    
+    if( !now ) {
+        return -1;
+    }
+    
+    return (time+now->utc_offset)%SECS_IN_DAY;
+}
+
 TimezonePeriod*
 tzHead( Timezone* this ) {
     return this->head;

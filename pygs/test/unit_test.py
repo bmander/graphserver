@@ -1876,6 +1876,31 @@ class TestTimezone(unittest.TestCase):
         assert laz.period_of( 50 ).__getstate__() == (0, 99, -8*3600)
         assert laz.period_of( 250 ).__getstate__() == (200, 299, -7*3600)
         assert laz.period_of( 550 ).__getstate__() == (500, 599, -8*3600)
+        
+    def test_time_since_midnight(self):
+        tz = Timezone()
+        p1 = TimezonePeriod(0, 24*3600*256, -8*3600)
+        tz.add_period( p1 )
+        
+        assert tz.time_since_midnight( 8*3600 ) == 0
+        
+        tz = Timezone()
+        summer_tzp = TimezonePeriod( util.TimeHelpers.localtime_to_unix( 2008,6,1,0,0,0, "America/Los_Angeles" ),
+                                     util.TimeHelpers.localtime_to_unix( 2008,9,1,0,0,0, "America/Los_Angeles" ),
+                                     -7*3600 )
+        tz.add_period( summer_tzp )
+                                     
+        assert tz.time_since_midnight( util.TimeHelpers.localtime_to_unix( 2008, 7,1,0,0,0,"America/Los_Angeles" ) ) == 0
+        assert tz.time_since_midnight( util.TimeHelpers.localtime_to_unix( 2008, 7, 2, 2, 0, 0, "America/Los_Angeles" ) ) == 3600*2
+        
+        tz = Timezone()
+        winter_tzp = TimezonePeriod( util.TimeHelpers.localtime_to_unix( 2008,1,1,0,0,0, "America/Los_Angeles" ),
+                                     util.TimeHelpers.localtime_to_unix( 2008,4,1,0,0,0, "America/Los_Angeles" ),
+                                     -8*3600 )
+        tz.add_period( winter_tzp )
+                                     
+        assert tz.time_since_midnight( util.TimeHelpers.localtime_to_unix( 2008, 2,1,0,0,0,"America/Los_Angeles" ) ) == 0
+        assert tz.time_since_midnight( util.TimeHelpers.localtime_to_unix( 2008, 2, 2, 2, 0, 0, "America/Los_Angeles" ) ) == 3600*2
     
 class TestTimezonePeriod(unittest.TestCase):
     def test_basic(self):
@@ -2382,8 +2407,8 @@ if __name__ == '__main__':
                  #TestServicePeriod,
                  #TestServiceCalendar,
                  #TestEngine,
-                 #TestTimezone,
-                 TestTimezonePeriod,
+                 TestTimezone,
+                 #TestTimezonePeriod,
                  #TestTripBoard,
                  #TestCrossing,
                  #TestAlight,

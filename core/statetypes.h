@@ -115,6 +115,9 @@ tzPeriodOf( Timezone* this, long time);
 int
 tzUtcOffset( Timezone* this, long time);
 
+int
+tzTimeSinceMidnight( Timezone* this, long time );
+
 TimezonePeriod*
 tzHead( Timezone* this );
 
