@@ -31,6 +31,7 @@ typedef struct State {
    int           num_transfers;
    edgepayload_t prev_edge_type;
    char*         prev_edge_name;
+   char*         trip_id;
    int           n_agencies;
    ServicePeriod** service_periods;
 } State;
@@ -61,6 +62,9 @@ stateGetPrevEdgeType( State* this );
 
 char*
 stateGetPrevEdgeName( State* this );
+
+char*
+stateGetTripId( State* this );
 
 int
 stateGetNumAgencies( State* this );

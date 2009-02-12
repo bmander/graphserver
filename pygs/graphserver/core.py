@@ -244,6 +244,7 @@ class State(CShadow):
     prev_edge_type = cproperty(lgs.stateGetPrevEdgeType, c_int, setter=lgs.stateSetPrevEdgeType) # should not use: setter=lgs.stateSetPrevEdgeType)
     prev_edge_name = cproperty(lgs.stateGetPrevEdgeName, c_char_p, setter=lgs.stateSetPrevEdgeName)
     num_agencies     = cproperty(lgs.stateGetNumAgencies, c_int)
+    trip_id          = cproperty(lgs.stateGetTripId, c_char_p)
         
 
 class Vertex(CShadow):

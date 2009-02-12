@@ -788,6 +788,7 @@ class TestState(unittest.TestCase):
         assert s.prev_edge_type == 5
         assert s.num_agencies == 1
         assert s.service_period(0) == None
+        assert s.trip_id == None
         
     def test_basic_multiple_calendars(self):
         s = State(2,0)
@@ -2493,7 +2494,7 @@ if __name__ == '__main__':
     testables = [\
                  #TestGraph,
                  #TestGraphPerformance,
-                 #TestState,
+                 TestState,
                  #TestPyPayload,
                  #TestLink,
                  #TestWait,
