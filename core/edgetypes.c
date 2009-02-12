@@ -597,6 +597,8 @@ tbWalk( EdgePayload* superthis, State* params, int transferPenalty ) {
     ret->time   += wait;
     ret->weight += wait + 1; //transfer penalty
     
+    ret->trip_id = this->trip_ids[next_boarding_index];
+    
     // Make sure the service period caches are updated if we've traveled over a service period boundary
     int i;
     for(i=0; i<params->n_agencies; i++) {
@@ -792,7 +794,10 @@ alDestroy(Alight* this) {
 
 inline State*
 alWalk(EdgePayload* this, State* params, int transferPenalty) {
-    return stateDup( params );
+    State* ret = stateDup( params );
+    ret->trip_id = NULL;
+    
+    return ret;
 }
 
 //TRIPHOP FUNCTIONS
