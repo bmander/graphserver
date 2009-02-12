@@ -115,8 +115,12 @@ SELECT stop_times.* FROM stop_times, trips
         return "<TripBundle n_trips: %d n_stops: %d>"%(len(self.trip_ids), len(self.pattern_signature[0]))
 
 class GTFSDatabase:
-    TRIPS_DEF = ("trips", (("trip_id",    None, None),
+    TRIPS_DEF = ("trips", (("route_id",   None, None),
+                           ("trip_id",    None, None),
                            ("service_id", None, None) ) )
+    ROUTES_DEF = ("routes", (("route_id", None, None),
+                             ("route_short_name", None, None),
+                             ("route_long_name", None, None)) )
     STOP_TIMES_DEF = ("stop_times", (("trip_id", None, None), 
                                      ("arrival_time", "INTEGER", parse_gtfs_time),
                                      ("departure_time", "INTEGER", parse_gtfs_time),
@@ -149,7 +153,7 @@ class GTFSDatabase:
                                        ("end_time", "INTEGER", parse_gtfs_time),
                                        ("headway_secs", "INTEGER", None)) )
     
-    GTFS_DEF = (TRIPS_DEF, STOP_TIMES_DEF, STOPS_DEF, CALENDAR_DEF, CAL_DATES_DEF, AGENCY_DEF, FREQUENCIES_DEF)
+    GTFS_DEF = (TRIPS_DEF, STOP_TIMES_DEF, STOPS_DEF, CALENDAR_DEF, CAL_DATES_DEF, AGENCY_DEF, FREQUENCIES_DEF, ROUTES_DEF)
     
     def __init__(self, sqlite_filename, overwrite=False):
         if overwrite:
