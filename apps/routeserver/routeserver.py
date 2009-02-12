@@ -53,25 +53,29 @@ if __name__ == '__main__':
         
         route_desc = list( gtfsdb.execute( "SELECT routes.route_long_name FROM routes, trips WHERE routes.route_id=trips.route_id AND trip_id=?", (trip_id,) ) )[0][0]
         stop_desc = list( gtfsdb.execute( "SELECT stop_name FROM stops WHERE stop_id = ?", (stop_id,) ) )[0][0]
+        lat, lon = list( gtfsdb.execute( "SELECT stop_lat, stop_lon FROM stops WHERE stop_id = ?", (stop_id,) ) )[0]
         
         what = "Board the %s"%route_desc
         where = stop_desc
         when = str(TimeHelpers.unix_to_localtime( event_time, "America/Chicago" ))
-        return (what, where, when)
+        loc = (lat,lon)
+        return (what, where, when, loc)
 
     def alight_event(vertex1, edge, vertex2):
         event_time = vertex1.payload.time
         stop_id = vertex2.label
         
         stop_desc = list( gtfsdb.execute( "SELECT stop_name FROM stops WHERE stop_id = ?", (stop_id,) ) )[0][0]
+        lat, lon = list( gtfsdb.execute( "SELECT stop_lat, stop_lon FROM stops WHERE stop_id = ?", (stop_id,) ) )[0]
         
         what = "Alight"
         where = stop_desc
         when = str(TimeHelpers.unix_to_localtime( event_time, "America/Chicago" ))
-        return (what, where, when)
+        loc = (lat,lon)
+        return (what, where, when, loc)
         
     def street_event(vertex1, edge, vertex2):
-        return ("Walk", "", "")
+        return ("Walk", "", "", None)
         
     event_dispatch = {graphserver.core.TripBoard:board_event,
                       graphserver.core.Alight:alight_event,
