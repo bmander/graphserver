@@ -31,7 +31,7 @@ class RouteServer(Servable):
             if edgetype in self.event_dispatch:
                 ret.append( self.event_dispatch[ edges[i].payload.__class__ ]( vertices[i], edges[i], vertices[i+1] ) )
         
-        return "\n".join( [json.dumps(x) for x in ret] )
+        return json.dumps(ret)
             
 import sys
 if __name__ == '__main__':
