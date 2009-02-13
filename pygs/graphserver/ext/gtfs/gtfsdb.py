@@ -179,15 +179,17 @@ class GTFSDatabase:
                 load_gtfs_table_to_sqlite(trips_file, tablename, c, table_def)
             except KeyError:
                 if reporter: reporter.write( "NOTICE: GTFS feed has no file %s.txt, cannot load\n"%tablename )
+    
+        self._create_indices(c)
+        self.conn.commit()
+        c.close()
+
+    def _create_indices(self, c):
         
-        #create indices
         c.execute( "CREATE INDEX stop_times_trip_id ON stop_times (trip_id)" )
         c.execute( "CREATE INDEX trips_trip_id ON trips (trip_id)" )
         c.execute( "CREATE INDEX stops_stop_lat ON stops (stop_lat)" )
         c.execute( "CREATE INDEX stops_stop_lon ON stops (stop_lon)" )
-
-        self.conn.commit()
-        c.close()
 
     def stops(self):
         c = self.conn.cursor()
@@ -340,8 +342,8 @@ class GTFSDatabase:
         return [x[0] for x in self.execute( query )]
                 
 
-from sys import argv
-if __name__=='__main__':
+def main():
+    from sys import argv
     
     if len(argv) < 2:
         print "usage: python gtfsdb.py gtfsdb_filename [query]"
@@ -375,3 +377,5 @@ if __name__=='__main__':
     #    sys.stdout.flush()
 
     pass
+
+if __name__=='__main__': main()
