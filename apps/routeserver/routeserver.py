@@ -18,7 +18,7 @@ class RouteServer(Servable):
     def vertices(self):
         return "\n".join( [vv.label for vv in self.graph.vertices] )
     vertices.mime = "text/plain"
-        
+
     def path(self, origin, dest, currtime):
         
         spt = self.graph.shortest_path_tree( origin, dest, State(1,currtime) )
@@ -34,6 +34,18 @@ class RouteServer(Servable):
         spt.destroy()
         
         return json.dumps(ret)
+
+    def path_raw(self, origin, dest, currtime):
+        
+        spt = self.graph.shortest_path_tree( origin, dest, State(1,currtime) )
+        
+        vertices, edges = spt.path( dest )
+        
+        ret = "\n".join([str(x) for x in vertices]) + "\n\n" + "\n".join([str(x) for x in edges])
+
+        spt.destroy()
+        
+        return ret
             
 import sys
 if __name__ == '__main__':
