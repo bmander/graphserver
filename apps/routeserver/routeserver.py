@@ -31,6 +31,8 @@ class RouteServer(Servable):
             if edgetype in self.event_dispatch:
                 ret.append( self.event_dispatch[ edges[i].payload.__class__ ]( vertices[i], edges[i], vertices[i+1] ) )
         
+        spt.destroy()
+        
         return json.dumps(ret)
             
 import sys
