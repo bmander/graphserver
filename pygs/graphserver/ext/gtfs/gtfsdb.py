@@ -288,8 +288,12 @@ class GTFSDatabase:
             yield record
         c.close()
         
-    def agency_timezone_name(self, agency_id_or_name):
-        agency_timezone_name = list(self.execute( "SELECT agency_timezone FROM agency WHERE agency_id=? OR agency_name=?", (agency_id_or_name,agency_id_or_name) ))
+    def agency_timezone_name(self, agency_id_or_name=None):
+
+        if agency_id_or_name is None:
+            agency_timezone_name = list(self.execute( "SELECT agency_timezone FROM agency LIMIT 1" ))
+        else:
+            agency_timezone_name = list(self.execute( "SELECT agency_timezone FROM agency WHERE agency_id=? OR agency_name=?", (agency_id_or_name,agency_id_or_name) ))
         
         return agency_timezone_name[0][0]
         
