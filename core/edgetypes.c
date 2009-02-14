@@ -691,17 +691,37 @@ hbWalk( EdgePayload* superthis, State* params, int transferPenalty ) {
         service_period = scPeriodOfOrAfter( this->calendar, params->time );
         params->service_periods[this->agency] = service_period;
     
-    // if the schedule never runs
-    // or if the schedule does not run on this day
-    // this link goes nowhere
-    if( !service_period ||
-        !spPeriodHasServiceId( service_period, this->service_id) ) {
-      return NULL;
+        //If still can't find service_period, params->time is beyond service calendar, so bail
+        if( !service_period )
+            return NULL;
+    
+    long time_since_midnight = tzTimeSinceMidnight( this->timezone, params->time );
+        
+    if( !spPeriodHasServiceId( service_period, this->service_id ) ) {
+        
+        /* If the boarding schedule extends past midnight - for example, you can board a train on the Friday schedule until
+         * 2 AM Saturday morning - and the travel_state.time_since_midnight is less than this overage - for example, 1 AM, but
+         * the travel_state.service_period will show Saturday and not Friday, then:
+         * 
+         * Check if the boarding schedule service_id is running in the travel_state's yesterday period. If it is, simply advance the 
+         * time_since_midnight by a day and continue. If not, this boarding schedule was not running today or yesterday, so as far
+         * as we're concerned, it's not running at all
+         *
+         * TODO - figure out an algorithm for the general cse
+         */
+        
+        if( this->end_time-SECS_IN_DAY >= time_since_midnight &&
+            service_period->prev_period &&
+            spPeriodHasServiceId( service_period->prev_period, this->service_id )) {
+                
+            time_since_midnight += SECS_IN_DAY;
+        } else {
+            return NULL;
+        }
+        
     }
     
-    long adjusted_time = spNormalizeTime( service_period, tzUtcOffset(this->timezone, params->time), params->time );
-    
-    if (adjusted_time > this->end_time ) {
+    if (time_since_midnight > this->end_time ) {
         return NULL;
     }
     
@@ -712,8 +732,8 @@ hbWalk( EdgePayload* superthis, State* params, int transferPenalty ) {
     
     int wait = this->headway_secs; //you could argue the correct wait is headway_secs/2
     
-    if (adjusted_time < this->start_time )
-        wait += (this->start_time - adjusted_time);
+    if (time_since_midnight < this->start_time )
+        wait += (this->start_time - time_since_midnight);
     
     ret->time   += wait;
     ret->weight += wait + 1; //transfer penalty
