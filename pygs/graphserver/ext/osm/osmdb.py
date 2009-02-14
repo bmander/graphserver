@@ -175,7 +175,7 @@ class OSMDB:
         
         try:
             ret = next(c)
-        except StopIteration as e:
+        except StopIteration:
             c.close()
             raise Exception( "Database does not have node with id '%s'"%id )
             
@@ -422,7 +422,7 @@ if __name__=='__main__':
     usage = "python osmdb.py osm_filename osmdb_filename"
     if len(argv) < 3:
         print usage
-       exit()
+        exit()
 
     osm_filename = argv[1]
     osmdb_filename = argv[2]
