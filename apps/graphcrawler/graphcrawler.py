@@ -3,10 +3,21 @@ from graphserver.graphdb import GraphDatabase
 import cgi
 from graphserver.core import State
 import time
+import sys
+
+def string_spt_vertex(vertex, level=0):
+    ret = ["  "*level+str(vertex)]
+    
+    for edge in vertex.outgoing:
+        ret.append( "  "*(level+1)+"%s"%(edge) )
+        ret.append( string_spt_vertex( edge.to_v, level+1 ) )
+    
+    return "\n".join(ret)
 
 class GraphCrawler(Servable):
     def __init__(self, graphdb_filename):
         self.graphdb = GraphDatabase( graphdb_filename )
+        self.graph = self.graphdb.incarnate()
     
     def vertices(self):
         return "\n".join( ["<a href=\"/vertex?label=&quot;%s&quot;\">%s</a><br>"%(vertex_label, vertex_label) for vertex_label in sorted( self.graphdb.all_vertex_labels() ) ])
@@ -39,6 +50,14 @@ class GraphCrawler(Servable):
         return "".join(ret)
     vertex.mime = "text/html"
     
+    def spt(self, label, currtime=None):
+        
+        currtime = currtime or int(time.time())
+        
+        spt = self.graph.shortest_path_tree( label, None, State(1,currtime) )
+        
+        return string_spt_vertex( spt.get_vertex( label ) )
+    
     def outgoing(self, label, edgenum):
         all_outgoing = list( self.graphdb.all_outgoing( label ) )
         
@@ -54,7 +73,7 @@ if __name__ == '__main__':
     # for trimet: "10071" @ 1233172800
     
     GDB_FILENAME = "../package_graph/bartheadway.db"
-    GDB_FILENAME = "/home/brandon/urbanmapping/transit_routing/router/data/bart.gdb"
+    GDB_FILENAME = "/home/brandon/urbanmapping/transit_routing/router/data/chicago.gdb"
     
     gc = GraphCrawler(GDB_FILENAME)
-    gc.run_test_server()
+    gc.run_test_server(8081)
