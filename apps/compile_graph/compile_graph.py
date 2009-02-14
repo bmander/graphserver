@@ -6,7 +6,7 @@ import pytz
 from datetime import timedelta, datetime, time
 from graphserver.util import TimeHelpers
 from graphserver.graphdb import GraphDatabase
-from pyproj import Proj
+from vincenty import vincenty
 
 def iter_dates(startdate, enddate):
     currdate = startdate
@@ -18,7 +18,7 @@ def cons(ary):
     for i in range(len(ary)-1):
         yield (ary[i], ary[i+1])
 
-def gtfsdb_to_service_calendar(gtfsdb, agency_id):
+def gtfsdb_to_service_calendar(gtfsdb, agency_id=None):
     """Given gtfsdb and agency_id, returns graphserver.core.ServiceCalendar"""
     
     # grab pytz timezone by agency_id, via gtfsdb
@@ -27,9 +27,6 @@ def gtfsdb_to_service_calendar(gtfsdb, agency_id):
 
     # grab date, day service bounds
     start_date, end_date = gtfsdb.date_range()
-    
-    if day_end > day_start + 24*3600:
-        raise Exception( "Service days overlap by %d seconds"%(day_end-24*3600-day_start) )
 
     # init empty calendar
     cal = ServiceCalendar()
@@ -135,12 +132,10 @@ def load_gtfsdb_to_boardalight_graph(g, gtfsdb, agency_id, service_ids, reporter
         for (trip_id1, arrival_time1, departure_time1, stop_id1, stop_sequence1), (trip_id2, arrival_time2, departure_time2, stop_id2, stop_sequence2) in cons(stoptimes):
             g.add_edge( "%s-hw-%s"%(stop_id1, trip_id1), "%s-hw-%s"%(stop_id2, trip_id2), Crossing(arrival_time2-departure_time1) )
             
-def link_nearby_stops(g, gtfsdb, epsg, range=0.05, obstruction=1.4):
+def link_nearby_stops(g, gtfsdb, range=0.05, obstruction=1.4):
     """Adds Street links of length obstruction*dist(A,B) directly between all station pairs closer than <range>"""
 
     print "Linking nearby stops..."
-    
-    proj = Proj(init='epsg:%d'%epsg)
 
     for stop_id1, stop_name1, lat1, lon1 in gtfsdb.stops():
         g.add_vertex( stop_id1 )
@@ -153,21 +148,14 @@ def link_nearby_stops(g, gtfsdb, epsg, range=0.05, obstruction=1.4):
             
             g.add_vertex( stop_id2 )
             
-            dd = obstruction*dist( (lon1,lat1), (lon2,lat2), proj=proj )
+            dd = obstruction*vincenty( lat1, lon1, lat2, lon2 )
             print dd
             
             g.add_edge( stop_id1, stop_id2, Street("walk", dd) )
             g.add_edge( stop_id2, stop_id1, Street("walk", dd) )
             
 
-def dist(p1, p2, proj=lambda x,y:(x,y)):
-    x1,y1 = proj(*p1)
-    x2,y2 = proj(*p2)
-    
-    return ((x1-x2)**2 + (y1-y2)**2)**0.5
-
-def load_streets_to_graph(g, osmdb, proj_epsg, reporter=None):
-    proj = Proj(init='epsg:%d'%proj_epsg)
+def load_streets_to_graph(g, osmdb, reporter=None):
     
     n_ways = osmdb.count_ways()
     
@@ -175,8 +163,7 @@ def load_streets_to_graph(g, osmdb, proj_epsg, reporter=None):
         
         if reporter and i%(n_ways//100+1)==0: reporter.write( "%d/%d ways loaded\n"%(i, n_ways))
         
-        #distance = sum( [((x2-x1)**2+(y2-y1)**2)**0.5 for (x1,y1),(x2,y2) in cons(way.geom)] )
-        distance = sum( [dist(p1, p2, proj) for p1, p2 in cons(way.geom)] )
+        distance = sum( [vincenty(y1,x1,y2,x2) for (x1,y1), (x2,y2) in cons(way.geom)] )
         
         vertex1_label = "osm"+way.nds[0]
         vertex2_label = "osm"+way.nds[-1]
@@ -200,7 +187,7 @@ def load_transit_street_links_to_graph( g, osmdb, gtfsdb, reporter=None ):
             g.add_edge( stop_id, "osm"+osm_id, Link( ) )
             g.add_edge( "osm"+osm_id, stop_id, Link( ) )
 
-def process_transit_graph(gtfsdb_filename, agency_id, graphdb_filename, link=False, epsg=26915):
+def process_transit_graph(gtfsdb_filename, agency_id, graphdb_filename, link=False):
     gtfsdb = GTFSDatabase( gtfsdb_filename )
     
     g = Graph()
@@ -208,7 +195,7 @@ def process_transit_graph(gtfsdb_filename, agency_id, graphdb_filename, link=Fal
     load_gtfsdb_to_boardalight_graph(g, gtfsdb, agency_id=agency_id, service_ids=service_ids)
     
     if link:
-        link_nearby_stops( g, gtfsdb, epsg )
+        link_nearby_stops( g, gtfsdb )
     
     graphdb = GraphDatabase( graphdb_filename, overwrite=True )
     graphdb.populate( g, reporter=sys.stdout )
@@ -221,12 +208,12 @@ def process_street_graph():
     osmdb = OSMDB( OSMDB_FILENAME )
     
     g = Graph()
-    load_streets_to_graph( g, osmdb, 26910, sys.stdout )
+    load_streets_to_graph( g, osmdb, sys.stdout )
     
     graphdb = GraphDatabase( GRAPHDB_FILENAME, overwrite=True )
     graphdb.populate( g, reporter=sys.stdout )
     
-def process_transit_street_graph(graphdb_filename, gtfsdb_filename, agency_id, osmdb_filename, projection_epsg):
+def process_transit_street_graph(graphdb_filename, gtfsdb_filename, osmdb_filename, agency_id=None):
     g = Graph()
 
     # Load gtfsdb ==============================
@@ -239,7 +226,7 @@ def process_transit_street_graph(graphdb_filename, gtfsdb_filename, agency_id, o
     
     print( "Opening OSM-DB '%s'"%osmdb_filename )
     osmdb = OSMDB( osmdb_filename )
-    load_streets_to_graph( g, osmdb, projection_epsg, sys.stdout )
+    load_streets_to_graph( g, osmdb, sys.stdout )
     
     # Link osm to transit ======================
     
@@ -257,7 +244,7 @@ if __name__=='__main__':
     #process_transit_graph()
     #process_street_graph()
     #process_transit_street_graph("bartheadway.db", "headwaybart.gtfsdb", "BART", "bartarea.sqlite", 26910 )
-    #process_transit_street_graph("streetstrimet.db", "trimet.gtfsdb", "TriMet", "bigportland.sqlite", 26910 )
+    #process_transit_street_graph("portlandtrimet.db", "../transitshed/data/trimet.gtfsdb", "../transitshed/data/bigportland.osmdb", None )
 
     usage = """usage:
     python package_graphs.py transit <gtfsdb_filename> <agency_id> <graphdb_filename> [link]"""
@@ -268,11 +255,9 @@ if __name__=='__main__':
 
     if argv[1] == "transit":
         gtfsdb_filename = argv[2]
-        agency_id = argv[3]
         graphdb_filename = argv[4]
         
-        
-        process_transit_graph( gtfsdb_filename, agency_id, graphdb_filename, link=("link" in argv) )
+        process_transit_graph( gtfsdb_filename, graphdb_filename, link=("link" in argv) )
     
     
 
