@@ -30,8 +30,8 @@ struct ServiceCalendar {
 } ; 
 
 struct ServicePeriod {
-  long begin_time; //the first second on which the service period is valid
-  long end_time;   //the last second on which the service_period is valid
+  long begin_time; //the first second since the epoch on which the service period is in effect
+  long end_time;   //first moment after the period; exclusive.
   int n_service_ids;
   ServiceId* service_ids;
   ServicePeriod* prev_period;
@@ -115,6 +115,9 @@ tzPeriodOf( Timezone* this, long time);
 int
 tzUtcOffset( Timezone* this, long time);
 
+int
+tzTimeSinceMidnight( Timezone* this, long time );
+
 TimezonePeriod*
 tzHead( Timezone* this );
 
@@ -129,6 +132,9 @@ tzpDestroy( TimezonePeriod* this );
 
 int
 tzpUtcOffset( TimezonePeriod* this );
+
+int
+tzpTimeSinceMidnight( TimezonePeriod* this, long time );
 
 long
 tzpBeginTime( TimezonePeriod* this );

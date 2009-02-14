@@ -225,13 +225,14 @@ class State(CShadow):
         self.check_destroyed()  
         
         ret = "<state time='%d' weight='%s' dist_walked='%s' " \
-              "num_transfers='%s' prev_edge_type='%s' prev_edge_name='%s'>" % \
+              "num_transfers='%s' prev_edge_type='%s' prev_edge_name='%s' trip_id='%s'>" % \
                (self.time,
                self.weight,
                self.dist_walked,
               self.num_transfers,
                self.prev_edge_type,
-               self.prev_edge_name)
+               self.prev_edge_name,
+               self.trip_id)
         for i in range(self.num_agencies):
             if self.service_period(i) is not None:
                 ret += self.service_period(i).to_xml()
@@ -244,6 +245,7 @@ class State(CShadow):
     prev_edge_type = cproperty(lgs.stateGetPrevEdgeType, c_int, setter=lgs.stateSetPrevEdgeType) # should not use: setter=lgs.stateSetPrevEdgeType)
     prev_edge_name = cproperty(lgs.stateGetPrevEdgeName, c_char_p, setter=lgs.stateSetPrevEdgeName)
     num_agencies     = cproperty(lgs.stateGetNumAgencies, c_int)
+    trip_id          = cproperty(lgs.stateGetTripId, c_char_p)
         
 
 class Vertex(CShadow):
@@ -662,6 +664,9 @@ class TimezonePeriod(CShadow):
     def next_period(self):
         return TimezonePeriod.from_pointer( lgs.tzpNextPeriod( self.soul ) )
         
+    def time_since_midnight(self, time):
+        return lgs.tzpTimeSinceMidnight( self.soul, c_long(time) )
+        
     def __getstate__(self):
         return (self.begin_time, self.end_time, self.utc_offset)
     
@@ -686,6 +691,14 @@ class Timezone(CShadow):
         ret = lgs.tzUtcOffset( self.soul, time )
         
         if ret==-360000:
+            raise IndexError( "%d lands within no timezone period"%time )
+            
+        return ret
+        
+    def time_since_midnight(self, time):
+        ret = lgs.tzTimeSinceMidnight( self.soul, c_long(time) )
+        
+        if ret==-1:
             raise IndexError( "%d lands within no timezone period"%time )
             
         return ret
@@ -951,6 +964,7 @@ class TripBoard(EdgePayload):
     agency = cproperty( lgs.tbGetAgency, c_int )
     int_service_id = cproperty( lgs.tbGetServiceId, c_int )
     num_boardings = cproperty( lgs.tbGetNumBoardings, c_int )
+    overage = cproperty( lgs.tbGetOverage, c_int )
     
     def __init__(self, service_id, calendar, timezone, agency):
         service_id = service_id if type(service_id)==int else calendar.get_service_id_int(service_id)

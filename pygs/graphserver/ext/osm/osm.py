@@ -1,6 +1,7 @@
 import xml.sax
 import copy
 from math import *
+from vincenty import vincenty
 
 INFINITY = float('inf')
 
@@ -111,7 +112,7 @@ class Way:
         return "SRID=%d;LINESTRING(%s)"%(srid, ",".join( ["%f %f"%(x,y) for x,y in self.get_projected_points()] ) )
 
 
-    def length(self, reprojection_func=lambda x,y:(x,y)):
+    def length(self):
         """nodedir is a dictionary of nodeid->node objects"""
         ret = 0
 
@@ -119,10 +120,7 @@ class Way:
             thisnode = self.osm.nodes[ self.nd_ids[i] ]
             nextnode = self.osm.nodes[ self.nd_ids[i+1] ]
 
-            fromx, fromy = reprojection_func(thisnode.lon,thisnode.lat)
-            tox, toy = reprojection_func(nextnode.lon,nextnode.lat)
-
-            ret += dist(fromx,fromy,tox,toy)
+            ret += vincenty(thisnode.lat, thisnode.lon, nextnode.lat, nextnode.lon)
 
         return ret
 

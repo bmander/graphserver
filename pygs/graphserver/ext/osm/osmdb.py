@@ -175,7 +175,7 @@ class OSMDB:
         
         try:
             ret = next(c)
-        except StopIteration as e:
+        except StopIteration:
             c.close()
             raise Exception( "Database does not have node with id '%s'"%id )
             
@@ -410,13 +410,25 @@ def osm_to_osmdb(osm_filename, osmdb_filename):
     fp.close()
 
 if __name__=='__main__':
+    from sys import argv
 
     #osmdb = OSMDB( "portland.sqlite" )
     #osmdb.node( "osmsplit10739" )
 
     #test_wayrecord()
-    osm_to_osmdb("bartarea.osm", "bartarea.sqlite")
+    #osm_to_osmdb("bartarea.osm", "bartarea.sqlite")
+
     
+    usage = "python osmdb.py osm_filename osmdb_filename"
+    if len(argv) < 3:
+        print usage
+        exit()
+
+    osm_filename = argv[1]
+    osmdb_filename = argv[2]
+    
+    osm_to_osmdb(osm_filename, osmdb_filename)
+
     #print( osmdb.nearest_node( 45.517471999999998, -122.667694 ) )
 
     #y = 45.5235

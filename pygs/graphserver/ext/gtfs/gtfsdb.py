@@ -115,8 +115,12 @@ SELECT stop_times.* FROM stop_times, trips
         return "<TripBundle n_trips: %d n_stops: %d>"%(len(self.trip_ids), len(self.pattern_signature[0]))
 
 class GTFSDatabase:
-    TRIPS_DEF = ("trips", (("trip_id",    None, None),
+    TRIPS_DEF = ("trips", (("route_id",   None, None),
+                           ("trip_id",    None, None),
                            ("service_id", None, None) ) )
+    ROUTES_DEF = ("routes", (("route_id", None, None),
+                             ("route_short_name", None, None),
+                             ("route_long_name", None, None)) )
     STOP_TIMES_DEF = ("stop_times", (("trip_id", None, None), 
                                      ("arrival_time", "INTEGER", parse_gtfs_time),
                                      ("departure_time", "INTEGER", parse_gtfs_time),
@@ -149,7 +153,7 @@ class GTFSDatabase:
                                        ("end_time", "INTEGER", parse_gtfs_time),
                                        ("headway_secs", "INTEGER", None)) )
     
-    GTFS_DEF = (TRIPS_DEF, STOP_TIMES_DEF, STOPS_DEF, CALENDAR_DEF, CAL_DATES_DEF, AGENCY_DEF, FREQUENCIES_DEF)
+    GTFS_DEF = (TRIPS_DEF, STOP_TIMES_DEF, STOPS_DEF, CALENDAR_DEF, CAL_DATES_DEF, AGENCY_DEF, FREQUENCIES_DEF, ROUTES_DEF)
     
     def __init__(self, sqlite_filename, overwrite=False):
         if overwrite:
@@ -175,15 +179,17 @@ class GTFSDatabase:
                 load_gtfs_table_to_sqlite(trips_file, tablename, c, table_def)
             except KeyError:
                 if reporter: reporter.write( "NOTICE: GTFS feed has no file %s.txt, cannot load\n"%tablename )
+    
+        self._create_indices(c)
+        self.conn.commit()
+        c.close()
+
+    def _create_indices(self, c):
         
-        #create indices
         c.execute( "CREATE INDEX stop_times_trip_id ON stop_times (trip_id)" )
         c.execute( "CREATE INDEX trips_trip_id ON trips (trip_id)" )
         c.execute( "CREATE INDEX stops_stop_lat ON stops (stop_lat)" )
         c.execute( "CREATE INDEX stops_stop_lon ON stops (stop_lon)" )
-
-        self.conn.commit()
-        c.close()
 
     def stops(self):
         c = self.conn.cursor()
@@ -282,8 +288,12 @@ class GTFSDatabase:
             yield record
         c.close()
         
-    def agency_timezone_name(self, agency_id_or_name):
-        agency_timezone_name = list(self.execute( "SELECT agency_timezone FROM agency WHERE agency_id=? OR agency_name=?", (agency_id_or_name,agency_id_or_name) ))
+    def agency_timezone_name(self, agency_id_or_name=None):
+
+        if agency_id_or_name is None:
+            agency_timezone_name = list(self.execute( "SELECT agency_timezone FROM agency LIMIT 1" ))
+        else:
+            agency_timezone_name = list(self.execute( "SELECT agency_timezone FROM agency WHERE agency_id=? OR agency_name=?", (agency_id_or_name,agency_id_or_name) ))
         
         return agency_timezone_name[0][0]
         
@@ -336,8 +346,8 @@ class GTFSDatabase:
         return [x[0] for x in self.execute( query )]
                 
 
-from sys import argv
-if __name__=='__main__':
+def main():
+    from sys import argv
     
     if len(argv) < 2:
         print "usage: python gtfsdb.py gtfsdb_filename [query]"
@@ -371,3 +381,5 @@ if __name__=='__main__':
     #    sys.stdout.flush()
 
     pass
+
+if __name__=='__main__': main()

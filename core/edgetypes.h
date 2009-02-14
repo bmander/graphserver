@@ -31,6 +31,7 @@ typedef struct State {
    int           num_transfers;
    edgepayload_t prev_edge_type;
    char*         prev_edge_name;
+   char*         trip_id;
    int           n_agencies;
    ServicePeriod** service_periods;
 } State;
@@ -61,6 +62,9 @@ stateGetPrevEdgeType( State* this );
 
 char*
 stateGetPrevEdgeName( State* this );
+
+char*
+stateGetTripId( State* this );
 
 int
 stateGetNumAgencies( State* this );
@@ -273,6 +277,8 @@ typedef struct TripBoard {
     Timezone* timezone;
     int agency;
     ServiceId service_id;
+    
+    int overage; //number of seconds schedules past midnight of the last departure. If it's at 12:00:00, the overage is 0.
 } TripBoard;
 
 TripBoard*
@@ -310,6 +316,9 @@ tbSearchBoardingsList(TripBoard* this, int time);
 
 int
 tbGetNextBoardingIndex(TripBoard* this, int time);
+
+int
+tbGetOverage(TripBoard* this);
 
 inline State*
 tbWalk( EdgePayload* superthis, State* params, int transferPenalty );

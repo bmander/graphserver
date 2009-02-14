@@ -56,7 +56,7 @@ scAddPeriod( ServiceCalendar* this, ServicePeriod* period ) {
         ServicePeriod* prev = NULL;
         ServicePeriod* curs = this->head;
         
-        while(curs && period->begin_time > curs->end_time ) {
+        while(curs && period->begin_time >= curs->end_time ) {
             prev = curs;
             curs = curs->next_period;
         }
@@ -83,7 +83,7 @@ ServicePeriod*
 scPeriodOfOrAfter( ServiceCalendar* this, long time ) {
   ServicePeriod* period = this->head;
 
-  while( period && period->end_time < time ) {
+  while( period && period->end_time <= time ) {
     period = period->next_period;
   }
   
@@ -308,6 +308,17 @@ tzUtcOffset( Timezone* this, long time) {
     return tzpUtcOffset( now );
 }
 
+int
+tzTimeSinceMidnight( Timezone* this, long time ) {
+    TimezonePeriod* now = tzPeriodOf( this, time );
+    
+    if( !now ) {
+        return -1;
+    }
+    
+    return (time+now->utc_offset)%SECS_IN_DAY;
+}
+
 TimezonePeriod*
 tzHead( Timezone* this ) {
     return this->head;
@@ -346,6 +357,11 @@ tzpDestroy( TimezonePeriod* this ) {
 int
 tzpUtcOffset( TimezonePeriod* this ) {
     return this->utc_offset;
+}
+
+int
+tzpTimeSinceMidnight( TimezonePeriod* this, long time ) {
+    return (time+this->utc_offset)%SECS_IN_DAY;
 }
 
 long

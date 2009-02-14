@@ -11,6 +11,7 @@ stateNew(int n_agencies, long time) {
   ret->dist_walked = 0;
   ret->num_transfers = 0;
   ret->prev_edge_name = NULL;
+  ret->trip_id = NULL;
   ret->prev_edge_type = PL_NONE;
   ret->n_agencies = n_agencies;
   ret->service_periods = (ServicePeriod**)malloc(n_agencies*sizeof(ServicePeriod*)); //hash of strings->calendardays
@@ -58,6 +59,9 @@ stateGetPrevEdgeType( State* this ) { return this->prev_edge_type; }
 
 char*
 stateGetPrevEdgeName( State* this ) { return this->prev_edge_name; }
+
+char*
+stateGetTripId( State* this ) { return this->trip_id; }
 
 int
 stateGetNumAgencies( State* this ) { return this->n_agencies; }
@@ -359,6 +363,8 @@ tbNew( ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int 
     
   ret->walk = &tbWalk;
     
+  ret->overage = 0;
+    
   return ret;
 }
 
@@ -404,7 +410,8 @@ tbGetNumBoardings(TripBoard* this) {
 
 void
 tbAddBoarding(TripBoard* this, char* trip_id, int depart) {
-    
+    if (depart > SECS_IN_DAY+this->overage)
+        this->overage = depart-SECS_IN_DAY;
     
     // init the trip_id, depart list
     if(this->n==0) {
@@ -510,6 +517,29 @@ tbGetNextBoardingIndex(TripBoard* this, int time) {
     return index;
 }
 
+int
+tbGetOverage(TripBoard* this) {
+    return this->overage;
+}
+
+/*
+given TripBoard with service ID of friday, list of boardings going until 3 AM, and schedule, gets time corresponding to saturday at 2 AM.
+
+The on-board service calendar would resolve 2AM to saturday to the saturday service ID, which does not match the friday service ID; the conclusion
+is that the current is not in the service day served by this vehicle, and so a NULL is returned.
+
+In fact times do run until 3 AM saturday, so you could catch any train on this TripBoard's boarding schedule between 2 AM and 3 AM.
+
+I think the trick is for the TripBoard to realize that it should cut the State some slack, because it's going over from 2 to 3.
+
+So the TripBoard knows the last departure is three hours after the end of the day. The TripHop can add 24 hours to the time-since-midnight of the 
+State and check yesterday's schedule. The TripHop will find the next departure that way.
+
+This appears to b e _always_ a safe thing to do. If the service day of the State does not match the TripId and the time-since-midnight of the State is
+smaller than the overage of the TripBoard, roll back the day by the number of days of the overage (probably always one) and increment the state time by the same
+number of days, and check again.
+*/
+
 inline State*
 tbWalk( EdgePayload* superthis, State* params, int transferPenalty ) {
     TripBoard* this = (TripBoard*)superthis;
@@ -520,17 +550,37 @@ tbWalk( EdgePayload* superthis, State* params, int transferPenalty ) {
         service_period = scPeriodOfOrAfter( this->calendar, params->time );
         params->service_periods[this->agency] = service_period;
     
-    // if the schedule never runs
-    // or if the schedule does not run on this day
-    // this link goes nowhere
-    if( !service_period ||
-        !spPeriodHasServiceId( service_period, this->service_id) ) {
-      return NULL;
+        //If still can't find service_period, params->time is beyond service calendar, so bail
+        if( !service_period )
+            return NULL;
+    
+    long time_since_midnight = tzTimeSinceMidnight( this->timezone, params->time );
+        
+    if( !spPeriodHasServiceId( service_period, this->service_id ) ) {
+        
+        /* If the boarding schedule extends past midnight - for example, you can board a train on the Friday schedule until
+         * 2 AM Saturday morning - and the travel_state.time_since_midnight is less than this overage - for example, 1 AM, but
+         * the travel_state.service_period will show Saturday and not Friday, then:
+         * 
+         * Check if the boarding schedule service_id is running in the travel_state's yesterday period. If it is, simply advance the 
+         * time_since_midnight by a day and continue. If not, this boarding schedule was not running today or yesterday, so as far
+         * as we're concerned, it's not running at all
+         *
+         * TODO - figure out an algorithm for the general cse
+         */
+        
+        if( this->overage >= time_since_midnight &&
+            service_period->prev_period &&
+            spPeriodHasServiceId( service_period->prev_period, this->service_id )) {
+                
+            time_since_midnight += SECS_IN_DAY;
+        } else {
+            return NULL;
+        }
+        
     }
     
-    long adjusted_time = spNormalizeTime( service_period, tzUtcOffset(this->timezone, params->time), params->time );
-    
-    int next_boarding_index = tbGetNextBoardingIndex( this, adjusted_time );
+    int next_boarding_index = tbGetNextBoardingIndex( this, time_since_midnight );
     
     if( next_boarding_index == -1 ) {
         return NULL;
@@ -542,10 +592,12 @@ tbWalk( EdgePayload* superthis, State* params, int transferPenalty ) {
     ret->num_transfers += 1;
     
     int next_boarding_time = this->departs[next_boarding_index];
-    int wait = (next_boarding_time - adjusted_time);
+    int wait = (next_boarding_time - time_since_midnight);
     
     ret->time   += wait;
     ret->weight += wait + 1; //transfer penalty
+    
+    ret->trip_id = this->trip_ids[next_boarding_index];
     
     // Make sure the service period caches are updated if we've traveled over a service period boundary
     int i;
@@ -639,17 +691,37 @@ hbWalk( EdgePayload* superthis, State* params, int transferPenalty ) {
         service_period = scPeriodOfOrAfter( this->calendar, params->time );
         params->service_periods[this->agency] = service_period;
     
-    // if the schedule never runs
-    // or if the schedule does not run on this day
-    // this link goes nowhere
-    if( !service_period ||
-        !spPeriodHasServiceId( service_period, this->service_id) ) {
-      return NULL;
+        //If still can't find service_period, params->time is beyond service calendar, so bail
+        if( !service_period )
+            return NULL;
+    
+    long time_since_midnight = tzTimeSinceMidnight( this->timezone, params->time );
+        
+    if( !spPeriodHasServiceId( service_period, this->service_id ) ) {
+        
+        /* If the boarding schedule extends past midnight - for example, you can board a train on the Friday schedule until
+         * 2 AM Saturday morning - and the travel_state.time_since_midnight is less than this overage - for example, 1 AM, but
+         * the travel_state.service_period will show Saturday and not Friday, then:
+         * 
+         * Check if the boarding schedule service_id is running in the travel_state's yesterday period. If it is, simply advance the 
+         * time_since_midnight by a day and continue. If not, this boarding schedule was not running today or yesterday, so as far
+         * as we're concerned, it's not running at all
+         *
+         * TODO - figure out an algorithm for the general cse
+         */
+        
+        if( this->end_time-SECS_IN_DAY >= time_since_midnight &&
+            service_period->prev_period &&
+            spPeriodHasServiceId( service_period->prev_period, this->service_id )) {
+                
+            time_since_midnight += SECS_IN_DAY;
+        } else {
+            return NULL;
+        }
+        
     }
     
-    long adjusted_time = spNormalizeTime( service_period, tzUtcOffset(this->timezone, params->time), params->time );
-    
-    if (adjusted_time > this->end_time ) {
+    if (time_since_midnight > this->end_time ) {
         return NULL;
     }
     
@@ -660,8 +732,8 @@ hbWalk( EdgePayload* superthis, State* params, int transferPenalty ) {
     
     int wait = this->headway_secs; //you could argue the correct wait is headway_secs/2
     
-    if (adjusted_time < this->start_time )
-        wait += (this->start_time - adjusted_time);
+    if (time_since_midnight < this->start_time )
+        wait += (this->start_time - time_since_midnight);
     
     ret->time   += wait;
     ret->weight += wait + 1; //transfer penalty
@@ -742,7 +814,10 @@ alDestroy(Alight* this) {
 
 inline State*
 alWalk(EdgePayload* this, State* params, int transferPenalty) {
-    return stateDup( params );
+    State* ret = stateDup( params );
+    ret->trip_id = NULL;
+    
+    return ret;
 }
 
 //TRIPHOP FUNCTIONS

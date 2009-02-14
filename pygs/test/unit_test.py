@@ -2,6 +2,7 @@ import sys, os
 sys.path = [os.path.dirname(os.path.abspath(__file__)) + "/.."] + sys.path
 from graphserver.core import *
 from graphserver.engine import Engine
+from graphserver import util
 import time
 import unittest
 import pickle
@@ -787,6 +788,7 @@ class TestState(unittest.TestCase):
         assert s.prev_edge_type == 5
         assert s.num_agencies == 1
         assert s.service_period(0) == None
+        assert s.trip_id == None
         
     def test_basic_multiple_calendars(self):
         s = State(2,0)
@@ -1585,8 +1587,43 @@ class TestServiceCalendar(unittest.TestCase):
         assert c.period_of_or_after(-1).begin_time==0
         assert c.period_of_or_after(0).begin_time==0
         assert c.period_of_or_after(500).begin_time==0
-        assert c.period_of_or_after(1000).begin_time==0
+        assert c.period_of_or_after(1000)==None
         assert c.period_of_or_after(1001) == None
+        
+    def test_overlap_a_little(self):
+        
+        c = ServiceCalendar()
+        c.add_period( 0, 1000, ["A"] )
+        c.add_period( 1000, 2000, ["B"] )
+        
+        assert c.head.begin_time == 0
+        assert c.head.end_time == 1000
+        
+        assert c.period_of_or_before(-1) == None
+        assert c.period_of_or_before(0).begin_time==0
+        assert c.period_of_or_before(999).begin_time==0
+        assert c.period_of_or_before(1000).begin_time==1000
+        
+        c = ServiceCalendar()
+        c.add_period(1000,2000,["B"])
+        c.add_period(0,1000,["A"])
+        
+        assert c.head.begin_time == 0
+        assert c.head.end_time == 1000
+        
+        assert c.period_of_or_before(-1) == None
+        assert c.period_of_or_before(0).begin_time==0
+        assert c.period_of_or_before(999).begin_time==0
+        assert c.period_of_or_before(1000).begin_time==1000
+        
+        #--==--
+    
+        sc = ServiceCalendar()
+        sc.add_period(0, 1*3600*24, ['A'])
+        sc.add_period(1*3600*24,2*3600*24, ['B'])
+        
+        assert sc.period_of_or_after( 1*3600*24 ).begin_time == 86400
+        
         
     def test_multiple(self):
         c = ServiceCalendar()
@@ -1611,9 +1648,9 @@ class TestServiceCalendar(unittest.TestCase):
         
         assert c.period_of_or_after(-1).begin_time == 0
         assert c.period_of_or_after(0).begin_time == 0
-        assert c.period_of_or_after(1000).begin_time == 0
+        assert c.period_of_or_after(1000).begin_time == 1001
         assert c.period_of_or_after(1001).begin_time == 1001
-        assert c.period_of_or_after(2000).begin_time == 1001
+        assert c.period_of_or_after(2000) == None
         assert c.period_of_or_after(2001) == None
         
     def test_add_three(self):
@@ -1875,6 +1912,31 @@ class TestTimezone(unittest.TestCase):
         assert laz.period_of( 50 ).__getstate__() == (0, 99, -8*3600)
         assert laz.period_of( 250 ).__getstate__() == (200, 299, -7*3600)
         assert laz.period_of( 550 ).__getstate__() == (500, 599, -8*3600)
+        
+    def test_time_since_midnight(self):
+        tz = Timezone()
+        p1 = TimezonePeriod(0, 24*3600*256, -8*3600)
+        tz.add_period( p1 )
+        
+        assert tz.time_since_midnight( 8*3600 ) == 0
+        
+        tz = Timezone()
+        summer_tzp = TimezonePeriod( util.TimeHelpers.localtime_to_unix( 2008,6,1,0,0,0, "America/Los_Angeles" ),
+                                     util.TimeHelpers.localtime_to_unix( 2008,9,1,0,0,0, "America/Los_Angeles" ),
+                                     -7*3600 )
+        tz.add_period( summer_tzp )
+                                     
+        assert tz.time_since_midnight( util.TimeHelpers.localtime_to_unix( 2008, 7,1,0,0,0,"America/Los_Angeles" ) ) == 0
+        assert tz.time_since_midnight( util.TimeHelpers.localtime_to_unix( 2008, 7, 2, 2, 0, 0, "America/Los_Angeles" ) ) == 3600*2
+        
+        tz = Timezone()
+        winter_tzp = TimezonePeriod( util.TimeHelpers.localtime_to_unix( 2008,1,1,0,0,0, "America/Los_Angeles" ),
+                                     util.TimeHelpers.localtime_to_unix( 2008,4,1,0,0,0, "America/Los_Angeles" ),
+                                     -8*3600 )
+        tz.add_period( winter_tzp )
+                                     
+        assert tz.time_since_midnight( util.TimeHelpers.localtime_to_unix( 2008, 2,1,0,0,0,"America/Los_Angeles" ) ) == 0
+        assert tz.time_since_midnight( util.TimeHelpers.localtime_to_unix( 2008, 2, 2, 2, 0, 0, "America/Los_Angeles" ) ) == 3600*2
     
 class TestTimezonePeriod(unittest.TestCase):
     def test_basic(self):
@@ -1896,6 +1958,27 @@ class TestTimezonePeriod(unittest.TestCase):
         assert laz.end_time == 7
         assert laz.utc_offset == -11
         
+    def test_time_since_midnight(self):
+        tzp = TimezonePeriod(0, 24*3600*256, -8*3600)
+        
+        assert tzp.time_since_midnight( 8*3600 ) == 0
+        
+        summer_tzp = TimezonePeriod( util.TimeHelpers.localtime_to_unix( 2008,6,1,0,0,0, "America/Los_Angeles" ),
+                                     util.TimeHelpers.localtime_to_unix( 2008,9,1,0,0,0, "America/Los_Angeles" ),
+                                     -7*3600 )
+                                     
+        assert summer_tzp.time_since_midnight( util.TimeHelpers.localtime_to_unix( 2008, 7,1,0,0,0,"America/Los_Angeles" ) ) == 0
+        assert summer_tzp.time_since_midnight( util.TimeHelpers.localtime_to_unix( 2008, 7, 2, 2, 0, 0, "America/Los_Angeles" ) ) == 3600*2
+        
+        winter_tzp = TimezonePeriod( util.TimeHelpers.localtime_to_unix( 2008,1,1,0,0,0, "America/Los_Angeles" ),
+                                     util.TimeHelpers.localtime_to_unix( 2008,4,1,0,0,0, "America/Los_Angeles" ),
+                                     -8*3600 )
+                                     
+        assert winter_tzp.time_since_midnight( util.TimeHelpers.localtime_to_unix( 2008, 2,1,0,0,0,"America/Los_Angeles" ) ) == 0
+        assert winter_tzp.time_since_midnight( util.TimeHelpers.localtime_to_unix( 2008, 2, 2, 2, 0, 0, "America/Los_Angeles" ) ) == 3600*2
+        
+        
+        
 class TestTripBoard(unittest.TestCase):
     def test_basic(self):
         sc = ServiceCalendar()
@@ -1909,6 +1992,7 @@ class TestTripBoard(unittest.TestCase):
         assert tb.timezone.soul == tz.soul
         assert tb.calendar.soul == sc.soul
         assert tb.agency == 0
+        assert tb.overage == 0
         
         assert tb.num_boardings == 0
         
@@ -1920,6 +2004,92 @@ class TestTripBoard(unittest.TestCase):
             raise Exception( "should have failed by now" )
         except:
             pass
+            
+    def test_overage(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        tb = TripBoard("WKDY", sc, tz, 0)
+        
+        assert tb.overage == 0
+        
+        tb.add_boarding( "midnight", 24*3600 )
+        
+        assert tb.overage == 0
+        
+        tb.add_boarding( "nightowl1", 24*3600+1 )
+        
+        assert tb.overage == 1
+        
+        tb.add_boarding( "nightowl2", 24*3600+3600 )
+        
+        assert tb.overage == 3600
+        
+    def test_tripboard_over_midnight(self):
+        
+        sc = ServiceCalendar()
+        sc.add_period(0, 1*3600*24, ['WKDY'])
+        sc.add_period(1*3600*24,2*3600*24, ['SAT'])
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0,2*3600*24,0) )
+        
+        tb = TripBoard( "WKDY", sc, tz, 0 )
+        tb.add_boarding( "eleven", 23*3600 )
+        tb.add_boarding( "midnight", 24*3600 )
+        tb.add_boarding( "one", 25*3600 )
+        tb.add_boarding( "two", 26*3600 )
+        
+        s0 = State(1, 0)
+        s1 = tb.walk(s0)
+        assert s1.weight == 82801
+        assert s1.service_period(0).service_ids == [0]
+        
+        s0 = State(1, 23*3600 )
+        s1 = tb.walk(s0)
+        assert s1.weight == 1
+        assert s1.service_period(0).service_ids == [0]
+        
+        s0 = State(1, 24*3600 )
+        s1 = tb.walk(s0)
+        assert s1.weight == 1
+        assert s1.service_period(0).service_ids == [1]
+        
+        s0 = State(1, 25*3600 )
+        s1 = tb.walk(s0)
+        assert s1.time == 25*3600
+        assert s1.weight == 1
+        assert s1.service_period(0).service_ids == [1]
+        
+        s0 = State(1, 26*3600 )
+        s1 = tb.walk(s0)
+        assert s1.time == 26*3600
+        assert s1.weight == 1
+        assert s1.service_period(0).service_ids == [1]
+        
+        s0 = State(1, 26*3600+1)
+        s1 = tb.walk(s0)
+        assert s1 == None
+        
+    def test_tripboard_over_midnight_without_hope(self):
+        
+        sc = ServiceCalendar()
+        sc.add_period(0, 1*3600*24, ['WKDY'])
+        sc.add_period(1*3600*24,2*3600*24, ['SAT'])
+        sc.add_period(2*3600*24,3*3600*24, ['SUN'])
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0,3*3600*24,0) )
+        
+        tb = TripBoard( "WKDY", sc, tz, 0 )
+        tb.add_boarding( "eleven", 23*3600 )
+        tb.add_boarding( "midnight", 24*3600 )
+        tb.add_boarding( "one", 25*3600 )
+        tb.add_boarding( "two", 26*3600 )
+        
+        s0 = State(1,3*3600*24) #midnight sunday
+        s1 = tb.walk(s0)
+        assert s1 == None
             
     def test_add_single_trip(self):
         sc = ServiceCalendar()
@@ -2317,6 +2487,47 @@ class TestHeadwayBoard(unittest.TestCase):
         s0 = State(1, 1001)
         s1 = hb.walk(s0)
         assert s1 == None
+        
+    def test_tripboard_over_midnight(self):
+        
+        sc = ServiceCalendar()
+        sc.add_period(0, 1*3600*24, ['WKDY'])
+        sc.add_period(1*3600*24,2*3600*24, ['SAT'])
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0,2*3600*24,0) )
+        
+        hb = HeadwayBoard( "WKDY", sc, tz, 0, "owl", 23*3600, 26*3600, 100 )
+        
+        s0 = State(1, 0)
+        s1 = hb.walk(s0)
+        assert s1.weight == 82901
+        assert s1.service_period(0).service_ids == [0]
+        
+        s0 = State(1, 23*3600 )
+        s1 = hb.walk(s0)
+        assert s1.weight == 101
+        assert s1.service_period(0).service_ids == [0]
+        
+        s0 = State(1, 24*3600 )
+        s1 = hb.walk(s0)
+        assert s1.weight == 101
+        assert s1.service_period(0).service_ids == [1]
+        
+        s0 = State(1, 25*3600 )
+        s1 = hb.walk(s0)
+        assert s1.time == 25*3600+100
+        assert s1.weight == 101
+        assert s1.service_period(0).service_ids == [1]
+        
+        s0 = State(1, 26*3600 )
+        s1 = hb.walk(s0)
+        assert s1.time == 26*3600+100
+        assert s1.weight == 101
+        assert s1.service_period(0).service_ids == [1]
+        
+        s0 = State(1, 26*3600+1)
+        s1 = hb.walk(s0)
+        assert s1 == None
 
 if __name__ == '__main__':
     tl = unittest.TestLoader()
@@ -2339,7 +2550,7 @@ if __name__ == '__main__':
                  #TestEngine,
                  #TestTimezone,
                  #TestTimezonePeriod,
-                 TestTripBoard,
+                 #TestTripBoard,
                  #TestCrossing,
                  #TestAlight,
                  TestHeadwayBoard,
