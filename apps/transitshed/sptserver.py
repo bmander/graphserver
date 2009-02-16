@@ -129,5 +129,9 @@ class ContourServer(Servable):
 if __name__=='__main__':    
     from SETTINGS import GRAPHDB_FILENAME, GTFSDB_FILENAME, CENTER
     
+    print "Graphdb is %s"%GRAPHDB_FILENAME
+    print "GTFSdb is %s"%GTFSDB_FILENAME
+    print "Centerpoint is %s"%(CENTER,)
+    
     cserver = ContourServer( GRAPHDB_FILENAME, GTFSDB_FILENAME, CENTER )
     cserver.run_test_server()
