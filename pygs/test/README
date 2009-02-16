@@ -1,0 +1,13 @@
+To run the tests, first unzip the archives:
+
+$ unzip map.osm.zip
+
+To run all tests, use 'nosetests'
+
+$ nosetests -v
+
+To run a specific test file:
+
+$ nosetests -v unit_test.py
+
+There is a chance the performance test may fail on your machine. Don't worry about it.
