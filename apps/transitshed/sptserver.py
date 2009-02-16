@@ -126,11 +126,8 @@ class ContourServer(Servable):
     def bounds(self):
         return json.dumps(self.osmdb.bounds())
 
-if __name__=='__main__':
-    # a fine example node for bart: "ASBY" @ 1233172800
-    # for trimet: "10071" @ 1233172800
+if __name__=='__main__':    
+    from SETTINGS import GRAPHDB_FILENAME, GTFSDB_FILENAME, CENTER
     
-    #cserver = ContourServer("streetstrimet.db", "../package_graph/bigportland.sqlite", (45.521439,-122.673512))
-    cserver = ContourServer("../package_graph/bartheadway.db", "../package_graph/bartarea.sqlite", (37.787466,-122.398853))
-    #cserver = ContourServer("streetsbart.db", "../package_graph/bartarea.sqlite", (37.787466,-122.398853))
+    cserver = ContourServer( GRAPHDB_FILENAME, GTFSDB_FILENAME, CENTER )
     cserver.run_test_server()
