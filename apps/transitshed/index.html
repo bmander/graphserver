@@ -157,30 +157,6 @@
         
       }
     }
-    
-    function initialize() {
-      if (GBrowserIsCompatible()) {
-        map = new GMap2(document.getElementById("map"));
-        map.setCenter(new GLatLng(45.515780000, -122.58460), 15);
-        map.addControl(new GSmallMapControl());
-        map.addControl(new GMapTypeControl());       
-        map.setMapType(G_SATELLITE_MAP);
-
-        // Add an encoded polyline.
-        var encodedPoints = "mkqtGxgxkV_XR_XgBkJuF_BkJgBmFmFyBua@cC{DCoH_@wJvCaANeJxBkK}CG?g@o@cIeJE[{GeFkDqBQkAmDaJ}@cXXoCh@uMl@yD~EyIxIkE`Ey@tNaE`Ae@d@OtHuL|FwHuBaJ`JkC~DsBdMc@xCo@hGkBsAuDuDgOoJjIs@I{J|AqBjDwBpBeEpJoJ{@uF_AiPaDgAMkGeAeHgDgD}Jc@wECc@YaXKoAcB_PYqDIuEAuJIuEa@eGe@qFe@kHa@aXuByH}DgN~@aXa@yCyCsP[w@G[_@eAbA_@zBcQLyBI}BeAcTIo@o@oBmGqJeBmG_BmIoByFqA{ENwCbCkJL}Gq@yFyFuNcEjPi@bERzE|BhNHzAoFbXDzHQtCBlIj@~G|GjGtF@hDrFkDrFsF_@_KlEaG`KCxCRxMElDe@bCaChHsC~E_CrC`CrCpC`EbCfINbCa@`XQ~A_BfJeBrF_@fBEjCCdOEnCwAlF{@hGwDhH}B`EaEvCiCzHCjC_AlElE`LjAfBHhAS`AaAfJmByHkKoBiF{@{@^sAw@gKqFcI}HaXhKkFLsIH_FJsC`AcHrCxG|C|ChA|FTxGJfGXbHxEdGbH@tFcApF?zHgA|KqAbKTbJi@dCh@tHrCjH`CnIfAfDuFtItIaDrFxJn@rFoCrCsCzAuEYEuE{DiKiKq@mFlEiClFNfJfJ~HlCSClCfBpF|B`EdAnJp@vH~@nFrA|KrClSPbJx@lL?x@m@fV|OtFtFdBhKn@tKx@tGdArG\vFp@rJeFvHuJhAg@h@C|Aq@~KeE`HgExE}AfEwExAgHByEx@aHjByBzBkAtEMpPzDfTwBpCc@vFcAvIf@nEcEbFgDYeFrGcIAyCdBaIpAmCjCyAzDl@pExDnE`EbEE`Fb@hJKtEt@lGBhIgAfEDtIfCjBH|I~LzGcOj@yGmDyCyCj@";
-        var encodedLevels = "B?@@?@@??@??@?@????@?A@?@?@????@?@@?@??A?@@?@??@????@@A????????????@?@@????@??@?@??@???@??@?A?@??@@??@@@@@@@@@??@???@??@?@???@??@?@???@?@??@?A@??@??@@??@?A?@??@?@??????@???@@@?@?@@?@@?@@@@??@????@???A?@????@@@?????@@??@?@?@??@@?@@@?@?@@?@????@?@?@@@@@B";
- 
-        var encodedPolyline = new GPolyline.fromEncoded({
-		  color: "#ee1111",
-		  weight: 4,
-		  points: encodedPoints,
-		  levels: encodedLevels,
-		  zoomFactor: 32,
-		  numLevels: 4
-	    });
-	    map.addOverlay(encodedPolyline);
-      }
-    }
 
 
     //]]>
