@@ -15,36 +15,67 @@
     var target;
     var marker = null;
 
-    function gpolylineize_contour( contour, color, width ) {
-      coords = [];
-      for(i=0; i<contour.length; i++) {
-        coords.push( new GLatLng( contour[i][1], contour[i][0] ) );
-      }
-      coords.push( new GLatLng( contour[0][1], contour[0][0] ) )
+    function package_contour_ring( contour, color, width ) {
+      var latlngs = contour[0];
+      var levels = contour[1];
       
-      return new GPolyline( coords, color, width );
+      return {color: color, 
+              weight: width, 
+              points: latlngs, 
+              numLevels: 4, 
+              levels: levels, 
+              zoomFactor: 32};
     }
     
-    function gpolygonize_contours( data, color, width ) {
-        ret = []
+    function gpolylineize_contour( data, color, width ) {
+        //Return list of polylines, one for each ring in the isochron contour
     
-        for(cc=0; cc<data.length; cc++) {
-           ret.push( gpolylineize_contour( data[cc], color, width ) )
+        var ret = []
+    
+        for(var i=0; i<data.length; i++) {
+           ret.push( new GPolyline.fromEncoded( package_contour_ring( data[i], color, width ) ) );
         }
         
         return ret
     }
     
-    function gpolygonize_contour_stack( data, color, width ) {
-        ret = [];
+    function gpolygonize_contour( data, color, width ) {
+        var packaged_rings = [];
         
-        //alert( data.length );
-        
-        for(var cc=0; cc<data.length-1; cc++) {
-            ret = ret.concat( gpolygonize_contours( data[cc], "#ff1111", 2 ) );
+        for(var i=0; i<data.length; i++) {
+           packaged_rings.push( package_contour_ring( data[i], color, width ) );
         }
         
-        ret = ret.concat( gpolygonize_contours( data[data.length-1], "#ee0000", 4 ) );
+        return new GPolygon.fromEncoded({polylines: packaged_rings,
+                                         fill:true,
+                                         color:"#ee0000",
+                                         opacity:0.2,
+                                         outline:true});
+    }
+    
+    function gpolylineize_contour_stack( data, color, width ) {
+        //Generate a set of polylines, one set for each isochron contour interval
+    
+        ret = [];
+        
+        for(var cc=0; cc<data.length-1; cc++) {
+            ret = ret.concat( gpolylineize_contour( data[cc], "#ff1111", 2 ) );
+        }
+        
+        ret = ret.concat( gpolylineize_contour( data[data.length-1], "#ee0000", 4 ) );
+        
+        return ret;
+    }
+    
+    function gpolygonize_contour_stack( data, color, width ) {
+        //Generate a set of polygons, one for each isochron contour interval
+    
+        ret = [];
+        
+        for(var i=0; i<data.length; i++) {
+            var polygon = gpolygonize_contour( data[i], "#ff1111", 2 );
+            ret.push( polygon );
+        }
         
         return ret;
     }
@@ -81,17 +112,22 @@
           marker = new GMarker(latlng, {clickable: false});
           map.addOverlay(marker);
           
-          $.getJSON("/contour?lat="+latlng.lat()+"&lon="+latlng.lng()+"&year="+year+"&month="+month+"&day="+day+"&hour="+hour+"&minute="+minute+"&second="+second+"&cutoff="+range,
+          $.getJSON("/contour?lat="+latlng.lat()+"&lon="+latlng.lng()+"&year="+year+"&month="+month+"&day="+day+"&hour="+hour+"&minute="+minute+"&second="+second+"&cutoff="+range+"&encoded=\"True\"",
           function(data){
             if( data == "NO NEARBY INTERSECTION" ) {
               alert( "No nearby intersection!" );
             } else {
               next_contours = gpolygonize_contour_stack( data, "#ff0000", 3 )
+              
+              //console.log( next_contours );
+              
               map.clearOverlays();
               map.addOverlay( boundary );
               marker = new GMarker(latlng, {clickable: false})
               map.addOverlay(marker);
               display_contours( next_contours )
+              
+
             }
             busy = false;
           });
@@ -121,6 +157,31 @@
         
       }
     }
+    
+    function initialize() {
+      if (GBrowserIsCompatible()) {
+        map = new GMap2(document.getElementById("map"));
+        map.setCenter(new GLatLng(45.515780000, -122.58460), 15);
+        map.addControl(new GSmallMapControl());
+        map.addControl(new GMapTypeControl());       
+        map.setMapType(G_SATELLITE_MAP);
+
+        // Add an encoded polyline.
+        var encodedPoints = "mkqtGxgxkV_XR_XgBkJuF_BkJgBmFmFyBua@cC{DCoH_@wJvCaANeJxBkK}CG?g@o@cIeJE[{GeFkDqBQkAmDaJ}@cXXoCh@uMl@yD~EyIxIkE`Ey@tNaE`Ae@d@OtHuL|FwHuBaJ`JkC~DsBdMc@xCo@hGkBsAuDuDgOoJjIs@I{J|AqBjDwBpBeEpJoJ{@uF_AiPaDgAMkGeAeHgDgD}Jc@wECc@YaXKoAcB_PYqDIuEAuJIuEa@eGe@qFe@kHa@aXuByH}DgN~@aXa@yCyCsP[w@G[_@eAbA_@zBcQLyBI}BeAcTIo@o@oBmGqJeBmG_BmIoByFqA{ENwCbCkJL}Gq@yFyFuNcEjPi@bERzE|BhNHzAoFbXDzHQtCBlIj@~G|GjGtF@hDrFkDrFsF_@_KlEaG`KCxCRxMElDe@bCaChHsC~E_CrC`CrCpC`EbCfINbCa@`XQ~A_BfJeBrF_@fBEjCCdOEnCwAlF{@hGwDhH}B`EaEvCiCzHCjC_AlElE`LjAfBHhAS`AaAfJmByHkKoBiF{@{@^sAw@gKqFcI}HaXhKkFLsIH_FJsC`AcHrCxG|C|ChA|FTxGJfGXbHxEdGbH@tFcApF?zHgA|KqAbKTbJi@dCh@tHrCjH`CnIfAfDuFtItIaDrFxJn@rFoCrCsCzAuEYEuE{DiKiKq@mFlEiClFNfJfJ~HlCSClCfBpF|B`EdAnJp@vH~@nFrA|KrClSPbJx@lL?x@m@fV|OtFtFdBhKn@tKx@tGdArG\vFp@rJeFvHuJhAg@h@C|Aq@~KeE`HgExE}AfEwExAgHByEx@aHjByBzBkAtEMpPzDfTwBpCc@vFcAvIf@nEcEbFgDYeFrGcIAyCdBaIpAmCjCyAzDl@pExDnE`EbEE`Fb@hJKtEt@lGBhIgAfEDtIfCjBH|I~LzGcOj@yGmDyCyCj@";
+        var encodedLevels = "B?@@?@@??@??@?@????@?A@?@?@????@?@@?@??A?@@?@??@????@@A????????????@?@@????@??@?@??@???@??@?A?@??@@??@@@@@@@@@??@???@??@?@???@??@?@???@?@??@?A@??@??@@??@?A?@??@?@??????@???@@@?@?@@?@@?@@@@??@????@???A?@????@@@?????@@??@?@?@??@@?@@@?@?@@?@????@?@?@@@@@B";
+ 
+        var encodedPolyline = new GPolyline.fromEncoded({
+		  color: "#ee1111",
+		  weight: 4,
+		  points: encodedPoints,
+		  levels: encodedLevels,
+		  zoomFactor: 32,
+		  numLevels: 4
+	    });
+	    map.addOverlay(encodedPolyline);
+      }
+    }
+
 
     //]]>
     </script>

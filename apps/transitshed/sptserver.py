@@ -8,6 +8,7 @@ from graphserver.util import TimeHelpers
 from contour import travel_time_contour
 import json
 from rtree import Rtree
+from glineenc import encode_pairs
 
 class ContourServer(Servable):
     def __init__(self, graphdb_filename, osmdb_filename, home_point):
@@ -60,14 +61,14 @@ class ContourServer(Servable):
         print "%s sec"%(time.time()-t0)
         
         print "done. here you go..."
-        return json.dumps( contours )
+        return contours
     
     def label_contour(self, vertex_label, starttime=None, cutoff=1800):
         starttime = starttime or time.time()
         
-        return self._contour( vertex_label, starttime, cutoff )
+        return json.dumps( self._contour( vertex_label, starttime, cutoff ) )
         
-    def contour(self, lat, lon, year, month, day, hour, minute, second, cutoff, step=None):
+    def contour(self, lat, lon, year, month, day, hour, minute, second, cutoff, step=60*15, encoded=False):
         if step is not None and step < 600:
             raise Exception( "Step cannot be less than 600 seconds" )
         
@@ -92,7 +93,19 @@ class ContourServer(Servable):
         
         print( "found - %s"%vlabel )
         
-        return self._contour( "osm"+vlabel, starttime, cutoff, step )
+        contours = self._contour( "osm"+vlabel, starttime, cutoff, step )
+        
+        if encoded:
+            encoded_contours = []
+            for contour in contours:
+                encoded_contour = []
+                for ring in contour:
+                    encoded_contour.append( encode_pairs( [(lat,lon) for lon,lat in ring] ) )
+                encoded_contours.append( encoded_contour )
+                
+            contours = encoded_contours
+        
+        return json.dumps( contours )
         
     def nodes(self):
         return "\n".join( ["%s-%s"%(k,v) for k,v in self.node_positions.items()] )
@@ -127,11 +140,11 @@ class ContourServer(Servable):
         return json.dumps(self.osmdb.bounds())
 
 if __name__=='__main__':    
-    from SETTINGS import GRAPHDB_FILENAME, GTFSDB_FILENAME, CENTER
+    from SETTINGS import GRAPHDB_FILENAME, OSMDB_FILENAME, CENTER
     
     print "Graphdb is %s"%GRAPHDB_FILENAME
-    print "GTFSdb is %s"%GTFSDB_FILENAME
+    print "OSMdb is %s"%OSMDB_FILENAME
     print "Centerpoint is %s"%(CENTER,)
     
-    cserver = ContourServer( GRAPHDB_FILENAME, GTFSDB_FILENAME, CENTER )
+    cserver = ContourServer( GRAPHDB_FILENAME, OSMDB_FILENAME, CENTER )
     cserver.run_test_server()
