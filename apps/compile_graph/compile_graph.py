@@ -241,23 +241,44 @@ import sys
 from sys import argv
 if __name__=='__main__':
 
-    #process_transit_graph()
-    #process_street_graph()
-    #process_transit_street_graph("bartheadway.db", "headwaybart.gtfsdb", "BART", "bartarea.sqlite", 26910 )
-    #process_transit_street_graph("portlandtrimet.db", "../transitshed/data/trimet.gtfsdb", "../transitshed/data/bigportland.osmdb", None )
-
-    usage = """usage:
-    python package_graphs.py transit <gtfsdb_filename> <agency_id> <graphdb_filename> [link]"""
+    usage = """usage: python compile_graph.py <link|conflate>"""
     
-    if len(argv)<2:
+    if len(argv) < 2:
         print usage
-        quit()
-
-    if argv[1] == "transit":
-        gtfsdb_filename = argv[2]
-        graphdb_filename = argv[4]
+        quit
         
-        process_transit_graph( gtfsdb_filename, graphdb_filename, link=("link" in argv) )
+    mode = argv[1]
     
+    if mode == "link":
+        
+        usage = "usage: python compile_graph.py link <gtfsdb_filename> <graphdb_filename>"
+        
+        if len(argv)<5:
+            print usage
+            quit()
+
+        gtfsdb_filename = argv[3]
+        graphdb_filename = argv[4]
+            
+        process_transit_graph( gtfsdb_filename, graphdb_filename, link=True )
+            
+    elif mode == "conflate"
+        
+        usage = "usage: python compile_graph.py conflate <graphdb_filename> <gtfsdb_filename> <osmdb_filename>"
+
+        if len(argv)<6:
+            print usage
+            quit()
+
+        graphdb_filename = argv[3]
+        gtfsdb_filename = argv[4]
+        osmdb_filename = argv[5]
+     
+        print "graphdb_filename: %s"%graphdb_filename
+        print "gtfsdb_filename: %s"%gtfsdb_filename
+        print "osmdb_filename: %s"%osmdb_filename
+
+        process_transit_street_graph( graphdb_filename, gtfsdb_filename, osmdb_filename ) 
+
     
 
