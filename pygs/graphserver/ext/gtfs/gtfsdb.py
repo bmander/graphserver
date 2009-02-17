@@ -310,6 +310,9 @@ class GTFSDatabase:
         end_date = end_date or "00000000" #sorted earlier than any date
         
         first_exception_date, last_exception_date = list( self.execute("select min(date), max(date) from calendar_dates WHERE exception_type=1") )[0]
+          
+        first_exception_date = first_exception_date or "99999999"
+        last_exceptoin_date = last_exception_date or "00000000"
         
         start_date = min(start_date, first_exception_date)
         end_date = max(end_date, last_exception_date )
