@@ -245,7 +245,7 @@ if __name__=='__main__':
     
     if len(argv) < 2:
         print usage
-        quit
+        quit()
         
     mode = argv[1]
     
@@ -262,17 +262,17 @@ if __name__=='__main__':
             
         process_transit_graph( gtfsdb_filename, graphdb_filename, link=True )
             
-    elif mode == "conflate"
+    elif mode == "conflate":
         
         usage = "usage: python compile_graph.py conflate <graphdb_filename> <gtfsdb_filename> <osmdb_filename>"
 
-        if len(argv)<6:
+        if len(argv)<5:
             print usage
             quit()
 
-        graphdb_filename = argv[3]
-        gtfsdb_filename = argv[4]
-        osmdb_filename = argv[5]
+        graphdb_filename = argv[2]
+        gtfsdb_filename = argv[3]
+        osmdb_filename = argv[4]
      
         print "graphdb_filename: %s"%graphdb_filename
         print "gtfsdb_filename: %s"%gtfsdb_filename
