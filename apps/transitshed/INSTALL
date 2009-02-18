@@ -43,7 +43,7 @@ Public and pirate feeds here: http://www.gtfs-data-exchange.com/
  
 5) Cut down the gigantic OSM file to the city using the OpenStreetMap "osmosis" utility:
 
- $ osmosis osmosis --read-xml oregon.osm.highway --bounding-box left=<left> bottom=<bottom> right=<right> top=<top> --write-xml trimet.osm
+ $ osmosis --read-xml oregon.osm.highway --bounding-box left=<left> bottom=<bottom> right=<right> top=<top> --write-xml trimet.osm
  
 6) Index the cut-down osm file into an osmdb file:
 
