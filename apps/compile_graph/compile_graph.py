@@ -132,6 +132,12 @@ def load_gtfsdb_to_boardalight_graph(g, gtfsdb, agency_id, service_ids, reporter
         for (trip_id1, arrival_time1, departure_time1, stop_id1, stop_sequence1), (trip_id2, arrival_time2, departure_time2, stop_id2, stop_sequence2) in cons(stoptimes):
             g.add_edge( "%s-hw-%s"%(stop_id1, trip_id1), "%s-hw-%s"%(stop_id2, trip_id2), Crossing(arrival_time2-departure_time1) )
             
+    # load connections
+    if reporter: reporter.write( "Loading connections to graph...\n" )
+    for stop_id1, stop_id2, conn_type, distance in gtfsdb.execute( "SELECT * FROM connections" ):
+        g.add_edge( stop_id1, stop_id2, Street( conn_type, distance ) )
+        g.add_edge( stop_id2, stop_id1, Street( conn_type, distance ) )
+            
 def link_nearby_stops(g, gtfsdb, range=0.05, obstruction=1.4):
     """Adds Street links of length obstruction*dist(A,B) directly between all station pairs closer than <range>"""
 
