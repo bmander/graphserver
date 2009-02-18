@@ -157,7 +157,15 @@ class GTFSDatabase:
                                        ("type", None, None),
                                        ("distance", "INTEGER", None))
     
-    GTFS_DEF = (TRIPS_DEF, STOP_TIMES_DEF, STOPS_DEF, CALENDAR_DEF, CAL_DATES_DEF, AGENCY_DEF, FREQUENCIES_DEF, ROUTES_DEF, CONNECTIONS_DEF)
+    GTFS_DEF = (TRIPS_DEF, 
+                STOP_TIMES_DEF, 
+                STOPS_DEF, 
+                CALENDAR_DEF, 
+                CAL_DATES_DEF, 
+                AGENCY_DEF, 
+                FREQUENCIES_DEF, 
+                ROUTES_DEF, 
+                CONNECTIONS_DEF)
     
     def __init__(self, sqlite_filename, overwrite=False):
         if overwrite:
