@@ -1,7 +1,7 @@
 from servable import Servable
 from graphserver.graphdb import GraphDatabase
 import cgi
-from graphserver.core import State
+from graphserver.core import State, WalkOptions
 import time
 import sys
 
@@ -54,7 +54,9 @@ class GraphCrawler(Servable):
         
         currtime = currtime or int(time.time())
         
-        spt = self.graph.shortest_path_tree( label, None, State(1,currtime) )
+        wo = WalkOptions()
+        spt = self.graph.shortest_path_tree( label, None, State(1,currtime), wo )
+        wo.destroy()
         
         return string_spt_vertex( spt.get_vertex( label ) )
     
