@@ -1,6 +1,5 @@
 #define ABSOLUTE_MAX_WALK 100000 //meters. 100 km. prevents overflow
 #define MAX_LONG 2147483647
-#define WAITING_RELUCTANCE 1
 #define SECS_IN_DAY 86400
 
 inline State*
@@ -34,7 +33,7 @@ waitWalk(EdgePayload* superthis, State* params, WalkOptions* options) {
     }
     
     ret->time += wait_time;
-    ret->weight += wait_time*WAITING_RELUCTANCE;
+    ret->weight += wait_time;
     
     if(params->prev_edge_type==PL_TRIPHOP) {
         ret->weight += options->transfer_penalty;
@@ -58,7 +57,7 @@ waitWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
     }
     
     ret->time -= wait_time;
-    ret->weight += wait_time*WAITING_RELUCTANCE;
+    ret->weight += wait_time;
     
     if(params->prev_edge_type==PL_TRIPHOP) {
         ret->weight += options->transfer_penalty;
