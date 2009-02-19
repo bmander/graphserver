@@ -19,9 +19,9 @@
 
 inline State*
 #ifndef ROUTE_REVERSE
-linkWalk(EdgePayload* this, State* params, int env) {
+linkWalk(EdgePayload* this, State* params, WalkOptions* options) {
 #else
-linkWalkBack(EdgePayload* this, State* params, int env) {
+linkWalkBack(EdgePayload* this, State* params, WalkOptions* options) {
 #endif
     
   State* ret = stateDup( params );
@@ -34,7 +34,7 @@ linkWalkBack(EdgePayload* this, State* params, int env) {
 
 #ifndef ROUTE_REVERSE
 inline State*
-waitWalk(EdgePayload* superthis, State* params, int transfer_penalty) {
+waitWalk(EdgePayload* superthis, State* params, WalkOptions* options) {
     Wait* this = (Wait*)superthis;
     
     State* ret = stateDup( params );
@@ -51,14 +51,14 @@ waitWalk(EdgePayload* superthis, State* params, int transfer_penalty) {
     ret->weight += wait_time*WAITING_RELUCTANCE;
     
     if(params->prev_edge_type==PL_TRIPHOP) {
-        ret->weight += transfer_penalty;
+        ret->weight += options->transfer_penalty;
     }
     
     return ret;
 }
 #else
 inline State*
-waitWalkBack(EdgePayload* superthis, State* params, int transfer_penalty) {
+waitWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
     Wait* this = (Wait*)superthis;
     
     State* ret = stateDup( params );
@@ -75,7 +75,7 @@ waitWalkBack(EdgePayload* superthis, State* params, int transfer_penalty) {
     ret->weight += wait_time*WAITING_RELUCTANCE;
     
     if(params->prev_edge_type==PL_TRIPHOP) {
-        ret->weight += transfer_penalty;
+        ret->weight += options->transfer_penalty;
     }
     
     return ret;
@@ -84,9 +84,9 @@ waitWalkBack(EdgePayload* superthis, State* params, int transfer_penalty) {
 
 inline State*
 #ifndef ROUTE_REVERSE
-streetWalk(EdgePayload* superthis, State* params, int env) {
+streetWalk(EdgePayload* superthis, State* params, WalkOptions* options) {
 #else
-streetWalkBack(EdgePayload* superthis, State* params, int env) {
+streetWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
 #endif
   Street* this = (Street*)superthis;
   State* ret = stateDup( params );
@@ -130,9 +130,9 @@ streetWalkBack(EdgePayload* superthis, State* params, int env) {
 // by a higher-level langauge for the purpose of debugging.
 inline State*
 #ifndef ROUTE_REVERSE
-thsWalk(EdgePayload* superthis, State* params, int transferPenalty) {
+thsWalk(EdgePayload* superthis, State* params, WalkOptions* options) {
 #else
-thsWalkBack(EdgePayload* superthis, State* params, int transferPenalty) {
+thsWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
 #endif
     TripHopSchedule* this = (TripHopSchedule*)superthis;
     
@@ -148,9 +148,9 @@ thsWalkBack(EdgePayload* superthis, State* params, int transferPenalty) {
     
     State* ret;
 #ifndef ROUTE_REVERSE
-    ret = th->walk((EdgePayload*)th, params, transferPenalty);
+    ret = th->walk((EdgePayload*)th, params, options);
 #else
-    ret = th->walkBack((EdgePayload*)th, params, transferPenalty);
+    ret = th->walkBack((EdgePayload*)th, params, options);
 #endif
     
     return ret;
@@ -158,9 +158,9 @@ thsWalkBack(EdgePayload* superthis, State* params, int transferPenalty) {
 
 inline State*
 #ifndef ROUTE_REVERSE
-triphopWalk(EdgePayload* superthis, State* params, int transferPenalty) {
+triphopWalk(EdgePayload* superthis, State* params, WalkOptions* options) {
 #else
-triphopWalkBack(EdgePayload* superthis, State* params, int transferPenalty) {
+triphopWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
 #endif
     
     TripHop* this = (TripHop*)superthis;
@@ -208,7 +208,7 @@ triphopWalkBack(EdgePayload* superthis, State* params, int transferPenalty) {
       //    params->num_transfers > 0) {
       //  transfer_penalty = (MIN_TRANSFER_TIME-wait)*TRANSFER_PENALTY;
       //}
-      transfer_penalty = transferPenalty; //penalty of making a transfer; flat rate. "all things being equal, transferring costs a little"
+      transfer_penalty = options->transfer_penalty; //penalty of making a transfer; flat rate. "all things being equal, transferring costs a little"
 
       ret->num_transfers += 1;
     }
@@ -250,9 +250,9 @@ triphopWalkBack(EdgePayload* superthis, State* params, int transferPenalty) {
 
 inline State*
 #ifndef ROUTE_REVERSE
-headwayWalk(EdgePayload* superthis, State* params, int transferPenalty) {
+headwayWalk(EdgePayload* superthis, State* params, WalkOptions* options) {
 #else
-headwayWalkBack(EdgePayload* superthis, State* params, int transferPenalty) {
+headwayWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
 #endif
     Headway* this = (Headway*)superthis;
     
@@ -292,7 +292,7 @@ headwayWalkBack(EdgePayload* superthis, State* params, int transferPenalty) {
       //    params->num_transfers > 0) {
       //  transfer_penalty = (MIN_TRANSFER_TIME-wait)*TRANSFER_PENALTY;
       //}
-      transfer_penalty = transferPenalty; //penalty of making a transfer; flat rate. "all things being equal, transferring costs a little"
+      transfer_penalty = options->transfer_penalty; //penalty of making a transfer; flat rate. "all things being equal, transferring costs a little"
 
       ret->num_transfers += 1;
     }

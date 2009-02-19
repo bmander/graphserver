@@ -165,7 +165,7 @@ epGetType( EdgePayload* this ) {
 }
 
 State*
-epWalk( EdgePayload* this, State* params, int transferPenalty ) {
+epWalk( EdgePayload* this, State* params, WalkOptions* options ) {
   if( !this )
     return NULL;
 
@@ -173,12 +173,12 @@ epWalk( EdgePayload* this, State* params, int transferPenalty ) {
     return cpWalk( (CustomPayload*)this, params );
   }
   
-  return this->walk( this, params, transferPenalty );
+  return this->walk( this, params, options );
 
 }
 
 State*
-epWalkBack( EdgePayload* this, State* params, int transferPenalty ) {
+epWalkBack( EdgePayload* this, State* params, WalkOptions* options ) {
   if(!this)
     return NULL;
 
@@ -186,7 +186,7 @@ epWalkBack( EdgePayload* this, State* params, int transferPenalty ) {
     return cpWalkBack( (CustomPayload*)this, params );
   }
   
-  return this->walkBack( this, params, transferPenalty );
+  return this->walkBack( this, params, options );
 }
 
 EdgePayload*
@@ -565,7 +565,7 @@ number of days, and check again.
 */
 
 inline State*
-tbWalk( EdgePayload* superthis, State* params, int transferPenalty ) {
+tbWalk( EdgePayload* superthis, State* params, WalkOptions* options ) {
     TripBoard* this = (TripBoard*)superthis;
     
     //Get service period cached in travel state. If it doesn't exist, figure it out and cache it
@@ -706,7 +706,7 @@ hbGetHeadwaySecs( HeadwayBoard* this ) {
 }
 
 inline State*
-hbWalk( EdgePayload* superthis, State* params, int transferPenalty ) {
+hbWalk( EdgePayload* superthis, State* params, WalkOptions* options ) {
     HeadwayBoard* this = (HeadwayBoard*)superthis;
     
     //Get service period cached in travel state. If it doesn't exist, figure it out and cache it
@@ -798,7 +798,7 @@ crGetCrossingTime(Crossing* this) {
 }
 
 inline State*
-crWalk( EdgePayload* superthis, State* params, int transferPenalty ) {
+crWalk( EdgePayload* superthis, State* params, WalkOptions* options ) {
     Crossing* this = (Crossing*)superthis;
     
     // Dupe state and advance time by the waiting time
@@ -837,7 +837,7 @@ alDestroy(Alight* this) {
 }
 
 inline State*
-alWalk(EdgePayload* this, State* params, int transferPenalty) {
+alWalk(EdgePayload* this, State* params, WalkOptions* options) {
     State* ret = stateDup( params );
     ret->trip_id = NULL;
     
