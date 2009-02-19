@@ -28,6 +28,7 @@ typedef struct WalkOptions {
     int transfer_penalty;
     float walking_speed;
     float walking_reluctance;
+    int max_walk;
 } WalkOptions;
 
 WalkOptions*
@@ -53,6 +54,12 @@ woGetWalkingReluctance( WalkOptions* this );
 
 void
 woSetWalkingReluctance( WalkOptions* this, float walking_reluctance );
+
+int
+woGetMaxWalk( WalkOptions* this );
+
+void
+woSetMaxWalk( WalkOptions* this, int max_walk );
 
 //---------------DECLARATIONS FOR STATE CLASS---------------------
 

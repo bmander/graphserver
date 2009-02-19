@@ -10,6 +10,7 @@ woNew() {
     ret->transfer_penalty = 0;
     ret->walking_speed = 0.85; //meters per second
     ret->walking_reluctance = 1;
+    ret->max_walk = 10000; //meters
     return ret;
 }
 
@@ -46,6 +47,16 @@ woGetWalkingReluctance( WalkOptions* this ) {
 void
 woSetWalkingReluctance( WalkOptions* this, float walking_reluctance ) {
     this->walking_reluctance = walking_reluctance;
+}
+
+int
+woGetMaxWalk( WalkOptions* this ) {
+    return this->max_walk;
+}
+
+void
+woSetMaxWalk( WalkOptions* this, int max_walk ) {
+    this->max_walk = max_walk;
 }
 
 //STATE FUNCTIONS
