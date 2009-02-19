@@ -26,6 +26,7 @@ typedef enum {
 
 typedef struct WalkOptions {
     int transfer_penalty;
+    float walking_speed;
 } WalkOptions;
 
 WalkOptions*
@@ -39,6 +40,12 @@ woGetTransferPenalty( WalkOptions* this );
 
 void
 woSetTransferPenalty( WalkOptions* this, int transfer_penalty );
+
+float
+woGetWalkingSpeed( WalkOptions* this );
+
+void
+woSetWalkingSpeed( WalkOptions* this, float walking_speed );
 
 //---------------DECLARATIONS FOR STATE CLASS---------------------
 
