@@ -9,6 +9,7 @@ woNew() {
     WalkOptions* ret = (WalkOptions*)malloc( sizeof(WalkOptions) );
     ret->transfer_penalty = 0;
     ret->walking_speed = 0.85; //meters per second
+    ret->walking_reluctance = 1;
     return ret;
 }
 
@@ -35,6 +36,16 @@ woGetWalkingSpeed( WalkOptions* this ) {
 void
 woSetWalkingSpeed( WalkOptions* this, float walking_speed ) {
     this->walking_speed = walking_speed;
+}
+
+float
+woGetWalkingReluctance( WalkOptions* this ) {
+    return this->walking_reluctance;
+}
+
+void
+woSetWalkingReluctance( WalkOptions* this, float walking_reluctance ) {
+    this->walking_reluctance = walking_reluctance;
 }
 
 //STATE FUNCTIONS

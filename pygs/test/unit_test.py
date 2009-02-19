@@ -2537,12 +2537,16 @@ class TestWalkOptions(unittest.TestCase):
         
         assert wo.transfer_penalty == 0
         assert wo.walking_speed*100//1 == 85.0
+        assert wo.walking_reluctance == 1.0
         
         wo.transfer_penalty = 50
         assert wo.transfer_penalty == 50
         
         wo.walking_speed = 1.05
         assert round(wo.walking_speed*100) == 105.0
+        
+        wo.walking_reluctance = 2.0
+        assert wo.walking_reluctance == 2.0
         
         wo.destroy()
         assert wo.soul == None

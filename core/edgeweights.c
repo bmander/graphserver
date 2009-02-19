@@ -3,8 +3,6 @@
 //#define MAX_WALK 1200         //in meters; he better part of a mile
 #define MAX_WALK 10000
 #define WALKING_OVERAGE 0.1   //hassle/second/meter
-//#define WALKING_RELUCTANCE 2  //hassle/second
-#define WALKING_RELUCTANCE 1
 #define ABSOLUTE_MAX_WALK 100000 //meters. 100 km. prevents overflow
 #define MAX_LONG 2147483647
 #define WAITING_RELUCTANCE 1
@@ -12,8 +10,7 @@
 /*#define MIN_TRANSFER_TIME 0 //five minutes
 #define TRANSFER_PENALTY 0    //rough measure of how bad a close transfer is
 #define MAX_WALK 100000         //in meters; very large
-#define WALKING_OVERAGE 0     //hassle/second/meter
-#define WALKING_RELUCTANCE 1  //hassle/second*/
+#define WALKING_OVERAGE 0     //hassle/second/meter*/
 
 inline State*
 #ifndef ROUTE_REVERSE
@@ -91,7 +88,7 @@ streetWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
 
   double end_dist = params->dist_walked + this->length;
   long delta_t = (long)(this->length/options->walking_speed);
-  long delta_w = delta_t*WALKING_RELUCTANCE;
+  long delta_w = delta_t*options->walking_reluctance;
   if(end_dist > MAX_WALK)
     delta_w += (end_dist - MAX_WALK)*WALKING_OVERAGE*delta_t;
 
