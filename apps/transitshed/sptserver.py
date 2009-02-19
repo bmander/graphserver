@@ -2,7 +2,7 @@ from servable import Servable
 from graphserver.graphdb import GraphDatabase
 import time
 from graphserver import core
-from graphserver.core import State
+from graphserver.core import State, WalkOptions
 from graphserver.ext.osm.osmdb import OSMDB
 from graphserver.util import TimeHelpers
 from contour import travel_time_contour
@@ -37,7 +37,9 @@ class ContourServer(Servable):
         #starttime = 1233172800
         
         t0 = time.time()
-        spt = self.graph.shortest_path_tree( vertex_label, None, State(1,starttime) , maxtime=starttime+int(cutoff*1.25) )
+        wo = WalkOptions()
+        spt = self.graph.shortest_path_tree( vertex_label, None, State(1,starttime), wo, maxtime=starttime+int(cutoff*1.25) )
+        wo.destroy()
         t1 = time.time()
         print t1-t0
         
