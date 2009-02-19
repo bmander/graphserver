@@ -69,11 +69,13 @@ class GraphCrawler(Servable):
         return str(self.graphdb)
         
 if __name__ == '__main__':
-    # a fine example node for bart: "ASBY" @ 1233172800
-    # for trimet: "10071" @ 1233172800
-    
-    GDB_FILENAME = "../package_graph/bartheadway.db"
-    GDB_FILENAME = "/home/brandon/urbanmapping/transit_routing/router/data/chicago.gdb"
-    
-    gc = GraphCrawler(GDB_FILENAME)
+    from sys import argv
+    usage = "python graphcrawler.py graphdb_filename"
+    if len(argv)<2:
+      print usage
+      exit()
+
+    graphdb_filename = argv[1]
+
+    gc = GraphCrawler(graphdb_filename)
     gc.run_test_server(8081)
