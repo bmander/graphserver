@@ -1,12 +1,7 @@
-#define MIN_TRANSFER_TIME 1//300 //five minutes
-#define WALKING_OVERAGE 0.1   //hassle/second/meter
 #define ABSOLUTE_MAX_WALK 100000 //meters. 100 km. prevents overflow
 #define MAX_LONG 2147483647
 #define WAITING_RELUCTANCE 1
 #define SECS_IN_DAY 86400
-/*#define MIN_TRANSFER_TIME 0 //five minutes
-#define TRANSFER_PENALTY 0    //rough measure of how bad a close transfer is
-#define WALKING_OVERAGE 0     //hassle/second/meter*/
 
 inline State*
 #ifndef ROUTE_REVERSE
@@ -86,7 +81,7 @@ streetWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
   long delta_t = (long)(this->length/options->walking_speed);
   long delta_w = delta_t*options->walking_reluctance;
   if(end_dist > options->max_walk)
-    delta_w += (end_dist - options->max_walk)*WALKING_OVERAGE*delta_t;
+    delta_w += (end_dist - options->max_walk)*options->walking_overage*delta_t;
 
   int i;
 #ifndef ROUTE_REVERSE
@@ -194,11 +189,6 @@ triphopWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
         !params->prev_edge_name               ||    //it was a bus, but the trip_id was NULL
         strcmp( params->prev_edge_name, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
 
-      //add a weight penalty to the transfer under some conditions
-      //if( wait < MIN_TRANSFER_TIME && 
-      //    params->num_transfers > 0) {
-      //  transfer_penalty = (MIN_TRANSFER_TIME-wait)*TRANSFER_PENALTY;
-      //}
       transfer_penalty = options->transfer_penalty; //penalty of making a transfer; flat rate. "all things being equal, transferring costs a little"
 
       ret->num_transfers += 1;

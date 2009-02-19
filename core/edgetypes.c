@@ -11,6 +11,7 @@ woNew() {
     ret->walking_speed = 0.85; //meters per second
     ret->walking_reluctance = 1;
     ret->max_walk = 10000; //meters
+    ret->walking_overage = 0.1;
     return ret;
 }
 
@@ -57,6 +58,16 @@ woGetMaxWalk( WalkOptions* this ) {
 void
 woSetMaxWalk( WalkOptions* this, int max_walk ) {
     this->max_walk = max_walk;
+}
+
+float
+woGetWalkingOverage( WalkOptions* this ) {
+    return this->walking_overage;
+}
+
+void
+woSetWalkingOverage( WalkOptions* this, float walking_overage ) {
+    this->walking_overage = walking_overage;
 }
 
 //STATE FUNCTIONS
