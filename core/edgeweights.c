@@ -1,4 +1,3 @@
-#define WALKING_SPEED 0.85    //meters per second
 #define MIN_TRANSFER_TIME 1//300 //five minutes
 #define TRANSFER_PENALTY 3    //rough measure of how bad a close transfer is
 //#define MAX_WALK 1200         //in meters; he better part of a mile
@@ -10,8 +9,7 @@
 #define MAX_LONG 2147483647
 #define WAITING_RELUCTANCE 1
 #define SECS_IN_DAY 86400
-/*#define WALKING_SPEED 0.85    //meters per second
-#define MIN_TRANSFER_TIME 0 //five minutes
+/*#define MIN_TRANSFER_TIME 0 //five minutes
 #define TRANSFER_PENALTY 0    //rough measure of how bad a close transfer is
 #define MAX_WALK 100000         //in meters; very large
 #define WALKING_OVERAGE 0     //hassle/second/meter
@@ -92,7 +90,7 @@ streetWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
   State* ret = stateDup( params );
 
   double end_dist = params->dist_walked + this->length;
-  long delta_t = (long)(this->length/WALKING_SPEED);
+  long delta_t = (long)(this->length/options->walking_speed);
   long delta_w = delta_t*WALKING_RELUCTANCE;
   if(end_dist > MAX_WALK)
     delta_w += (end_dist - MAX_WALK)*WALKING_OVERAGE*delta_t;
