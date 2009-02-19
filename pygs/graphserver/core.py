@@ -123,19 +123,33 @@ class Graph(CShadow):
                 edges.append(e)
         return edges    
     
-    def shortest_path_tree(self, fromv, tov, initstate, walk_options, maxtime=2000000000):
+    def shortest_path_tree(self, fromv, tov, initstate, walk_options=None, maxtime=2000000000):
         #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
         self.check_destroyed()
         if not tov:
             tov = "*bogus^*^vertex*"
-        return self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(maxtime) )
         
-    def shortest_path_tree_retro(self, fromv, tov, finalstate, walk_options, mintime=0):
+        if walk_options is None:
+            walk_options = WalkOptions()
+            ret = self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(maxtime) )
+            walk_options.destroy()
+            return ret
+        else:
+            return self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(maxtime) )
+        
+    def shortest_path_tree_retro(self, fromv, tov, finalstate, walk_options=None, mintime=0):
         #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
         self.check_destroyed()
         if not fromv:
-            fromv = "*bogus^*^vertex*"        
-        return self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime) )
+            fromv = "*bogus^*^vertex*"
+            
+        if walk_optoins is None:
+            walk_options = WalkOptions()
+            ret = self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime) )
+            walk_options.destroy()
+            return ret
+        else:
+            return self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime) )
 
     def to_dot(self):
         self.check_destroyed()
