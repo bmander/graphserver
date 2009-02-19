@@ -22,6 +22,24 @@ typedef enum {
   PL_HEADWAYBOARD,
 } edgepayload_t;
 
+//---------------DECLARATIONS FOR WALKOPTIONS CLASS---------------
+
+typedef struct WalkOptions {
+    int transfer_penalty;
+} WalkOptions;
+
+WalkOptions*
+woNew();
+
+void
+woDestroy( WalkOptions* this );
+
+int
+woGetTransferPenalty( WalkOptions* this );
+
+void
+woSetTransferPenalty( WalkOptions* this, int transfer_penalty );
+
 //---------------DECLARATIONS FOR STATE CLASS---------------------
 
 typedef struct State {

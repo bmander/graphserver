@@ -2,6 +2,30 @@
 #include "math.h"
 #include <stdio.h>
 
+//---------------DEFINITIONS FOR WALKOPTIONS CLASS---------------
+
+WalkOptions*
+woNew() {
+    WalkOptions* ret = (WalkOptions*)malloc( sizeof(WalkOptions) );
+    ret->transfer_penalty = 1;
+    return ret;
+}
+
+void
+woDestroy( WalkOptions* this ) {
+    free(this);
+}
+
+int
+woGetTransferPenalty( WalkOptions* this ) {
+    return this->transfer_penalty;
+}
+
+void
+woSetTransferPenalty( WalkOptions* this, int transfer_penalty ) {
+    this->transfer_penalty = transfer_penalty;
+}
+
 //STATE FUNCTIONS
 State*
 stateNew(int n_agencies, long time) {
