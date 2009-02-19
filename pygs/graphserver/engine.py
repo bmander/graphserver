@@ -1,5 +1,5 @@
 try:
-    from graphserver.core import Graph, State, TripHop, Headway, Street
+    from graphserver.core import Graph, State, TripHop, Headway, Street, WalkOptions
 except ImportError:
     from core import Graph, State
 from time import time as now
@@ -145,14 +145,18 @@ class Engine(object, Servable):
                 else:
                     collapsed = edge.payload
                 if collapsed:
-                    dest_states.append( (edge, collapsed, collapsed.walk( init_state )) )
+                    wo = WalkOptions()
+                    dest_states.append( (edge, collapsed, collapsed.walk( init_state,wo )) )
+                    wo.destroy()
             else:
                 if hasattr( edge.payload, 'collapse_back' ):
                     collapsed = edge.payload.collapse_back( init_state )
                 else:
                     collapsed = edge.payload
                 if collapsed:
-                    dest_states.append( (edge, collapsed, collapsed.walk_back( init_state )) )
+                    wo = WalkOptions()
+                    dest_states.append( (edge, collapsed, collapsed.walk_back( init_state,wo )) )
+                    wo.destroy()
         
         def sort_states(x,y):
             if x[2] is None:

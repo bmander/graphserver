@@ -35,11 +35,11 @@ class Collapsable:
 
 class Walkable:
     """ Implements the walkable interface. """
-    def walk(self, state, transfer_penalty=0):
-        return State.from_pointer(self._cwalk(self.soul, state.soul, transfer_penalty))
+    def walk(self, state, walk_options):
+        return State.from_pointer(self._cwalk(self.soul, state.soul, walk_options.soul))
         
-    def walk_back(self, state, transfer_penalty=0):
-        return State.from_pointer(self._cwalk_back(self.soul, state.soul, transfer_penalty))
+    def walk_back(self, state, walk_options):
+        return State.from_pointer(self._cwalk_back(self.soul, state.soul, walk_options.soul))
 
 """
 
@@ -123,19 +123,19 @@ class Graph(CShadow):
                 edges.append(e)
         return edges    
     
-    def shortest_path_tree(self, fromv, tov, initstate, transfer_penalty=0, maxtime=2000000000):
+    def shortest_path_tree(self, fromv, tov, initstate, walk_options, maxtime=2000000000):
         #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
         self.check_destroyed()
         if not tov:
             tov = "*bogus^*^vertex*"
-        return self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, transfer_penalty, c_long(maxtime) )
+        return self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(maxtime) )
         
-    def shortest_path_tree_retro(self, fromv, tov, finalstate, transfer_penalty=0, mintime=0):
+    def shortest_path_tree_retro(self, fromv, tov, finalstate, walk_options, mintime=0):
         #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
         self.check_destroyed()
         if not fromv:
             fromv = "*bogus^*^vertex*"        
-        return self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, transfer_penalty, c_long(mintime) )
+        return self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime) )
 
     def to_dot(self):
         self.check_destroyed()
@@ -352,8 +352,8 @@ class Edge(CShadow, Walkable):
     def payload(self):
         return self._cpayload(self.soul)
         
-    def walk(self, state, transfer_penalty=0):
-        return self._cwalk(self.soul, state.soul, transfer_penalty)
+    def walk(self, state, walk_options):
+        return self._cwalk(self.soul, state.soul, walk_options.soul)
 
 
 class ListNode(CShadow):
