@@ -246,7 +246,19 @@ class State(CShadow):
     prev_edge_name = cproperty(lgs.stateGetPrevEdgeName, c_char_p, setter=lgs.stateSetPrevEdgeName)
     num_agencies     = cproperty(lgs.stateGetNumAgencies, c_int)
     trip_id          = cproperty(lgs.stateGetTripId, c_char_p)
+    
+class WalkOptions(CShadow):
+    
+    def __init__(self):
+        self.soul = self._cnew()
         
+    def destroy(self):
+        self.check_destroyed()
+        
+        self._cdel(self.soul)
+        self.soul = None
+        
+    transfer_penalty = cproperty(lgs.woGetTransferPenalty, c_int, setter=lgs.woSetTransferPenalty)
 
 class Vertex(CShadow):
     
@@ -1232,6 +1244,9 @@ Alight._cdel = lgs.alDestroy
 HeadwayBoard._cnew = lgs.hbNew
 HeadwayBoard._cdel = lgs.hbDestroy
 HeadwayBoard._cwalk = lgs.epWalk
+
+WalkOptions._cnew = lgs.woNew
+WalkOptions._cdel = lgs.woDestroy
 
 GenericPyPayload._cnew = lgs.cpNew
 GenericPyPayload._cdel = lgs.cpDestroy
