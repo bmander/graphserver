@@ -1,7 +1,7 @@
 from servable import Servable
 from graphserver.graphdb import GraphDatabase
 import cgi
-from graphserver.core import State
+from graphserver.core import State, WalkOptions
 import time
 import sys
 import graphserver
@@ -21,7 +21,9 @@ class RouteServer(Servable):
 
     def path(self, origin, dest, currtime):
         
-        spt = self.graph.shortest_path_tree( origin, dest, State(1,currtime) )
+        wo = WalkOptions()
+        spt = self.graph.shortest_path_tree( origin, dest, State(1,currtime), wo )
+        wo.destroy()
         
         vertices, edges = spt.path( dest )
         
@@ -37,7 +39,9 @@ class RouteServer(Servable):
 
     def path_raw(self, origin, dest, currtime):
         
-        spt = self.graph.shortest_path_tree( origin, dest, State(1,currtime) )
+        wo = WalkOptions()
+        spt = self.graph.shortest_path_tree( origin, dest, State(1,currtime), wo )
+        wo.destroy()
         
         vertices, edges = spt.path( dest )
         
