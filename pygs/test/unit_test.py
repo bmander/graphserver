@@ -2528,6 +2528,19 @@ class TestHeadwayBoard(unittest.TestCase):
         s0 = State(1, 26*3600+1)
         s1 = hb.walk(s0)
         assert s1 == None
+        
+class TestWalkOptions(unittest.TestCase):
+    def test_basic(self):
+        wo = WalkOptions()
+        
+        assert wo
+        
+        assert wo.transfer_penalty == 1
+        wo.transfer_penalty = 50
+        assert wo.transfer_penalty == 50
+        
+        wo.destroy()
+        assert wo.soul == None
 
 if __name__ == '__main__':
     tl = unittest.TestLoader()
@@ -2553,7 +2566,8 @@ if __name__ == '__main__':
                  #TestTripBoard,
                  #TestCrossing,
                  #TestAlight,
-                 TestHeadwayBoard,
+                 #TestHeadwayBoard,
+                 TestWalkOptions,
                  ]
 
     for testable in testables:
