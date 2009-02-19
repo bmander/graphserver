@@ -7,7 +7,7 @@
 WalkOptions*
 woNew() {
     WalkOptions* ret = (WalkOptions*)malloc( sizeof(WalkOptions) );
-    ret->transfer_penalty = 1;
+    ret->transfer_penalty = 0;
     return ret;
 }
 
