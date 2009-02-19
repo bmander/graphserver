@@ -52,6 +52,10 @@ def load_gtfs_table_to_sqlite(fp, gtfs_basename, cc, header=None):
     for i, line in enumerate(rd):
         #print( i%50, line )
         if i%5000==0: print(i)
+               
+        # carry on quietly if there's a blank line in the csv
+        if line == []:
+            continue
         
         _line = []
         for i, converter in field_operator:
@@ -155,7 +159,7 @@ class GTFSDatabase:
     CONNECTIONS_DEF = ("connections", (("stop_id1", None, None),
                                        ("stop_id2", None, None),
                                        ("type", None, None),
-                                       ("distance", "INTEGER", None))
+                                       ("distance", "INTEGER", None)))
     
     GTFS_DEF = (TRIPS_DEF, 
                 STOP_TIMES_DEF, 
