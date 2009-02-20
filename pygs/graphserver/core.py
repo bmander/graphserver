@@ -159,18 +159,16 @@ class Graph(CShadow):
             ret += "    %s -> %s;\n" % (e.from_v.label, e.to_v.label)
         return ret + "}"
 
-def get_edge_uptree_trunkynesses( edge ):
-    trunkyness = edge.to_v.payload.weight - edge.from_v.payload.weight
-    records = {}
+def set_spt_edge_thickness( edge ):
+    thickness = edge.to_v.payload.weight - edge.from_v.payload.weight
     
     for frontier_edge in edge.to_v.outgoing:
-        frontier_trunkyness, frontier_records = get_edge_uptree_trunkynesses( frontier_edge )
-        trunkyness += frontier_trunkyness
-        records.update( frontier_records )
+        frontier_thickness = set_spt_edge_thickness( frontier_edge )
+        thickness += frontier_thickness
+        
+    edge.thickness = thickness
     
-    records[edge] = trunkyness
-    
-    return trunkyness, records
+    return thickness
 
 class ShortestPathTree(Graph):
     def path(self, destination):
@@ -206,16 +204,11 @@ class ShortestPathTree(Graph):
     
         return (path_vertices, path_edges)
     
-    def get_all_trunkyness(self, root_label):
-        trunkyness_records = {}
-        
+    def set_thickness(self, root_label):
         root = self.get_vertex( root_label )
         
         for edge in root.outgoing:
-            trunkyness, records = get_edge_uptree_trunkynesses( edge )
-            trunkyness_records.update( records )
-        
-        return trunkyness_records
+            set_spt_edge_thickness( edge )
 
     def destroy(self):
         #destroy the vertex State instances, but not the edge EdgePayload instances, as they're owned by the parent graph
