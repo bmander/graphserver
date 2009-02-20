@@ -396,6 +396,8 @@ class Edge(CShadow, Walkable):
         
     def walk(self, state, walk_options):
         return self._cwalk(self.soul, state.soul, walk_options.soul)
+        
+    thickness = cproperty(lgs.eGetThickness, c_long, setter=lgs.eSetThickness)
 
 
 class ListNode(CShadow):

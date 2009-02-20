@@ -2576,13 +2576,21 @@ class TestWalkOptions(unittest.TestCase):
         
         wo.destroy()
         assert wo.soul == None
+        
+class TestEdge(unittest.TestCase):
+    def test_basic(self):
+        v1 = Vertex( "A" )
+        v2 = Vertex( "B" )
+        e1 = Edge( v1, v2, Street( "atob", 10.0 ) )
+        
+        assert e1.thickness == -1
 
 if __name__ == '__main__':
     tl = unittest.TestLoader()
     
     testables = [\
                  #TestGraph,
-                 TestShortestPathTree,
+                 #TestShortestPathTree,
                  #TestGraphPerformance,
                  #TestState,
                  #TestPyPayload,
@@ -2604,6 +2612,7 @@ if __name__ == '__main__':
                  #TestAlight,
                  #TestHeadwayBoard,
                  #TestWalkOptions,
+                 TestEdge
                  ]
 
     for testable in testables:

@@ -333,6 +333,16 @@ vPayload( Vertex* this ) {
 	return this->payload;
 }
 
+long
+eGetThickness(Edge *this) {
+    return this->thickness;
+}
+
+void
+eSetThickness(Edge *this, long thickness) {
+    this->thickness = thickness;
+}
+
 // EDGE FUNCTIONS
 
 Edge*
@@ -342,6 +352,7 @@ eNew(Vertex* from, Vertex* to, EdgePayload* payload) {
     this->to = to;
     this->payload = payload;
     this->geom = NULL;
+    this->thickness = -1;
     return this;
 }
 

@@ -45,6 +45,7 @@ struct Edge {
   Vertex* to;
   Geom* geom;
   EdgePayload* payload;
+  long thickness;
 } ;
 
 struct ListNode {
@@ -169,6 +170,12 @@ eGetTo(Edge *this);
 
 EdgePayload*
 eGetPayload(Edge *this);
+
+long
+eGetThickness(Edge *this);
+
+void
+eSetThickness(Edge *this, long thickness);
 
 //LIST FUNCTIONS
 
