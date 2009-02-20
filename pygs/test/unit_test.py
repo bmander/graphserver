@@ -2396,6 +2396,23 @@ class TestTripBoard(unittest.TestCase):
         ret = tb.walk(s,WalkOptions())
         assert ret == None
         
+    def test_walk_back(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24-1, ['WKDY'] )
+        sc.add_period( 1*3600*25, 2*3600*25-1, ['SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        tb = TripBoard( "WKDY", sc, tz, 0 )
+        tb.add_boarding( "1", 50 )
+        tb.add_boarding( "2", 100 )
+        tb.add_boarding( "3", 200 )
+        
+        s = State(1,100)
+        ret = tb.walk_back( s, WalkOptions() )
+        assert ret.time == 100
+        assert ret.weight == 0
+        
 class TestCrossing(unittest.TestCase):
     
     def test_basic(self):
@@ -2590,8 +2607,8 @@ if __name__ == '__main__':
                  #TestEngine,
                  #TestTimezone,
                  #TestTimezonePeriod,
-                 #TestTripBoard,
-                 TestCrossing,
+                 TestTripBoard,
+                 #TestCrossing,
                  #TestAlight,
                  #TestHeadwayBoard,
                  #TestWalkOptions,

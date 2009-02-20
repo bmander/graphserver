@@ -430,6 +430,7 @@ tbNew( ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int 
   ret->service_id = service_id;
     
   ret->walk = &tbWalk;
+  ret->walkBack = &tbWalkBack;
     
   ret->overage = 0;
     
@@ -677,6 +678,14 @@ tbWalk( EdgePayload* superthis, State* params, WalkOptions* options ) {
     
     return ret;
     
+}
+
+inline State*
+tbWalkBack(EdgePayload* this, State* params, WalkOptions* options) {
+    State* ret = stateDup( params );
+    ret->trip_id = NULL;
+    
+    return ret;
 }
 
 // HEADWAYBOARD FUNCTIONS

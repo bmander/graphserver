@@ -314,6 +314,7 @@ streetGetLength(Street* this);
 typedef struct TripBoard {
     edgepayload_t type;
     State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
+    State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
     
     int n;
     int* departs;
@@ -368,6 +369,9 @@ tbGetOverage(TripBoard* this);
 
 inline State*
 tbWalk( EdgePayload* superthis, State* params, WalkOptions* options );
+
+inline State*
+tbWalkBack( EdgePayload* superthis, State* params, WalkOptions* options );
 
 //---------------DECLARATIONS FOR HEADWAYBOARD CLASS---------------------------------------
 
