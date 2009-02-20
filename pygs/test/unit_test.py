@@ -710,7 +710,7 @@ class TestShortestPathTree(unittest.TestCase):
         wo = WalkOptions()
         wo.walking_speed = 1
         spt = g.shortest_path_tree( "A", None, State(1,0), wo )
-        spt.set_thickness( "A" )
+        spt.set_thicknesses( "A" )
         
         for edge in spt.get_vertex( "A" ).outgoing:
             if edge.to_v.label == "B":

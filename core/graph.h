@@ -92,6 +92,9 @@ gShortestPath( Graph* this, char *from, char *to, State* init_state, int directi
 long
 gSize( Graph* this );
 
+void
+gSetThicknesses( Graph* this, char *root_label );
+
 //VERTEX FUNCTIONS
 
 Vertex *

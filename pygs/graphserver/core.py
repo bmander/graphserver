@@ -159,17 +159,6 @@ class Graph(CShadow):
             ret += "    %s -> %s;\n" % (e.from_v.label, e.to_v.label)
         return ret + "}"
 
-def set_spt_edge_thickness( edge ):
-    thickness = edge.to_v.payload.weight - edge.from_v.payload.weight
-    
-    for frontier_edge in edge.to_v.outgoing:
-        frontier_thickness = set_spt_edge_thickness( frontier_edge )
-        thickness += frontier_thickness
-        
-    edge.thickness = thickness
-    
-    return thickness
-
 class ShortestPathTree(Graph):
     def path(self, destination):
         path_vertices, path_edges = self.path_retro(destination)
@@ -203,12 +192,9 @@ class ShortestPathTree(Graph):
             path_vertices.append( curr )
     
         return (path_vertices, path_edges)
-    
-    def set_thickness(self, root_label):
-        root = self.get_vertex( root_label )
-        
-        for edge in root.outgoing:
-            set_spt_edge_thickness( edge )
+
+    def set_thicknesses(self, root_label):
+        lgs.gSetThicknesses( c_void_p(self.soul), c_char_p(root_label) )
 
     def destroy(self):
         #destroy the vertex State instances, but not the edge EdgePayload instances, as they're owned by the parent graph
