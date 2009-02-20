@@ -692,6 +692,24 @@ class TestGraph(unittest.TestCase):
         assert spt.get_vertex( "B" ) == None
         spt.destroy()
 
+class TestShortestPathTree(unittest.TestCase):
+    def test_basic(self):
+        g = Graph()
+        
+        g.add_vertex( "A" )
+        g.add_vertex( "B" )
+        g.add_vertex( "C" )
+        g.add_vertex( "D" )
+        g.add_vertex( "E" )
+        g.add_edge( "A", "B", Street("atob", 10) )
+        g.add_edge( "A", "C", Street("atoc", 10) )
+        g.add_edge( "C", "D", Street("ctod", 10) )
+        g.add_edge( "B", "D", Street("btod", 10) )
+        g.add_edge( "D", "E", Street("btoe", 10) )
+        
+        spt = g.shortest_path_tree( "A", None, State(1,0), WalkOptions() )
+        for k,v in spt.get_all_trunkyness( "A" ).items():
+            print k,v
 
 import time
 from random import randint
@@ -2564,6 +2582,7 @@ if __name__ == '__main__':
     
     testables = [\
                  #TestGraph,
+                 TestShortestPathTree,
                  #TestGraphPerformance,
                  #TestState,
                  #TestPyPayload,
@@ -2584,7 +2603,7 @@ if __name__ == '__main__':
                  #TestCrossing,
                  #TestAlight,
                  #TestHeadwayBoard,
-                 TestWalkOptions,
+                 #TestWalkOptions,
                  ]
 
     for testable in testables:
