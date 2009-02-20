@@ -827,6 +827,7 @@ crNew( int crossing_time ) {
   ret->crossing_time = crossing_time;
     
   ret->walk = &crWalk;
+  ret->walkBack = &crWalkBack;
     
   return ret;
 }
@@ -856,6 +857,28 @@ crWalk( EdgePayload* superthis, State* params, WalkOptions* options ) {
     for(i=0; i<params->n_agencies; i++) {
         if( ret->service_periods[i] && ret->time >= ret->service_periods[i]->end_time) {
           ret->service_periods[i] = ret->service_periods[i]->next_period;
+        }
+    }
+    
+    return ret;
+    
+}
+
+inline State*
+crWalkBack( EdgePayload* superthis, State* state, WalkOptions* options ) {
+    Crossing* this = (Crossing*)superthis;
+    
+    // Dupe state and advance time by the waiting time
+    State* ret = stateDup( state );
+    
+    ret->time   -= this->crossing_time;
+    ret->weight += this->crossing_time;
+    
+    // Make sure the service period caches are updated if we've traveled over a service period boundary
+    int i;
+    for(i=0; i<state->n_agencies; i++) {
+        if( ret->service_periods[i] && ret->time < ret->service_periods[i]->begin_time) {
+          ret->service_periods[i] = ret->service_periods[i]->prev_period;
         }
     }
     

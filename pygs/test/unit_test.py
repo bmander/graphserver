@@ -2415,6 +2415,16 @@ class TestCrossing(unittest.TestCase):
         assert ret.time == 10
         assert ret.weight == 10
         
+    def test_walk_back(self):
+        
+        cr = Crossing(10)
+        
+        s = State(1, 10)
+        ret = cr.walk_back(s, WalkOptions())
+        
+        assert ret.time == 0
+        assert ret.weight == 10
+        
 class TestAlight(unittest.TestCase):
     
     def test_basic(self):
@@ -2581,10 +2591,10 @@ if __name__ == '__main__':
                  #TestTimezone,
                  #TestTimezonePeriod,
                  #TestTripBoard,
-                 #TestCrossing,
+                 TestCrossing,
                  #TestAlight,
                  #TestHeadwayBoard,
-                 TestWalkOptions,
+                 #TestWalkOptions,
                  ]
 
     for testable in testables:

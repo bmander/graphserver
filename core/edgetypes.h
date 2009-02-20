@@ -424,6 +424,7 @@ hbWalk( EdgePayload* superthis, State* params, WalkOptions* options );
 typedef struct Crossing {
     edgepayload_t type;
     State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
+    State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
     
     int crossing_time;
 } Crossing;
@@ -439,6 +440,9 @@ crGetCrossingTime(Crossing* this);
 
 inline State*
 crWalk( EdgePayload* superthis, State* params, WalkOptions* options );
+
+inline State*
+crWalkBack( EdgePayload* superthis, State* state, WalkOptions* options );
 
 //---------------DECLARATIONS FOR ALIGHT CLASS---------------------------------------------
 
