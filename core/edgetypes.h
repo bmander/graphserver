@@ -456,13 +456,49 @@ typedef struct Alight {
 } Alight;
 
 Alight*
-alNew();
+alNew( ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int agency );
 
 void
 alDestroy(Alight* this);
 
+ServiceCalendar*
+alGetCalendar( Alight* this );
+
+Timezone*
+alGetTimezone( Alight* this );
+
+int
+alGetAgency( Alight* this );
+
+ServiceId
+alGetServiceId( Alight* this );
+
+int
+alGetNumAlightings(Alight* this);
+
+void
+alAddAlighting(Alight* this, char* trip_id, int arrival);
+
+char*
+alGetAlightingTripId(Alight* this, int i);
+
+int
+alGetAlightingArrival(Alight* this, int i);
+
+int
+alSearchAlightingList(Alight* this, int time);
+
+int
+alGetLastAlightingIndex(Alight* this, int time);
+
+int
+alGetOverage(Alight* this);
+
 inline State*
 alWalk(EdgePayload* this, State* params, WalkOptions* options);
+
+inline State*
+alWalkBack(EdgePayload* this, State* params, WalkOptions* options);
 
 //---------------DECLARATIONS FOR TRIPHOPSCHEDULE and TRIPHOP  CLASSES---------------------
 
