@@ -451,8 +451,20 @@ crWalkBack( EdgePayload* superthis, State* state, WalkOptions* options );
 //---------------DECLARATIONS FOR ALIGHT CLASS---------------------------------------------
 
 typedef struct Alight {
-  edgepayload_t type;
-  State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
+    edgepayload_t type;
+    State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
+    State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
+    
+    int n;
+    int* arrivals;
+    char** trip_ids;
+    
+    ServiceCalendar* calendar;
+    Timezone* timezone;
+    int agency;
+    ServiceId service_id;
+    
+    int overage; //number of seconds schedules past midnight of the last departure. If it's at 12:00:00, the overage is 0.
 } Alight;
 
 Alight*
@@ -486,7 +498,7 @@ int
 alGetAlightingArrival(Alight* this, int i);
 
 int
-alSearchAlightingList(Alight* this, int time);
+alSearchAlightingsList(Alight* this, int time);
 
 int
 alGetLastAlightingIndex(Alight* this, int time);

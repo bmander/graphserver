@@ -899,7 +899,7 @@ crWalkBack( EdgePayload* superthis, State* state, WalkOptions* options ) {
 
 Alight*
 alNew( ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int agency ) {
-  Alight* ret = (TripBoard*)malloc(sizeof(Alight));
+  Alight* ret = (Alight*)malloc(sizeof(Alight));
   ret->type = PL_ALIGHT;
   ret->n = 0;
   ret->arrivals = NULL;
@@ -960,8 +960,8 @@ alGetNumAlightings( Alight* this) {
 
 void
 alAddAlighting(Alight* this, char* trip_id, int arrival) {
-    if (depart > SECS_IN_DAY+this->overage)
-        this->overage = depart-SECS_IN_DAY;
+    if (arrival > SECS_IN_DAY+this->overage)
+        this->overage = arrival-SECS_IN_DAY;
     
     // init the trip_id, depart list
     if(this->n==0) {
@@ -990,7 +990,7 @@ alAddAlighting(Alight* this, char* trip_id, int arrival) {
         }
         
         //copy new departure into lists
-        next_arrivals[m] = arrivals;
+        next_arrivals[m] = arrival;
         int strn = strlen(trip_id)+1;
         next_trip_ids[m] = (char*)malloc(sizeof(char)*(strn));
         memcpy(next_trip_ids[m], trip_id, strn);
@@ -1012,7 +1012,7 @@ alAddAlighting(Alight* this, char* trip_id, int arrival) {
 }
 
 char*
-alGetArrivalTripId(Alight* this, int i) {
+alGetAlightingTripId(Alight* this, int i) {
     if(i<0 || i >= this->n) {
         return NULL;
     }
@@ -1021,7 +1021,7 @@ alGetArrivalTripId(Alight* this, int i) {
 }
 
 int
-alGetArrivalDepart(Alight* this, int i) {
+alGetAlightingArrival(Alight* this, int i) {
     if(i<0 || i >= this->n) {
         return -1;
     }
@@ -1030,35 +1030,33 @@ alGetArrivalDepart(Alight* this, int i) {
 }
 
 int
-alSearchArrivalList(Alight* this, int time) {
+binsearch(int* ary, int n, int key, int before) {
     int first = 0;
-    int last = this->n-1;
+    int last = n-1;
     int mid; 
-    
-    //fprintf( stderr, "first, last: %d, %d", first, last );
     
     while( first <= last ) {
         mid = (first+last)/2;
-        //fprintf( stderr, "first: %d last: %d mid: %d\n", first, last, mid );
-        if( time > this->arrivals[mid] ) {
+        if( key > ary[mid] ) {
             first = mid+1;
-            //fprintf( stderr, "time above searchspan mid; setting first to %d\n", first );
-        } else if( time < this->arrivals[mid] ) {
+        } else if( key < ary[mid] ) {
             last = mid-1;
-            //fprintf( stderr, "time below searchspan mid; setting last to %d\n", last );
         } else {
-            //fprintf( stderr, "time is mid; setting last to %d\n\n", last );
-            return mid-1;
+            return mid-before;
         }
     }
     
-    //fprintf( stderr, "not found, returning first: %d\n\n", first );
     return first;
 }
 
 int
-alGetNextArrivalIndex(Alight* this, int time) {
-    int index = tbSearchArrivalList( this, time );
+alSearchAlightingsList(Alight* this, int time) {
+    return binsearch( this->arrivals, this->n, time, 0);
+}
+
+int
+alGetLastAlightingIndex(Alight* this, int time) {
+    int index = binsearch( this->arrivals, this->n, time, 1 );
     
     if( index == this->n ) { //insertion point beyond end of array, return error code
         return -1;

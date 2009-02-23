@@ -205,6 +205,10 @@ pycapi(lgs.tbAddBoarding, c_void_p, [c_void_p, c_char_p, c_int])
 pycapi(lgs.tbGetBoardingTripId, c_char_p, [c_void_p, c_int])
 pycapi(lgs.tbGetBoardingDepart, c_int, [c_void_p, c_int])
 
+#ALIGHT API
+pycapi(lgs.alGetAlightingTripId, c_char_p, [c_void_p, c_int])
+pycapi(lgs.alGetAlightingArrival, c_int, [c_void_p, c_int])
+
 #CUSTOM TYPE API
 class PayloadMethodTypes:
     """ Enumerates the ctypes of the function pointers."""

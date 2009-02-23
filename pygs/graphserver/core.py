@@ -1160,8 +1160,35 @@ class Crossing(EdgePayload):
         return Crossing(state)
         
 class Alight(EdgePayload):
-    def __init__(self):
-        self.soul = self._cnew()
+    calendar = cproperty( lgs.alGetCalendar, c_void_p, ServiceCalendar )
+    timezone = cproperty( lgs.alGetTimezone, c_void_p, Timezone )
+    agency = cproperty( lgs.alGetAgency, c_int )
+    int_service_id = cproperty( lgs.alGetServiceId, c_int )
+    num_alightings = cproperty( lgs.alGetNumAlightings, c_int )
+    overage = cproperty( lgs.tbGetOverage, c_int )
+    
+    def __init__(self, service_id, calendar, timezone, agency):
+        service_id = service_id if type(service_id)==int else calendar.get_service_id_int(service_id)
+        
+        self.soul = self._cnew(service_id, calendar.soul, timezone.soul, agency)
+        
+    def add_alighting(self, trip_id, arrival):
+        lgs.alAddAlighting( self.soul, trip_id, arrival )
+        
+    def get_alighting(self, i):
+        trip_id = lgs.alGetAlightingTripId(self.soul, c_int(i))
+        arrival = lgs.alGetAlightingArrival(self.soul, c_int(i))
+        
+        if trip_id is None:
+            raise IndexError("Index %d out of bounds"%i)
+        
+        return (trip_id, arrival)
+        
+    def search_alightings_list(self, time):
+        return lgs.alSearchAlightingsList( self.soul, c_int(time) )
+        
+    def get_last_alighting_index(self, time):
+        return lgs.alGetLastAlightingIndex( self.soul, c_int(time) )
         
     def to_xml(self):
         return "<Alight/>"
