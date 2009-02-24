@@ -17,7 +17,6 @@ def string_spt_vertex(vertex, level=0):
 class GraphCrawler(Servable):
     def __init__(self, graphdb_filename):
         self.graphdb = GraphDatabase( graphdb_filename )
-        self.graph = self.graphdb.incarnate()
     
     def vertices(self):
         return "\n".join( ["<a href=\"/vertex?label=&quot;%s&quot;\">%s</a><br>"%(vertex_label, vertex_label) for vertex_label in sorted( self.graphdb.all_vertex_labels() ) ])
@@ -35,7 +34,9 @@ class GraphCrawler(Servable):
         ret.append( "<h3>outgoing to:</h3>" )
         for i, (vertex1, vertex2, edgetype) in enumerate( self.graphdb.all_outgoing( label ) ):
             s0 = State(1,int(currtime))
-            s1 = edgetype.walk( s0 )
+            wo = WalkOptions()
+            s1 = edgetype.walk( s0, wo )
+            wo.destroy()
             
             if s1:
                 toterm = "<a href=\"/vertex?label=&quot;%s&quot;&currtime=%d\">%s@%d</a>"%(vertex2, s1.time, vertex2, s1.time)
@@ -49,16 +50,6 @@ class GraphCrawler(Servable):
                 
         return "".join(ret)
     vertex.mime = "text/html"
-    
-    def spt(self, label, currtime=None):
-        
-        currtime = currtime or int(time.time())
-        
-        wo = WalkOptions()
-        spt = self.graph.shortest_path_tree( label, None, State(1,currtime), wo )
-        wo.destroy()
-        
-        return string_spt_vertex( spt.get_vertex( label ) )
     
     def outgoing(self, label, edgenum):
         all_outgoing = list( self.graphdb.all_outgoing( label ) )
