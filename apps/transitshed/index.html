@@ -87,7 +87,11 @@
           }
     }
 
-    function get_and_display_contours( overlay, latlng ) {
+    function get_and_display_contours( overlay, latlng, overlaylatlng ) {
+        if(latlng == undefined) {
+          latlng = overlaylatlng;
+        }
+    
         target = latlng
     
         range = ($("#range")[0].value)*60
@@ -99,6 +103,8 @@
         hour = $("#hour")[0].value
         minute = $("#minute")[0].value
         second = $("#second")[0].value
+        
+        speed = $("#speed")[0].value
         
         if( range > 3600 || range < 0 ) {
           alert( "Range must be between 0 and 60 minutes" )
@@ -112,7 +118,7 @@
           marker = new GMarker(latlng, {clickable: false});
           map.addOverlay(marker);
           
-          $.getJSON("/contour?lat="+latlng.lat()+"&lon="+latlng.lng()+"&year="+year+"&month="+month+"&day="+day+"&hour="+hour+"&minute="+minute+"&second="+second+"&cutoff="+range+"&encoded=\"True\"",
+          $.getJSON("/contour?lat="+latlng.lat()+"&lon="+latlng.lng()+"&year="+year+"&month="+month+"&day="+day+"&hour="+hour+"&minute="+minute+"&second="+second+"&cutoff="+range+"&encoded=\"True\""+"&speed="+speed,
           function(data){
             if( data == "NO NEARBY INTERSECTION" ) {
               alert( "No nearby intersection!" );
@@ -178,6 +184,7 @@
     <div id="map" style="width:700px;height:500px"></div>
     <table>
     <tr><td>Range (minutes):</td><td><input id="range" type="text" value="30"/><span onclick="javascript:$('#range')[0].value=parseInt($('#range')[0].value)+1;get_and_display_contours(null,target);">[+]</span> <span onclick="javascript:$('#range')[0].value=parseInt($('#range')[0].value)-1;get_and_display_contours(null,target);">[-]</span></td></tr>
+    <tr><td>Speed (m/s):</td><td><input id="speed" type="text" value="0.85"/></td></tr>
     <tr><td>Depart time (YYYY/MM/DD hh:mm:ss)</td><td>
       <input id="year" type="text" value="2009" maxlength=4 size=4/>/
       <input id="month" type="text" value="2" maxlength=2 size=2/>/
