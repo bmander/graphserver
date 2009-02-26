@@ -1,5 +1,7 @@
 all: libgraphserver.so
 
+# to override base installation directory run
+# PREFIX=... make install
 PREFIX=/usr
 
 OBJECTS= dirfibheap.o \

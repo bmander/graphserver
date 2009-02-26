@@ -4,16 +4,27 @@ from ctypes import cdll, CDLL, pydll, PyDLL, CFUNCTYPE
 from ctypes import string_at, byref, c_int, c_long, c_size_t, c_char_p, c_double, c_void_p, py_object
 from ctypes import Structure, pointer, cast, POINTER, addressof
 
-from ctypes.util import find_library
 import os
 import sys
 
+# The libgraphserver.so object:
+lgs = None
+
 # Try loading from the source tree. If that doesn't work, fall back to the installed location.
-try:
-    path = os.path.dirname(os.path.abspath(__file__)) + '/../../core/libgraphserver.so'
-    lgs = PyDLL( path )
-except OSError:
-    lgs = PyDLL( '/usr/lib/libgraphserver.so' )
+_dlldirs = [os.path.dirname(os.path.abspath(__file__)) + '/../../core',
+            '/usr/lib',
+            '/usr/local/lib']
+
+for _dlldir in _dlldirs:
+    _dllpath = os.path.join(_dlldir, 'libgraphserver.so')
+    if os.path.exists(_dllpath):
+        lgs = PyDLL( _dllpath )
+        break
+
+if not lgs:
+    raise ImportError("unable to find libgraphserver shared library in the usual locations: %s" % "\n".join(_dlldirs))
+
+
 
 class _EmptyClass(object):
     pass
