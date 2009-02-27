@@ -306,9 +306,10 @@ class TestGraph(unittest.TestCase):
         s = Street( "helloworld", 240000 )
         e = g.add_edge("home", "work", s)
         
-        sprime = e.walk(State(g.numagencies,0), WalkOptions())
-        
-        assert str(sprime)=="<state time='282352' weight='2147483647' dist_walked='240000.0' num_transfers='0' prev_edge_type='0' prev_edge_name='helloworld'></state>"
+        wo = WalkOptions()
+        sprime = e.walk(State(g.numagencies,0), wo)
+        wo.destroy()
+        assert str(sprime)=="<state time='282352' weight='2147483647' dist_walked='240000.0' num_transfers='0' prev_edge_type='0' prev_edge_name='helloworld' trip_id='None'></state>"
 
         g.destroy()
         
@@ -903,6 +904,79 @@ class TestStreet(unittest.TestCase):
         s = Street("longstreet", 2)
         
         assert s.__getstate__() == ('longstreet', 2)
+
+class TestEgress(unittest.TestCase):
+    def test_street(self):
+        s = Egress("mystreet", 1.1)
+        assert s.name == "mystreet"
+        assert s.length == 1.1
+        assert s.to_xml() == "<Egress name='mystreet' length='1.100000' />"
+        
+    def test_destroy(self):
+        s = Egress("mystreet", 1.1)
+        s.destroy()
+        
+        assert s.soul==None
+        
+    def test_street_big_length(self):
+        s = Egress("longstreet", 240000)
+        assert s.name == "longstreet"
+        assert s.length == 240000
+
+        assert s.to_xml() == "<Egress name='longstreet' length='240000.000000' />"
+        
+    def test_walk(self):
+        s = Egress("longstreet", 2)
+        wo = WalkOptions()
+        after = s.walk(State(0,0),wo)
+        wo.destroy()
+        assert after.time == 2
+        assert after.weight == 2
+        assert after.dist_walked == 2
+        assert after.prev_edge_type == 12
+        assert after.prev_edge_name == "longstreet"
+        assert after.num_agencies == 0
+        
+    def test_walk_back(self):
+        s = Egress("longstreet", 2)
+        
+        before = s.walk_back(State(0,100),WalkOptions())
+        
+        assert before.time == 98
+        assert before.weight == 2
+        assert before.dist_walked == 2.0
+        assert before.prev_edge_type == 12
+        assert before.prev_edge_name == "longstreet"
+        assert before.num_agencies == 0
+        
+    def test_getstate(self):
+        s = Egress("longstreet", 2)
+        
+        assert s.__getstate__() == ('longstreet', 2)
+        
+    def test_graph(self):
+        g = Graph()
+        g.add_vertex("E")
+        g.add_vertex("S")
+        g.add_edge("E", "S", Egress("E2S",10))
+        
+        spt = g.shortest_path_tree("E", "S", State(0,0), WalkOptions())
+        assert spt
+        assert spt.__class__ == ShortestPathTree
+        assert spt.get_vertex("S").payload.dist_walked==10
+
+        spt.destroy()
+        g.destroy()
+
+class TestWalkOptions(unittest.TestCase):
+    def test_from_ptr(self):
+        wo = WalkOptions()
+        wo.transfer_penalty = 10
+        wo1 = WalkOptions.from_pointer(wo.soul)
+        assert wo.transfer_penalty == w1.transfer_penalty
+        assert wo1.soul == wo.soul
+        wo.destroy()
+        
         
 class TestPyPayload(unittest.TestCase):
     def _minimal_graph(self):
@@ -930,12 +1004,12 @@ class TestPyPayload(unittest.TestCase):
     
     def test_walk(self):
         class IncTimePayload(GenericPyPayload):
-            def walk_impl(self, state):
+            def walk_impl(self, state, walkopts):
                 state.time = state.time + 10
                 state.weight = 5
                 return state
             
-            def walk_back_impl(self, state):
+            def walk_back_impl(self, state, walkopts):
                 state.time = state.time - 10
                 state.weight = 0
                 return state
@@ -958,15 +1032,18 @@ class TestPyPayload(unittest.TestCase):
         assert s2
         assert s2.time == 1
         assert s2.weight == 0
+        g.destroy()
         
     def test_failures(self):
         class ExceptionRaiser(GenericPyPayload):
-            def bad_stuff(self, state):
+            def walk_bad_stuff(self, state, walkopts):
                 raise Exception("I am designed to fail.")
-            walk_impl = bad_stuff
-            walk_back_impl = bad_stuff
-            collapse_impl = bad_stuff
-            collapse_back_impl = bad_stuff
+            walk_impl = walk_bad_stuff
+            walk_back_impl = walk_bad_stuff
+            def collapse_bad_stuff(self, state):
+                raise Exception("I am designed to fail.")
+            collapse_impl = collapse_bad_stuff
+            collapse_back_impl = collapse_bad_stuff
 
         g = self._minimal_graph()
         ed = g.add_edge( "Seattle", "Portland", ExceptionRaiser())
@@ -974,8 +1051,32 @@ class TestPyPayload(unittest.TestCase):
         
         ed.walk(State(1,0), WalkOptions()) 
         ed.walk_back(State(1,0), WalkOptions())
-        ed.payload.collapse(State(1,0), WalkOptions())
-        ed.payload.collapse_back(State(1,0), WalkOptions())
+        ed.payload.collapse(State(1,0))
+        ed.payload.collapse_back(State(1,0))
+        g.destroy()
+        
+    def test_basic_graph(self):
+        class MovingWalkway(GenericPyPayload):
+            def walk_impl(self, state, walkopts):
+                state.time = state.time + 10
+                state.weight = 5
+                return state
+            
+            def walk_back_impl(self, state, walkopts):
+                state.time = state.time - 10
+                state.weight = 0
+                return state
+        
+        g = self._minimal_graph()
+        g.add_edge( "Seattle", "Portland", MovingWalkway())
+        spt = g.shortest_path_tree("Seattle", "Portland", State(0,0), WalkOptions())
+        assert spt
+        assert spt.__class__ == ShortestPathTree
+        assert spt.get_vertex("Portland").payload.weight==5
+        assert spt.get_vertex("Portland").payload.time==10
+
+        spt.destroy()
+        g.destroy()
 
 
 class TestLink(unittest.TestCase):
@@ -1737,7 +1838,8 @@ class TestEngine(unittest.TestCase):
         
         eng = Engine(gg)
         
-        assert eng.walk_edges("A", time=0) == "<?xml version='1.0'?><vertex><state time='0' weight='0' dist_walked='0.0' num_transfers='0' prev_edge_type='5' prev_edge_name='None'></state><outgoing_edges><edge><destination label='C'><state time='11' weight='22' dist_walked='10.0' num_transfers='0' prev_edge_type='0' prev_edge_name='4'></state></destination><payload><Street name='4' length='10.000000' /></payload></edge><edge><destination label='B'><state time='11' weight='22' dist_walked='10.0' num_transfers='0' prev_edge_type='0' prev_edge_name='1'></state></destination><payload><Street name='1' length='10.000000' /></payload></edge></outgoing_edges></vertex>"
+        print eng.walk_edges("A", time=0)
+        assert eng.walk_edges("A", time=0) == "<?xml version='1.0'?><vertex><state time='0' weight='0' dist_walked='0.0' num_transfers='0' prev_edge_type='5' prev_edge_name='None' trip_id='None'></state><outgoing_edges><edge><destination label='C'><state time='11' weight='11' dist_walked='10.0' num_transfers='0' prev_edge_type='0' prev_edge_name='4' trip_id='None'></state></destination><payload><Street name='4' length='10.000000' /></payload></edge><edge><destination label='B'><state time='11' weight='11' dist_walked='10.0' num_transfers='0' prev_edge_type='0' prev_edge_name='1' trip_id='None'></state></destination><payload><Street name='1' length='10.000000' /></payload></edge></outgoing_edges></vertex>"
 
     def xtest_outgoing_edges_entire_osm(self):
         gg = Graph()
@@ -1755,7 +1857,7 @@ class TestEngine(unittest.TestCase):
         
         eng = Engine(gg)
         
-        assert eng.walk_edges("65287655", time=0) == "<?xml version='1.0'?><vertex><state time='Thu Jan  1 00:00:00 1970' weight='0' dist_walked='0.0' num_transfers='0' prev_edge_type='5' prev_edge_name='None'></state><outgoing_edges><edge><destination label='65287660'><state time='Thu Jan  1 00:04:16 1970' weight='512' dist_walked='218.044875866' num_transfers='0' prev_edge_type='0' prev_edge_name='8915843-0'></state></destination><payload><Street name='8915843-0' length='218.044876' /></payload></edge></outgoing_edges></vertex>"
+        assert eng.walk_edges("65287655", time=0) == "<?xml version='1.0'?><vertex><state time='Thu Jan  1 00:00:00 1970' weight='0' dist_walked='0.0' num_transfers='0' prev_edge_type='5' prev_edge_name='None' trip_id='None'></state><outgoing_edges><edge><destination label='65287660'><state time='Thu Jan  1 00:04:16 1970' weight='512' dist_walked='218.044875866' num_transfers='0' prev_edge_type='0' prev_edge_name='8915843-0'></state></destination><payload><Street name='8915843-0' length='218.044876' /></payload></edge></outgoing_edges></vertex>"
 
 class TestTimezone(unittest.TestCase):
     def test_basic(self):

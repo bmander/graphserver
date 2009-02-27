@@ -20,6 +20,7 @@ typedef enum {
   PL_CROSSING,
   PL_ALIGHT,
   PL_HEADWAYBOARD,
+  PL_EGRESS
 } edgepayload_t;
 
 //---------------DECLARATIONS FOR WALKOPTIONS CLASS---------------
@@ -369,6 +370,35 @@ tbGetOverage(TripBoard* this);
 inline State*
 tbWalk( EdgePayload* superthis, State* params, WalkOptions* options );
 
+//---------------DECLARATIONS FOR EGRESS CLASS---------------------
+
+typedef struct Egress {
+   edgepayload_t type;
+   State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
+   State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
+    
+   char* name;
+   double length;
+} Egress;
+
+Egress*
+egressNew(const char *name, double length);
+
+void
+egressDestroy(Egress* tokill);
+
+inline State*
+egressWalk(EdgePayload* superthis, State* params, WalkOptions* options);
+
+inline State*
+egressWalkBack(EdgePayload* superthis, State* params, WalkOptions* options);
+
+char*
+egressGetName(Egress* this);
+
+double
+egressGetLength(Egress* this);
+
 //---------------DECLARATIONS FOR HEADWAYBOARD CLASS---------------------------------------
 
 typedef struct HeadwayBoard {
@@ -455,6 +485,7 @@ alDestroy(Alight* this);
 
 inline State*
 alWalk(EdgePayload* this, State* params, WalkOptions* options);
+
 
 //---------------DECLARATIONS FOR TRIPHOPSCHEDULE and TRIPHOP  CLASSES---------------------
 
@@ -577,8 +608,8 @@ thsGetTimezone(TripHopSchedule* this );
 
 typedef struct PayloadMethods {
 	void (*destroy)(void*);
-	State* (*walk)(void*,State*);
-	State* (*walkBack)(void*,State*);
+	State* (*walk)(void*,State*,WalkOptions*);
+	State* (*walkBack)(void*,State*,WalkOptions*);
 	EdgePayload* (*collapse)(void*,State*);
 	EdgePayload* (*collapseBack)(void*,State*);
 	//char* (*to_str)(void*);
@@ -592,8 +623,8 @@ typedef struct CustomPayload {
 
 PayloadMethods*
 defineCustomPayloadType(void (*destroy)(void*),
-						State* (*walk)(void*,State*),
-						State* (*walkback)(void*,State*),
+						State* (*walk)(void*,State*,WalkOptions*),
+						State* (*walkback)(void*,State*,WalkOptions*),
 						EdgePayload* (*collapse)(void*,State*),
 						EdgePayload* (*collapseBack)(void*,State*));
 
@@ -614,10 +645,10 @@ PayloadMethods*
 cpMethods( CustomPayload* this );
 
 State*
-cpWalk(CustomPayload* this, State* params);
+cpWalk(CustomPayload* this, State* params, struct WalkOptions* walkoptions);
 
 State*
-cpWalkBack(CustomPayload* this, State* params);
+cpWalkBack(CustomPayload* this, State* params, struct WalkOptions* walkoptions);
 
 EdgePayload*
 cpCollapse(CustomPayload* this, State* params);

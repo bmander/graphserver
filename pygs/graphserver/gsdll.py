@@ -193,6 +193,12 @@ pycapi(lgs.streetDestroy, c_void_p)
 pycapi(lgs.streetWalk, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.streetWalkBack, c_void_p, [c_void_p, c_void_p])
 
+#EGRESS API
+pycapi(lgs.egressNew, c_void_p, [c_char_p, c_double])
+pycapi(lgs.egressDestroy, c_void_p)
+pycapi(lgs.egressWalk, c_void_p, [c_void_p, c_void_p])
+pycapi(lgs.egressWalkBack, c_void_p, [c_void_p, c_void_p])
+
 #TRIPHOPSCHEDULE API
 pycapi(lgs.thsNew, c_void_p) # args are dynamic, and not specified
 pycapi(lgs.thsDestroy, c_void_p)
@@ -224,8 +230,8 @@ pycapi(lgs.tbGetBoardingDepart, c_int, [c_void_p, c_int])
 class PayloadMethodTypes:
     """ Enumerates the ctypes of the function pointers."""
     destroy = CFUNCTYPE(c_void_p, py_object)
-    walk = CFUNCTYPE(c_void_p, py_object, c_void_p)
-    walk_back = CFUNCTYPE(c_void_p, py_object, c_void_p)
+    walk = CFUNCTYPE(c_void_p, py_object, c_void_p, c_void_p)
+    walk_back = CFUNCTYPE(c_void_p, py_object, c_void_p, c_void_p)
     collapse = CFUNCTYPE(c_void_p, py_object, c_void_p)
     collapse_back = CFUNCTYPE(c_void_p, py_object, c_void_p)
     
