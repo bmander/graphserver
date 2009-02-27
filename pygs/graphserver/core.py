@@ -1190,6 +1190,14 @@ class Alight(EdgePayload):
     def get_last_alighting_index(self, time):
         return lgs.alGetLastAlightingIndex( self.soul, c_int(time) )
         
+    def get_last_alighting(self, time):
+        i = self.get_last_alighting_index(time)
+        
+        if i == -1:
+            return None
+        else:
+            return self.get_alighting( i )
+        
     def to_xml(self):
         return "<Alight/>"
         

@@ -910,8 +910,8 @@ alNew( ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int 
   ret->agency = agency;
   ret->service_id = service_id;
     
-  ret->walk = &tbWalk;
-  ret->walkBack = &tbWalkBack;
+  ret->walk = &alWalk;
+  ret->walkBack = &alWalkBack;
     
   ret->overage = 0;
     
@@ -1042,11 +1042,11 @@ binsearch(int* ary, int n, int key, int before) {
         } else if( key < ary[mid] ) {
             last = mid-1;
         } else {
-            return mid-before;
+            return mid;
         }
     }
     
-    return first;
+    return first-before;
 }
 
 int
@@ -1056,13 +1056,8 @@ alSearchAlightingsList(Alight* this, int time) {
 
 int
 alGetLastAlightingIndex(Alight* this, int time) {
-    int index = binsearch( this->arrivals, this->n, time, 1 );
-    
-    if( index == this->n ) { //insertion point beyond end of array, return error code
-        return -1;
-    }
-    
-    return index;
+    //if insertion point is before end of array, -1 will be returned, which is coincidentally the error code
+    return binsearch( this->arrivals, this->n, time, 1 );
 }
 
 int
@@ -1076,6 +1071,76 @@ alWalk(EdgePayload* this, State* params, WalkOptions* options) {
     ret->trip_id = NULL;
     
     return ret;
+}
+
+inline State*
+alWalkBack( EdgePayload* superthis, State* params, WalkOptions* options ) {
+    Alight* this = (Alight*)superthis;
+    
+    //Get service period cached in travel state. If it doesn't exist, figure it out and cache it
+    ServicePeriod* service_period = params->service_periods[this->agency];
+    if( !service_period )
+        service_period = scPeriodOfOrBefore( this->calendar, params->time );
+        params->service_periods[this->agency] = service_period;
+    
+        //If still can't find service_period, params->time is beyond service calendar, so bail
+        if( !service_period )
+            return NULL;
+    
+    long time_since_midnight = tzTimeSinceMidnight( this->timezone, params->time );
+        
+    if( !spPeriodHasServiceId( service_period, this->service_id ) ) {
+        
+        /* If the boarding schedule extends past midnight - for example, you can board a train on the Friday schedule until
+         * 2 AM Saturday morning - and the travel_state.time_since_midnight is less than this overage - for example, 1 AM, but
+         * the travel_state.service_period will show Saturday and not Friday, then:
+         * 
+         * Check if the boarding schedule service_id is running in the travel_state's yesterday period. If it is, simply advance the 
+         * time_since_midnight by a day and continue. If not, this boarding schedule was not running today or yesterday, so as far
+         * as we're concerned, it's not running at all
+         *
+         * TODO - figure out an algorithm for the general cse
+         */
+        
+        if( service_period->prev_period &&
+            spPeriodHasServiceId( service_period->prev_period, this->service_id )) {
+                
+            time_since_midnight += SECS_IN_DAY;
+        } else {
+            return NULL;
+        }
+        
+    }
+    
+    int last_alighting_index = alGetLastAlightingIndex( this, time_since_midnight );
+    
+    if( last_alighting_index == -1 ) {
+        return NULL;
+    }
+    
+    // Dupe state and advance time by the waiting time
+    State* ret = stateDup( params );
+    
+    ret->num_transfers += 1;
+    
+    int last_alighting_time = this->arrivals[last_alighting_index];
+    int wait = (time_since_midnight - last_alighting_time);
+    
+    ret->time   -= wait;
+    ret->weight += wait + 1; //transfer penalty
+    
+    ret->trip_id = this->trip_ids[last_alighting_index];
+    
+    // Make sure the service period caches are updated if we've traveled over a service period boundary
+    int i;
+    for(i=0; i<params->n_agencies; i++) {
+        if( ret->service_periods[i] && ret->time < ret->service_periods[i]->begin_time) {
+          ret->service_periods[i] = ret->service_periods[i]->prev_period;
+        }
+    }
+    
+    return ret;
+    
 }
 
 //TRIPHOP FUNCTIONS
