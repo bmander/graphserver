@@ -29,7 +29,7 @@ class Dispatch:
         return json.dumps(self.children)
         
     def children(self):
-        return json.dumps(self.children.values())
+        return json.dumps( self.children )
         
     def _over(self, lat, lon):
         return [self.children[x] for x in self.index.intersection( (lon, lat, lon, lat) )]
