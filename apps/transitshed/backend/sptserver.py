@@ -153,24 +153,6 @@ class ContourServer(Servable):
         
         return json.dumps(self.osmdb.nearest_node( lat, lon ))
         
-    def index(self):
-        fp = open("index.html")
-        indexhtml = fp.read()
-        fp.close()
-       
-        fp = open("GMAPS_API_KEY")
-        apikey = fp.read()
-        fp.close() 
-
-        return indexhtml%(apikey, self.home_point[0], self.home_point[1])
-    index.mime = "text/html"
-    
-    def jquery(self):
-        fp = open("jquery.js")
-        ret = fp.read()
-        fp.close()
-        return ret
-        
     def bounds(self):
         return json.dumps(self.osmdb.bounds())
     

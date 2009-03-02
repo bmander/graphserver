@@ -53,25 +53,6 @@ class Dispatch:
                 'speed':speed}
         contoururl = "http://%s/contour?%s&encoded=true"%(child_server['url'], urlencode(args))
         return urlopen(contoururl).read()
-        
-    def index(self):
-        fp = open("balancerindex.html")
-        indexhtml = fp.read()
-        fp.close()
-       
-        fp = open("GMAPS_API_KEY")
-        apikey = fp.read()
-        fp.close() 
-
-        return indexhtml%(apikey, 37, -122)
-        
-    def jquery(self):
-        fp = open("jquery.js")
-        ret = fp.read()
-        fp.close()
-        return ret
-        
-    index.mime = "text/html"
             
 class DispatchServer(Servable,Dispatch):
     def over(self, lat, lon):
