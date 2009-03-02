@@ -3,6 +3,7 @@ import atexit
 from ctypes import cdll, CDLL, pydll, PyDLL, CFUNCTYPE
 from ctypes import string_at, byref, c_int, c_long, c_size_t, c_char_p, c_double, c_void_p, py_object
 from ctypes import Structure, pointer, cast, POINTER, addressof
+from ctypes.util import find_library
 
 import os
 import sys
@@ -24,6 +25,7 @@ for _dlldir in _dlldirs:
 if not lgs:
     raise ImportError("unable to find libgraphserver shared library in the usual locations: %s" % "\n".join(_dlldirs))
 
+libc = cdll.LoadLibrary(find_library('c'))
 
 
 class _EmptyClass(object):
@@ -117,6 +119,8 @@ pycapi(lgs.gVertices, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.gShortestPathTree,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p, c_int, c_long])
 pycapi(lgs.gShortestPathTreeRetro,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p, c_int, c_long])
 pycapi(lgs.gSize,c_void_p, [c_long])
+pycapi(lgs.sptPathRetro,c_void_p, [c_void_p, c_char_p, c_void_p])
+pycapi(lgs.gShortestPathTreeRetro,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p, c_int, c_long])
 
 # SERVICE PERIOD API 
 pycapi(lgs.spNew, c_void_p, [c_long, c_long, c_int, c_void_p])

@@ -1,9 +1,9 @@
 
 try:
-    from graphserver.gsdll import lgs, cproperty, ccast, CShadow, instantiate, PayloadMethodTypes
+    from graphserver.gsdll import lgs, libc, cproperty, ccast, CShadow, instantiate, PayloadMethodTypes
 except ImportError:
     #so I can run this script from the same folder
-    from gsdll import lgs, cproperty, ccast, CShadow, instantiate, PayloadMethodTypes
+    from gsdll import lgs, libc, cproperty, ccast, CShadow, instantiate, PayloadMethodTypes
 from ctypes import string_at, byref, c_int, c_long, c_size_t, c_char_p, c_double, c_void_p, py_object, c_float
 from ctypes import Structure, pointer, cast, POINTER, addressof
 from _ctypes import Py_INCREF, Py_DECREF
@@ -174,25 +174,27 @@ class ShortestPathTree(Graph):
     def path_retro(self,origin):
         self.check_destroyed()
         
-        path_vertices = []
-        path_edges    = []
-   
-        curr = self.get_vertex( origin )
+        t = now()
+        vcnt = c_long(0)
+        ptr = lgs.sptPathRetro(self.soul, origin, 
+                               byref(vcnt))
         
-        #if the origin isn't in the SPT, there is no route
-        if curr is None:
-            return None, None
-    
-        path_vertices.append( curr )
-        
-        while len(curr.incoming) != 0:
-            edge_in = curr.incoming[0]
-            path_edges.append( edge_in )
-            curr = edge_in.from_v
-            path_vertices.append( curr )
-    
-        return (path_vertices, path_edges)
+        vcnt = vcnt.value
+        if vcnt <= 0:
+            return (None, None) 
 
+        pv = []
+        pe = []
+        vev_arr = cast(ptr, POINTER(c_void_p)) # a bit of necessary voodoo
+        pv.append(Vertex.from_pointer(vev_arr[0]))
+        for i in range(1,vcnt):
+            pv.append(Vertex.from_pointer(vev_arr[2*i]))
+            pe.append(Edge.from_pointer(vev_arr[2*i-1]))
+        # free the vev_arr
+        libc.free(ptr)
+        
+        return (pv, pe)
+        
     def destroy(self):
         #destroy the vertex State instances, but not the edge EdgePayload instances, as they're owned by the parent graph
         super(ShortestPathTree, self).destroy(1, 0)
