@@ -182,8 +182,11 @@
   </head>
   <body onload="load()" onunload="GUnload()">
     <h2>Transit Shed</h2>
-    Click on the map to see everywhere you can get using the Trimet transit system, on a weekday, within given a range and departure time<br>
+    Click on the map to see how far you can get using public transit<br>
     <br>
+    {% for child in childcenters %}
+    <a href="javascript:map.setCenter(new GLatLng({{child.lat}},{{child.lon}}));">{{child.name}}</a><br>
+    {% endfor %}
     <div id="map" style="width:700px;height:500px"></div>
     <table>
     <tr><td>Range (minutes):</td><td><input id="range" type="text" value="30"/><span onclick="javascript:$('#range')[0].value=parseInt($('#range')[0].value)+1;get_and_display_contours(null,target);">[+]</span> <span onclick="javascript:$('#range')[0].value=parseInt($('#range')[0].value)-1;get_and_display_contours(null,target);">[-]</span></td></tr>
