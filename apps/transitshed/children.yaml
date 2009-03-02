@@ -1,0 +1,10 @@
+- name: Bay Area
+  agencies:
+    - BART
+  bounds: [-122.4690794, 37.557335000000002, -121.90036000000001, 38.018931000000002]
+  url: localhost:8081
+- name: Seattle Area
+  agencies:
+    - King County Metro
+  bounds: [-122.50672900000001, 47.155334000000003, -121.782442, 47.932352999999999]
+  url: localhost:8082

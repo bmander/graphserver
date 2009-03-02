@@ -120,15 +120,18 @@
           
           $.getJSON("/contour?lat="+latlng.lat()+"&lon="+latlng.lng()+"&year="+year+"&month="+month+"&day="+day+"&hour="+hour+"&minute="+minute+"&second="+second+"&cutoff="+range+"&encoded=\"True\""+"&speed="+speed,
           function(data){
+          
             if( data == "NO NEARBY INTERSECTION" ) {
               alert( "No nearby intersection!" );
             } else {
-              next_contours = gpolygonize_contour_stack( data, "#0000ff", 3 )
+              next_contours = gpolygonize_contour_stack( data, "#0000ff", 3 );
+              
+              console.log( next_contours );
               
               //console.log( next_contours );
               
               map.clearOverlays();
-              map.addOverlay( boundary );
+              //map.addOverlay( boundary );
               marker = new GMarker(latlng, {clickable: false})
               map.addOverlay(marker);
               display_contours( next_contours )
