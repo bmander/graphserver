@@ -1201,12 +1201,61 @@ class Alight(EdgePayload):
     def to_xml(self):
         return "<Alight/>"
         
-    def __getstate__(self):
-        return tuple()
+    def __repr__(self):
+        return "<Alight int_sid=%d agency=%d calendar=%s timezone=%s alightings=%s>"%(self.int_service_id, self.agency, self.calendar.soul,self.timezone.soul,[self.get_alighting(i) for i in range(self.num_alightings)])
         
+    def __getstate__(self):
+        state = {}
+        state['calendar'] = self.calendar.soul
+        state['timezone'] = self.timezone.soul
+        state['agency'] = self.agency
+        state['int_sid'] = self.int_service_id
+        alightings = []
+        for i in range(self.num_alightings):
+            alightings.append( self.get_alighting( i ) )
+        state['alightings'] = alightings
+        return state
+        
+    def __resources__(self):
+        return ((str(self.calendar.soul), self.calendar),
+                (str(self.timezone.soul), self.timezone))
+    
     @classmethod
     def reconstitute(cls, state, resolver):
-        return Alight()
+        calendar = resolver.resolve( state['calendar'] )
+        timezone = resolver.resolve( state['timezone'] )
+        int_sid = state['int_sid']
+        agency = state['agency']
+        
+        ret = Alight(int_sid, calendar, timezone, agency)
+        
+        for trip_id, arrival in state['alightings']:
+            ret.add_alighting( trip_id, arrival )
+            
+        return ret
+        
+    def expound(self):
+        boardingstrs = []
+        
+        for i in range(self.num_alightings):
+            trip_id, arrival_secs = self.get_alighting(i)
+            alightingstrs.append( "on trip id='%s' at %s"%(trip_id, unparse_secs(arrival_secs)) )
+        
+        ret = """TripBoard
+   agency (internal id): %d
+   service_id (internal id): %d
+   calendar:
+%s
+   timezone:
+%s
+   alightings:
+%s"""%( self.agency,
+        self.int_service_id,
+        indent( self.calendar.expound("America/Chicago"), 6 ),
+        indent( self.timezone.expound(), 6 ),
+        indent( "\n".join(alightingstrs), 6 ) )
+
+        return ret
 
 Graph._cnew = lgs.gNew
 Graph._cdel = lgs.gDestroy
