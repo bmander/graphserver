@@ -148,7 +148,7 @@
         map = new GMap2(document.getElementById("map"));
         map.setCenter(new GLatLng(47, -122), 11);
         map.addControl( new GLargeMapControl() );
-            
+
         map.disableDoubleClickZoom()
         GEvent.addListener(map,"click", get_and_display_contours);
         
