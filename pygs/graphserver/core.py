@@ -1235,7 +1235,7 @@ class Alight(EdgePayload):
         return ret
         
     def expound(self):
-        boardingstrs = []
+        alightingstrs = []
         
         for i in range(self.num_alightings):
             trip_id, arrival_secs = self.get_alighting(i)
