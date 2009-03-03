@@ -29,8 +29,23 @@ class GraphCrawler(Servable):
         ret.append( "<h1>%s</h1>"%label )
         
         ret.append( "<h3>incoming from:</h3>" )
-        for vertex1, vertex2, edgetype in self.graphdb.all_incoming( label ):
-            ret.append( "<a href=\"/vertex?label=&quot;%s&quot;\">%s</a><pre>&nbsp;&nbsp;&nbsp;%s</pre>"%(vertex1, vertex1, cgi.escape(repr(edgetype))) )
+        for i, (vertex1, vertex2, edgetype) in enumerate( self.graphdb.all_incoming( label ) ):
+            s1 = State(1,int(currtime))
+            wo = WalkOptions()
+            s0 = edgetype.walk_back( s1, wo )
+            wo.destroy()
+            
+            if s0:
+                toterm = "<a href=\"/vertex?label=&quot;%s&quot;&currtime=%d\">%s@%d</a>"%(vertex1, s0.time, vertex1, s1.time)
+            else:
+                toterm = "<a href=\"/vertex?label=&quot;%s&quot;\">%s</a>"%(vertex1, vertex1)
+            
+            ret.append( "%s<br><pre>&nbsp;&nbsp;&nbsp;via %s (<a href=\"/incoming?label=&quot;%s&quot;&edgenum=%d\">details</a>)</pre>"%(toterm, cgi.escape(repr(edgetype)), vertex2, i) )
+            
+            if s0:
+                ret.append( "<pre>&nbsp;&nbsp;&nbsp;%s</pre>"%cgi.escape(str(s0)) )
+            
+            
         ret.append( "<h3>outgoing to:</h3>" )
         for i, (vertex1, vertex2, edgetype) in enumerate( self.graphdb.all_outgoing( label ) ):
             s0 = State(1,int(currtime))
@@ -55,6 +70,13 @@ class GraphCrawler(Servable):
         all_outgoing = list( self.graphdb.all_outgoing( label ) )
         
         fromv, tov, edge = all_outgoing[edgenum]
+        
+        return edge.expound()
+        
+    def incoming(self, label, edgenum):
+        all_incoming = list( self.graphdb.all_incoming( label ) )
+        
+        fromv, tov, edge = all_incoming[edgenum]
         
         return edge.expound()
     
