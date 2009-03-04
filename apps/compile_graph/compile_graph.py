@@ -63,7 +63,7 @@ def load_bundle_to_boardalight_graph(g, bundle, service_id, sc, tz):
         
         trip_id, departure_time, arrival_time, stop_id, stop_sequence = stop_time_bundle[0]
         
-        patternstop_vx_name = "%03d-%03d-%s"%(bundle.pattern.pattern_id,i,service_id)
+        patternstop_vx_name = "%03d-%03d"%(bundle.pattern.pattern_id,i)
         
         g.add_vertex( patternstop_vx_name )
         
@@ -75,23 +75,20 @@ def load_bundle_to_boardalight_graph(g, bundle, service_id, sc, tz):
         
     #add alight edges
     for i, stop_time_bundle in enumerate(stop_time_bundles[1:]):
-        patternstop_vx_name = "%03d-%03d-%s"%(bundle.pattern.pattern_id,i+1,service_id)
-         
         trip_id, departure_time, arrival_time, stop_id, stop_sequence = stop_time_bundle[0]
         
-        patternstop_vx_name = "%03d-%03d-%s"%(bundle.pattern.pattern_id,i,service_id)
+        patternstop_vx_name = "%03d-%03d"%(bundle.pattern.pattern_id,i+1)
         
         al = Alight(service_id, sc, tz, 0)
         for trip_id, departure_time, arrival_time, stop_id, stop_sequence in stop_time_bundle:
             al.add_alighting( trip_id.encode('ascii'), arrival_time )
             
         g.add_edge( patternstop_vx_name, stop_id, al )
-        pass
     
     # add crossing edges
     for j, crossing_time in enumerate(bundle.pattern.crossings):
         c = Crossing( crossing_time )
-        g.add_edge( "%03d-%03d-%s"%(bundle.pattern.pattern_id,j,service_id), "%03d-%03d-%s"%(bundle.pattern.pattern_id,j+1,service_id), c )
+        g.add_edge( "%03d-%03d"%(bundle.pattern.pattern_id,j), "%03d-%03d"%(bundle.pattern.pattern_id,j+1), c )
 
 def load_gtfsdb_to_boardalight_graph(g, gtfsdb, agency_id, service_ids, reporter=sys.stdout):
     
