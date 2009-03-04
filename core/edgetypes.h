@@ -371,6 +371,7 @@ tbGetOverage(TripBoard* this);
 inline State*
 tbWalk( EdgePayload* superthis, State* params, WalkOptions* options );
 
+inline State*
 tbWalkBack( EdgePayload* superthis, State* params, WalkOptions* options );
 
 //---------------DECLARATIONS FOR EGRESS CLASS---------------------
