@@ -36,6 +36,24 @@ class RouteServer(Servable):
         spt.destroy()
         
         return json.dumps(ret)
+        
+    def path_retro(self, origin, dest, currtime):
+        
+        wo = WalkOptions()
+        spt = self.graph.shortest_path_tree_retro( origin, dest, State(1,currtime), wo )
+        wo.destroy()
+        
+        vertices, edges = spt.path_retro( origin )
+        
+        ret = []
+        for i in range(len(edges)):
+            edgetype = edges[i].payload.__class__
+            if edgetype in self.event_dispatch:
+                ret.append( self.event_dispatch[ edges[i].payload.__class__ ]( vertices[i], edges[i], vertices[i+1] ) )
+        
+        spt.destroy()
+        
+        return json.dumps(ret)
 
     def path_raw(self, origin, dest, currtime):
         
@@ -44,6 +62,20 @@ class RouteServer(Servable):
         wo.destroy()
         
         vertices, edges = spt.path( dest )
+        
+        ret = "\n".join([str(x) for x in vertices]) + "\n\n" + "\n".join([str(x) for x in edges])
+
+        spt.destroy()
+        
+        return ret
+        
+    def path_raw_retro(self, origin, dest, currtime):
+        
+        wo = WalkOptions()
+        spt = self.graph.shortest_path_tree_retro( origin, dest, State(1,currtime), wo )
+        wo.destroy()
+        
+        vertices, edges = spt.path_retro( origin )
         
         ret = "\n".join([str(x) for x in vertices]) + "\n\n" + "\n".join([str(x) for x in edges])
 
@@ -75,7 +107,7 @@ if __name__ == '__main__':
         
         what = "Board the %s"%route_desc
         where = stop_desc
-        when = str(TimeHelpers.unix_to_localtime( event_time, "America/Chicago" ))
+        when = str(TimeHelpers.unix_to_localtime( event_time, "America/Los_Angeles" ))
         loc = (lat,lon)
         return (what, where, when, loc)
 
@@ -88,7 +120,7 @@ if __name__ == '__main__':
         
         what = "Alight"
         where = stop_desc
-        when = str(TimeHelpers.unix_to_localtime( event_time, "America/Chicago" ))
+        when = str(TimeHelpers.unix_to_localtime( event_time, "America/Los_Angeles" ))
         loc = (lat,lon)
         return (what, where, when, loc)
         
