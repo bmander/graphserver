@@ -1,10 +1,10 @@
   <html>
   <head>
-    <script type="text/javascript" src="jquery"></script>
+    <script type="text/javascript" src="js/jquery.js"></script>
   
     <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
     <title>Transit Shed: Everywhere You Can Get</title>
-    <script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=%s"
+    <script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key={{gmaps_api_key}}"
       type="text/javascript"></script>
     <script type="text/javascript">
 
@@ -48,7 +48,7 @@
         
         return new GPolygon.fromEncoded({polylines: packaged_rings,
                                          fill:true,
-                                         color:"#ee0000",
+                                         color:"#0000ee",
                                          opacity:0.2,
                                          outline:true});
     }
@@ -59,10 +59,10 @@
         ret = [];
         
         for(var cc=0; cc<data.length-1; cc++) {
-            ret = ret.concat( gpolylineize_contour( data[cc], "#ff1111", 2 ) );
+            ret = ret.concat( gpolylineize_contour( data[cc], "#1111ff", 2 ) );
         }
         
-        ret = ret.concat( gpolylineize_contour( data[data.length-1], "#ee0000", 4 ) );
+        ret = ret.concat( gpolylineize_contour( data[data.length-1], "#0000ee", 4 ) );
         
         return ret;
     }
@@ -73,7 +73,7 @@
         ret = [];
         
         for(var i=0; i<data.length; i++) {
-            var polygon = gpolygonize_contour( data[i], "#ff1111", 2 );
+            var polygon = gpolygonize_contour( data[i], "#1111ff", 2 );
             ret.push( polygon );
         }
         
@@ -87,7 +87,11 @@
           }
     }
 
-    function get_and_display_contours( overlay, latlng ) {
+    function get_and_display_contours( overlay, latlng, overlaylatlng ) {
+        if(latlng == undefined) {
+          latlng = overlaylatlng;
+        }
+    
         target = latlng
     
         range = ($("#range")[0].value)*60
@@ -99,6 +103,8 @@
         hour = $("#hour")[0].value
         minute = $("#minute")[0].value
         second = $("#second")[0].value
+        
+        speed = $("#speed")[0].value
         
         if( range > 3600 || range < 0 ) {
           alert( "Range must be between 0 and 60 minutes" )
@@ -112,17 +118,20 @@
           marker = new GMarker(latlng, {clickable: false});
           map.addOverlay(marker);
           
-          $.getJSON("/contour?lat="+latlng.lat()+"&lon="+latlng.lng()+"&year="+year+"&month="+month+"&day="+day+"&hour="+hour+"&minute="+minute+"&second="+second+"&cutoff="+range+"&encoded=\"True\"",
+          $.getJSON("/contour?lat="+latlng.lat()+"&lon="+latlng.lng()+"&year="+year+"&month="+month+"&day="+day+"&hour="+hour+"&minute="+minute+"&second="+second+"&cutoff="+range+"&encoded=\"True\""+"&speed="+speed,
           function(data){
+          
             if( data == "NO NEARBY INTERSECTION" ) {
               alert( "No nearby intersection!" );
             } else {
-              next_contours = gpolygonize_contour_stack( data, "#ff0000", 3 )
+              next_contours = gpolygonize_contour_stack( data, "#0000ff", 3 );
+              
+              console.log( next_contours );
               
               //console.log( next_contours );
               
               map.clearOverlays();
-              map.addOverlay( boundary );
+              //map.addOverlay( boundary );
               marker = new GMarker(latlng, {clickable: false})
               map.addOverlay(marker);
               display_contours( next_contours )
@@ -137,9 +146,9 @@
       if (GBrowserIsCompatible()) {
 
         map = new GMap2(document.getElementById("map"));
-        map.setCenter(new GLatLng(%f, %f), 11);
+        map.setCenter(new GLatLng(47, -122), 11);
         map.addControl( new GLargeMapControl() );
-            
+
         map.disableDoubleClickZoom()
         GEvent.addListener(map,"click", get_and_display_contours);
         
@@ -173,11 +182,15 @@
   </head>
   <body onload="load()" onunload="GUnload()">
     <h2>Transit Shed</h2>
-    Click on the map to see everywhere you can get using the Trimet transit system, on a weekday, within given a range and departure time<br>
+    Click on the map to see how far you can get using public transit<br>
     <br>
+    {% for child in childcenters %}
+    <a href="javascript:map.setCenter(new GLatLng({{child.lat}},{{child.lon}}));">{{child.name}}</a><br>
+    {% endfor %}
     <div id="map" style="width:700px;height:500px"></div>
     <table>
     <tr><td>Range (minutes):</td><td><input id="range" type="text" value="30"/><span onclick="javascript:$('#range')[0].value=parseInt($('#range')[0].value)+1;get_and_display_contours(null,target);">[+]</span> <span onclick="javascript:$('#range')[0].value=parseInt($('#range')[0].value)-1;get_and_display_contours(null,target);">[-]</span></td></tr>
+    <tr><td>Speed (m/s):</td><td><input id="speed" type="text" value="0.85"/></td></tr>
     <tr><td>Depart time (YYYY/MM/DD hh:mm:ss)</td><td>
       <input id="year" type="text" value="2009" maxlength=4 size=4/>/
       <input id="month" type="text" value="2" maxlength=2 size=2/>/

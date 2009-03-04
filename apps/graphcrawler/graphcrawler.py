@@ -18,8 +18,13 @@ class GraphCrawler(Servable):
     def __init__(self, graphdb_filename):
         self.graphdb = GraphDatabase( graphdb_filename )
     
-    def vertices(self):
-        return "\n".join( ["<a href=\"/vertex?label=&quot;%s&quot;\">%s</a><br>"%(vertex_label, vertex_label) for vertex_label in sorted( self.graphdb.all_vertex_labels() ) ])
+    def vertices(self, like=None):
+        if like:
+            return "\n".join( ["<a href=\"/vertex?label=&quot;%s&quot;\">%s</a><br>"%(vl[0], vl[0]) 
+                               for vl in self.graphdb.execute("SELECT label from vertices where label like ? order by label", (like,)) ])
+        else:
+            return "\n".join( ["<a href=\"/vertex?label=&quot;%s&quot;\">%s</a><br>"%(vl[0], vl[0]) 
+                               for vl in self.graphdb.execute("SELECT label from vertices order by label") ])
     vertices.mime = "text/html"
     
     def vertex(self, label, currtime=None):

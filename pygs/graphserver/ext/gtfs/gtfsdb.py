@@ -121,7 +121,8 @@ SELECT stop_times.* FROM stop_times, trips
 class GTFSDatabase:
     TRIPS_DEF = ("trips", (("route_id",   None, None),
                            ("trip_id",    None, None),
-                           ("service_id", None, None) ) )
+                           ("service_id", None, None),
+                           ("shape_id", None, None)))
     ROUTES_DEF = ("routes", (("route_id", None, None),
                              ("route_short_name", None, None),
                              ("route_long_name", None, None)) )
@@ -160,6 +161,11 @@ class GTFSDatabase:
                                        ("stop_id2", None, None),
                                        ("type", None, None),
                                        ("distance", "INTEGER", None)))
+    SHAPES_DEF = ("shape_id", (("shape_id", None, None),
+                               ("shape_pt_lat", "FLOAT", None),
+                               ("shape_pt_lon", "FLOAT", None),
+                               ("shape_pt_sequence", "INTEGER", None),
+                               ("shape_dist_traveled", "FLOAT", None)))
     
     GTFS_DEF = (TRIPS_DEF, 
                 STOP_TIMES_DEF, 

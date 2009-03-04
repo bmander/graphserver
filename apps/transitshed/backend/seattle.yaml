@@ -1,0 +1,5 @@
+graphdb_filename: "data/metrokc.gdb"
+osmdb_filename: "data/metrokc.osmdb"
+gtfsdb_filename: "data/metrokc.gtfsdb"
+center: [47, -122]
+port: 8082
