@@ -1,9 +1,9 @@
 
 try:
-    from graphserver.gsdll import lgs, cproperty, ccast, CShadow, instantiate, PayloadMethodTypes
+    from graphserver.gsdll import lgs, libc, cproperty, ccast, CShadow, instantiate, PayloadMethodTypes
 except ImportError:
     #so I can run this script from the same folder
-    from gsdll import lgs, cproperty, ccast, CShadow, instantiate, PayloadMethodTypes
+    from gsdll import lgs, libc, cproperty, ccast, CShadow, instantiate, PayloadMethodTypes
 from ctypes import string_at, byref, c_int, c_long, c_size_t, c_char_p, c_double, c_void_p, py_object, c_float
 from ctypes import Structure, pointer, cast, POINTER, addressof
 from _ctypes import Py_INCREF, Py_DECREF
@@ -143,7 +143,7 @@ class Graph(CShadow):
         if not fromv:
             fromv = "*bogus^*^vertex*"
             
-        if walk_optoins is None:
+        if walk_options is None:
             walk_options = WalkOptions()
             ret = self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime) )
             walk_options.destroy()
@@ -174,25 +174,27 @@ class ShortestPathTree(Graph):
     def path_retro(self,origin):
         self.check_destroyed()
         
-        path_vertices = []
-        path_edges    = []
-   
-        curr = self.get_vertex( origin )
+        t = now()
+        vcnt = c_long(0)
+        ptr = lgs.sptPathRetro(self.soul, origin, 
+                               byref(vcnt))
         
-        #if the origin isn't in the SPT, there is no route
-        if curr is None:
-            return None, None
-    
-        path_vertices.append( curr )
-        
-        while len(curr.incoming) != 0:
-            edge_in = curr.incoming[0]
-            path_edges.append( edge_in )
-            curr = edge_in.from_v
-            path_vertices.append( curr )
-    
-        return (path_vertices, path_edges)
+        vcnt = vcnt.value
+        if vcnt <= 0:
+            return (None, None) 
 
+        pv = []
+        pe = []
+        vev_arr = cast(ptr, POINTER(c_void_p)) # a bit of necessary voodoo
+        pv.append(Vertex.from_pointer(vev_arr[0]))
+        for i in range(1,vcnt):
+            pv.append(Vertex.from_pointer(vev_arr[2*i]))
+            pe.append(Edge.from_pointer(vev_arr[2*i-1]))
+        # free the vev_arr
+        libc.free(ptr)
+        
+        return (pv, pe)
+        
     def destroy(self):
         #destroy the vertex State instances, but not the edge EdgePayload instances, as they're owned by the parent graph
         super(ShortestPathTree, self).destroy(1, 0)
@@ -272,6 +274,15 @@ class WalkOptions(CShadow):
         self._cdel(self.soul)
         self.soul = None
         
+    @classmethod
+    def from_pointer(cls, ptr):
+        """ Overrides the default behavior to return the appropriate subtype."""
+        if ptr is None:
+            return None
+        ret = instantiate(cls)
+        ret.soul = ptr
+        return ret
+ 
     transfer_penalty = cproperty(lgs.woGetTransferPenalty, c_int, setter=lgs.woSetTransferPenalty)
     walking_speed = cproperty(lgs.woGetWalkingSpeed, c_float, setter=lgs.woSetWalkingSpeed)
     walking_reluctance = cproperty(lgs.woGetWalkingReluctance, c_float, setter=lgs.woSetWalkingReluctance)
@@ -458,16 +469,16 @@ class GenericPyPayload(EdgePayload):
     """ These methods are the public interface, BUT should not be overridden by subclasses 
         - subclasses should override the *_impl methods instead.""" 
     @failsafe(1)
-    def walk(self, state):
+    def walk(self, state, walkoptions):
         s = state.clone()
         s.prev_edge_name = self.name
-        return self.walk_impl(s)
+        return self.walk_impl(s, walkoptions)
     
     @failsafe(1)
-    def walk_back(self, state):
+    def walk_back(self, state, walkoptions):
         s = state.clone()
         s.prev_edge_name = self.name
-        return self.walk_back_impl(s)
+        return self.walk_back_impl(s, walkoptions)
 
     @failsafe(0)
     def collapse(self, state):
@@ -478,10 +489,10 @@ class GenericPyPayload(EdgePayload):
         return self.collapse_back_impl(state)
      
     """ These methods should be overridden by subclasses as deemed fit. """
-    def walk_impl(self, state):
+    def walk_impl(self, state, walkoptions):
         return state
 
-    def walk_back_impl(self, state):
+    def walk_back_impl(self, state, walkoptions):
         return state
 
     def collapse_impl(self, state):
@@ -491,11 +502,11 @@ class GenericPyPayload(EdgePayload):
         return self
 
     """ These methods provide the interface from the C world to py method implementation. """
-    def _cwalk(self, stateptr):
-        return self.walk(State.from_pointer(stateptr)).soul
+    def _cwalk(self, stateptr, walkoptionsptr):
+        return self.walk(State.from_pointer(stateptr), WalkOptions.from_pointer(walkoptionsptr)).soul
 
-    def _cwalk_back(self, stateptr):
-        return self.walk_back(State.from_pointer(stateptr)).soul
+    def _cwalk_back(self, stateptr, walkoptionsptr):
+        return self.walk_back(State.from_pointer(stateptr), WalkOptions.from_pointer(walkoptionsptr)).soul
 
     def _ccollapse(self, stateptr):
         return self.collapse(State.from_pointer(stateptr)).soul
@@ -526,10 +537,10 @@ class NoOpPyPayload(GenericPyPayload):
         super(NoOpPyPayload,self).__init__()
     
     """ Dummy class."""
-    def walk_impl(self, state):
+    def walk_impl(self, state, walkopts):
         print "%s walking..." % self
         
-    def walk_back_impl(self, state):
+    def walk_back_impl(self, state, walkopts):
         print "%s walking back..." % self
         
         
@@ -815,6 +826,32 @@ class Street(EdgePayload):
     @classmethod
     def reconstitute(self, state, resolver):
         return Street( *state )
+
+class Egress(EdgePayload):
+    length = cproperty(lgs.egressGetLength, c_double)
+    name   = cproperty(lgs.egressGetName, c_char_p)
+    
+    def __init__(self,name,length):
+        self.soul = self._cnew(name, length)
+            
+    def to_xml(self):
+        self.check_destroyed()
+        
+        return "<Egress name='%s' length='%f' />" % (self.name, self.length)
+        
+    def __getstate__(self):
+        return (self.name, self.length)
+        
+    def __setstate__(self, state):
+        self.__init__(*state)
+        
+    def __repr__(self):
+        return "<Egress name='%s' length=%f>"%(self.name, self.length)
+        
+    @classmethod
+    def reconstitute(self, state, resolver):
+        return Egress( *state )
+
 
 class Wait(EdgePayload):
     end = cproperty(lgs.waitGetEnd, c_long)
@@ -1235,8 +1272,13 @@ TripHopSchedule._cget_next_hop = lgs.thsGetNextHop
 
 Street._cnew = lgs.streetNew
 Street._cdel = lgs.streetDestroy
-Street._cwalk = lgs.epWalk
+Street._cwalk = lgs.streetWalk
 Street._cwalk_back = lgs.streetWalkBack
+
+Egress._cnew = lgs.egressNew
+Egress._cdel = lgs.egressDestroy
+Egress._cwalk = lgs.egressWalk
+Egress._cwalk_back = lgs.egressWalkBack
 
 Link._cnew = lgs.linkNew
 Link._cdel = lgs.linkDestroy

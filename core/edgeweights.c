@@ -2,6 +2,30 @@
 #define MAX_LONG 2147483647
 #define SECS_IN_DAY 86400
 
+#ifndef ROUTE_REVERSE
+#define ELAPSE_TIME_AND_SERVICE_PERIOD(ret, delta_t) \
+  int i; \
+  ret->time           += delta_t; \
+  for(i=0; i<params->n_agencies; i++) { \
+      ServicePeriod* sp = params->service_periods[i]; \
+      if(sp && ret->time >= sp->end_time) { \
+        ret->service_periods[i] = sp->next_period; \
+      } \
+  }
+#else
+#define ELAPSE_TIME_AND_SERVICE_PERIOD(ret, delta_t) \
+  int i; \
+  ret->time           -= delta_t; \
+  for(i=0; i<params->n_agencies; i++) { \
+    ServicePeriod* sp = params->service_periods[i]; \
+    if(sp && ret->time < sp->begin_time) { \
+      ret->service_periods[i] = sp->prev_period; \
+    } \
+  }
+#endif
+
+
+
 inline State*
 #ifndef ROUTE_REVERSE
 linkWalk(EdgePayload* this, State* params, WalkOptions* options) {
@@ -82,24 +106,8 @@ streetWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
   if(end_dist > options->max_walk)
     delta_w += (end_dist - options->max_walk)*options->walking_overage*delta_t;
 
-  int i;
-#ifndef ROUTE_REVERSE
-  ret->time           += delta_t;
-  for(i=0; i<params->n_agencies; i++) {
-      ServicePeriod* sp = params->service_periods[i];
-      if(sp && ret->time >= sp->end_time) {
-        ret->service_periods[i] = sp->next_period;
-      }
-  }
-#else
-  ret->time           -= delta_t;
-  for(i=0; i<params->n_agencies; i++) {
-    ServicePeriod* sp = params->service_periods[i];
-    if(sp && ret->time < sp->begin_time) {
-      ret->service_periods[i] = sp->prev_period;
-    }
-  }
-#endif
+  ELAPSE_TIME_AND_SERVICE_PERIOD(ret, delta_t);
+
   if (end_dist > ABSOLUTE_MAX_WALK) //TODO profile this to see if it's worth it
     ret->weight = MAX_LONG;
   else
@@ -110,6 +118,35 @@ streetWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
 
   return ret;
 }
+
+inline State*
+#ifndef ROUTE_REVERSE
+egressWalk(EdgePayload* superthis, State* params, WalkOptions* options) {
+#else
+egressWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
+#endif
+  Egress* this = (Egress*)superthis;
+  State* ret = stateDup( params );
+
+  double end_dist = params->dist_walked + this->length;
+  // no matter what the options say (e.g. you're on a bike), 
+  // the walking speed should be 2 mps, because you can't ride in
+  // a station
+  long delta_t = (long)(this->length/2);
+  long delta_w = delta_t*options->walking_reluctance;
+  if(end_dist > options->max_walk)
+    delta_w += (end_dist - options->max_walk)*options->walking_overage*delta_t;
+
+  ELAPSE_TIME_AND_SERVICE_PERIOD(ret, delta_t);
+
+  ret->weight        += delta_w;
+  ret->dist_walked    = end_dist;
+  ret->prev_edge_type = PL_EGRESS;
+  ret->prev_edge_name = this->name;
+
+  return ret;
+}
+
 
 // This function is never called by the router - it's mostly a convenience method to be wrapped
 // by a higher-level langauge for the purpose of debugging.

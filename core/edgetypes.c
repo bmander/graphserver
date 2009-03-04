@@ -198,6 +198,9 @@ epDestroy( EdgePayload* this ) {
     case PL_HEADWAY:
       headwayDestroy( (Headway*)this );
       break;
+    case PL_EGRESS:
+      egressDestroy( (Egress*)this ); 
+      break;
     default:
       free( this );
   }
@@ -214,7 +217,7 @@ epWalk( EdgePayload* this, State* params, WalkOptions* options ) {
     return NULL;
 
   if( this->type == PL_EXTERNVALUE ) {
-    return cpWalk( (CustomPayload*)this, params );
+    return cpWalk( (CustomPayload*)this, params, options );
   }
   
   return this->walk( this, params, options );
@@ -227,7 +230,7 @@ epWalkBack( EdgePayload* this, State* params, WalkOptions* options ) {
     return NULL;
 
   if( this->type == PL_EXTERNVALUE ){
-    return cpWalkBack( (CustomPayload*)this, params );
+    return cpWalkBack( (CustomPayload*)this, params, options );
   }
   
   return this->walkBack( this, params, options );
@@ -325,6 +328,39 @@ double
 streetGetLength(Street* this) {
     return this->length;
 }
+
+//EGRESS FUNCTIONS
+Egress*
+egressNew(const char *name, double length) {
+  Egress* ret = (Egress*)malloc(sizeof(Egress));
+  ret->type = PL_EGRESS;
+  ret->name = (char*)malloc((strlen(name)+1)*sizeof(char));
+  strcpy(ret->name, name);
+  ret->length = length;
+  
+  //bind functions to methods
+  ret->walk = &egressWalk;
+  ret->walkBack = &egressWalkBack;
+
+  return ret;
+}
+
+void
+egressDestroy(Egress* tokill) {
+  free(tokill->name);
+  free(tokill);
+}
+
+char*
+egressGetName(Egress* this) {
+    return this->name;
+}
+
+double
+egressGetLength(Egress* this) {
+    return this->length;
+}
+
 
 //WAIT FUNCTIONS
 Wait*
@@ -1084,8 +1120,8 @@ thsGetHop(TripHopSchedule* this, int i) { return this->hops[i]; }
 
 PayloadMethods*
 defineCustomPayloadType(void (*destroy)(void*),
-						State* (*walk)(void*,State*),
-						State* (*walkback)(void*,State*),
+						State* (*walk)(void*,State*,WalkOptions*),
+						State* (*walkback)(void*,State*,WalkOptions*),
 						EdgePayload* (*collapse)(void*,State*),
 						EdgePayload* (*collapseBack)(void*,State*)) {
 	PayloadMethods* this = (PayloadMethods*)malloc(sizeof(PayloadMethods));
@@ -1128,14 +1164,14 @@ cpMethods( CustomPayload* this ) {
 }
 
 State*
-cpWalk(CustomPayload* this, State* params) {
-	State* s = this->methods->walk(this->soul, params);
+cpWalk(CustomPayload* this, State* params, WalkOptions* walkoptions) {
+	State* s = this->methods->walk(this->soul, params, walkoptions);
 	s->prev_edge_type = PL_EXTERNVALUE;
 	return s;
 }
 State*
-cpWalkBack(CustomPayload* this, State* params) {
-	State* s = this->methods->walkBack(this->soul, params);
+cpWalkBack(CustomPayload* this, State* params, WalkOptions* walkoptions) {
+	State* s = this->methods->walkBack(this->soul, params, walkoptions);
 	s->prev_edge_type = PL_EXTERNVALUE;
 	return s;
 }

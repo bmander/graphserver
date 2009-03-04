@@ -16,8 +16,15 @@ OBJECTS= dirfibheap.o \
 
 # You know what? Honestly? I don't know what most of these switches do.
 CFLAGS=-g -fno-strict-aliasing -O2 -fPIC -Wall
-LDFLAGS= -L. -Bsymbolic-functions -rdynamic -Wall -export-dynamic -ldl \
-	 -lcrypt -lm -lc
+LDFLAGS= -L. -Bsymbolic-functions -Wall -ldl -lm -lc
+
+OS := $(shell uname)
+
+ifeq ($(OS),Darwin)
+  LDFLAGS += -dynamiclib
+else
+  LDFLAGS += -shared
+endif
 
 # This complicated-looking rule will autogenerate the appropriate dependancies
 # for each source file, ensuring that they are recompiled when the headers

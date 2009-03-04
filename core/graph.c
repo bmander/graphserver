@@ -187,6 +187,43 @@ gShortestPath( Graph* this, char *from, char *to, State* init_state, int directi
   return ret;
 }
 
+void**
+sptPathRetro(Graph* g, char* origin_label, int* vertex_cnt) {
+	Vertex* curr = gGetVertex(g, origin_label);
+	ListNode* incoming = NULL;
+	Edge* edge = NULL;
+	
+	int num_alloc = 50;
+	void** vev_array = NULL;
+	//Edge** path_edges = (Edge**)malloc((num_alloc) * sizeof(Edge*));
+	
+	int num_elements = 0;
+	if (curr == NULL) {
+		*vertex_cnt = 0;
+		//printf("No path\n");
+		return NULL;
+	}
+	vev_array = (void**)malloc(num_alloc * sizeof(Vertex*));
+	vev_array[num_elements] = (void*)curr;
+	num_elements++;
+	
+	while ((incoming = vGetIncomingEdgeList(curr))) {
+		if (2*num_elements >= num_alloc-1) {
+			//printf("Realloc\n");
+			vev_array = (void**)realloc(vev_array, ((num_alloc+50) * sizeof(void*)));
+			num_alloc += 50;
+			//printf("Realloc done\n");
+		}
+		edge = liGetData(incoming);
+		vev_array[2*num_elements-1] = (void*)edge;
+		curr = eGetFrom(edge);
+		vev_array[2*num_elements] = (void*)curr;
+		num_elements++;
+	}
+	*vertex_cnt = num_elements;
+	//printf("Path has %d vertices\n", num_elements);
+	return vev_array;	
+}
 
 long
 gSize( Graph* this ) {
