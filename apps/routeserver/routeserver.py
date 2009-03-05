@@ -101,6 +101,7 @@ if __name__ == '__main__':
         trip_id = vertex2.payload.trip_id
         stop_id = vertex1.label
         
+        print trip_id
         route_desc = list( gtfsdb.execute( "SELECT routes.route_long_name FROM routes, trips WHERE routes.route_id=trips.route_id AND trip_id=?", (trip_id,) ) )[0][0]
         stop_desc = list( gtfsdb.execute( "SELECT stop_name FROM stops WHERE stop_id = ?", (stop_id,) ) )[0][0]
         lat, lon = list( gtfsdb.execute( "SELECT stop_lat, stop_lon FROM stops WHERE stop_id = ?", (stop_id,) ) )[0]
@@ -124,12 +125,42 @@ if __name__ == '__main__':
         loc = (lat,lon)
         return (what, where, when, loc)
         
+    def headwayboard_event(vertex1, edge, vertex2):
+        event_time = vertex2.payload.time
+        trip_id = vertex2.payload.trip_id
+        stop_id = vertex1.label
+        
+        route_desc = list( gtfsdb.execute( "SELECT routes.route_long_name FROM routes, trips WHERE routes.route_id=trips.route_id AND trip_id=?", (trip_id,) ) )[0][0]
+        stop_desc = list( gtfsdb.execute( "SELECT stop_name FROM stops WHERE stop_id = ?", (stop_id,) ) )[0][0]
+        lat, lon = list( gtfsdb.execute( "SELECT stop_lat, stop_lon FROM stops WHERE stop_id = ?", (stop_id,) ) )[0]
+        
+        what = "Board the %s"%route_desc
+        where = stop_desc
+        when = "about %s"%str(TimeHelpers.unix_to_localtime( event_time, "America/Los_Angeles" ))
+        loc = (lat,lon)
+        return (what, where, when, loc)
+        
+    def headwayalight_event(vertex1, edge, vertex2):
+        event_time = vertex1.payload.time
+        stop_id = vertex2.label
+        
+        stop_desc = list( gtfsdb.execute( "SELECT stop_name FROM stops WHERE stop_id = ?", (stop_id,) ) )[0][0]
+        lat, lon = list( gtfsdb.execute( "SELECT stop_lat, stop_lon FROM stops WHERE stop_id = ?", (stop_id,) ) )[0]
+        
+        what = "Alight"
+        where = stop_desc
+        when = "about %s"%str(TimeHelpers.unix_to_localtime( event_time, "America/Los_Angeles" ))
+        loc = (lat,lon)
+        return (what, where, when, loc)
+        
     def street_event(vertex1, edge, vertex2):
         return ("Walk", "", "", None)
         
     event_dispatch = {graphserver.core.TripBoard:board_event,
                       graphserver.core.Alight:alight_event,
-                      graphserver.core.Street:street_event}
+                      graphserver.core.Street:street_event,
+                      graphserver.core.HeadwayBoard:headwayboard_event,
+                      graphserver.core.HeadwayAlight:headwayalight_event}
     
     gc = RouteServer(graphdb_filename, event_dispatch)
     gc.run_test_server()
