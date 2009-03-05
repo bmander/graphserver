@@ -3121,26 +3121,26 @@ class TestHeadwayAlight(unittest.TestCase):
         # 200 after end of headway
         s0 = State(1,1200)
         s1 = ha.walk_back(s0,WalkOptions())
-        assert s1.time == 950
-        assert s1.weight == 251
+        assert s1.time == 1000
+        assert s1.weight == 201
         
         # at very end of the headway
         s0 = State(1,1000)
         s1 = ha.walk_back(s0,WalkOptions())
-        assert s1.time == 950
-        assert s1.weight == 51
+        assert s1.time == 1000
+        assert s1.weight == 1
         
         # in the middle of headway period
         s0 = State(1, 500)
         s1 = ha.walk_back(s0,WalkOptions())
-        assert s1.time == 450
-        assert s1.weight == 51
+        assert s1.time == 500
+        assert s1.weight == 1
         
         # at the very beginning of the headway period
         s0 = State(1, 200)
         s1 = ha.walk_back(s0,WalkOptions())
-        assert s1.time == 150
-        assert s1.weight == 51
+        assert s1.time == 200
+        assert s1.weight == 1
         
         # before beginning of headway period
         s0 = State(1, 199)
@@ -3172,33 +3172,33 @@ class TestHeadwayAlight(unittest.TestCase):
         # just past the end
         s0 = State(1, 26*3600+100)
         s1 = ha.walk_back(s0,WalkOptions())
-        assert s1.weight == 201
+        assert s1.weight == 101
         assert s1.service_period(0).service_ids == [1]
         
         # right at the end
         s0 = State(1, 26*3600 )
         s1 = ha.walk_back(s0,WalkOptions())
-        assert s1.weight == 101
+        assert s1.weight == 1
         assert s1.service_period(0).service_ids == [1]
         
         # in the middle, over midnight
         s0 = State(1, 25*3600 )
         s1 = ha.walk_back(s0,WalkOptions())
-        assert s1.time == 25*3600-100
-        assert s1.weight == 101
+        assert s1.time == 25*3600
+        assert s1.weight == 1
         assert s1.service_period(0).service_ids == [1]
         
         # in the middle, at midnight
         s0 = State(1, 24*3600 )
         s1 = ha.walk_back(s0,WalkOptions())
-        assert s1.weight == 101
+        assert s1.weight == 1
         assert s1.service_period(0).service_ids == [1]
         
         #before midnight, at the beginning
         s0 = State(1, 23*3600 )
         s1 = ha.walk_back(s0,WalkOptions())
-        assert s1.time == 23*3600-100
-        assert s1.weight == 101
+        assert s1.time == 23*3600
+        assert s1.weight == 1
         assert s1.service_period(0).service_ids == [0]
         
         s0 = State(1, 23*3600-1)
@@ -3239,29 +3239,29 @@ if __name__ == '__main__':
     tl = unittest.TestLoader()
     
     testables = [\
-                 #TestGraph,
-                 #TestGraphPerformance,
-                 #TestState,
-                 #TestPyPayload,
-                 #TestLink,
-                 #TestWait,
-                 #TestTripHop,
-                 #TestTriphopSchedule,
-                 #TestStreet,
-                 #TestHeadway,
-                 #TestListNode,
-                 #TestVertex,
-                 #TestServicePeriod,
-                 #TestServiceCalendar,
-                 #TestEngine,
-                 #TestTimezone,
-                 #TestTimezonePeriod,
-                 #TestTripBoard,
-                 #TestCrossing,
-                 #TestAlight,
-                 #TestHeadwayBoard,
+                 TestGraph,
+                 TestGraphPerformance,
+                 TestState,
+                 TestPyPayload,
+                 TestLink,
+                 TestWait,
+                 TestTripHop,
+                 TestTriphopSchedule,
+                 TestStreet,
+                 TestHeadway,
+                 TestListNode,
+                 TestVertex,
+                 TestServicePeriod,
+                 TestServiceCalendar,
+                 TestEngine,
+                 TestTimezone,
+                 TestTimezonePeriod,
+                 TestTripBoard,
+                 TestCrossing,
+                 TestAlight,
+                 TestHeadwayBoard,
                  TestHeadwayAlight,
-                 #TestWalkOptions,
+                 TestWalkOptions,
                  ]
 
     for testable in testables:
