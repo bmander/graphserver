@@ -744,6 +744,7 @@ hbNew(  ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int
   ret->service_id = service_id;
     
   ret->walk = &hbWalk;
+  ret->walkBack = &hbWalkBack;
     
   return ret;
 }
@@ -851,6 +852,8 @@ hbWalk( EdgePayload* superthis, State* params, WalkOptions* options ) {
     ret->time   += wait;
     ret->weight += wait + 1; //transfer penalty
     
+    ret->trip_id = this->trip_id;
+    
     // Make sure the service period caches are updated if we've traveled over a service period boundary
     int i;
     for(i=0; i<params->n_agencies; i++) {
@@ -861,6 +864,14 @@ hbWalk( EdgePayload* superthis, State* params, WalkOptions* options ) {
     
     return ret;
     
+}
+
+inline State*
+hbWalkBack(EdgePayload* this, State* params, WalkOptions* options) {
+    State* ret = stateDup( params );
+    ret->trip_id = NULL;
+    
+    return ret;
 }
 
 // CROSSING FUNCTIONS

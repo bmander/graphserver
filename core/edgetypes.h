@@ -408,6 +408,7 @@ egressGetLength(Egress* this);
 typedef struct HeadwayBoard {
     edgepayload_t type;
     State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
+    State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
     
     ServiceId service_id;
     char* trip_id;
@@ -452,6 +453,9 @@ hbGetHeadwaySecs( HeadwayBoard* this );
 
 inline State*
 hbWalk( EdgePayload* superthis, State* params, WalkOptions* options );
+
+inline State*
+hbWalkBack( EdgePayload* superthis, State* params, WalkOptions* options );
 
 //---------------DECLARATIONS FOR CROSSING CLASS-------------------------------------------
 
