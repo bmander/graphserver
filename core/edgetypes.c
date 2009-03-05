@@ -867,8 +867,14 @@ hbWalk( EdgePayload* superthis, State* params, WalkOptions* options ) {
 }
 
 inline State*
-hbWalkBack(EdgePayload* this, State* params, WalkOptions* options) {
+hbWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
+    HeadwayBoard* this = (HeadwayBoard*)superthis;
+    
     State* ret = stateDup( params );
+    
+    int wait = this->headway_secs; 
+    ret->time   -= wait;
+    ret->weight += wait; //transfer penalty
     ret->trip_id = NULL;
     
     return ret;
@@ -1001,7 +1007,7 @@ haWalkBack( EdgePayload* superthis, State* params, WalkOptions* options ) {
     
     ret->num_transfers += 1;
     
-    int wait = this->headway_secs; //you could argue the correct wait is headway_secs/2
+    int wait = 0;
     
     if (time_since_midnight > this->end_time )
         wait += (time_since_midnight - this->end_time);
