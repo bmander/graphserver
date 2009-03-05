@@ -879,7 +879,7 @@ hbWalkBack(EdgePayload* this, State* params, WalkOptions* options) {
 HeadwayAlight*
 haNew(  ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int agency, char* trip_id, int start_time, int end_time, int headway_secs ) {
   HeadwayAlight* ret = (HeadwayAlight*)malloc(sizeof(HeadwayAlight));
-  ret->type = PL_HEADWAYBOARD;
+  ret->type = PL_HEADWAYALIGHT;
 
   int n = strlen(trip_id)+1;
   ret->trip_id = (char*)malloc(sizeof(char)*(n));
