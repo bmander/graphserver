@@ -700,7 +700,8 @@ tbWalk( EdgePayload* superthis, State* params, WalkOptions* options ) {
     int wait = (next_boarding_time - time_since_midnight);
     
     ret->time   += wait;
-    ret->weight += wait + 1; //transfer penalty
+    ret->weight += wait + 1; //base transfer penalty
+    ret->weight += options->transfer_penalty;
     
     ret->trip_id = this->trip_ids[next_boarding_index];
     
@@ -851,6 +852,7 @@ hbWalk( EdgePayload* superthis, State* params, WalkOptions* options ) {
     
     ret->time   += wait;
     ret->weight += wait + 1; //transfer penalty
+    ret->weight += options->transfer_penalty;
     
     ret->trip_id = this->trip_id;
     
@@ -1014,6 +1016,7 @@ haWalkBack( EdgePayload* superthis, State* params, WalkOptions* options ) {
     
     ret->time   -= wait;
     ret->weight += wait + 1; //transfer penalty
+    ret->weight += options->transfer_penalty;
     
     ret->trip_id = this->trip_id;
     
@@ -1330,6 +1333,7 @@ alWalkBack( EdgePayload* superthis, State* params, WalkOptions* options ) {
     
     ret->time   -= wait;
     ret->weight += wait + 1; //transfer penalty
+    ret->weight += options->transfer_penalty;
     
     ret->trip_id = this->trip_ids[last_alighting_index];
     
