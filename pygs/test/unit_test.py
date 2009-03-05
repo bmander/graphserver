@@ -3033,6 +3033,19 @@ class TestHeadwayBoard(unittest.TestCase):
         s1 = hb.walk(s0,WalkOptions())
         assert s1 == None
         
+    def test_walk_back(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24, ['WKDY'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        hb = HeadwayBoard("WKDY", sc, tz, 0, "tr1", 200, 1000, 50)
+        
+        s0 = State(1,0)
+        s1 = hb.walk(s0, WalkOptions())
+        s2 = hb.walk_back(s1, WalkOptions())
+        assert s2.trip_id == None
+        
     def test_tripboard_over_midnight(self):
         
         sc = ServiceCalendar()
@@ -3108,28 +3121,28 @@ if __name__ == '__main__':
     tl = unittest.TestLoader()
     
     testables = [\
-                 TestGraph,
-                 TestGraphPerformance,
-                 TestState,
-                 TestPyPayload,
-                 TestLink,
-                 TestWait,
-                 TestTripHop,
-                 TestTriphopSchedule,
-                 TestStreet,
-                 TestHeadway,
-                 TestListNode,
-                 TestVertex,
-                 TestServicePeriod,
-                 TestServiceCalendar,
-                 TestEngine,
-                 TestTimezone,
-                 TestTimezonePeriod,
-                 TestTripBoard,
-                 TestCrossing,
-                 TestAlight,
+                 #TestGraph,
+                 #TestGraphPerformance,
+                 #TestState,
+                 #TestPyPayload,
+                 #TestLink,
+                 #TestWait,
+                 #TestTripHop,
+                 #TestTriphopSchedule,
+                 #TestStreet,
+                 #TestHeadway,
+                 #TestListNode,
+                 #TestVertex,
+                 #TestServicePeriod,
+                 #TestServiceCalendar,
+                 #TestEngine,
+                 #TestTimezone,
+                 #TestTimezonePeriod,
+                 #TestTripBoard,
+                 #TestCrossing,
+                 #TestAlight,
                  TestHeadwayBoard,
-                 TestWalkOptions,
+                 #TestWalkOptions,
                  ]
 
     for testable in testables:
