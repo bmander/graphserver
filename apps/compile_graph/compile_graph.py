@@ -1,4 +1,4 @@
-from graphserver.core import State, Graph, TripBoard, HeadwayBoard, Crossing, Alight, Link, ServiceCalendar, Timezone, TimezonePeriod, Street
+from graphserver.core import State, Graph, TripBoard, HeadwayBoard, HeadwayAlight, Crossing, Alight, Link, ServiceCalendar, Timezone, TimezonePeriod, Street
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
 from graphserver.ext.osm.osmdb import OSMDB
 import sys
@@ -114,28 +114,30 @@ def load_gtfsdb_to_boardalight_graph(g, gtfsdb, agency_id, service_ids, reporter
             load_bundle_to_boardalight_graph(g, bundle, service_id, sc, tz)
             
     # load headways
-    #if reporter: reporter.write( "Loading headways trips to graph...\n" )
-    #for trip_id, start_time, end_time, headway_secs in gtfsdb.execute( "SELECT * FROM frequencies" ):
-    #    service_id = list(gtfsdb.execute( "SELECT service_id FROM trips WHERE trip_id=?", (trip_id,) ))[0][0]
-    #    service_id = service_id.encode('utf-8')
-    #    
-    #    hb = HeadwayBoard( service_id, sc, tz, 0, trip_id.encode('utf-8'), start_time, end_time, headway_secs )
-    #    
-    #    stoptimes = list(gtfsdb.execute( "SELECT * FROM stop_times WHERE trip_id=? ORDER BY stop_sequence", (trip_id,)) )
-    #    
-    #    #add board edges
-    #    for trip_id, arrival_time, departure_time, stop_id, stop_sequence in stoptimes[:-1]:
-    #        g.add_vertex( "%s-hw-%s"%(stop_id, trip_id) )
-    #        g.add_edge( stop_id, "%s-hw-%s"%(stop_id, trip_id), hb )
-    #        
-    #    #add alight edges
-    #    for trip_id, arrival_time, departure_time, stop_id, stop_sequence in stoptimes[1:]:
-    #        g.add_vertex( "%s-hw-%s"%(stop_id, trip_id) )
-    #        g.add_edge( "%s-hw-%s"%(stop_id, trip_id), stop_id, Alight() )
-    #    
-    #    #add crossing edges
-    #    for (trip_id1, arrival_time1, departure_time1, stop_id1, stop_sequence1), (trip_id2, arrival_time2, departure_time2, stop_id2, stop_sequence2) in cons(stoptimes):
-    #        g.add_edge( "%s-hw-%s"%(stop_id1, trip_id1), "%s-hw-%s"%(stop_id2, trip_id2), Crossing(arrival_time2-departure_time1) )
+    if reporter: reporter.write( "Loading headways trips to graph...\n" )
+    for trip_id, start_time, end_time, headway_secs in gtfsdb.execute( "SELECT * FROM frequencies" ):
+        service_id = list(gtfsdb.execute( "SELECT service_id FROM trips WHERE trip_id=?", (trip_id,) ))[0][0]
+        service_id = service_id.encode('utf-8')
+        
+        hb = HeadwayBoard( service_id, sc, tz, 0, trip_id.encode('utf-8'), start_time, end_time, headway_secs )
+        ha = HeadwayAlight( service_id, sc, tz, 0, trip_id.encode('utf-8'), start_time, end_time, headway_secs )
+        
+        stoptimes = list(gtfsdb.execute( "SELECT * FROM stop_times WHERE trip_id=? ORDER BY stop_sequence", (trip_id,)) )
+        
+        #add board edges
+        for trip_id, arrival_time, departure_time, stop_id, stop_sequence in stoptimes[:-1]:
+            g.add_vertex( "%s-hw-%s"%(stop_id, trip_id) )
+            g.add_edge( stop_id, "%s-hw-%s"%(stop_id, trip_id), hb )
+            
+        #add alight edges
+        for trip_id, arrival_time, departure_time, stop_id, stop_sequence in stoptimes[1:]:
+            g.add_vertex( "%s-hw-%s"%(stop_id, trip_id) )
+            g.add_edge( "%s-hw-%s"%(stop_id, trip_id), stop_id, ha )
+            print ha
+        
+        #add crossing edges
+        for (trip_id1, arrival_time1, departure_time1, stop_id1, stop_sequence1), (trip_id2, arrival_time2, departure_time2, stop_id2, stop_sequence2) in cons(stoptimes):
+            g.add_edge( "%s-hw-%s"%(stop_id1, trip_id1), "%s-hw-%s"%(stop_id2, trip_id2), Crossing(arrival_time2-departure_time1) )
             
     # load connections
     if reporter: reporter.write( "Loading connections to graph...\n" )
