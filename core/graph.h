@@ -45,6 +45,7 @@ struct Edge {
   Vertex* to;
   Geom* geom;
   EdgePayload* payload;
+  long thickness;
 } ;
 
 struct ListNode {
@@ -90,6 +91,9 @@ gShortestPath( Graph* this, char *from, char *to, State* init_state, int directi
 
 long
 gSize( Graph* this );
+
+void
+gSetThicknesses( Graph* this, char *root_label );
 
 //VERTEX FUNCTIONS
 
@@ -169,6 +173,12 @@ eGetTo(Edge *this);
 
 EdgePayload*
 eGetPayload(Edge *this);
+
+long
+eGetThickness(Edge *this);
+
+void
+eSetThickness(Edge *this, long thickness);
 
 //LIST FUNCTIONS
 
