@@ -19,10 +19,11 @@ class RouteServer(Servable):
         return "\n".join( [vv.label for vv in self.graph.vertices] )
     vertices.mime = "text/plain"
 
-    def path(self, origin, dest, currtime, transfer_penalty=0):
+    def path(self, origin, dest, currtime, transfer_penalty=0, walking_speed=1.0):
         
         wo = WalkOptions()
         wo.transfer_penalty=transfer_penalty
+        wo.walking_speed=walking_speed
         spt = self.graph.shortest_path_tree( origin, dest, State(1,currtime), wo )
         wo.destroy()
         
@@ -38,10 +39,11 @@ class RouteServer(Servable):
         
         return json.dumps(ret)
         
-    def path_retro(self, origin, dest, currtime, transfer_penalty=0):
+    def path_retro(self, origin, dest, currtime, transfer_penalty=0, walking_speed=1.0):
         
         wo = WalkOptions()
         wo.transfer_penalty = transfer_penalty
+        wo.walking_speed = walking_speed
         spt = self.graph.shortest_path_tree_retro( origin, dest, State(1,currtime), wo )
         wo.destroy()
         
