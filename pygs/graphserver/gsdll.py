@@ -12,13 +12,15 @@ import sys
 lgs = None
 
 # Try loading from the source tree. If that doesn't work, fall back to the installed location.
-_dlldirs = [os.path.dirname(os.path.abspath(__file__)) + '/../../core',
+_dlldirs = [os.path.dirname(os.path.abspath(__file__)),
+            os.path.dirname(os.path.abspath(__file__)) + '/../../core',
             '/usr/lib',
             '/usr/local/lib']
 
 for _dlldir in _dlldirs:
     _dllpath = os.path.join(_dlldir, 'libgraphserver.so')
     if os.path.exists(_dllpath):
+        print _dllpath
         lgs = PyDLL( _dllpath )
         break
 

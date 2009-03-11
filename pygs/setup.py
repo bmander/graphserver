@@ -1,29 +1,30 @@
-from distutils.core import setup
-import os.path, sys
+from setuptools import setup, find_packages
+import os.path, sys, subprocess
 
-LIBSO = '../core/libgraphserver.so'
+LIBSO = os.path.join('..','core','libgraphserver.so')
 
-if not os.path.exists(LIBSO):
-    print "ERROR: %s not found.  Have you run '(cd core && make)' yet?" % LIBSO
-    sys.exit(-1)
+# build and copy libgraphserver.so
+subprocess.call(["make","-s", "-C","../core"])
+subprocess.call(["cp",LIBSO,"graphserver/"])
 
-"""py_modules=['graphserver.gsdll', 'graphserver.core', 'graphserver.engine', 'graphserver.util', 'graphserver.ext', 'graphserver.ext.osm', 'graphserver.ext.gtfs', 'graphserver.ext.gtfs.load_gtfs', 'graphserver.ext.osm.osm', 'graphserver.ext.osm.graph', 'graphserver.ext.osm.engine', 'graphserver.ext.osm.load_osm'],"""
-
-setup( name='graphserver',
-       version='0.1',
-       url='http://graphserver.wiki.sourceforge.net/',
-       packages = ['graphserver.ext'],
-       py_modules=['graphserver.gsdll', 
-                   'graphserver.core', 
-                   'graphserver.engine', 
-                   'graphserver.util',
-                   'graphserver.graphdb',
-                   'graphserver.ext.gtfs.load_gtfs',
-                   'graphserver.ext.gtfs.gtfsdb',
-                   'graphserver.ext.osm.osm', 
-                   'graphserver.ext.osm.vincenty',
-                   'graphserver.ext.osm.graph', 
-                   'graphserver.ext.osm.engine', 
-                   'graphserver.ext.osm.load_osm',
-                   'graphserver.ext.osm.osmdb',],
-       data_files=[('/usr/lib',[LIBSO])])
+setup(  name='graphserver',
+        version='0.1',
+        packages = find_packages(exclude=['examples.*','examples','test','test.*']),
+        install_requires=['pytz>=2008b','pyproj>=1.8.5'], # need to add servable
+        zip_safe=False,
+        extras_require = {
+        #    'transitfeed':  ["transitfeed>=1.1.6"],
+        },
+        
+        test_suite='test.unit_test',
+        
+        # metadata for upload to PyPI
+        author = "Brandon Martin-Anderson",
+        author_email = "badhill@gmail.com",
+        description = "Graphserver routing engine.",
+        license = "BSD",
+        keywords = "OSM OpenStreetMap GTFS routing transit",
+        url = "http://github.com/bmander/graphserver/tree/master",
+        
+        # put libgraphserver.so next gsdll.py
+        package_data = {'graphserver':['libgraphserver.so']})
