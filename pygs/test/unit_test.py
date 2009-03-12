@@ -951,25 +951,27 @@ class TestEgress(unittest.TestCase):
         assert s.to_xml() == "<Egress name='longstreet' length='240000.000000' />"
         
     def test_walk(self):
-        s = Egress("longstreet", 2)
+        s = Egress("longstreet", 10)
         wo = WalkOptions()
+        wo.walking_reluctance = 1
         after = s.walk(State(0,0),wo)
         wo.destroy()
-        assert after.time == 2
-        assert after.weight == 2
-        assert after.dist_walked == 2
+        print after
+        assert after.time == 5
+        assert after.weight == 5
+        assert after.dist_walked == 10
         assert after.prev_edge_type == 12
         assert after.prev_edge_name == "longstreet"
         assert after.num_agencies == 0
         
     def test_walk_back(self):
-        s = Egress("longstreet", 2)
+        s = Egress("longstreet", 10)
         
         before = s.walk_back(State(0,100),WalkOptions())
-        
-        assert before.time == 98
-        assert before.weight == 2
-        assert before.dist_walked == 2.0
+        print before
+        assert before.time == 100 - (10/2)
+        assert before.weight == 10/2
+        assert before.dist_walked == 10.0
         assert before.prev_edge_type == 12
         assert before.prev_edge_name == "longstreet"
         assert before.num_agencies == 0
