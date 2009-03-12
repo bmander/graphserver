@@ -16,7 +16,7 @@ setup(  name='graphserver',
         #    'transitfeed':  ["transitfeed>=1.1.6"],
         },
         
-        test_suite='test.unit_test',
+        test_suite='nose.collector',
         
         # metadata for upload to PyPI
         author = "Brandon Martin-Anderson",
@@ -26,5 +26,5 @@ setup(  name='graphserver',
         keywords = "OSM OpenStreetMap GTFS routing transit",
         url = "http://github.com/bmander/graphserver/tree/master",
         
-        # put libgraphserver.so next gsdll.py
-        package_data = {'graphserver':['libgraphserver.so']})
+        # put libgraphserver.so next to gsdll.py
+        package_data = {'graphserver':['libgraphserver.so']}  )
