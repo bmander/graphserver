@@ -61,26 +61,26 @@ def load_bundle_to_boardalight_graph(g, bundle, service_id, sc, tz):
         if len(stop_time_bundle)==0:
             return
         
-        trip_id, departure_time, arrival_time, stop_id, stop_sequence = stop_time_bundle[0]
+        trip_id, departure_time, arrival_time, stop_id, stop_sequence, stop_dist_traveled = stop_time_bundle[0]
         
         patternstop_vx_name = "%03d-%03d"%(bundle.pattern.pattern_id,i)
         
         g.add_vertex( patternstop_vx_name )
         
         b = TripBoard(service_id, sc, tz, 0)
-        for trip_id, departure_time, arrival_time, stop_id, stop_sequence in stop_time_bundle:
+        for trip_id, departure_time, arrival_time, stop_id, stop_sequence, stop_dist_traveled in stop_time_bundle:
             b.add_boarding( trip_id, departure_time )
             
         g.add_edge( stop_id, patternstop_vx_name, b )
         
     #add alight edges
     for i, stop_time_bundle in enumerate(stop_time_bundles[1:]):
-        trip_id, departure_time, arrival_time, stop_id, stop_sequence = stop_time_bundle[0]
+        trip_id, departure_time, arrival_time, stop_id, stop_sequence, stop_dist_traveled = stop_time_bundle[0]
         
         patternstop_vx_name = "%03d-%03d"%(bundle.pattern.pattern_id,i+1)
         
         al = Alight(service_id, sc, tz, 0)
-        for trip_id, departure_time, arrival_time, stop_id, stop_sequence in stop_time_bundle:
+        for trip_id, departure_time, arrival_time, stop_id, stop_sequence, stop_dist_traveled in stop_time_bundle:
             al.add_alighting( trip_id.encode('ascii'), arrival_time )
             
         g.add_edge( patternstop_vx_name, stop_id, al )
@@ -125,18 +125,18 @@ def load_gtfsdb_to_boardalight_graph(g, gtfsdb, agency_id, service_ids, reporter
         stoptimes = list(gtfsdb.execute( "SELECT * FROM stop_times WHERE trip_id=? ORDER BY stop_sequence", (trip_id,)) )
         
         #add board edges
-        for trip_id, arrival_time, departure_time, stop_id, stop_sequence in stoptimes[:-1]:
+        for trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_dist_traveled in stoptimes[:-1]:
             g.add_vertex( "%s-hw-%s"%(stop_id, trip_id) )
             g.add_edge( stop_id, "%s-hw-%s"%(stop_id, trip_id), hb )
             
         #add alight edges
-        for trip_id, arrival_time, departure_time, stop_id, stop_sequence in stoptimes[1:]:
+        for trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_dist_traveled in stoptimes[1:]:
             g.add_vertex( "%s-hw-%s"%(stop_id, trip_id) )
             g.add_edge( "%s-hw-%s"%(stop_id, trip_id), stop_id, ha )
             print ha
         
         #add crossing edges
-        for (trip_id1, arrival_time1, departure_time1, stop_id1, stop_sequence1), (trip_id2, arrival_time2, departure_time2, stop_id2, stop_sequence2) in cons(stoptimes):
+        for (trip_id1, arrival_time1, departure_time1, stop_id1, stop_sequence1, stop_dist_traveled1), (trip_id2, arrival_time2, departure_time2, stop_id2, stop_sequence2,stop_dist_traveled2) in cons(stoptimes):
             g.add_edge( "%s-hw-%s"%(stop_id1, trip_id1), "%s-hw-%s"%(stop_id2, trip_id2), Crossing(arrival_time2-departure_time1) )
             
     # load connections

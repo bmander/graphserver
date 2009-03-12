@@ -130,7 +130,8 @@ class GTFSDatabase:
                                      ("arrival_time", "INTEGER", parse_gtfs_time),
                                      ("departure_time", "INTEGER", parse_gtfs_time),
                                      ("stop_id", None, None),
-                                     ("stop_sequence", "INTEGER", None)))
+                                     ("stop_sequence", "INTEGER", None),
+                                     ("shape_dist_traveled", "FLOAT", None)))
     STOPS_DEF = ("stops", (("stop_id", None, None),
                            ("stop_name", None, None),
                            ("stop_lat", "FLOAT", None),
@@ -161,7 +162,7 @@ class GTFSDatabase:
                                        ("stop_id2", None, None),
                                        ("type", None, None),
                                        ("distance", "INTEGER", None)))
-    SHAPES_DEF = ("shape_id", (("shape_id", None, None),
+    SHAPES_DEF = ("shapes", (("shape_id", None, None),
                                ("shape_pt_lat", "FLOAT", None),
                                ("shape_pt_lon", "FLOAT", None),
                                ("shape_pt_sequence", "INTEGER", None),
@@ -175,7 +176,8 @@ class GTFSDatabase:
                 AGENCY_DEF, 
                 FREQUENCIES_DEF, 
                 ROUTES_DEF, 
-                CONNECTIONS_DEF)
+                CONNECTIONS_DEF,
+                SHAPES_DEF)
     
     def __init__(self, sqlite_filename, overwrite=False):
         if overwrite:
@@ -369,7 +371,57 @@ class GTFSDatabase:
         query = "SELECT DISTINCT service_id FROM (SELECT service_id FROM calendar UNION SELECT service_id FROM calendar_dates)"
         
         return [x[0] for x in self.execute( query )]
-                
+    
+    def shape(self, shape_id):
+        query = "SELECT shape_pt_lon, shape_pt_lat, shape_dist_traveled from shapes where shape_id = %s order by shape_pt_sequence" % shape_id
+        
+        return list(self.execute( query ))
+    
+    def shape_between(self, trip_id, stop1, stop2):
+        query = """SELECT t.shape_id, st.shape_dist_traveled, st.stop_id
+                     FROM trips t 
+                     JOIN stop_times st ON st.trip_id = t.trip_id 
+                     WHERE t.trip_id = %s and (st.stop_id = '%s' or st.stop_id = '%s')
+                     ORDER BY shape_dist_traveled""" % (trip_id, stop1, stop2)
+        
+        # if there is a loop the logic breaks...
+        distances = []
+        shape_id = None
+        for x in self.execute( query ):
+            if not shape_id: shape_id = x[0]
+            distances.append(x[1])
+        
+        if not shape_id:
+            return None
+        
+        t_min = distances[0]
+        t_max = distances[1]
+        
+        shape = []
+        last = None
+        total_traveled = 0
+        for pt in self.shape(shape_id):
+            dist_traveled = pt[2]
+            if dist_traveled > t_min and dist_traveled < t_max: 
+                if len(shape) == 0 and total_traveled != 0 and t_min != 0 and dist_traveled - total_traveled != 0:
+                    # interpolate first node:
+                    percent_along = (dist_traveled - t_min) / (dist_traveled - total_traveled)
+                    shape.append((last[0] + (pt[0] - last[0])*percent_along,
+                                  last[1] + (pt[1] - last[1])*percent_along))
+                else:                    
+                    shape.append(last)
+                    last = (pt[0],pt[1])
+            elif dist_traveled > t_max:
+                # calculate the differnce and interpolate
+                percent_along = (dist_traveled - t_max) / (dist_traveled - total_traveled)
+                shape.append((last[0] + (pt[0] - last[0])*percent_along,
+                              last[1] + (pt[1] - last[1])*percent_along))
+                return shape
+            else:
+                last = (pt[0],pt[1])
+            total_traveled = dist_traveled
+        
+        return shape
 
 def main():
     from sys import argv
