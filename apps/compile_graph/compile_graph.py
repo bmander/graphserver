@@ -2,6 +2,7 @@ from graphserver.graphdb import GraphDatabase
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
 from graphserver.ext.osm.osmdb import OSMDB
 from graphserver import compiler
+from graphserver.core import Graph
 import sys
 from sys import argv
 
@@ -70,14 +71,14 @@ if __name__=='__main__':
         
         usage = "usage: python compile_graph.py link <gtfsdb_filename> <graphdb_filename>"
         
-        if len(argv)<5:
+        if len(argv)<4:
             print usage
             quit()
 
-        gtfsdb_filename = argv[3]
-        graphdb_filename = argv[4]
+        gtfsdb_filename = argv[2]
+        graphdb_filename = argv[3]
             
-        compiler.process_transit_graph( gtfsdb_filename, graphdb_filename, link=True )
+        process_transit_graph( gtfsdb_filename, None, graphdb_filename, link=True )
             
     elif mode == "conflate":
         
@@ -95,5 +96,5 @@ if __name__=='__main__':
         print "gtfsdb_filename: %s"%gtfsdb_filename
         print "osmdb_filename: %s"%osmdb_filename
 
-        compiler.process_transit_street_graph( graphdb_filename, gtfsdb_filename, osmdb_filename ) 
+        process_transit_street_graph( graphdb_filename, gtfsdb_filename, osmdb_filename ) 
         
