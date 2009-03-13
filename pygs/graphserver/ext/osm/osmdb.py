@@ -299,7 +299,16 @@ class OSMDB:
         ret = next(c)
         c.close()
         return ret
-
+    
+    def execute(self,sql,args=None):
+        c = self.conn.cursor()
+        if args:
+            for row in c.execute(sql,args):
+                yield row
+        else:
+            for row in c.execute(sql):
+                yield row
+        c.close()
 def mag(vec):
     return sum([x**2 for x in vec])**0.5
     

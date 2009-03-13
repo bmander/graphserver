@@ -384,7 +384,7 @@ class GTFSDatabase:
                      WHERE t.trip_id = %s and (st.stop_id = '%s' or st.stop_id = '%s')
                      ORDER BY shape_dist_traveled""" % (trip_id, stop1, stop2)
         
-        # if there is a loop the logic breaks...
+        # BUG: if there is a loop the logic breaks...
         distances = []
         shape_id = None
         for x in self.execute( query ):
