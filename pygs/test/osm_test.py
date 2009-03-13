@@ -2,19 +2,24 @@ from pyproj import Proj
 from StringIO import StringIO
 from random import randint
 
-import sys
+import sys, os
 sys.path.append("..")
 from graphserver.ext.osm.graph import OSMGraph
 from graphserver.ext.osm.osm import OSM
 from graphserver.core import State
-
 import unittest
+
+RESOURCE_DIR=os.path.dirname(os.path.abspath(__file__))
+
+def find_resource(s):
+    return os.path.join(RESOURCE_DIR, s)
+
 class TestOSM(unittest.TestCase):
     def test_basic(self):
         """basic osm file load test."""        
         utmzone10 = Proj(init='epsg:26910')
         print "loading map.osm"
-        osm = OSM("map.osm")
+        osm = OSM(find_resource("map.osm"))
         print "iterating over all the ways and calculating length."
         for way in osm.ways.values():
             way.length(utmzone10)
@@ -24,7 +29,7 @@ class TestOSM(unittest.TestCase):
     def test_osmgraph(self):
         """create graph from osm file."""
         utmzone10 = Proj(init='epsg:26910')
-        g = OSMGraph("map.osm", utmzone10)
+        g = OSMGraph(find_resource("map.osm"), utmzone10)
         vert = g.vertices
         
         while True:
@@ -45,11 +50,11 @@ class TestOSM(unittest.TestCase):
     
     def test_osmgraph_from_object(self):
         utmzone10 = Proj(init='epsg:26910')
-        g = OSMGraph(OSM("map.osm"), utmzone10)
+        g = OSMGraph(OSM(find_resource("map.osm")), utmzone10)
         assert len(g.vertices) != 0
         
     def test_find_nearest_node(self):
-        osm = OSM("sf.osm")
+        osm = OSM(find_resource("sf.osm"))
         n = osm.find_nearest_node(-122.4179760000,37.7434470000)
         print n.id
         assert n.id == "65325497"

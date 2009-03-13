@@ -1,5 +1,5 @@
 import transitfeed
-import sys
+import sys, os
 sys.path = ['..'] + sys.path
 from graphserver.core import Graph, Street, ServicePeriod, TripHopSchedule, ServiceCalendar, State, Wait
 from graphserver.engine import Engine
@@ -9,6 +9,11 @@ import time
 from calendar import timegm
 from datetime import datetime
 import pytz
+
+RESOURCE_DIR=os.path.dirname(os.path.abspath(__file__))
+
+def find_resource(s):
+    return os.path.join(RESOURCE_DIR, s)
 
 #NON-DST DATES
 #weekday
@@ -53,7 +58,7 @@ class GTFSTestCase(unittest.TestCase):
     def xtestx_gtfs(self): #segfaults right now. Need unit tests that isolate segfault.
         
         g = TestGTFS()
-        g.load_gtfs("google_transit.zip")
+        g.load_gtfs(find_resource("google_transit.zip"))
 
         v = g.get_vertex("gtfs24TH")
 
@@ -129,7 +134,7 @@ class GTFSTestCase(unittest.TestCase):
     def xtestx_raw_calendar(self):
         g = TestGTFS()
         fp = open("raw_cal_out", "r")
-        for line in g._raw_calendar(transitfeed.Loader("google_transit.zip").Load()):
+        for line in g._raw_calendar(transitfeed.Loader(find_resource("google_transit.zip")).Load()):
             expected = fp.readline().strip()
             
             foundsids = [str(x) for x in line[1]]
@@ -144,7 +149,7 @@ class GTFSTestCase(unittest.TestCase):
     
     def test_load_sample(self):
         g = TestGTFS()
-        g.load_gtfs( "sample-feed.zip")
+        g.load_gtfs( find_resource("sample-feed.zip"))
         
         def leads_to(x, y):
             vs = [ edge.to_v.label for edge in g.get_vertex(x).outgoing ]
@@ -191,7 +196,7 @@ class GTFSTestCase(unittest.TestCase):
         assert graphserver.ext.gtfs.load_gtfs.parse_date("20080827") == (2008,8,27)
         
     def test_get_service_ids(self):
-        sched = transitfeed.Loader("google_transit.zip").Load()
+        sched = transitfeed.Loader(find_resource("google_transit.zip")).Load()
         
         assert graphserver.ext.gtfs.load_gtfs.get_service_ids(sched, "20080827") == [u'M-FSAT', u'WKDY']
         assert graphserver.ext.gtfs.load_gtfs.get_service_ids(sched, "20080906" ) == [u'M-FSAT', u'SAT']
@@ -203,18 +208,18 @@ class GTFSTestCase(unittest.TestCase):
         assert graphserver.ext.gtfs.load_gtfs.get_service_ids(sched, datetime(2008,12,25)) == [u'SUN', u'SUNAB']
         
     def test_timezone_from_agency(self):
-        sched = transitfeed.Loader("google_transit.zip").Load()
+        sched = transitfeed.Loader(find_resource("google_transit.zip")).Load()
         
         assert graphserver.ext.gtfs.load_gtfs.timezone_from_agency(sched, "BART") == pytz.timezone("America/Los_Angeles")
         assert graphserver.ext.gtfs.load_gtfs.timezone_from_agency(sched, "AirBART") == pytz.timezone("America/Los_Angeles")
     
     def test_day_bounds_from_sched(self):
-        sched = transitfeed.Loader("google_transit.zip").Load()
+        sched = transitfeed.Loader(find_resource("google_transit.zip")).Load()
         
         assert graphserver.ext.gtfs.load_gtfs.day_bounds_from_sched(sched) == (13860, 92100)
         
     def test_schedule_to_service_calendar(self):
-        sched = transitfeed.Loader("google_transit.zip").Load()
+        sched = transitfeed.Loader(find_resource("google_transit.zip")).Load()
         
         sc = graphserver.ext.gtfs.load_gtfs.schedule_to_service_calendar(sched, "BART")
         
@@ -232,7 +237,7 @@ class GTFSTestCase(unittest.TestCase):
 class TestBART(unittest.TestCase):
     def test_bart(self):
         g = TestGTFS()
-        g.load_gtfs("google_transit.zip")
+        g.load_gtfs(find_resource("google_transit.zip"))
         
         # just a basic sanity test
         s1 = State(g.numagencies, 1219863720)
@@ -245,7 +250,7 @@ class TestBART(unittest.TestCase):
 class TestBART_DAG(unittest.TestCase):
     def test_bart_dag(self):
         g = TestGTFS()
-        g.load_gtfs_dag("google_transit.zip", "America/Los_Angeles")
+        g.load_gtfs_dag(find_resource("google_transit.zip"), "America/Los_Angeles")
         
         #e = Engine(g)
         #e.run_test_server()
