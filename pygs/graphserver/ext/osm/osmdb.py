@@ -309,6 +309,10 @@ class OSMDB:
             for row in c.execute(sql):
                 yield row
         c.close()
+    
+    def cursor(self):
+        return self.conn.cursor()    
+    
 def mag(vec):
     return sum([x**2 for x in vec])**0.5
     
