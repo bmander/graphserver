@@ -1,6 +1,7 @@
 from graphserver.core import Graph, Link, Street, State
 from osmdb import OSMDB
 import time
+from vincenty import vincenty as dist_earth
 
 class OSMDBFilter(object):
     def setup(self, db, *args):
@@ -23,6 +24,56 @@ class OSMDBFilter(object):
     def visualize(self, db, *args):
         pass
 
+class CalculateWayLengthFilter(OSMDBFilter):
+    def setup(self, db, *args):
+        c = db.cursor()
+        try:
+            c.execute("ALTER TABLE ways ADD column length FLOAT")
+            db.conn.commit()
+        except: pass
+        c.close()
+
+    def filter(self, db):
+        way_length = {}
+        print "Calculating length."
+        for way in db.ways():
+            g = way.geom
+            l = 0
+            for i in range(0, len(g)-1):
+                l += dist_earth(g[i][1], g[i][0], g[i+1][1], g[i+1][0])
+            way_length[way.id] = l
+
+        print "Updating %s ways" % len(way_length)
+        c = db.cursor()
+        for w,l in way_length.items():
+            c.execute("UPDATE ways set length = ? where id = ?", (l,w))
+        db.conn.commit()
+        c.close()
+        print "Done"
+
+class AddFromToColumnsFilter(OSMDBFilter):
+    def setup(self, db, *args):
+        c = db.cursor()
+        try:
+            c.execute("ALTER TABLE ways ADD column from_v TEXT")
+            c.execute("ALTER TABLE ways ADD column to_v TEXT")
+            db.conn.commit()
+        except: pass
+        c.close()
+
+    def filter(self, db):
+        add_list = []
+        for way in db.ways():
+            add_list.append((way.nds[0], way.nds[-1], way.id))
+
+        print "Updating %s ways" % len(add_list)
+        c = db.cursor()
+        for a in add_list:
+            c.execute("UPDATE ways set from_v = ?, to_v = ? where id = ?", a)
+        db.conn.commit()
+        c.close()
+        print "Done"
+
 class DeleteHighwayTypesFilter(OSMDBFilter):
     def run(self, db, *types):
         print "Types",types
@@ -38,8 +89,7 @@ class DeleteHighwayTypesFilter(OSMDBFilter):
         db.conn.commit()
         c.close()
         print "Deleted all %s highway types (%s ways)" % (", ".join(types), len(purge_list))
-        DeleteOrphanNodesFilter().run(db,*args)
-
+        DeleteOrphanNodesFilter().run(db,None)
         
 class DeleteOrphanNodesFilter(OSMDBFilter):
     def run(self, db, *args):
@@ -96,6 +146,32 @@ class PurgeDisjunctGraphsFilter(OSMDBFilter):
         DeleteOrphanNodesFilter().run(db,*args)
                 
         f.teardown(db)
+        
+class StripOtherTagsFilter(OSMDBFilter):
+    def filter(self, db, feature_type, *keep_tags):
+        keep_tags = dict([(t,1) for t in keep_tags])
+
+        update_list = []
+        if feature_type == 'nodes':
+            query = "SELECT id,tags FROM nodes"
+        else:
+            query = "SELECT id,tags FROM ways"
+            
+        c = db.cursor()
+        c.execute(query)
+        for id, tags in c:
+            tags = json.loads(tags)
+            for k in tags.keys():
+                if k not in keep_tags:
+                    del tags[k]
+            
+            update_list[id] = json.dumps(tags)
+        
+        for id, tags in update_list:
+            c.execute("UPDATE ways set tags = ? WHERE id = ?",(id,tags))
+
+        db.conn.commit()
+        c.close()
 
 class FindDisjunctGraphsFilter(OSMDBFilter):
     def setup(self, db, *args):
@@ -113,9 +189,11 @@ class FindDisjunctGraphsFilter(OSMDBFilter):
         g = Graph()
         t0 = time.time()
         
+        vertices = {}
         print "load vertices into memory"
         for row in osmdb.execute("SELECT id from nodes"):
             g.add_vertex(str(row[0]))
+            vertices[str(row[0])] = 0
 
         print "load ways into memory"
         for way in osmdb.ways():
@@ -129,23 +207,25 @@ class FindDisjunctGraphsFilter(OSMDBFilter):
         iteration = 1
         c = osmdb.cursor()
         while True:
-            c.execute("SELECT id from nodes where id not in (SELECT node_id from graph_nodes) LIMIT 1")
+            #c.execute("SELECT id from nodes where id not in (SELECT node_id from graph_nodes) LIMIT 1")
             try:
-                vertex = next(c)[0]
+                vertex, dummy = vertices.popitem()
             except:
                 break
             spt = g.shortest_path_tree(vertex, None, State(1,0))
             for v in spt.vertices:
+                vertices.pop(v.label, None)
                 c.execute("INSERT into graph_nodes VALUES (?, ?)", (iteration, v.label))
             spt.destroy()
-            iteration += 1
             
             t1 = time.time()
             print "pass %s took: %f"%(iteration, t1-t0)
             t0 = t1
+            iteration += 1
         c.close()
         
         osmdb.conn.commit()
+        g.destroy()
         # audit
         for gnum, count in osmdb.execute("SELECT graph_num, count(*) FROM graph_nodes GROUP BY graph_num"):
             print "FOUND: %s=%s" % (gnum, count)
@@ -183,7 +263,7 @@ class FindDisjunctGraphsFilter(OSMDBFilter):
         # setup the drawing
         l,b,r,t = db.bounds()
         mr = processing.MapRenderer("/usr/local/bin/prender/renderer")
-        WIDTH = 2000
+        WIDTH = 3000
         mr.start(l,b,r,t,WIDTH) #left,bottom,right,top,width
         mr.background(255,255,255)
         mr.smooth()
