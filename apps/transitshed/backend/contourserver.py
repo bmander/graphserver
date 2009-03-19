@@ -6,7 +6,7 @@ from graphserver.core import State, WalkOptions
 from graphserver.ext.osm.osmdb import OSMDB
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
 from graphserver.util import TimeHelpers
-from contour import travel_time_contour
+from contour import travel_time_contour, travel_time_surface
 import json
 from rtree import Rtree
 from glineenc import encode_pairs
@@ -62,7 +62,7 @@ class ContourServer(Servable):
             print "hop onto trip '%s' at stop '%s', time '%s'"%(edge.to_v.payload.trip_id, edge.from_v.label, edge.to_v.payload.time)
         print "took %ss"%(time.time()-t0)
     
-    def _contour(self, vertex_label, starttime, cutoff, step=None, speed=0.85):
+    def _points(self, vertex_label, starttime, cutoff, speed):
         starttime = starttime or time.time()
         
         #=== find shortest path tree ===
@@ -88,6 +88,11 @@ class ContourServer(Servable):
         
         spt.destroy()
         
+        return points
+    
+    def _contour(self, vertex_label, starttime, cutoff, step=None, speed=0.85):
+        points = self._points( vertex_label, starttime, cutoff, speed )
+        
         #=== create contour ===
         print "creating contour...",
         
@@ -97,6 +102,19 @@ class ContourServer(Servable):
         
         print "done. here you go..."
         return contours
+        
+    def _surface(self, vertex_label, starttime, cutoff, speed=0.85):
+        points = self._points( vertex_label, starttime, cutoff, speed )
+        
+        #=== create contour ===
+        print "creating surface...",
+        
+        t0 = time.time()
+        surface = travel_time_surface( points, cutoff=cutoff, cellsize=0.004, fudge=1.7 )
+        print "%s sec"%(time.time()-t0)
+        
+        print "done. here you go..."
+        return surface
     
     def label_contour(self, vertex_label, starttime=None, cutoff=1800):
         starttime = starttime or time.time()
@@ -142,6 +160,33 @@ class ContourServer(Servable):
         
         return json.dumps( contours )
         
+    def surface(self, lat, lon, year, month, day, hour, minute, second, cutoff, speed=0.85):
+        
+        starttime = TimeHelpers.localtime_to_unix( year, month, day, hour, minute, second, "America/Los_Angeles" )
+        
+        #=== get osm vertex ==
+        print( "getting nearest vertex" )
+        
+        #find osmid of origin intersection
+        t0 = time.time()
+        range = 0.001
+        bbox = (lon-range, lat-range, lon+range, lat+range)
+        candidates = self.index.intersection( bbox )
+        vlabel, vlat, vlon, vdist = self.osmdb.nearest_of( lat, lon, candidates )
+        t1 = time.time()
+        print( "done, took %s seconds"%(t1-t0) )
+        
+        #vlabel, vlat, vlon, vdist = self.osmdb.nearest_node( lat, lon )
+        
+        if vlabel is None:
+            return json.dumps( "NO NEARBY INTERSECTION" )
+        
+        print( "found - %s"%vlabel )
+        
+        ret = self._surface( "osm"+vlabel, starttime, cutoff, speed )
+        
+        return json.dumps( ret )
+        
     def nodes(self):
         return "\n".join( ["%s-%s"%(k,v) for k,v in self.node_positions.items()] )
             
@@ -171,6 +216,9 @@ if __name__=='__main__':
     cserver = ContourServer( argv[1] )
     
     print "bounds are %s"%cserver.bounds()
+    
+    #print cserver.contour(37.78563944612241, -122.40898132324219, 2009, 2, 18, 12, 0, 0, 45*60)
+    #exit()
     
     cserver.run_test_server()
     
