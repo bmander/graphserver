@@ -116,20 +116,26 @@ class DeleteOrphanNodesFilter(OSMDBFilter):
         
 
 class PurgeDisjunctGraphsFilter(OSMDBFilter):
-    def filter(self, db, *args):
+    def filter(self, db, threshold=None):
         f = FindDisjunctGraphsFilter()
         try:
             f.teardown(db)
         except: pass
         
-        f.run(db,*args)
-        
-        largest = next(db.execute("SELECT graph_num, count(*) as cnt FROM graph_nodes GROUP BY graph_num ORDER BY cnt desc"))[0]
+        f.run(db,*[])
         
         node_ids = {}
-        
-        for x in db.execute("SELECT node_id FROM graph_nodes where graph_num != ?", (largest,)):
-            node_ids[x[0]] = 1
+
+        if not threshold:
+            largest = next(db.execute("SELECT graph_num, count(*) as cnt FROM graph_nodes GROUP BY graph_num ORDER BY cnt desc"))[0]
+                    
+            for x in db.execute("SELECT node_id FROM graph_nodes where graph_num != ?", (largest,)):
+                node_ids[x[0]] = 1
+        else: 
+            for x in db.execute("""SELECT node_id FROM graph_nodes where graph_num in
+                                (SELECT a.graph_num FROM 
+                                  (SELECT graph_num, count(*) as cnt FROM graph_nodes GROUP BY graph_num HAVING cnt < %s) as a)""" % threshold):
+                node_ids[x[0]] = 1
 
         c = db.cursor()
 
@@ -144,7 +150,7 @@ class PurgeDisjunctGraphsFilter(OSMDBFilter):
         db.conn.commit()
         c.close()
         print "Deleted %s ways" % (len(purge_list))
-        DeleteOrphanNodesFilter().run(db,*args)
+        DeleteOrphanNodesFilter().run(db,*[])
                 
         f.teardown(db)
         
