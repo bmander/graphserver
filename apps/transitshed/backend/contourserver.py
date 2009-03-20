@@ -13,6 +13,10 @@ from glineenc import encode_pairs
 from urllib import urlopen
 import yaml
 
+def cons(ary):
+    for i in range(len(ary)-1):
+        yield ary[i],ary[i+1]
+
 class ContourServer(Servable):
     def __init__(self, settings_filename):
         settings = yaml.load( open( settings_filename ) )
@@ -102,25 +106,12 @@ class ContourServer(Servable):
         
         print "done. here you go..."
         return contours
-        
-    def _surface(self, vertex_label, starttime, cutoff, speed=0.85):
-        points = self._points( vertex_label, starttime, cutoff, speed )
-        
-        #=== create contour ===
-        print "creating surface...",
-        
-        t0 = time.time()
-        surface = travel_time_surface( points, cutoff=cutoff, cellsize=0.004, fudge=1.7 )
-        print "%s sec"%(time.time()-t0)
-        
-        print "done. here you go..."
-        return surface
     
     def label_contour(self, vertex_label, starttime=None, cutoff=1800):
         starttime = starttime or time.time()
         
         return json.dumps( self._contour( vertex_label, starttime, cutoff ) )
-        
+    
     def contour(self, lat, lon, year, month, day, hour, minute, second, cutoff, step=60*15, encoded=False, speed=0.85):
         if step is not None and step < 600:
             raise Exception( "Step cannot be less than 600 seconds" )
@@ -159,8 +150,8 @@ class ContourServer(Servable):
             contours = encoded_contours
         
         return json.dumps( contours )
-        
-    def surface(self, lat, lon, year, month, day, hour, minute, second, cutoff, speed=0.85):
+
+    def _surface(self, lat, lon, year, month, day, hour, minute, second, cutoff, speed):
         
         starttime = TimeHelpers.localtime_to_unix( year, month, day, hour, minute, second, "America/Los_Angeles" )
         
@@ -183,9 +174,25 @@ class ContourServer(Servable):
         
         print( "found - %s"%vlabel )
         
-        ret = self._surface( "osm"+vlabel, starttime, cutoff, speed )
+        #=== get points which comprise ETA surface ===
+        points = self._points( "osm"+vlabel, starttime, cutoff, speed )
         
-        return json.dumps( ret )
+        #=== create regular grid from ETA surface ===
+        print "creating surface...",
+        
+        t0 = time.time()
+        ret = travel_time_surface( points, cutoff=cutoff, cellsize=0.004, fudge=1.7 )
+        print "%s sec"%(time.time()-t0)
+        print "done. here you go..."
+        
+        return ret
+
+    def surface(self, lat, lon, year, month, day, hour, minute, second, cutoff, speed=0.85):
+        return json.dumps( self._surface(lat,lon,year,month,day,hour,minute,second,cutoff,speed) )
+        
+    def transitability(self, lat, lon, year, month, day, hour, minute, second, cutoff, speed=0.85):
+        grid = self._surface(lat,lon,year,month,day,hour,minute,second,cutoff,speed)
+        return sum( [len(filter(lambda x:x[2]<=cutoff,col)) for col in grid] )
         
     def nodes(self):
         return "\n".join( ["%s-%s"%(k,v) for k,v in self.node_positions.items()] )
@@ -217,8 +224,8 @@ if __name__=='__main__':
     
     print "bounds are %s"%cserver.bounds()
     
-    #print cserver.contour(37.78563944612241, -122.40898132324219, 2009, 2, 18, 12, 0, 0, 45*60)
-    #exit()
+    print cserver.transitability(37.78563944612241, -122.40898132324219, 2009, 2, 18, 12, 0, 0, 45*60)
+    exit()
     
     cserver.run_test_server()
     
