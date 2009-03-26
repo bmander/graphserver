@@ -2,6 +2,7 @@ from graphserver.core import Graph, Link, Street, State
 from osmdb import OSMDB
 import time
 from vincenty import vincenty as dist_earth
+import json
 
 class OSMDBFilter(object):
     def setup(self, db, *args):
@@ -230,7 +231,7 @@ class FindDisjunctGraphsFilter(OSMDBFilter):
         for gnum, count in osmdb.execute("SELECT graph_num, count(*) FROM graph_nodes GROUP BY graph_num"):
             print "FOUND: %s=%s" % (gnum, count)
         
-    def visualize(self, db, out_filename):
+    def visualize(self, db, out_filename, renderer="/usr/local/bin/prender/renderer"):
         
         from prender import processing
         c = db.conn.cursor()
@@ -262,27 +263,88 @@ class FindDisjunctGraphsFilter(OSMDBFilter):
         
         # setup the drawing
         l,b,r,t = db.bounds()
-        mr = processing.MapRenderer("/usr/local/bin/prender/renderer")
+        mr = processing.MapRenderer(renderer)
         WIDTH = 3000
         mr.start(l,b,r,t,WIDTH) #left,bottom,right,top,width
         mr.background(255,255,255)
         mr.smooth()
         width = float(r-l)/WIDTH
     
-        for w in db.ways():
+        for i, w in enumerate(db.ways()):
+            if i%1000==0: print "way %d"%i
+            
             g = w.geom
             group = node_group[w.nds[0]]
             color = group_color[group]
             mr.strokeWeight( group_weight[group] * width )
             mr.stroke(*color)                            
             mr.line(g[0][0],g[0][1],g[-1][0],g[-1][1])
-            
+
+        mr.strokeWeight(width*10)
+        mr.stroke(255,0,0)
+        for ct, lat, lon in osmdb.execute("SELECT count(*), lat, lon from nodes GROUP BY lat, lon "):
+            if ct>1:
+                mr.point( lon, lat )
+
         mr.saveLocal(out_filename)
         mr.stop()
         print "Done"
         
-            
+class StitchDisjunctGraphs(OSMDBFilter):
+    
+    def filter(self, osmdb, *args):
+        alias = {}
         
+        # for each location that appears more than once
+        for ct, lat, lon in osmdb.execute("SELECT count(*), lat, lon from nodes GROUP BY lat, lon "):
+            if ct>1:
+                
+                # get all the nodes that appear at that location
+                ids = map(lambda x:x[0], osmdb.execute("SELECT id FROM nodes WHERE lat=? AND lon=?", (lat,lon)))
+                
+                # alias the duplicate node to an identical node
+                for id in ids:
+                    if id != ids[0]:
+                        alias[id] = ids[0]
+                    
+        # delete all duplicate nodes
+        dupes = alias.keys()
+        print "%d dupe nodes"%len(dupes)
+        print "Deleting dupe nodes"
+        query = "DELETE FROM nodes WHERE id IN (%s)"%(",".join(dupes),)
+        c = osmdb.cursor()
+        c.execute(query)
+        osmdb.conn.commit()
+        c.close()
+        
+        print "Replacing references to dupe nodes"
+        c = osmdb.cursor()
+        # replace reference in nd lists
+        for i, (id, nds_str) in enumerate( osmdb.execute("SELECT id, nds FROM ways") ):
+            if i%1000==0: print "way %d"%i
+            
+            nds = json.loads(nds_str)
+            if nds[0] in alias:
+                nds[0] = alias[nds[0]]
+                print "replace header"
+            if nds[-1] in alias:
+                nds[-1] = alias[nds[-1]]
+                print "replace footer"
+            
+            
+            c.execute( "UPDATE ways SET nds=? WHERE id=?", (json.dumps(nds), id) )
+        osmdb.conn.commit()
+        c.close()
+
+def stitch_and_visualize(dbname,mapname):
+    osmdb = OSMDB( dbname )
+    ff = StitchDisjunctGraphs()
+    ff.filter( osmdb )
+    
+    ff = FindDisjunctGraphsFilter()
+    ff.run( osmdb )
+    ff.visualize( osmdb, mapname )
+
 def main():
     from sys import argv
     filter_cls, mode, osmdb_file = argv[1:4]
@@ -310,3 +372,4 @@ def main():
     
 if __name__ == '__main__':
     main()
+    
