@@ -123,17 +123,25 @@ class GraphDatabase:
     def num_edges(self):
         return list(self.execute( "SELECT count(*) from edges" ))[0][0]
         
-    def incarnate(self):
+    def incarnate(self, reporter=sys.stdout):
         g = Graph()
         num_vertices = self.num_vertices()
+        
         for i, vertex_label in enumerate( self.all_vertex_labels() ):
-            if i%5000==0: print( "%d/%d vertices"%(i,num_vertices) ); sys.stdout.flush()
+            if reporter and i%5000==0: 
+                reporter.write("\r%d/%d vertices"%(i,num_vertices) ) 
+                reporter.flush()
             g.add_vertex( vertex_label )
+        
+        if reporter: reporter.write("\rLoaded %d vertices %s\n" % (num_vertices, " "*10))
         
         num_edges = self.num_edges()
         for i, (vertex1, vertex2, edgetype) in enumerate( self.all_edges() ):
-            if i%5000==0: print( "%d/%d edges"%(i,num_edges)); sys.stdout.flush()
+            if i%5000==0: 
+                reporter.write("\r%d/%d edges"%(i,num_edges) ) 
+                reporter.flush()
             g.add_edge( vertex1, vertex2, edgetype )
+        if reporter: reporter.write("\rLoaded %d edges %s\n" % (num_edges, " "*10))
         
         return g
         
