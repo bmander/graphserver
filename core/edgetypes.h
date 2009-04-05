@@ -13,15 +13,16 @@ typedef enum {
   PL_TRIPHOP,
   PL_LINK,
   PL_EXTERNVALUE,
-  PL_NONE,
+  PL_NONE, // 5
   PL_WAIT,
   PL_HEADWAY,
   PL_TRIPBOARD,
   PL_CROSSING,
-  PL_ALIGHT,
+  PL_ALIGHT, // 10
   PL_HEADWAYBOARD,
   PL_EGRESS,
   PL_HEADWAYALIGHT,
+  PL_ELAPSE_TIME
 } edgepayload_t;
 
 //---------------DECLARATIONS FOR WALKOPTIONS CLASS---------------
@@ -281,6 +282,32 @@ waitGetEnd(Wait* this);
 
 Timezone*
 waitGetTimezone(Wait* this);
+
+//---------------DECLARATIONS FOR ELAPSE TIME CLASS------------------------
+
+typedef struct ElapseTime {
+    edgepayload_t type;
+    State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
+    State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
+    
+    long seconds;
+} ElapseTime;
+
+ElapseTime*
+elapseTimeNew(long seconds);
+
+void
+elapseTimeDestroy(ElapseTime* tokill);
+
+inline State*
+elapseTimeWalk(EdgePayload* superthis, State* param, WalkOptions* options);
+
+inline State*
+elapseTimeWalkBack(EdgePayload* superthis, State* param, WalkOptions* options);
+
+long
+elapseTimeGetSeconds(ElapseTime* this);
+
 
 //---------------DECLARATIONS FOR STREET  CLASS---------------------
 

@@ -873,6 +873,20 @@ class Wait(EdgePayload):
     def __getstate__(self):
         return (self.end, self.timezone.soul)
 
+class ElapseTime(EdgePayload):
+    seconds = cproperty(lgs.elapseTimeGetSeconds, c_long)
+    
+    def __init__(self, seconds):
+        self.soul = self._cnew( seconds )
+        
+    def to_xml(self):
+        self.check_destroyed()
+        
+        return "<ElapseTime seconds='%ld' />"%(self.seconds)
+        
+    def __getstate__(self):
+        return (self.seconds,)
+
 class TripHop(EdgePayload):
     
     depart = cproperty( lgs.triphopDepart, c_int )
@@ -1434,6 +1448,12 @@ Wait._cnew = lgs.waitNew
 Wait._cdel = lgs.waitDestroy
 Wait._cwalk = lgs.waitWalk
 Wait._cwalk_back = lgs.waitWalkBack
+
+ElapseTime._cnew = lgs.elapseTimeNew
+ElapseTime._cdel = lgs.elapseTimeDestroy
+ElapseTime._cwalk = lgs.elapseTimeWalk
+ElapseTime._cwalk_back = lgs.elapseTimeWalkBack
+
 
 TripBoard._cnew = lgs.tbNew
 TripBoard._cdel = lgs.tbDestroy

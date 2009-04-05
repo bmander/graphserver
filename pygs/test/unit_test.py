@@ -950,8 +950,8 @@ class TestEgress(unittest.TestCase):
         after = s.walk(State(0,0),wo)
         wo.destroy()
         print after
-        assert after.time == 5
-        assert after.weight == 5
+        assert after.time == 9
+        assert after.weight == 9
         assert after.dist_walked == 10
         assert after.prev_edge_type == 12
         assert after.prev_edge_name == "longstreet"
@@ -962,8 +962,8 @@ class TestEgress(unittest.TestCase):
         
         before = s.walk_back(State(0,100),WalkOptions())
         print before
-        assert before.time == 100 - (10/2)
-        assert before.weight == 10/2
+        assert before.time == 100 - (9)
+        assert before.weight == 9
         assert before.dist_walked == 10.0
         assert before.prev_edge_type == 12
         assert before.prev_edge_name == "longstreet"
@@ -988,12 +988,58 @@ class TestEgress(unittest.TestCase):
         spt.destroy()
         g.destroy()
 
+class TestElapseTime(unittest.TestCase):
+    def test_new(self):
+        s = ElapseTime(120)
+        assert s.seconds == 120
+        assert s.to_xml() == "<ElapseTime seconds='120' />"
+        
+    def test_destroy(self):
+        s = ElapseTime(1)
+        s.destroy()
+        
+        assert s.soul==None
+        
+    def test_big_seconds(self):
+        s = ElapseTime(240000)
+        assert s.seconds == 240000
+
+        assert s.to_xml() == "<ElapseTime seconds='240000' />"
+        
+    def test_walk(self):
+        s = ElapseTime(2)
+        
+        after = s.walk(State(0,0),WalkOptions())
+        assert after.time == 2
+        assert after.weight == 2
+        assert after.dist_walked == 0
+        assert after.prev_edge_type == 14
+        assert after.prev_edge_name == None
+        assert after.num_agencies == 0
+        
+    def test_walk_back(self):
+        s = ElapseTime(2)
+        
+        before = s.walk_back(State(0,100),WalkOptions())
+        
+        assert before.time == 98
+        assert before.weight == 2
+        assert before.dist_walked == 0
+        assert before.prev_edge_type == 14
+        assert before.prev_edge_name == None
+        assert before.num_agencies == 0
+        
+    def test_getstate(self):
+        s = ElapseTime(2)
+        
+        assert s.__getstate__() == (2,)
+
 class TestWalkOptions(unittest.TestCase):
     def test_from_ptr(self):
         wo = WalkOptions()
         wo.transfer_penalty = 10
         wo1 = WalkOptions.from_pointer(wo.soul)
-        assert wo.transfer_penalty == w1.transfer_penalty
+        assert wo.transfer_penalty == w01.transfer_penalty
         assert wo1.soul == wo.soul
         wo.destroy()
         

@@ -232,6 +232,13 @@ pycapi(lgs.tbGetBoardingDepart, c_int, [c_void_p, c_int])
 pycapi(lgs.alGetAlightingTripId, c_char_p, [c_void_p, c_int])
 pycapi(lgs.alGetAlightingArrival, c_int, [c_void_p, c_int])
 
+#ELAPSE TIME API
+pycapi(lgs.elapseTimeNew, c_void_p, [c_long])
+pycapi(lgs.elapseTimeDestroy, c_void_p)
+pycapi(lgs.elapseTimeWalk, c_void_p, [c_void_p, c_void_p])
+pycapi(lgs.elapseTimeWalkBack, c_void_p, [c_void_p, c_void_p])
+pycapi(lgs.elapseTimeGetSeconds, c_long, [c_void_p])
+
 #CUSTOM TYPE API
 class PayloadMethodTypes:
     """ Enumerates the ctypes of the function pointers."""

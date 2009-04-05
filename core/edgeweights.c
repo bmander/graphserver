@@ -41,6 +41,28 @@ linkWalkBack(EdgePayload* this, State* params, WalkOptions* options) {
   return ret;
 }
 
+inline State*
+#ifndef ROUTE_REVERSE
+elapseTimeWalk(EdgePayload* this, State* params, WalkOptions* options) {
+#else
+elapseTimeWalkBack(EdgePayload* this, State* params, WalkOptions* options) {
+#endif
+  
+  State* ret = stateDup( params );
+  
+  int delta_t = ((ElapseTime*)this)->seconds;
+  
+  ELAPSE_TIME_AND_SERVICE_PERIOD(ret, delta_t);
+
+  // this could have a multiplier via WalkOptions, but this is currently not necessary
+  ret->weight += delta_t;
+  ret->prev_edge_type = PL_ELAPSE_TIME;
+  //ret->prev_edge_name = ((ElapseTime*)this)->name;
+
+  return ret;
+}
+
+
 #ifndef ROUTE_REVERSE
 inline State*
 waitWalk(EdgePayload* superthis, State* params, WalkOptions* options) {
@@ -130,9 +152,9 @@ egressWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
 
   double end_dist = params->dist_walked + this->length;
   // no matter what the options say (e.g. you're on a bike), 
-  // the walking speed should be 2 mps, because you can't ride in
+  // the walking speed should be 1.1 mps, because you can't ride in
   // a station
-  long delta_t = (long)(this->length/2);
+  long delta_t = (long)(this->length/1.1);
   long delta_w = delta_t*options->walking_reluctance;
   if(end_dist > options->max_walk)
     delta_w += (end_dist - options->max_walk)*options->walking_overage*delta_t;
