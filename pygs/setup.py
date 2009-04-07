@@ -27,7 +27,7 @@ setup(  name='graphserver',
         url = "http://github.com/bmander/graphserver/tree/master",
         
         # put libgraphserver.so next to gsdll.py
-        package_data = {'graphserver':['libgraphserver.so']}  
+        package_data = {'graphserver':['libgraphserver.so']} ,
         
         entry_points = {
             'console_scripts': [
