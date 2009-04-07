@@ -10,7 +10,7 @@ subprocess.call(["cp",LIBSO,"graphserver/"])
 setup(  name='graphserver',
         version='0.1',
         packages = find_packages(exclude=['examples.*','examples','test','test.*']),
-        install_requires=['pytz>=2008b','pyproj>=1.8.5'], # need to add servable
+        install_requires=['pytz>=2008b','pyproj>=1.8.5','servable>=2009b'], 
         zip_safe=False,
         extras_require = {
         #    'transitfeed':  ["transitfeed>=1.1.6"],
