@@ -885,7 +885,12 @@ class ElapseTime(EdgePayload):
         return "<ElapseTime seconds='%ld' />"%(self.seconds)
         
     def __getstate__(self):
-        return (self.seconds,)
+        return self.seconds
+    
+    @classmethod
+    def reconstitute(cls, state, resolver):
+        return cls(state)
+
 
 class TripHop(EdgePayload):
     
@@ -1390,7 +1395,9 @@ Edge._cpayload = ccast(lgs.eGetPayload, EdgePayload)
 Edge._cwalk = ccast(lgs.eWalk, State)
 Edge._cwalk_back = lgs.eWalkBack
 
-EdgePayload._subtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,4:GenericPyPayload,5:None,6:Wait,7:Headway,8:TripBoard,9:Crossing,10:Alight,11:HeadwayBoard,13:HeadwayAlight}
+EdgePayload._subtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,4:GenericPyPayload,5:None,
+                         6:Wait,7:Headway,8:TripBoard,9:Crossing,10:Alight,
+                         11:HeadwayBoard,12:Egress,13:HeadwayAlight,14:ElapseTime}
 EdgePayload._cget_type = lgs.epGetType
 EdgePayload._cwalk = lgs.epWalk
 EdgePayload._cwalk_back = lgs.epWalkBack
