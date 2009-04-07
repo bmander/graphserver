@@ -288,7 +288,7 @@ class FindDisjunctGraphsFilter(OSMDBFilter):
 
         mr.strokeWeight(width*10)
         mr.stroke(255,0,0)
-        for ct, lat, lon in osmdb.execute("SELECT count(*), lat, lon from nodes GROUP BY lat, lon "):
+        for ct, lat, lon in db.execute("SELECT count(*) as cnt, lat, lon from nodes GROUP BY lat, lon HAVING cnt > 1"):
             if ct>1:
                 mr.point( lon, lat )
 
