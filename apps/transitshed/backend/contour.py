@@ -46,6 +46,8 @@ def bounds(points):
     return (l,b,r,t)
 
 def points_to_surface_grid(points, cutoff, fudge, margin, closure_tolerance, cellsize):
+    #now that maxcell is found, cutoff and fudge are depricated and not used
+    
     l, b, r, t = bounds(points)
     xspan = r-l
     yspan = t-b
@@ -55,12 +57,13 @@ def points_to_surface_grid(points, cutoff, fudge, margin, closure_tolerance, cel
     
     mat = sg.to_matrix()
     
+    #given a grid of (x,y,z) tuples where z is sometimes NaN, find the maximum z
+    maxcell = max([max( filter(lambda x: not numpy.isnan(x), map(lambda x:x[2],line))) for line in mat])
+    
     for i, row in enumerate(mat):
         for j, (x,y,z) in enumerate(row): # x, y, height
             if numpy.isnan(z):
-                sg.setZ(i,j,cutoff*fudge)
-            #if z > cutoff or numpy.isnan(z):
-            #    sg.setZ(i,j,cutoff*fudge)
+                sg.setZ(i,j,maxcell*fudge)
             
     return sg
 
