@@ -3336,6 +3336,7 @@ if __name__ == '__main__':
                  TestHeadwayBoard,
                  TestHeadwayAlight,
                  TestWalkOptions,
+                 TestElapseTime,
                  ]
 
     for testable in testables:
