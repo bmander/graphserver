@@ -158,7 +158,7 @@ class StripOtherTagsFilter(OSMDBFilter):
     def filter(self, db, feature_type, *keep_tags):
         keep_tags = dict([(t,1) for t in keep_tags])
 
-        update_list = []
+        update_list = {}
         if feature_type == 'nodes':
             query = "SELECT id,tags FROM nodes"
         else:
@@ -174,7 +174,7 @@ class StripOtherTagsFilter(OSMDBFilter):
             
             update_list[id] = json.dumps(tags)
         
-        for id, tags in update_list:
+        for id, tags in update_list.items():
             c.execute("UPDATE ways set tags = ? WHERE id = ?",(id,tags))
 
         db.conn.commit()
@@ -302,16 +302,18 @@ class StitchDisjunctGraphs(OSMDBFilter):
         alias = {}
         
         # for each location that appears more than once
-        for ct, lat, lon in osmdb.execute("SELECT count(*), lat, lon from nodes GROUP BY lat, lon "):
-            if ct>1:
-                
-                # get all the nodes that appear at that location
-                ids = map(lambda x:x[0], osmdb.execute("SELECT id FROM nodes WHERE lat=? AND lon=?", (lat,lon)))
-                
-                # alias the duplicate node to an identical node
-                for id in ids:
-                    if id != ids[0]:
-                        alias[id] = ids[0]
+        for nds, ct, lat, lon in osmdb.execute("SELECT group_concat(id), count(*) as cnt, lat, lon from nodes GROUP BY lat, lon HAVING cnt > 1"):
+            
+            # get all the nodes that appear at that location
+            #ids = map(lambda x:x[0], osmdb.execute("SELECT id FROM nodes WHERE lat=? AND lon=?", (lat,lon)))
+            #print nds
+            nds = nds.split(",")
+            first = nds.pop(0)
+            alias[nds] = nds
+            # alias the duplicate node to an identical node
+            #for id in ids:
+            # if id != ids[0]:
+            # alias[id] = ids[0]
                     
         # delete all duplicate nodes
         dupes = alias.keys()
@@ -353,6 +355,14 @@ def stitch_and_visualize(dbname,mapname):
 
 def main():
     from sys import argv
+    if len(argv) < 4:
+        print "%s <Filter Name> <run|rerun|visualize> <osmdb_file> [<filter args> ...]" % argv[0]
+        print "Filters:"
+        for k,v in globals().items():
+            if type(v) == type and issubclass(v,OSMDBFilter):
+                print " -- %s" % k
+        exit()
+    
     filter_cls, mode, osmdb_file = argv[1:4]
     
     try:
@@ -361,7 +371,7 @@ def main():
         raise Exception("Filter not found.")
     
     db = OSMDB(osmdb_file)
-
+ 
     if len(argv) > 4:
         extra = argv[4:]
     else:
@@ -378,4 +388,4 @@ def main():
     
 if __name__ == '__main__':
     main()
-    
+ 
