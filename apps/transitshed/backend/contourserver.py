@@ -6,7 +6,7 @@ from graphserver.core import State, WalkOptions
 from graphserver.ext.osm.osmdb import OSMDB
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
 from graphserver.util import TimeHelpers
-from contour import travel_time_contour, travel_time_surface
+from contour import travel_time_contour, travel_time_surface, points_to_surface_grid
 import json
 from rtree import Rtree
 from glineenc import encode_pairs
@@ -16,6 +16,12 @@ import yaml
 def cons(ary):
     for i in range(len(ary)-1):
         yield ary[i],ary[i+1]
+        
+def frange(low,high,step):
+    curs = low
+    while curs<=high:
+        yield curs
+        curs += step
 
 class ContourServer(Servable):
     def __init__(self, settings_filename):
@@ -151,7 +157,7 @@ class ContourServer(Servable):
         
         return json.dumps( contours )
 
-    def _surface(self, lat, lon, year, month, day, hour, minute, second, cutoff, speed):
+    def _surface(self, lat, lon, year, month, day, hour, minute, second, cutoff, speed, cellsize=0.004):
         
         starttime = TimeHelpers.localtime_to_unix( year, month, day, hour, minute, second, "America/Los_Angeles" )
         
@@ -181,18 +187,34 @@ class ContourServer(Servable):
         print "creating surface...",
         
         t0 = time.time()
-        ret = travel_time_surface( points, cutoff=cutoff, cellsize=0.004, fudge=1.7 )
+        ret = points_to_surface_grid( points, cutoff=cutoff, fudge=1.1, margin=2, closure_tolerance=0.05, cellsize=cellsize )
+        #ret = travel_time_surface( points, cutoff=cutoff, cellsize=0.004, fudge=1.7 )
         print "%s sec"%(time.time()-t0)
         print "done. here you go..."
         
         return ret
 
     def surface(self, lat, lon, year, month, day, hour, minute, second, cutoff, speed=0.85):
-        return json.dumps( self._surface(lat,lon,year,month,day,hour,minute,second,cutoff,speed) )
+        return json.dumps( self._surface(lat,lon,year,month,day,hour,minute,second,cutoff,speed).to_matrix() )
         
     def transitability(self, lat, lon, year, month, day, hour, minute, second, cutoff, speed=0.85):
         grid = self._surface(lat,lon,year,month,day,hour,minute,second,cutoff,speed)
-        return sum( [len(filter(lambda x:x[2]<=cutoff,col)) for col in grid] )
+        
+        if type(grid) == str:
+            return None
+        
+        ret = 0
+        for i in range(10):
+            contourslice=sum( [len(filter(lambda x:x[2]<=(cutoff/10.0)*(i+1),col)) for col in grid] )
+            print contourslice
+            ret += contourslice
+        
+        return ret
+            
+    def transitability_surface(self, left, bottom, right, top, res, year, month, day, hour, minute, second, cutoff, speed=0.85):
+        step = (right-left)/res
+        
+        return json.dumps([[(lon,lat,self.transitability(lat,lon,year,month,day,hour,minute,second,cutoff,speed)) for lat in frange(bottom,top,step)] for lon in frange(left,right,step)])
         
     def nodes(self):
         return "\n".join( ["%s-%s"%(k,v) for k,v in self.node_positions.items()] )
@@ -211,21 +233,86 @@ class ContourServer(Servable):
     def run_test_server(self):
         Servable.run_test_server(self, self.port)
 
-if __name__=='__main__':    
+# part of the transitabilty heatmap experiment. rightfully I should stick this in its own app.
+def print_transitability_surface(cserver):
+    print "bounds are %s"%cserver.bounds()
+    
+    bottom,left=(47.66567637286265, -122.33173370361328)
+    top,right=(47.687405831555616, -122.30289459228516)
+    
+    print cserver.transitability_surface(left,bottom,right,top, 30, 2009, 2, 18, 12, 0, 0, 45*60)
+
+from PIL import Image, ImageDraw
+def save_eta_surface(settings_filename, width, fname):
+    cserver = ContourServer( settings_filename )
+    
+    lat, lon =(47.68671247798501, -122.32057571411133)
+    
+    sg = cserver._surface(lat,lon, 2009, 2, 18, 12, 0, 0, 120*60, 1.0, cellsize=0.001)
+    
+    grid = sg.to_matrix()
+    left,bottom,t = grid[0][0]
+    right,top,t = grid[-1][-1]
+    
+    cellsize = (right-left)/width
+
+    igrid = [[sg.interpolate(x,y) for x in frange(left,right,cellsize)] for y in frange(bottom,top, cellsize)]
+        
+    #fp = open(fname, "w")
+    #fp.write( "\n".join([",".join(map(str,row)) for row in igrid]) )
+    #fp.close()
+    
+    height = len(igrid)
+    width = len(igrid[0])
+    
+    mintime = min([min(line) for line in igrid])
+    maxtime = max([max(line) for line in igrid])
+    
+    #red to yellow (255,0,0) to (255,255,0)
+    rty = zip([255]*256, range(256),[0]*256)
+    #yellow to green (255,255,0) to (0,255,0)
+    ytg = zip(range(255,-1,-1), [255]*256, [0]*256)
+    #green to cyan (0,255,0) to (0,255,255)
+    gtc = zip([0]*256, [255]*256, range(256))
+    #cyan to blue (0,255,255) to (0,0,255)
+    ctb = zip([0]*256, range(255,-1,-1), [255]*256)
+    #blue to violet (0,0,255) to (255,0,255)
+    btv = zip(range(256), [0]*256, [255]*256)
+
+    colors = rty+ytg+gtc+ctb+btv
+    
+    im = Image.new("RGB", (width,height))
+    draw = ImageDraw.Draw(im)
+    for y, line in enumerate(igrid):
+        for x, cell in enumerate(line):
+            color = colors[int(((cell-mintime)/(maxtime-mintime))*(len(colors)-1))]
+            draw.point( (x,y), fill=color )
+            #print x, y, int(((cell-mintime)/(maxtime-mintime))*255)
+    del draw 
+    # write to stdout
+    im.save(fname, "PNG")
+
+
+def eta_main(settings_filename):
+    save_eta_surface( "seattle.yaml", 1000, "grid.png" )
+
+def main(settings_filename=None):
     from sys import argv
 
     usage = "python sptserver.py settings_filename"
     
-    if len(argv) < 2:
-        print usage
-        quit()
+    if settings_filename is None:
+        if len(argv) < 2:
+            print usage
+            quit()
+        else:
+            settings_filename = argv[1]
     
-    cserver = ContourServer( argv[1] )
-    
-    print "bounds are %s"%cserver.bounds()
-    
-    print cserver.transitability(37.78563944612241, -122.40898132324219, 2009, 2, 18, 12, 0, 0, 45*60)
-    exit()
+    cserver = ContourServer( settings_filename )
     
     cserver.run_test_server()
+
+if __name__=='__main__':
+    main()
+
     
