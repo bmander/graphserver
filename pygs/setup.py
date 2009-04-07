@@ -27,4 +27,15 @@ setup(  name='graphserver',
         url = "http://github.com/bmander/graphserver/tree/master",
         
         # put libgraphserver.so next to gsdll.py
-        package_data = {'graphserver':['libgraphserver.so']}  )
+        package_data = {'graphserver':['libgraphserver.so']}  
+        
+        entry_points = {
+            'console_scripts': [
+                'gs_osmfilter = graphserver.ext.osm.osmfilters:main',
+                'gs_osmdb_compile = graphserver.ext.osm.osmdb:main',
+                'gs_crawl = graphserver.ext.graphcrawler:main',
+            ],
+            #'setuptools.installation': ['eggsecutable = umigis.server.setup:main']
+        }
+        
+)
