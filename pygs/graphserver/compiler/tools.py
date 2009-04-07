@@ -63,7 +63,7 @@ def load_bundle_to_boardalight_graph(g, agency_namespace, bundle, service_id, sc
         
         trip_id, departure_time, arrival_time, stop_id, stop_sequence, stop_dist_traveled = stop_time_bundle[0]
         
-        patternstop_vx_name = "%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,i)
+        patternstop_vx_name = "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,i)
         
         g.add_vertex( patternstop_vx_name )
         
@@ -71,24 +71,24 @@ def load_bundle_to_boardalight_graph(g, agency_namespace, bundle, service_id, sc
         for trip_id, departure_time, arrival_time, stop_id, stop_sequence, stop_dist_traveled in stop_time_bundle:
             b.add_boarding( trip_id, departure_time )
             
-        g.add_edge( stop_id, patternstop_vx_name, b )
+        g.add_edge( "sta-%s"%stop_id, patternstop_vx_name, b )
         
     #add alight edges
     for i, stop_time_bundle in enumerate(stop_time_bundles[1:]):
         trip_id, departure_time, arrival_time, stop_id, stop_sequence, stop_dist_traveled = stop_time_bundle[0]
         
-        patternstop_vx_name = "%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,i+1)
+        patternstop_vx_name = "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,i+1)
         
         al = Alight(service_id, sc, tz, 0)
         for trip_id, departure_time, arrival_time, stop_id, stop_sequence, stop_dist_traveled in stop_time_bundle:
             al.add_alighting( trip_id.encode('ascii'), arrival_time )
             
-        g.add_edge( patternstop_vx_name, stop_id, al )
+        g.add_edge( patternstop_vx_name, "sta-%s"%stop_id, al )
     
     # add crossing edges
     for j, crossing_time in enumerate(bundle.pattern.crossings):
         c = Crossing( crossing_time )
-        g.add_edge( "%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,j), "%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,j+1), c )
+        g.add_edge( "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,j), "%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,j+1), c )
 
 def load_gtfsdb_to_boardalight_graph(g, agency_namespace, gtfsdb, agency_id, service_ids, reporter=sys.stdout):
     
@@ -98,7 +98,7 @@ def load_gtfsdb_to_boardalight_graph(g, agency_namespace, gtfsdb, agency_id, ser
 
     # enter station vertices
     for stop_id, stop_name, stop_lat, stop_lon in gtfsdb.stops():
-        g.add_vertex( stop_id )
+        g.add_vertex( "sta-%s"%stop_id )
     
     # compile trip bundles from gtfsdb
     if reporter: reporter.write( "Compiling trip bundles...\n" )
@@ -126,24 +126,24 @@ def load_gtfsdb_to_boardalight_graph(g, agency_namespace, gtfsdb, agency_id, ser
         
         #add board edges
         for trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_dist_traveled in stoptimes[:-1]:
-            g.add_vertex( "%s-%s-hw-%s"%(agency_namespace,stop_id, trip_id) )
-            g.add_edge( stop_id, "%s-%s-hw-%s"%(agency_namespace,stop_id, trip_id), hb )
+            g.add_vertex( "hwv-%s-%s-%s"%(agency_namespace,stop_id, trip_id) )
+            g.add_edge( "sta-%s"%stop_id, "hwv-%s-%s-%s"%(agency_namespace,stop_id, trip_id), hb )
             
         #add alight edges
         for trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_dist_traveled in stoptimes[1:]:
-            g.add_vertex( "%s-%s-hw-%s"%(agency_namespace,stop_id, trip_id) )
-            g.add_edge( "%s-%s-hw-%s"%(agency_namespace,stop_id, trip_id), stop_id, ha )
+            g.add_vertex( "hwv-%s-%s-%s"%(agency_namespace,stop_id, trip_id) )
+            g.add_edge( "hwv-%s-%s-%s"%(agency_namespace,stop_id, trip_id), "sta-%s"%stop_id, ha )
             print ha
         
         #add crossing edges
         for (trip_id1, arrival_time1, departure_time1, stop_id1, stop_sequence1, stop_dist_traveled1), (trip_id2, arrival_time2, departure_time2, stop_id2, stop_sequence2,stop_dist_traveled2) in cons(stoptimes):
-            g.add_edge( "%s-%s-hw-%s"%(agency_namespace,stop_id1, trip_id1), "%s-hw-%s"%(stop_id2, trip_id2), Crossing(arrival_time2-departure_time1) )
+            g.add_edge( "hwv-%s-%s-%s"%(agency_namespace,stop_id1, trip_id1), "hwv-%s-%s-%s"%(agency_namespace,stop_id2, trip_id2), Crossing(arrival_time2-departure_time1) )
             
     # load connections
     if reporter: reporter.write( "Loading connections to graph...\n" )
     for stop_id1, stop_id2, conn_type, distance in gtfsdb.execute( "SELECT * FROM connections" ):
-        g.add_edge( stop_id1, stop_id2, Street( conn_type, distance ) )
-        g.add_edge( stop_id2, stop_id1, Street( conn_type, distance ) )
+        g.add_edge( "sta-%s"%stop_id1, "sta-%s"%stop_id2, Street( conn_type, distance ) )
+        g.add_edge( "sta-%s"%stop_id2, "sta-%s"%stop_id1, Street( conn_type, distance ) )
             
 def link_nearby_stops(g, gtfsdb, range=0.05, obstruction=1.4):
     """Adds Street links of length obstruction*dist(A,B) directly between all station pairs closer than <range>"""
@@ -151,7 +151,7 @@ def link_nearby_stops(g, gtfsdb, range=0.05, obstruction=1.4):
     print "Linking nearby stops..."
 
     for stop_id1, stop_name1, lat1, lon1 in gtfsdb.stops():
-        g.add_vertex( stop_id1 )
+        g.add_vertex( "sta-%s"%stop_id1 )
         
         for stop_id2, stop_name2, lat2, lon2 in gtfsdb.nearby_stops(lat1, lon1, range):
             if stop_id1 == stop_id2:
@@ -159,13 +159,13 @@ def link_nearby_stops(g, gtfsdb, range=0.05, obstruction=1.4):
             
             print "linking %s to %s"%(stop_id1, stop_id2)
             
-            g.add_vertex( stop_id2 )
+            g.add_vertex( "sta-%s"%stop_id2 )
             
             dd = obstruction*vincenty( lat1, lon1, lat2, lon2 )
             print dd
             
-            g.add_edge( stop_id1, stop_id2, Street("walk", dd) )
-            g.add_edge( stop_id2, stop_id1, Street("walk", dd) )
+            g.add_edge( "sta-%s"%stop_id1, "sta-%s"%stop_id2, Street("walk", dd) )
+            g.add_edge( "sta-%s"%stop_id2, "sta-%s"%stop_id1, Street("walk", dd) )
             
 
 def load_streets_to_graph(g, osmdb, reporter=None):
@@ -178,8 +178,8 @@ def load_streets_to_graph(g, osmdb, reporter=None):
         
         distance = sum( [vincenty(y1,x1,y2,x2) for (x1,y1), (x2,y2) in cons(way.geom)] )
         
-        vertex1_label = "osm"+way.nds[0]
-        vertex2_label = "osm"+way.nds[-1]
+        vertex1_label = "osm-%s"%way.nds[0]
+        vertex2_label = "osm-%s"%way.nds[-1]
         
         x1, y1 = way.geom[0]
         x2, y2 = way.geom[-1]
@@ -197,7 +197,7 @@ def load_transit_street_links_to_graph( g, osmdb, gtfsdb, reporter=None ):
         osm_id, osm_lat, osm_lon, osm_dist = osmdb.nearest_node( stop_lat, stop_lon )
          
         if osm_id:
-            g.add_edge( stop_id, "osm"+osm_id, Link( ) )
-            g.add_edge( "osm"+osm_id, stop_id, Link( ) )
+            g.add_edge( "sta-%s"%stop_id, "osm-%s"%osm_id, Link( ) )
+            g.add_edge( "osm-%s"%osm_id, "sta-%s"%stop_id, Link( ) )
 
 
