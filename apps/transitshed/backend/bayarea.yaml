@@ -1,0 +1,5 @@
+graphdb_filename: "data/bayarea.gdb"
+osmdb_filename: "data/bart.osmdb"
+gtfsdb_filename: "data/bart.gtfsdb"
+center: [37.75334401310656, -122.34375]
+port: 8081
