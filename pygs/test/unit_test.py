@@ -1039,7 +1039,7 @@ class TestWalkOptions(unittest.TestCase):
         wo = WalkOptions()
         wo.transfer_penalty = 10
         wo1 = WalkOptions.from_pointer(wo.soul)
-        assert wo.transfer_penalty == w01.transfer_penalty
+        assert wo.transfer_penalty == wo1.transfer_penalty
         assert wo1.soul == wo.soul
         wo.destroy()
         
