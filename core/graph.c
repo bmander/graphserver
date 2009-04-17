@@ -277,6 +277,14 @@ vNew( char* label ) {
     return this ;
 }
 
+Vertex *
+sptvNew( Vertex *shadow ) {
+    Vertex *this = vNew( shadow->label );
+    this->shadow = shadow;
+    
+    return this;
+}
+
 void
 vDestroy(Vertex *this, int free_vertex_payload, int free_edge_payloads) {
     if( free_vertex_payload && this->payload )

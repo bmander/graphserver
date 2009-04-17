@@ -101,6 +101,9 @@ gSetThicknesses( Graph* this, char *root_label );
 Vertex *
 vNew( char* label ) ;
 
+Vertex *
+sptvNew( Vertex *shadow );
+
 void
 vDestroy(Vertex* this, int free_vertex_payload, int free_edge_payloads) ;
 
