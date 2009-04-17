@@ -38,6 +38,7 @@ struct Vertex {
    ListNode* incoming;
    char* label;
    State* payload;
+   Vertex* shadow; //non-NULL when Vertex is used in SPT
 } ;
 
 struct Edge {
