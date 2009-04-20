@@ -31,10 +31,12 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
     
   //Return Tree
   Graph* spt = gNew();
-  gAddVertex( spt, origin )->payload = init_state;
+  Vertex *spt_origin = sptAddVertex( spt, origin_v );
+  spt_origin->payload = init_state;
+  
   //Priority Queue
   dirfibheap_t q = dirfibheap_new( gSize( this ) );
-  dirfibheap_insert_or_dec_key( q, gGetVertex( this, origin ), 0 );
+  dirfibheap_insert_or_dec_key( q, spt_origin, 0 );
 
 /*
  *  CENTRAL ITERATION
@@ -42,12 +44,11 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
  */
 
   while( !dirfibheap_empty( q ) ) {                  //Until the priority queue is empty:
-    u = dirfibheap_extract_min( q );                 //get the lowest-weight Vertex 'u',
+    spt_u = dirfibheap_extract_min( q );                 //get the lowest-weight Vertex 'u',
+    u = spt_u->shadow;
 
-    if( !strcmp( u->label, target ) )                //(end search if reached destination vertex)
+    if( !strcmp( spt_u->label, target ) )                //(end search if reached destination vertex)
       break;
-
-    spt_u = gGetVertex( spt, u->label );             //get corresponding SPT Vertex,
     
     du = (State*)spt_u->payload;                     //and get State of u 'du'.
     
@@ -114,13 +115,13 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
       long new_w = new_dv->weight;
       // If the new way of getting there is better,
       if( new_w < old_w ) {
-        dirfibheap_insert_or_dec_key( q, v, new_w );    // rekey v in the priority queue
-
         // If this is the first time v has been reached
         if( !spt_v ) {
-          spt_v = gAddVertex( spt, v->label );        //Copy v over to the SPT
+          spt_v = sptAddVertex( spt, v );        //Copy v over to the SPT
           count++;
-          }
+        }
+          
+        dirfibheap_insert_or_dec_key( q, spt_v, new_w );    // rekey v in the priority queue
 
         //if((count%10000) == 0)
         //  fprintf(stdout, "Shortest path tree size: %d\n",count);
