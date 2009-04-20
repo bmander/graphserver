@@ -43,6 +43,17 @@ gAddVertex( Graph* this, char *label ) {
   return exists;
 }
 
+Vertex*
+sptAddVertex( Graph *this, Vertex *shadow ) {
+    Vertex *exists = gGetVertex( this, shadow->label );
+    if( !exists ) {
+        exists = sptvNew( shadow );
+        hashtable_insert_string( this->vertices, exists->label, exists );
+    }
+    
+    return exists;
+}
+
 void 
 gAddVertices( Graph* this, char **labels, int n ) {
   int i;

@@ -66,6 +66,9 @@ Vertex*
 gAddVertex( Graph* this, char *label );
 
 Vertex*
+sptAddVertex( Graph *this, Vertex *shadow );
+
+Vertex*
 gGetVertex( Graph* this, char *label );
 
 void
