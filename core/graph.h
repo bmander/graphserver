@@ -15,6 +15,8 @@ typedef struct Vertex Vertex;
 typedef struct Edge Edge;
 typedef struct ListNode ListNode;
 typedef struct Graph Graph;
+typedef struct ShortestPathTree ShortestPathTree;
+typedef struct SPTVertex;
 
 struct Graph {
    struct hashtable* vertices;
@@ -53,6 +55,22 @@ struct ListNode {
    Edge* data;
    ListNode* next;
 } ;
+
+struct ShortestPathTree {
+   SPTVertex* root;
+   SPTVertex* goal;
+   SPTVertex* v_reserve; //pre-allocated array of Vertices
+   State* s_reserve; //pre-allocated array of States
+   int reserve_size;
+}
+
+struct SPTVertex {
+    int degree_out;
+    ListNode* outgoing;
+    Edge* incoming;
+    Vertex* shadow;
+    State* travel_state;
+}
 
 //GRAPH FUNCTIONS
 
@@ -206,5 +224,12 @@ liGetData( ListNode *this );
 
 ListNode*
 liGetNext( ListNode *this );
+
+// SPT METHODS
+
+ShortestPathTree*
+sptNew( Vertex* root, int reserve_size );
+
+
 
 #endif
