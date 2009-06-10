@@ -8,7 +8,21 @@ Install:
 $ cd core
 $ sudo make install
 
---== RUBY GRAPHSERVER ==--
+--== PYTHON GRAPHSERVER ==--
+
+Prerequisites:
+Python 2.6+ (or 2.5+ for only graphserver.core)
+
+Build:
+$ cd pygs
+$ sudo python setup.py install
+
+Test:
+$ python -c "import graphserver.core; graphserver.core.Graph(); print 'Graphserver can be imported'"
+
+--== RUBY GRAPHSERVER (DEPRECATED) ==--
+
+NOTE: These bindings are horribly out of date.  Ruby/C experts only. Patches welcome.
 
 Prerequisites:
 Ruby 1.8.5
@@ -17,14 +31,3 @@ Build:
 $ cd rbgs
 Read the README
 
---== PYTHON GRAPHSERVER ==--
-
-Prerequisites:
-Python 2.6+ (or 2.5+ for only graphserver.core)
-
-Build:
-There is no build step!
-
-Install and Test:
-$ cd pygs
-Read the README
