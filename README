@@ -20,7 +20,7 @@ Read the README
 --== PYTHON GRAPHSERVER ==--
 
 Prerequisites:
-Python 2.5
+Python 2.6+ (or 2.5+ for only graphserver.core)
 
 Build:
 There is no build step!
