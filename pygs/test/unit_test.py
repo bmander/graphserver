@@ -9,6 +9,11 @@ import pickle
 
 import os
 
+RESOURCE_DIR=os.path.dirname(os.path.abspath(__file__))
+
+def find_resource(s):
+    return os.path.join(RESOURCE_DIR, s)
+
 def get_mem_usage():
     """returns percentage and vsz mem usage of this script"""
     pid = os.getpid()
@@ -518,7 +523,7 @@ class TestGraph(unittest.TestCase):
         
         g = Graph()
         
-        reader = csv.reader(open("map.csv"))
+        reader = csv.reader(open(find_resource("map.csv")))
         
         for wayid, fromv, tov, length in reader:
             g.add_vertex( fromv )
@@ -575,7 +580,7 @@ class TestGraph(unittest.TestCase):
         
         g = Graph()
         
-        reader = csv.reader(open("map.csv"))
+        reader = csv.reader(open(find_resource("map.csv")))
         
         for wayid, fromv, tov, length in reader:
             g.add_vertex( fromv )
@@ -613,7 +618,7 @@ class TestGraph(unittest.TestCase):
     def xtestx_gratuitous_loop(self): #don't actually run with the test suite
         g = Graph()
         
-        reader = csv.reader(open("map.csv"))
+        reader = csv.reader(open(find_resource("map.csv")))
         
         for wayid, fromv, tov, length in reader:
             g.add_vertex( fromv )
@@ -718,7 +723,7 @@ class TestGraphPerformance(unittest.TestCase):
     def test_load_performance(self):
         g = Graph()
         
-        reader = csv.reader(open("map.csv"))
+        reader = csv.reader(open(find_resource("map.csv")))
         
         t0 = time.time()
         for wayid, fromv, tov, length in reader:
@@ -735,7 +740,7 @@ class TestGraphPerformance(unittest.TestCase):
     def test_spt_performance(self):
         g = Graph()
         
-        reader = csv.reader(open("map.csv"))
+        reader = csv.reader(open(find_resource("map.csv")))
         
         for wayid, fromv, tov, length in reader:
             g.add_vertex( fromv )
@@ -766,7 +771,7 @@ class TestGraphPerformance(unittest.TestCase):
     def test_stress(self):
         g = Graph()
         
-        reader = csv.reader(open("map.csv"))
+        reader = csv.reader(open(find_resource("map.csv")))
         
         nodeids = {}
         for wayid, fromv, tov, length in reader:
@@ -1032,7 +1037,7 @@ class TestElapseTime(unittest.TestCase):
     def test_getstate(self):
         s = ElapseTime(2)
         
-        assert s.__getstate__() == (2,)
+        assert s.__getstate__() == 2
 
 class TestWalkOptions(unittest.TestCase):
     def test_from_ptr(self):
