@@ -55,8 +55,7 @@ def process_transit_street_graph(graphdb_filename, gtfsdb_filenames, osmdb_filen
     graphdb.populate( g, reporter=sys.stdout )
 
 
-if __name__=='__main__':
-
+def main():
     usage = """usage: python compile_graph.py <link|conflate>"""
     
     if len(argv) < 2:
@@ -97,3 +96,4 @@ if __name__=='__main__':
 
         process_transit_street_graph( graphdb_filename, gtfsdb_filenames, osmdb_filename ) 
         
+if __name__=='__main__': main()
