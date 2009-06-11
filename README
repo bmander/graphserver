@@ -17,6 +17,24 @@ Build:
 $ cd pygs
 $ sudo python setup.py install
 
+setup.py installs several executables.  On debian these go into /usr/local/bin/*.
+On Mac OS X, these go into
+/Library/Frameworks/Python.framework/Versions/2.6/bin/*
+
+  gs_gtfsdb_build: create a GTFSDatabase (sqlite3 db) from a GTFS zip file
+  $ gs_gtfsdb_build test/google_transit.zip test/google_transit.zip.gtfsdb
+
+  gs_gtfsdb_inspect: run a query against a GTFSDatabase
+  $ gs_gtfsdb_inspect test/google_transit.zip.gtfsdb "select * from agency"
+
+  gs_osmdb_compile: compile an OSMDB from an OSM xml file
+  $ (cd test && unzip map.osm.zip)
+  $ gs_osmdb_compile test/map.osm test/map.osmdb
+  
+  gs_osmfilter: run one of the filter classes from graphserver.ext.osm.osmfilters on an OSMDB instance
+  $ gs_osmfilter <Filter Name> <run|rerun|visualize> <osmdb_file> [<filter args> ...]
+
+
 Test:
 $ python -c "import graphserver.core; graphserver.core.Graph(); print 'Graphserver can be imported'"
 

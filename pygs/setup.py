@@ -31,8 +31,11 @@ setup(  name='graphserver',
         
         entry_points = {
             'console_scripts': [
+                'gs_compile_gdb = graphserver.compiler.compile_graph:main',
                 'gs_osmfilter = graphserver.ext.osm.osmfilters:main',
                 'gs_osmdb_compile = graphserver.ext.osm.osmdb:main',
+                'gs_gtfsdb_build = graphserver.ext.gtfs.gtfsdb:main_build_gtfsdb',
+                'gs_gtfsdb_inspect = graphserver.ext.gtfs.gtfsdb:main_inspect_gtfsdb',
                 'gs_crawl = graphserver.ext.graphcrawler:main',
             ],
             #'setuptools.installation': ['eggsecutable = umigis.server.setup:main']
