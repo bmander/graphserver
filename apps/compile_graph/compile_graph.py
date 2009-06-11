@@ -11,7 +11,7 @@ def process_transit_graph(gtfsdb_filename, agency_id, graphdb_filename, link=Fal
     
     g = Graph()
     service_ids = [x.encode("ascii") for x in gtfsdb.service_ids()]
-    compiler.load_gtfsdb_to_boardalight_graph(g, gtfsdb, agency_id=agency_id, service_ids=service_ids)
+    compiler.load_gtfsdb_to_boardalight_graph(g, "0", gtfsdb, agency_id=agency_id, service_ids=service_ids)
     
     if link:
         compiler.link_nearby_stops( g, gtfsdb )
@@ -32,7 +32,7 @@ def process_street_graph():
     graphdb = GraphDatabase( GRAPHDB_FILENAME, overwrite=True )
     graphdb.populate( g, reporter=sys.stdout )
     
-def process_transit_street_graph(graphdb_filename, gtfsdb_filename, osmdb_filename, agency_id=None):
+def process_transit_street_graph(graphdb_filename, gtfsdb_filenames, osmdb_filename, agency_id=None):
     g = Graph()
 
     # Load osmdb ===============================
