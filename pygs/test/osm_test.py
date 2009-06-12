@@ -7,23 +7,22 @@ sys.path.append("..")
 from graphserver.ext.osm.graph import OSMGraph
 from graphserver.ext.osm.osm import OSM
 from graphserver.core import State
-import unittest
 
 RESOURCE_DIR=os.path.dirname(os.path.abspath(__file__))
 
 def find_resource(s):
     return os.path.join(RESOURCE_DIR, s)
 
-class TestOSM(unittest.TestCase):
+class TestOSM:
     def test_basic(self):
         """basic osm file load test."""        
-        utmzone10 = Proj(init='epsg:26910')
+        #utmzone10 = Proj(init='epsg:26910')
         print "loading map.osm"
         osm = OSM(find_resource("map.osm"))
         print "iterating over all the ways and calculating length."
         for way in osm.ways.values():
-            way.length(utmzone10)
-            assert len(way.nds) > 1
+            way.length()
+            assert len(list(way.nds)) > 1
         print "done"
         
     def test_osmgraph(self):
