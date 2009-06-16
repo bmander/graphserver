@@ -1,21 +1,24 @@
---== GRAPHSERVER CORE ==--
+--== OVERVIEW ==--
 
-Build:
-$ cd core
-$ make
+Graphserver provides a C implementation of Djikstra's shortest path algorithm.
+This algorithm can be used to solve any number of problems, including street
+routing, transit routing, network analysis, etc.
 
-Install:
-$ cd core
-$ sudo make install
+The core graphserver library has Python bindings (and deprecated Ruby bindings),
+which provide easy construction, storage, and analysis of graph objects.  There
+are also a handful of tools designed to work with Open Street Map data and GTFS
+transit data.
 
---== PYTHON GRAPHSERVER ==--
+Related projects: prender, transitfeed, osmosis
+
+--== PYTHON BINDINGS ==--
 
 Prerequisites:
 Python 2.6+ (or 2.5+ for only graphserver.core)
 
 Build:
 $ cd pygs
-$ sudo python setup.py install
+$ sudo python2.6 setup.py install
 
 setup.py installs several executables.  On debian these go into /usr/local/bin/*.
 On Mac OS X, these go into
@@ -35,10 +38,26 @@ On Mac OS X, these go into
   $ gs_osmfilter <Filter Name> <run|rerun|visualize> <osmdb_file> [<filter args> ...]
 
 
-Test:
-$ python -c "import graphserver.core; graphserver.core.Graph(); print 'Graphserver can be imported'"
+Test a successful installation:
+  $ python2.6 -c "import graphserver.core; graphserver.core.Graph(); print 'Graphserver can be imported'"
 
---== RUBY GRAPHSERVER (DEPRECATED) ==--
+Run the test harness (in verbose mode):
+  user@graphserver/pygs$ python2.6 setup.py nosetests -v
+
+--== C .dll/.so ==--
+
+Provides the core DLL for routing. It is not necessary to manually build this if
+using the Python bindings.
+
+Build:
+  $ cd core
+  $ make
+
+Install:
+  $ cd core
+  $ sudo make install
+
+--== RUBY BINDINGS (DEPRECATED) ==--
 
 NOTE: These bindings are horribly out of date.  Ruby/C experts only. Patches welcome.
 

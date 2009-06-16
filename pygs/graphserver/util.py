@@ -52,13 +52,15 @@ class TimeHelpers:
         return ret, ret+24*3600, ret+2*24*3600
         
         
-if __name__=='__main__':
-    assert TimeHelpers.unix_time(2008,8,27,12,0,0,-7*3600) == 1219863600
-    assert TimeHelpers.localtime_to_unix(2008,8,27,12,0,0,"America/Los_Angeles") == 1219863600
-    assert str(TimeHelpers.unix_to_localtime(1219863600, "America/Los_Angeles")) == "2008-08-27 12:00:00-07:00"
-
+def main_test():
     print TimeHelpers.localtime_to_unix(2008,10,12,6,0,0,"Europe/Paris")
     print TimeHelpers.unix_to_localtime(1199181360, "America/New_York") 
     print TimeHelpers.unixtime_to_daytimes(1219834260, "America/Los_Angeles")
     print TimeHelpers.unix_to_localtime(1221459000, "America/Chicago")
     print TimeHelpers.unixtime_to_daytimes(1230354000, "America/Chicago")
+    assert TimeHelpers.unix_time(2008,8,27,12,0,0,-7*3600) == 1219863600
+    assert TimeHelpers.localtime_to_unix(2008,8,27,12,0,0,"America/Los_Angeles") == 1219863600
+    assert str(TimeHelpers.unix_to_localtime(1219863600, "America/Los_Angeles")) == "2008-08-27 12:00:00-07:00"
+
+if __name__=='__main__':
+    main_test()

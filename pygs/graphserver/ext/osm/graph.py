@@ -45,7 +45,7 @@ class OSMGraph(Graph):
         return 'highway' in way.tags
     
     def create_edgepayload(self, way):
-        len = way.length(self.projection)
+        len = way.length()
         return Street( way.id, len )
             
     def shortest_path_tree(self, from_v, to_v, state):
