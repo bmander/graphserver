@@ -19,6 +19,10 @@ def get_mem_usage():
     return float(parsed_psout[3]), int( parsed_psout[4] )
 
 import csv
+
+def test_graphserver_util():
+    util.main_test()
+
 class TestGraph(unittest.TestCase):
     
     def test_basic(self):
