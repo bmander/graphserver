@@ -1,7 +1,7 @@
 import transitfeed
-import sys, os
+import sys, os, subprocess
 sys.path = ['..'] + sys.path
-from graphserver.core import Graph, Street, ServicePeriod, TripHopSchedule, ServiceCalendar, State, Wait
+from graphserver.core import Graph, Street, ServicePeriod, TripHopSchedule, ServiceCalendar, State, Wait, WalkOptions
 from graphserver.engine import Engine
 from graphserver.ext.gtfs import GTFSLoadable
 import graphserver.ext.gtfs
@@ -149,28 +149,29 @@ class GTFSTestCase(unittest.TestCase):
     
     def test_load_sample(self):
         g = TestGTFS()
+        wo = WalkOptions()
         g.load_gtfs( find_resource("sample-feed.zip"))
         
         def leads_to(x, y):
             vs = [ edge.to_v.label for edge in g.get_vertex(x).outgoing ]
-            return vs == list(y)
+            assert vs == list(y), "%s vs %s" % (vs, list(y))
         
         # check that the graph is layed out like we'd expect
-        assert leads_to( "gtfsEMSI", ('gtfsDADAN',) )
-        assert leads_to( "gtfsBEATTY_AIRPORT", ('gtfsAMV', 'gtfsBULLFROG') )
-        assert leads_to( "gtfsNADAV", ('gtfsDADAN', 'gtfsNANAA') )
-        assert leads_to( 'gtfsBULLFROG', ('gtfsBEATTY_AIRPORT', 'gtfsFUR_CREEK_RES') )
-        assert leads_to( 'gtfsAMV', ('gtfsBEATTY_AIRPORT',) )
-        assert leads_to( 'gtfsNANAA', ('gtfsNADAV', 'gtfsSTAGECOACH' ) )
-        assert leads_to( 'gtfsDADAN', ('gtfsNADAV', 'gtfsEMSI' ) )
-        assert leads_to( 'gtfsSTAGECOACH', ('gtfsBEATTY_AIRPORT', 'gtfsNANAA') )
-        assert leads_to( 'gtfsFUR_CREEK_RES', ('gtfsBULLFROG',) )
+        leads_to( "gtfsEMSI", ('gtfsDADAN',) )
+        leads_to( "gtfsBEATTY_AIRPORT", ('gtfsAMV', 'gtfsBULLFROG') )
+        leads_to( "gtfsNADAV", ('gtfsDADAN', 'gtfsNANAA') )
+        leads_to( 'gtfsBULLFROG', ('gtfsBEATTY_AIRPORT', 'gtfsFUR_CREEK_RES') )
+        leads_to( 'gtfsAMV', ('gtfsBEATTY_AIRPORT',) )
+        leads_to( 'gtfsNANAA', ('gtfsNADAV', 'gtfsSTAGECOACH' ) )
+        leads_to( 'gtfsDADAN', ('gtfsNADAV', 'gtfsEMSI' ) )
+        leads_to( 'gtfsSTAGECOACH', ('gtfsBEATTY_AIRPORT', 'gtfsNANAA') )
+        leads_to( 'gtfsFUR_CREEK_RES', ('gtfsBULLFROG',) )
         
         s = State(1,1219842000) #6 am august 27, 2008, America/Los_Angeles
         
         # walk one edge
         edge_to_airport = g.get_vertex("gtfsSTAGECOACH").outgoing[0]
-        sprime = edge_to_airport.walk(s)
+        sprime = edge_to_airport.walk(s, wo)
         assert sprime.time == 1219843200
         assert sprime.weight == 1200
         
@@ -182,7 +183,7 @@ class GTFSTestCase(unittest.TestCase):
             
         s = State(1,1202911200) #6am feb 13, 2008, America/Los_Angeles
         edge_to_airport = g.get_vertex("gtfsSTAGECOACH").outgoing[0]
-        sprime = edge_to_airport.walk(s)
+        sprime = edge_to_airport.walk(s, wo)
         assert sprime.time == 1202912400
         assert sprime.weight == 1200
         
@@ -236,12 +237,13 @@ class GTFSTestCase(unittest.TestCase):
         
 class TestBART(unittest.TestCase):
     def test_bart(self):
+        wo = WalkOptions()
         g = TestGTFS()
         g.load_gtfs(find_resource("google_transit.zip"))
         
         # just a basic sanity test
         s1 = State(g.numagencies, 1219863720)
-        s2 = g.get_vertex("gtfsMONT").outgoing[1].walk(s1)
+        s2 = g.get_vertex("gtfsMONT").outgoing[1].walk(s1, wo)
         assert s2.time == 1219864320
         
         #e = Engine(g)
@@ -265,7 +267,7 @@ class TestBART_DAG(unittest.TestCase):
         assert spt.get_vertex("ASBY").payload.time == 1219863600
         # http://localhost:8080/shortest_path?from_v=%22gtfsFRMT%22&to_v=%22gtfsMLBR%22&time=1219863240
         assert spt.get_vertex("MLBR").payload.time == 1219866720
-    
+
 if __name__=='__main__':
     tl = unittest.TestLoader()
     
