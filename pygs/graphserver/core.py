@@ -1358,7 +1358,7 @@ class Alight(EdgePayload):
             trip_id, arrival_secs = self.get_alighting(i)
             alightingstrs.append( "on trip id='%s' at %s"%(trip_id, unparse_secs(arrival_secs)) )
         
-        ret = """TripBoard
+        ret = """Alight
    agency (internal id): %d
    service_id (internal id): %d
    calendar:
