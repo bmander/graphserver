@@ -1,4 +1,3 @@
-
 try:
     from graphserver.gsdll import lgs, libc, cproperty, ccast, CShadow, instantiate, PayloadMethodTypes
 except ImportError:
@@ -90,8 +89,14 @@ class Graph(CShadow):
         #Edge* gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload );
         self.check_destroyed()
         
-        return self._cadd_edge( self.soul, fromv, tov, payload.soul )
-    
+        e = self._cadd_edge( self.soul, fromv, tov, payload.soul )
+        
+        if e != None: return e
+
+        if not self.get_vertex(fromv):
+            raise VertexNotFoundError(fromv)
+        raise VertexNotFoundError(tov)
+        
     @property
     def vertices(self):
         self.check_destroyed()
@@ -291,7 +296,7 @@ class WalkOptions(CShadow):
     walking_reluctance = cproperty(lgs.woGetWalkingReluctance, c_float, setter=lgs.woSetWalkingReluctance)
     max_walk = cproperty(lgs.woGetMaxWalk, c_int, setter=lgs.woSetMaxWalk)
     walking_overage = cproperty(lgs.woGetWalkingOverage, c_float, setter=lgs.woSetWalkingOverage)
-
+    
 class Vertex(CShadow):
     
     label = cproperty(lgs.vGetLabel, c_char_p)
@@ -457,7 +462,7 @@ def failsafe(return_arg_num_on_failure):
 
 class GenericPyPayload(EdgePayload):
     """ This class is the base type for custom payloads created in Python.  
-        Subclasses can override the *_impl methods, which will be invoked through
+        Subclasses can override the \ *_impl\ methods, which will be invoked through
         C callbacks. """
         
     def __init__(self):
@@ -472,7 +477,7 @@ class GenericPyPayload(EdgePayload):
         return "<pypayload type='%s' class='%s'/>" % (self.type, self.__class__.__name__)
 
     """ These methods are the public interface, BUT should not be overridden by subclasses 
-        - subclasses should override the *_impl methods instead.""" 
+        - subclasses should override the \*_impl\ methods instead.""" 
     @failsafe(1)
     def walk(self, state, walkoptions):
         s = state.clone()
@@ -630,6 +635,13 @@ class ServiceCalendar(CShadow):
        
     def __init__(self):
         self.soul = lgs.scNew()
+        
+    def destroy(self):
+        self.check_destroyed()
+        
+        self._cdel(self.soul)
+        self.soul = None
+
     
     def get_service_id_int( self, service_id ):
         if type(service_id)!=type("string"):
@@ -672,18 +684,27 @@ class ServiceCalendar(CShadow):
         
     def __getstate__(self):
         ret = []
+        sids_map = {}
         curs = self.head
         while curs:
             start, end, sids = curs.__getstate__()
+            for sid in sids:
+                sids_map[sid] = self.get_service_id_string(sid)
             sids = [self.get_service_id_string(sid) for sid in sids]
+
             ret.append( (start,end,sids) )
             curs = curs.next
-        return ret
+        return (sids_map, ret)
         
     def __setstate__(self, state):
         self.__init__()
-        for sp_state in state:
-            self.add_period( *sp_state )
+        sids_map, periods = state
+        for k in sorted(sids_map.keys()):
+            new_k = self.get_service_id_int(sids_map[k])
+            assert k == new_k
+            
+        for p in periods:
+            self.add_period( *p )
             
     def __repr__(self):
         return "<ServiceCalendar periods=%s>"%repr(list(self.periods))
@@ -694,7 +715,8 @@ class ServiceCalendar(CShadow):
         for period in self.periods:
             begin_time = TimeHelpers.unix_to_localtime( period.begin_time, timezone_name )
             end_time = TimeHelpers.unix_to_localtime( period.end_time, timezone_name )
-            periodstrs.append( "sids:%s active from %d (%s) to %d (%s)"%(period.service_ids, period.begin_time, begin_time, period.end_time, end_time) )
+            service_ids = dict([(id,self.get_service_id_string(id)) for id in period.service_ids])
+            periodstrs.append( "sids:%s active from %d (%s) to %d (%s)"%(service_ids, period.begin_time, begin_time, period.end_time, end_time) )
         
         return "\n".join( periodstrs )
     
@@ -726,6 +748,12 @@ class Timezone(CShadow):
     def __init__(self):
         self.soul = lgs.tzNew()
         
+    def destroy(self):
+        self.check_destroyed()
+        
+        self._cdel(self.soul)
+        self.soul = None
+
     def add_period(self, timezone_period):
         lgs.tzAddPeriod( self.soul, timezone_period.soul)
         
@@ -1061,7 +1089,11 @@ class TripBoard(EdgePayload):
         service_id = service_id if type(service_id)==int else calendar.get_service_id_int(service_id)
         
         self.soul = self._cnew(service_id, calendar.soul, timezone.soul, agency)
-        
+    
+    @property
+    def service_id(self):
+        return self.calendar.get_service_id_string( self.int_service_id )
+    
     def add_boarding(self, trip_id, depart):
         self._cadd_boarding( self.soul, trip_id, depart )
         
@@ -1073,7 +1105,7 @@ class TripBoard(EdgePayload):
             raise IndexError("Index %d out of bounds"%i)
         
         return (trip_id, depart)
-    
+
     def search_boardings_list(self, time):
         return lgs.tbSearchBoardingsList( self.soul, c_int(time) )
         
@@ -1092,7 +1124,7 @@ class TripBoard(EdgePayload):
         return "<TripBoard />"
         
     def __repr__(self):
-        return "<TripBoard int_sid=%d agency=%d calendar=%s timezone=%s boardings=%s>"%(self.int_service_id, self.agency, self.calendar.soul,self.timezone.soul,[self.get_boarding(i) for i in range(self.num_boardings)])
+        return "<TripBoard int_sid=%d sid=%s agency=%d calendar=%s timezone=%s boardings=%s>"%(self.int_service_id, self.calendar.get_service_id_string(self.int_service_id), self.agency, self.calendar.soul,self.timezone.soul,[self.get_boarding(i) for i in range(self.num_boardings)])
         
     def __getstate__(self):
         state = {}
@@ -1172,7 +1204,11 @@ class HeadwayBoard(EdgePayload):
                                                                                                                                           self.start_time,
                                                                                                                                           self.end_time,
                                                                                                                                           self.headway_secs)
-                                                                                                                                          
+
+    @property
+    def service_id(self):
+        return self.calendar.get_service_id_string( self.int_service_id )
+                                                                                                                                      
     def __getstate__(self):
         state = {}
         state['calendar'] = self.calendar.soul
@@ -1374,6 +1410,8 @@ class Alight(EdgePayload):
 
         return ret
 
+class VertexNotFoundError(Exception): pass
+
 Graph._cnew = lgs.gNew
 Graph._cdel = lgs.gDestroy
 Graph._cadd_vertex = ccast(lgs.gAddVertex, Vertex)
@@ -1411,8 +1449,11 @@ ServicePeriod._cnext = ccast(lgs.spNextPeriod, ServicePeriod)
 ServicePeriod._cprev = ccast(lgs.spPreviousPeriod, ServicePeriod)
 
 ServiceCalendar._cnew = lgs.scNew
+ServiceCalendar._cdel = lgs.scDestroy
 ServiceCalendar._cperiod_of_or_before = ccast(lgs.scPeriodOfOrBefore, ServicePeriod)
 ServiceCalendar._cperiod_of_or_after = ccast(lgs.scPeriodOfOrAfter, ServicePeriod)
+
+Timezone._cdel = lgs.tzDestroy
 
 State._cnew = lgs.stateNew
 State._cdel = lgs.stateDestroy
