@@ -429,7 +429,7 @@ class GTFSDatabase:
         
         return shape
 
-def main():
+def main_inspect_gtfsdb():
     from sys import argv
     
     if len(argv) < 2:
@@ -465,4 +465,16 @@ def main():
 
     pass
 
-if __name__=='__main__': main()
+def main_build_gtfsdb():
+    if len(sys.argv) < 3:
+        print "Converts GTFS file to GTFS-DB, which is super handy\nusage: python process_gtfs.py gtfs_filename, gtfsdb_filename"
+        exit()
+    
+    gtfsdb_filename = sys.argv[2]
+    gtfs_filename = sys.argv[1]
+ 
+    gtfsdb = GTFSDatabase( gtfsdb_filename, overwrite=True )
+    gtfsdb.load_gtfs( gtfs_filename, reporter=sys.stdout )
+
+
+if __name__=='__main__': main_inspect_gtfsdb()

@@ -631,6 +631,12 @@ class ServiceCalendar(CShadow):
     def __init__(self):
         self.soul = lgs.scNew()
     
+    def destroy(self):
+        self.check_destroyed()
+
+        self._cdel(self.soul)
+        self.soul = None
+
     def get_service_id_int( self, service_id ):
         if type(service_id)!=type("string"):
             raise TypeError("service_id is supposed to be a string")
@@ -725,7 +731,13 @@ class Timezone(CShadow):
     
     def __init__(self):
         self.soul = lgs.tzNew()
-        
+    
+    def destroy(self):
+        self.check_destroyed()
+
+        self._cdel(self.soul)
+        self.soul = None
+    
     def add_period(self, timezone_period):
         lgs.tzAddPeriod( self.soul, timezone_period.soul)
         
@@ -1411,8 +1423,11 @@ ServicePeriod._cnext = ccast(lgs.spNextPeriod, ServicePeriod)
 ServicePeriod._cprev = ccast(lgs.spPreviousPeriod, ServicePeriod)
 
 ServiceCalendar._cnew = lgs.scNew
+ServiceCalendar._cdel = lgs.scDestroy
 ServiceCalendar._cperiod_of_or_before = ccast(lgs.scPeriodOfOrBefore, ServicePeriod)
 ServiceCalendar._cperiod_of_or_after = ccast(lgs.scPeriodOfOrAfter, ServicePeriod)
+
+Timezone._cdel = lgs.tzDestroy
 
 State._cnew = lgs.stateNew
 State._cdel = lgs.stateDestroy

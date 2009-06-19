@@ -102,11 +102,18 @@ class StressTest(unittest.TestCase):
         grind( func, 100000 )
         
     def test_alight_destroy(self):
-        def func():
-            al = Alight()
-            al.destroy()
-            
-        grind( func, 100000 )
+        print Timezone.__module__
+        tz = Timezone()                    
+        cal = ServiceCalendar()            
+                                       
+        def func():                        
+            al = Alight(0, cal,tz, 0)      
+            al.destroy()                   
+                                       
+        grind( func, 100000 )           
+        print dir(tz)                      
+        tz.destroy()                    
+        cal.destroy()                   
 
     def test_ths_destroy(self):
         """TripHopSchedule.destroy() completely destroys TripHopSchedule"""

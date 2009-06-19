@@ -10,7 +10,7 @@ subprocess.call(["cp",LIBSO,"graphserver/"])
 setup(  name='graphserver',
         version='0.1',
         packages = find_packages(exclude=['examples.*','examples','test','test.*']),
-        install_requires=['pytz>=2008b','pyproj>=1.8.5','servable>=2009b'], 
+        install_requires=['pytz>=2008b','pyproj>=1.8.5','servable>=2009b','nose>=0.10.4'], 
         zip_safe=False,
         extras_require = {
         #    'transitfeed':  ["transitfeed>=1.1.6"],
@@ -31,8 +31,11 @@ setup(  name='graphserver',
         
         entry_points = {
             'console_scripts': [
+                'gs_compile_gdb = graphserver.compiler.compile_graph:main',
                 'gs_osmfilter = graphserver.ext.osm.osmfilters:main',
                 'gs_osmdb_compile = graphserver.ext.osm.osmdb:main',
+                'gs_gtfsdb_build = graphserver.ext.gtfs.gtfsdb:main_build_gtfsdb',
+                'gs_gtfsdb_inspect = graphserver.ext.gtfs.gtfsdb:main_inspect_gtfsdb',
                 'gs_crawl = graphserver.ext.graphcrawler:main',
             ],
             #'setuptools.installation': ['eggsecutable = umigis.server.setup:main']
