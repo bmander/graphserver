@@ -296,7 +296,7 @@ class WalkOptions(CShadow):
     walking_reluctance = cproperty(lgs.woGetWalkingReluctance, c_float, setter=lgs.woSetWalkingReluctance)
     max_walk = cproperty(lgs.woGetMaxWalk, c_int, setter=lgs.woSetMaxWalk)
     walking_overage = cproperty(lgs.woGetWalkingOverage, c_float, setter=lgs.woSetWalkingOverage)
-    
+
 class Vertex(CShadow):
     
     label = cproperty(lgs.vGetLabel, c_char_p)
@@ -462,7 +462,7 @@ def failsafe(return_arg_num_on_failure):
 
 class GenericPyPayload(EdgePayload):
     """ This class is the base type for custom payloads created in Python.  
-        Subclasses can override the \ *_impl\ methods, which will be invoked through
+        Subclasses can override the *_impl methods, which will be invoked through
         C callbacks. """
         
     def __init__(self):
@@ -477,7 +477,7 @@ class GenericPyPayload(EdgePayload):
         return "<pypayload type='%s' class='%s'/>" % (self.type, self.__class__.__name__)
 
     """ These methods are the public interface, BUT should not be overridden by subclasses 
-        - subclasses should override the \*_impl\ methods instead.""" 
+        - subclasses should override the *_impl methods instead.""" 
     @failsafe(1)
     def walk(self, state, walkoptions):
         s = state.clone()
@@ -1105,7 +1105,7 @@ class TripBoard(EdgePayload):
             raise IndexError("Index %d out of bounds"%i)
         
         return (trip_id, depart)
-
+    
     def search_boardings_list(self, time):
         return lgs.tbSearchBoardingsList( self.soul, c_int(time) )
         
@@ -1394,7 +1394,7 @@ class Alight(EdgePayload):
             trip_id, arrival_secs = self.get_alighting(i)
             alightingstrs.append( "on trip id='%s' at %s"%(trip_id, unparse_secs(arrival_secs)) )
         
-        ret = """TripBoard
+        ret = """Alight
    agency (internal id): %d
    service_id (internal id): %d
    calendar:
@@ -1527,3 +1527,4 @@ WalkOptions._cdel = lgs.woDestroy
 
 GenericPyPayload._cnew = lgs.cpNew
 GenericPyPayload._cdel = lgs.cpDestroy
+
