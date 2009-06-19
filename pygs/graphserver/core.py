@@ -684,24 +684,24 @@ class ServiceCalendar(CShadow):
         
     def __getstate__(self):
         ret = []
-        sids_map = {}
+        max_sid = -1
         curs = self.head
         while curs:
             start, end, sids = curs.__getstate__()
             for sid in sids:
-                sids_map[sid] = self.get_service_id_string(sid)
+                max_sid = max(max_sid, sid)
             sids = [self.get_service_id_string(sid) for sid in sids]
 
             ret.append( (start,end,sids) )
             curs = curs.next
-        return (sids_map, ret)
+        sids_list = [self.get_service_id_string(sid) for sid in range(max_sid+1)]
+        return (sids_list, ret)
         
     def __setstate__(self, state):
         self.__init__()
-        sids_map, periods = state
-        for k in sorted(sids_map.keys()):
-            new_k = self.get_service_id_int(sids_map[k])
-            assert k == new_k
+        sids_list, periods = state
+        for sid in sids_list:
+            self.get_service_id_int(sid)
             
         for p in periods:
             self.add_period( *p )

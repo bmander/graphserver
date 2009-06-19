@@ -1736,15 +1736,31 @@ class TestServiceCalendar(unittest.TestCase):
         except TypeError:
             pass
         
-        assert c.get_service_id_string( -1 ) == None
-        assert c.get_service_id_string( 0 ) == "A"
-        assert c.get_service_id_string( 1 ) == "B"
-        assert c.get_service_id_string( 2 ) == None
-        try:
-            c.get_service_id_string( "A" )
-            assert False
-        except TypeError:
-            pass
+        c.add_period(0,1000,["B"])
+        
+        import pickle
+        from cStringIO import StringIO
+        src = StringIO()
+        p = pickle.Pickler(src)        
+        
+        p.dump(c)
+        datastream = src.getvalue()
+        dst = StringIO(datastream)
+
+        upc = pickle.Unpickler(dst).load()
+        print c.expound("America/Los_Angeles")
+        print upc.expound("America/Los_Angeles")
+        assert c.expound("America/Los_Angeles") == upc.expound("America/Los_Angeles"), upc
+        for _c in [c, upc]:
+            assert _c.get_service_id_string( -1 ) == None
+            assert _c.get_service_id_string( 0 ) == "A", _c.to_xml()
+            assert _c.get_service_id_string( 1 ) == "B"
+            assert _c.get_service_id_string( 2 ) == None
+            try:
+                _c.get_service_id_string( "A" )
+                assert False
+            except TypeError:
+                pass
         
     def test_single(self):
         c = ServiceCalendar()
