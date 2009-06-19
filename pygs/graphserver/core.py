@@ -1527,4 +1527,3 @@ WalkOptions._cdel = lgs.woDestroy
 
 GenericPyPayload._cnew = lgs.cpNew
 GenericPyPayload._cdel = lgs.cpDestroy
-
