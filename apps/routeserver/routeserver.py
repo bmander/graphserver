@@ -103,7 +103,7 @@ if __name__ == '__main__':
     def board_event(vertex1, edge, vertex2):
         event_time = vertex2.payload.time
         trip_id = vertex2.payload.trip_id
-        stop_id = vertex1.label
+        stop_id = vertex1.label.split("-")[-1]
         
         route_desc = "-".join(list( gtfsdb.execute( "SELECT routes.route_short_name, routes.route_long_name FROM routes, trips WHERE routes.route_id=trips.route_id AND trip_id=?", (trip_id,) ) )[0])
         stop_desc = list( gtfsdb.execute( "SELECT stop_name FROM stops WHERE stop_id = ?", (stop_id,) ) )[0][0]
@@ -117,7 +117,7 @@ if __name__ == '__main__':
 
     def alight_event(vertex1, edge, vertex2):
         event_time = vertex1.payload.time
-        stop_id = vertex2.label
+        stop_id = vertex2.label.split("-")[-1]
         
         stop_desc = list( gtfsdb.execute( "SELECT stop_name FROM stops WHERE stop_id = ?", (stop_id,) ) )[0][0]
         lat, lon = list( gtfsdb.execute( "SELECT stop_lat, stop_lon FROM stops WHERE stop_id = ?", (stop_id,) ) )[0]
@@ -131,7 +131,7 @@ if __name__ == '__main__':
     def headwayboard_event(vertex1, edge, vertex2):
         event_time = vertex2.payload.time
         trip_id = vertex2.payload.trip_id
-        stop_id = vertex1.label
+        stop_id = vertex1.label.split("-")[-1]
         
         route_desc = "-".join(list( gtfsdb.execute( "SELECT routes.route_short_name, routes.route_long_name FROM routes, trips WHERE routes.route_id=trips.route_id AND trip_id=?", (trip_id,) ) )[0])
         stop_desc = list( gtfsdb.execute( "SELECT stop_name FROM stops WHERE stop_id = ?", (stop_id,) ) )[0][0]
@@ -145,7 +145,7 @@ if __name__ == '__main__':
         
     def headwayalight_event(vertex1, edge, vertex2):
         event_time = vertex1.payload.time
-        stop_id = vertex2.label
+        stop_id = vertex2.label.split("-")[-1]
         
         stop_desc = list( gtfsdb.execute( "SELECT stop_name FROM stops WHERE stop_id = ?", (stop_id,) ) )[0][0]
         lat, lon = list( gtfsdb.execute( "SELECT stop_lat, stop_lon FROM stops WHERE stop_id = ?", (stop_id,) ) )[0]
