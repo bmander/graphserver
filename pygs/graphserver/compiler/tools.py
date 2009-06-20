@@ -79,6 +79,8 @@ def load_bundle_to_boardalight_graph(g, agency_namespace, bundle, service_id, sc
         
         patternstop_vx_name = "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,i+1)
         
+        g.add_vertex( patternstop_vx_name )
+        
         al = Alight(service_id, sc, tz, 0)
         for trip_id, departure_time, arrival_time, stop_id, stop_sequence, stop_dist_traveled in stop_time_bundle:
             al.add_alighting( trip_id.encode('ascii'), arrival_time )
@@ -87,8 +89,10 @@ def load_bundle_to_boardalight_graph(g, agency_namespace, bundle, service_id, sc
     
     # add crossing edges
     for j, crossing_time in enumerate(bundle.pattern.crossings):
+        print "CROSSING!"
+        
         c = Crossing( crossing_time )
-        g.add_edge( "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,j), "%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,j+1), c )
+        g.add_edge( "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,j), "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,j+1), c )
 
 def load_gtfsdb_to_boardalight_graph(g, agency_namespace, gtfsdb, agency_id, service_ids, reporter=sys.stdout):
     
