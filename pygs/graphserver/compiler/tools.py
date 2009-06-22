@@ -89,8 +89,6 @@ def load_bundle_to_boardalight_graph(g, agency_namespace, bundle, service_id, sc
     
     # add crossing edges
     for j, crossing_time in enumerate(bundle.pattern.crossings):
-        print "CROSSING!"
-        
         c = Crossing( crossing_time )
         g.add_edge( "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,j), "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,j+1), c )
 
