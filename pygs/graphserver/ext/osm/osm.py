@@ -40,17 +40,23 @@ class Node:
         return "<Node id='%s' (%s, %s) n_tags=%d>"%(self.id, self.lon, self.lat, len(self.tags))
         
 class Way:
-    def __init__(self, id, osm):
+    def __init__(self, id, osm, tolerant=False):
         self.osm = osm
         self.id = id
         self.nd_ids = []
         self.tags = {}
+        self.tolerant = tolerant #skip over dangling nd references
     
     @property
     def nds(self):
         for nd_id in self.nd_ids:
-            yield self.osm.nodes[nd_id]
-            
+            try:
+                yield self.osm.nodes[nd_id]
+            except KeyError:
+                if self.tolerant:
+                    pass
+                else:
+                    raise KeyError( "Way references undefined node '%s'"%nd_id )
     @property
     def geom(self):
         return [(nd.lon, nd.lat) for nd in self.nds]
@@ -147,7 +153,7 @@ class Way:
 
 class OSM:
 
-    def __init__(self, filename_or_stream):
+    def __init__(self, filename_or_stream, tolerant=False):
         """ File can be either a filename or stream/file object."""
         nodes = {}
         ways = {}
@@ -172,7 +178,7 @@ class OSM:
                 if name=='node':
                     self.currElem = Node(attrs['id'], float(attrs['lon']), float(attrs['lat']))
                 elif name=='way':
-                    self.currElem = Way(attrs['id'], superself)
+                    self.currElem = Way(attrs['id'], superself, tolerant)
                 elif name=='tag':
                     self.currElem.tags[attrs['k']] = attrs['v']
                 elif name=='nd':
@@ -207,7 +213,10 @@ class OSM:
 
         for way in self.ways.values():
             for node in way.nd_ids:
-                node_histogram[node] += 1
+                try:
+                    node_histogram[node] += 1
+                except KeyError:
+                    node_histogram[node] = 1
         
         #use that histogram to split all ways, replacing the member set of ways
         new_ways = {}
@@ -248,6 +257,22 @@ class OSM:
                     bdist = d
                     best = nd
         return best
+    
+    @property
+    def bbox(self):
+        l = INFINITY
+        b = INFINITY
+        r = -INFINITY
+        t = -INFINITY
+        
+        for way in self.ways.values():
+            ll, bb, rr, tt = way.bbox
+            l = min(l,ll)
+            b = min(b,bb)
+            r = max(r,rr)
+            t = max(t,tt)
+            
+        return (l,b,r,t)
         
 if __name__=='__main__':
     fp = download_osm( -122.326884, 47.684496, -122.319417, 47.689638 )
