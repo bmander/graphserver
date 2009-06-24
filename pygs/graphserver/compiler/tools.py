@@ -75,11 +75,12 @@ def load_bundle_to_boardalight_graph(g, agency_namespace, bundle, service_id, sc
         
     #add alight edges
     for i, stop_time_bundle in enumerate(stop_time_bundles[1:]):
+        if len(stop_time_bundle)==0:
+            continue
+
         trip_id, departure_time, arrival_time, stop_id, stop_sequence, stop_dist_traveled = stop_time_bundle[0]
         
         patternstop_vx_name = "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,i+1)
-        g.add_vertex( patternstop_vx_name )
-        
         g.add_vertex( patternstop_vx_name )
         
         al = Alight(service_id, sc, tz, 0)
