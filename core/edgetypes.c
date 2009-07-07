@@ -10,6 +10,7 @@ woNew() {
     ret->transfer_penalty = 0;
     ret->walking_speed = 0.85; //meters per second
     ret->walking_reluctance = 1;
+    ret->hill_equivalence = 30; //meters vertical per meters horizontal
     ret->max_walk = 10000; //meters
     ret->walking_overage = 0.1;
     return ret;
@@ -48,6 +49,16 @@ woGetWalkingReluctance( WalkOptions* this ) {
 void
 woSetWalkingReluctance( WalkOptions* this, float walking_reluctance ) {
     this->walking_reluctance = walking_reluctance;
+}
+
+int
+woGetHillEquivalence( WalkOptions* this ) {
+    return this->hill_equivalence;
+}
+
+void
+woSetHillEquivalence( WalkOptions* this, int hill_equivalence ) {
+    this->hill_equivalence = hill_equivalence;
 }
 
 int

@@ -1043,15 +1043,6 @@ class TestElapseTime(unittest.TestCase):
         s = ElapseTime(2)
         
         assert s.__getstate__() == 2
-
-class TestWalkOptions(unittest.TestCase):
-    def test_from_ptr(self):
-        wo = WalkOptions()
-        wo.transfer_penalty = 10
-        wo1 = WalkOptions.from_pointer(wo.soul)
-        assert wo.transfer_penalty == wo1.transfer_penalty
-        assert wo1.soul == wo.soul
-        wo.destroy()
         
         
 class TestPyPayload(unittest.TestCase):
@@ -3308,6 +3299,7 @@ class TestWalkOptions(unittest.TestCase):
         assert wo.walking_reluctance == 1.0
         assert wo.max_walk == 10000
         assert round(wo.walking_overage,3) == 0.1
+        assert wo.hill_equivalence == 30
         
         wo.transfer_penalty = 50
         assert wo.transfer_penalty == 50
@@ -3324,8 +3316,21 @@ class TestWalkOptions(unittest.TestCase):
         wo.walking_overage = 1.0
         assert wo.walking_overage == 1.0
         
+        wo.hill_equivalence = 20
+        assert wo.hill_equivalence == 20
+        
         wo.destroy()
         assert wo.soul == None
+        
+    def test_from_ptr(self):
+        wo = WalkOptions()
+        wo.transfer_penalty = 10
+        wo1 = WalkOptions.from_pointer(wo.soul)
+        assert wo.transfer_penalty == wo1.transfer_penalty
+        assert wo1.soul == wo.soul
+        wo.destroy()
+        
+        
         
 class TestEdge(unittest.TestCase):
     def test_basic(self):

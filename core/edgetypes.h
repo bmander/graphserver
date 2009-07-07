@@ -31,6 +31,7 @@ typedef struct WalkOptions {
     int transfer_penalty;
     float walking_speed;
     float walking_reluctance;
+    int hill_equivalence;
     int max_walk;
     float walking_overage;
 } WalkOptions;
