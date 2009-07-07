@@ -105,7 +105,7 @@ SELECT stop_times.* FROM stop_times, trips
         return list(c)
         
     def stop_time_bundles( self, service_id ):
-        i = 1
+        i = 0
         while True:
             yld = self.stop_time_bundle( i, service_id )
             if len(yld)==0:

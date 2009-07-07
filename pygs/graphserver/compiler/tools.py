@@ -54,7 +54,8 @@ def load_bundle_to_boardalight_graph(g, agency_namespace, bundle, service_id, sc
     # If there's less than two stations on this trip bundle, the trip bundle doesn't actually span two places
     if len(stop_time_bundles)<2:
         return
-        
+    
+    print "board edges"
     #add board edges
     for i, stop_time_bundle in enumerate(stop_time_bundles[:-1]):
         
@@ -63,34 +64,52 @@ def load_bundle_to_boardalight_graph(g, agency_namespace, bundle, service_id, sc
         
         trip_id, departure_time, arrival_time, stop_id, stop_sequence, stop_dist_traveled = stop_time_bundle[0]
         
-        patternstop_vx_name = "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,i)
+        psv_label = "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,i)
+        print psv_label
         
-        g.add_vertex( patternstop_vx_name )
+        g.add_vertex( psv_label )
         
         b = TripBoard(service_id, sc, tz, 0)
         for trip_id, departure_time, arrival_time, stop_id, stop_sequence, stop_dist_traveled in stop_time_bundle:
             b.add_boarding( trip_id, departure_time )
             
-        g.add_edge( "sta-%s"%stop_id, patternstop_vx_name, b )
-        
+        g.add_edge( "sta-%s"%stop_id, psv_label, b )
+    
+    print "alight edges"
     #add alight edges
     for i, stop_time_bundle in enumerate(stop_time_bundles[1:]):
         trip_id, departure_time, arrival_time, stop_id, stop_sequence, stop_dist_traveled = stop_time_bundle[0]
         
-        patternstop_vx_name = "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,i+1)
+        psv_label = "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,i+1)
+        print psv_label
         
-        g.add_vertex( patternstop_vx_name )
+        g.add_vertex( psv_label )
         
         al = Alight(service_id, sc, tz, 0)
         for trip_id, departure_time, arrival_time, stop_id, stop_sequence, stop_dist_traveled in stop_time_bundle:
             al.add_alighting( trip_id.encode('ascii'), arrival_time )
             
-        g.add_edge( patternstop_vx_name, "sta-%s"%stop_id, al )
+        g.add_edge( psv_label, "sta-%s"%stop_id, al )
+    
+
+    print bundle.pattern.crossings
+    print bundle.pattern.stop_ids
+    print bundle.pattern.layovers
+    for bb in bundle.stop_time_bundles(service_id):
+        print bb
     
     # add crossing edges
+    print "crossing edges"
     for j, crossing_time in enumerate(bundle.pattern.crossings):
         c = Crossing( crossing_time )
-        g.add_edge( "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,j), "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,j+1), c )
+        
+        psv1_label = "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,j)
+        psv2_label = "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,j+1)
+        
+        print psv1_label
+        print psv2_label
+        
+        g.add_edge( psv1_label, psv2_label, c )
 
 def load_gtfsdb_to_boardalight_graph(g, agency_namespace, gtfsdb, agency_id, service_ids, reporter=sys.stdout):
     

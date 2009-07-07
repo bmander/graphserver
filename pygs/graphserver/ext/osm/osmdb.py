@@ -121,7 +121,7 @@ class OSMDB:
     def setup(self):
         c = self.conn.cursor()
         c.execute( "CREATE TABLE nodes (id TEXT, tags TEXT, lat FLOAT, lon FLOAT)" )
-        c.execute( "CREATE TABLE ways (id TEXT, tags TEXT, nds TEXT, geom TEST, left FLOAT, bottom FLOAT, right FLOAT, top FLOAT)" )
+        c.execute( "CREATE TABLE ways (id TEXT, tags TEXT, nds TEXT, geom TEXT, left FLOAT, bottom FLOAT, right FLOAT, top FLOAT)" )
         c.execute( "CREATE INDEX nodes_id ON nodes (id)" )
         c.execute( "CREATE INDEX nodes_lon ON nodes (lon)" )
         c.execute( "CREATE INDEX nodes_lat ON nodes (lat)" )
@@ -418,7 +418,7 @@ def test_wayrecord():
 def osm_to_osmdb(osm_filename, osmdb_filename):
     osmdb = OSMDB( osmdb_filename, overwrite=True )
     fp = open( osm_filename )
-    lp = OSM( fp )
+    lp = OSM( fp, tolerant=True )
     osmdb.populate( lp, accept=lambda tags: 'highway' in tags, reporter=sys.stdout )
     fp.close()
 

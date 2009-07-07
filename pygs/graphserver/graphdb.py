@@ -23,28 +23,47 @@ class GraphDatabase:
         self.resources_cache = {}
         
     def setup(self):
+        """Create tables in a fresh graphdb"""
+        
         c = self.conn.cursor()
         c.execute( "CREATE TABLE vertices (label)" )
         c.execute( "CREATE TABLE edges (vertex1 TEXT, vertex2 TEXT, edgetype TEXT, edgestate TEXT)" )
         c.execute( "CREATE TABLE resources (name TEXT UNIQUE ON CONFLICT IGNORE, image TEXT)" )
+        c.execute( "CREATE TABLE extrastate (edgetype TEXT, id TEXT, extrastate TEXT)" )
     
         self.conn.commit()
         c.close()
         
     def populate(self, graph, reporter=None):
+        """Fill a graphdb with a graph"""
+        
         c = self.conn.cursor()
         
         n = len(graph.vertices)
+        
+        #For each vertex
         for i, vv in enumerate( graph.vertices ):
             if reporter and i%(n//100)==0: reporter.write( "%d/%d vertices dumped\n"%(i,n) )
             
             c.execute( "INSERT INTO vertices VALUES (?)", (vv.label,) )
+            
+            #For each outgoing edge from vertex (which, together, comprise all edges)
             for ee in vv.outgoing:
-                c.execute( "INSERT INTO edges VALUES (?, ?, ?, ?)", (ee.from_v.label, ee.to_v.label, cPickle.dumps( ee.payload.__class__ ), cPickle.dumps( ee.payload.__getstate__() ) ) )
+                c.execute( "INSERT INTO edges VALUES (?, ?, ?, ?)", (ee.from_v.label, 
+                                                                     ee.to_v.label, 
+                                                                     cPickle.dumps( ee.payload.__class__ ), 
+                                                                     cPickle.dumps( ee.payload.__getstate__() ) ) )
                 
+                # If a component of the state of the edge is a shared resource, the __getstate__() method can refer to the shared resource by an ID
+                # Those resources are then stashed by their ID using the graphdb.store(name,resource) method, ensuring that the same resource is not stashed
+                # twice. To rebuild the object, each edge type must implement a method "reconstitute( state, resolver ) which accepts the graphdb for the resolver argument,
+                # and pieces the edge back together with a shared resource
                 if hasattr(ee.payload, "__resources__"):
                     for name, resource in ee.payload.__resources__():
                         self.store( name, resource )
+                        
+                if hasattr(ee.payload, "__id__") and hasattr(ee.payload, "__getextrastate__"):
+                    self.store_extra_state( ee )
         
         self.conn.commit()
         c.close()
@@ -52,6 +71,7 @@ class GraphDatabase:
         self.index()
         
     def execute(self, query, args=None):
+        """Executes an arbitrary query on the graphdb"""
         
         c = self.conn.cursor()
         
@@ -69,6 +89,8 @@ class GraphDatabase:
             yield vertex_label
     
     def all_edges(self):
+        """Returns (vertex1, vertex2, edge) for every edge in the graphdb"""
+        
         for vertex1, vertex2, edgetype, edgestate in self.execute( "SELECT vertex1, vertex2, edgetype, edgestate FROM edges" ):
             try:
                 edgetype = cPickle.loads( str(edgetype) )
@@ -79,18 +101,24 @@ class GraphDatabase:
             yield vertex1, vertex2, edgetype.reconstitute(edgestate, self)
     
     def all_outgoing(self, vertex1_label):
+        """Returns (vertex1, vertex2, edge) for every outgoing edge in the graphdb"""
+        
         for vertex1, vertex2, edgetype, edgestate in self.execute( "SELECT vertex1, vertex2, edgetype, edgestate FROM edges WHERE vertex1=?", (vertex1_label,) ):
             edgetype = cPickle.loads( str(edgetype) )
             edgestate = cPickle.loads( str(edgestate) )
             yield vertex1, vertex2, edgetype.reconstitute(edgestate, self)
             
     def all_incoming(self, vertex2_label):
+        """Returns (vertex1, vertex2, edge) for every incoming edge in the graphdb"""
+        
         for vertex1, vertex2, edgetype, edgestate in self.execute( "SELECT vertex1, vertex2, edgetype, edgestate FROM edges WHERE vertex2=?", (vertex2_label,) ):
             edgetype = cPickle.loads( str(edgetype) )
             edgestate = cPickle.loads( str(edgestate) )
             yield vertex1, vertex2, edgetype.reconstitute(edgestate, self)
             
     def store(self, name, obj):
+        """Cache a pickleable resource "obj" with a given name in the graphdb"""
+        
         c = self.conn.cursor()
         resource_count = list(c.execute( "SELECT count(*) FROM resources WHERE name = ?", (name,) ))[0][0]
         if resource_count == 0:
@@ -98,7 +126,17 @@ class GraphDatabase:
             self.conn.commit()
         c.close()
         
+    def store_extra_state(self, edge):
+        """Cache the extra state of an edge"""
+        
+        c = self.conn.cursor()
+        c.execute( "INSERT INTO extrastate VALUES (?, ?)", (edge.id, cPickle.dumps( edge.getextrastate() ) ) )
+        self.conn.commit()
+        c.close()
+        
     def resolve(self, name):
+        """Unpickles and returns a resource with the given name"""
+        
         if name in self.resources_cache:
             return self.resources_cache[name]
         else:
@@ -108,10 +146,14 @@ class GraphDatabase:
             return resource
         
     def resources(self):
+        """Unpickles and returns all resources"""
+        
         for name, image in self.execute( "SELECT name, image from resources" ):
             yield name, cPickle.loads( str(image) )
             
     def index(self):
+        """Create index on vertices.label"""
+        
         c = self.conn.cursor()
         c.execute( "CREATE INDEX vertices_label ON vertices (label)" )
         self.conn.commit()
@@ -124,6 +166,8 @@ class GraphDatabase:
         return list(self.execute( "SELECT count(*) from edges" ))[0][0]
         
     def incarnate(self, reporter=sys.stdout):
+        """Create graph from graphdb"""
+        
         g = Graph()
         num_vertices = self.num_vertices()
         

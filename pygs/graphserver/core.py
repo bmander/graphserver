@@ -839,8 +839,9 @@ class Street(EdgePayload):
     length = cproperty(lgs.streetGetLength, c_double)
     name   = cproperty(lgs.streetGetName, c_char_p)
     
-    def __init__(self,name,length):
+    def __init__(self,name,length,geom=None):
         self.soul = self._cnew(name, length)
+        self.geom = geom
             
     def to_xml(self):
         self.check_destroyed()
@@ -855,6 +856,13 @@ class Street(EdgePayload):
         
     def __repr__(self):
         return "<Street name='%s' length=%f>"%(self.name, self.length)
+    
+    @property
+    def id(self):
+        return self.name
+        
+    def getextrastate(self):
+        return self.geom
         
     @classmethod
     def reconstitute(self, state, resolver):

@@ -56,7 +56,7 @@ class Way:
                 if self.tolerant:
                     pass
                 else:
-                    raise KeyError( "Way references undefined node '%s'"%nd_id )
+                    raise KeyError( "Way '%s' references undefined node '%s'"%(self.id, nd_id) )
     @property
     def geom(self):
         return [(nd.lon, nd.lat) for nd in self.nds]
