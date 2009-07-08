@@ -3299,7 +3299,9 @@ class TestWalkOptions(unittest.TestCase):
         assert wo.walking_reluctance == 1.0
         assert wo.max_walk == 10000
         assert round(wo.walking_overage,3) == 0.1
-        assert wo.hill_equivalence == 30
+        assert round(wo.uphill_slowness,3) == 0.08
+        assert round(wo.downhill_fastness,3) == 0.6
+        assert round(wo.hill_reluctance,3) == 1.5
         
         wo.transfer_penalty = 50
         assert wo.transfer_penalty == 50
@@ -3316,8 +3318,14 @@ class TestWalkOptions(unittest.TestCase):
         wo.walking_overage = 1.0
         assert wo.walking_overage == 1.0
         
-        wo.hill_equivalence = 20
-        assert wo.hill_equivalence == 20
+        wo.uphill_slowness = 1.5
+        assert wo.uphill_slowness == 1.5
+        
+        wo.downhill_fastness = 3.4
+        assert round(wo.downhill_fastness,3) == 3.4
+        
+        wo.hill_reluctance = 1.4
+        assert round(wo.hill_reluctance,3) == 1.4
         
         wo.destroy()
         assert wo.soul == None

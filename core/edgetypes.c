@@ -10,7 +10,9 @@ woNew() {
     ret->transfer_penalty = 0;
     ret->walking_speed = 0.85; //meters per second
     ret->walking_reluctance = 1;
-    ret->hill_equivalence = 30; //meters vertical per meters horizontal
+    ret->uphill_slowness = 0.08; //Factor by which someone's speed is slowed going uphill. A 15 mph rider on a flat will climb at 1.2 mph, for example.
+    ret->downhill_fastness = 0.6; // s/ft. Number of seconds regained for every foot dropped. 10 feet dropped will gain you six seconds.
+    ret->hill_reluctance = 1.5; //Factor by which an uphill stretch is penalized, in addition to whatever time is lost by simply gaining.
     ret->max_walk = 10000; //meters
     ret->walking_overage = 0.1;
     return ret;
@@ -51,14 +53,34 @@ woSetWalkingReluctance( WalkOptions* this, float walking_reluctance ) {
     this->walking_reluctance = walking_reluctance;
 }
 
-int
-woGetHillEquivalence( WalkOptions* this ) {
-    return this->hill_equivalence;
+float
+woGetUphillSlowness( WalkOptions* this ) {
+    return this->uphill_slowness;
 }
 
 void
-woSetHillEquivalence( WalkOptions* this, int hill_equivalence ) {
-    this->hill_equivalence = hill_equivalence;
+woSetUphillSlowness( WalkOptions* this, float uphill_slowness ) {
+    this->uphill_slowness = uphill_slowness;
+}
+
+float
+woGetDownhillFastness( WalkOptions* this ) {
+    return this->downhill_fastness;
+}
+
+void
+woSetDownhillFastness( WalkOptions* this, float downhill_fastness ) {
+    this->downhill_fastness = downhill_fastness;
+}
+
+float
+woGetHillReluctance( WalkOptions* this ) {
+    return this->hill_reluctance;
+}
+
+void
+woSetHillReluctance( WalkOptions* this, float hill_reluctance ) {
+    this->hill_reluctance = hill_reluctance;
 }
 
 int
