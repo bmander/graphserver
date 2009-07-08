@@ -185,9 +185,6 @@ def load_streets_to_graph(g, osmdb, reporter=None):
         vertex1_label = "osm-%s"%way.nds[0]
         vertex2_label = "osm-%s"%way.nds[-1]
         
-        x1, y1 = way.geom[0]
-        x2, y2 = way.geom[-1]
-        
         g.add_vertex( vertex1_label )
         g.add_vertex( vertex2_label )
         g.add_edge( vertex1_label, vertex2_label, Street( way.id, distance ) )
