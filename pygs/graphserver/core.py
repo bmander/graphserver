@@ -853,7 +853,7 @@ class Street(EdgePayload):
         return "<Street name='%s' length='%f' />" % (self.name, self.length)
         
     def __getstate__(self):
-        return (self.name, self.length)
+        return (self.name, self.length, self.rise, self.fall)
         
     def __setstate__(self, state):
         self.__init__(*state)

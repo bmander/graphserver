@@ -989,7 +989,7 @@ class TestStreet(unittest.TestCase):
     def test_getstate(self):
         s = Street("longstreet", 2)
         
-        assert s.__getstate__() == ('longstreet', 2)
+        assert s.__getstate__() == ('longstreet', 2, 0, 0)
 
 class TestEgress(unittest.TestCase):
     def test_street(self):
