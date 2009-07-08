@@ -890,6 +890,16 @@ class TestStreet(unittest.TestCase):
         s = Street("mystreet", 1.1)
         assert s.name == "mystreet"
         assert s.length == 1.1
+        assert s.rise == 0
+        assert s.fall == 0
+        assert s.to_xml() == "<Street name='mystreet' length='1.100000' />"
+        
+    def test_street_elev(self):
+        s = Street("mystreet", 1.1, 24.5, 31.2)
+        assert s.name == "mystreet"
+        assert s.length == 1.1
+        assert round(s.rise,3) == 24.5
+        assert round(s.fall,3) == 31.2
         assert s.to_xml() == "<Street name='mystreet' length='1.100000' />"
         
     def test_destroy(self):

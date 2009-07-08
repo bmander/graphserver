@@ -338,12 +338,22 @@ streetNew(const char *name, double length) {
   ret->name = (char*)malloc((strlen(name)+1)*sizeof(char));
   strcpy(ret->name, name);
   ret->length = length;
+  ret->rise = 0;
+  ret->fall = 0;
     
   //bind functions to methods
   ret->walk = &streetWalk;
   ret->walkBack = &streetWalkBack;
 
   return ret;
+}
+
+Street*
+streetNewElev(const char *name, double length, float rise, float fall) {
+    Street* ret = streetNew( name, length );
+    ret->rise = rise;
+    ret->fall = fall;
+    return ret;
 }
 
 void
@@ -360,6 +370,16 @@ streetGetName(Street* this) {
 double
 streetGetLength(Street* this) {
     return this->length;
+}
+
+float
+streetGetRise(Street* this) {
+    return this->rise;
+}
+
+float
+streetGetFall(Street* this) {
+    return this->fall;
 }
 
 //EGRESS FUNCTIONS

@@ -321,10 +321,15 @@ typedef struct Street {
     
    char* name;
    double length;
+   float rise;
+   float fall;
 } Street;
 
 Street*
 streetNew(const char *name, double length);
+
+Street*
+streetNewElev(const char *name, double length, float rise, float fall);
 
 void
 streetDestroy(Street* tokill);
@@ -340,6 +345,12 @@ streetGetName(Street* this);
 
 double
 streetGetLength(Street* this);
+
+float
+streetGetRise(Street* this);
+
+float
+streetGetFall(Street* this);
 
 //---------------DECLARATIONS FOR TRIPBOARD CLASS------------------------------------------
 

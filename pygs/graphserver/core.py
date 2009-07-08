@@ -841,9 +841,11 @@ class Link(EdgePayload):
 class Street(EdgePayload):
     length = cproperty(lgs.streetGetLength, c_double)
     name   = cproperty(lgs.streetGetName, c_char_p)
+    rise = cproperty(lgs.streetGetRise, c_float)
+    fall = cproperty(lgs.streetGetFall, c_float)
     
-    def __init__(self,name,length):
-        self.soul = self._cnew(name, length)
+    def __init__(self,name,length,rise=0,fall=0):
+        self.soul = self._cnew(name, length, rise, fall)
             
     def to_xml(self):
         self.check_destroyed()
@@ -1480,7 +1482,7 @@ TripHopSchedule._cget_next_hop = lgs.thsGetNextHop
 #TripHopSchedule._ccollapse_back = lgs.thsCollapseBack
 #TripHopSchedule._collapse_type = TripHop
 
-Street._cnew = lgs.streetNew
+Street._cnew = lgs.streetNewElev
 Street._cdel = lgs.streetDestroy
 Street._cwalk = lgs.streetWalk
 Street._cwalk_back = lgs.streetWalkBack

@@ -1,7 +1,7 @@
 
 import atexit
 from ctypes import cdll, CDLL, pydll, PyDLL, CFUNCTYPE
-from ctypes import string_at, byref, c_int, c_long, c_size_t, c_char_p, c_double, c_void_p, py_object
+from ctypes import string_at, byref, c_int, c_long, c_float, c_size_t, c_char_p, c_double, c_void_p, py_object
 from ctypes import Structure, pointer, cast, POINTER, addressof
 from ctypes.util import find_library
 
@@ -191,6 +191,7 @@ pycapi(lgs.linkWalkBack, c_void_p, [c_void_p, c_void_p])
 
 #STREET API
 pycapi(lgs.streetNew, c_void_p, [c_char_p, c_double])
+pycapi(lgs.streetNewElev, c_void_p, [c_char_p, c_double, c_float, c_float])
 pycapi(lgs.streetDestroy, c_void_p)
 pycapi(lgs.streetWalk, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.streetWalkBack, c_void_p, [c_void_p, c_void_p])
