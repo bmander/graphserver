@@ -122,9 +122,26 @@ streetWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
   Street* this = (Street*)superthis;
   State* ret = stateDup( params );
 
+  long t_horiz = (long)(this->length/options->walking_speed);
+#ifndef ROUTE_REVERSE
+  long t_up = (long)(this->rise/(options->walking_speed*options->uphill_slowness));
+  long t_down = (long)(this->fall*options->downhill_fastness);
+#else
+  long t_up = (long)(this->fall/(options->walking_speed*options->uphill_slowness));
+  long t_down = (long)(this->rise*options->downhill_fastness);
+#endif
+    
+  long delta_t = t_horiz + t_up - t_down;
+  if( delta_t < 0 ) {
+      delta_t = 0;
+  }
+    
+  long delta_w = t_horiz*options->walking_reluctance + t_up*options->hill_reluctance - t_down;
+  if( delta_w < 0 ) {
+      delta_w = 0;
+  }
+    
   double end_dist = params->dist_walked + this->length;
-  long delta_t = (long)(this->length/options->walking_speed);
-  long delta_w = delta_t*options->walking_reluctance;
   if(end_dist > options->max_walk)
     delta_w += (end_dist - options->max_walk)*options->walking_overage*delta_t;
 

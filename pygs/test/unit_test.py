@@ -938,6 +938,54 @@ class TestStreet(unittest.TestCase):
         assert before.prev_edge_name == "longstreet"
         assert before.num_agencies == 0
         
+    def test_walk_elev(self):
+        s = Street("uwhillclimb", 1604, 127, 0)
+        
+        wo = WalkOptions()
+        wo.walking_speed = 13
+        after = s.walk(State(0,0),wo)
+        assert after.time == 245
+        assert after.weight == 306
+        
+        s = Street("uwhillclimb", 1604, 0, 127)
+        after = s.walk(State(0,0),wo)
+        assert after.time == 47
+        assert after.weight == 47
+        
+        s = Street("bgfall", 2011, 25, 0)
+        after = s.walk(State(0,0),wo)
+        assert after.time == 178
+        assert after.weight == 190
+        
+        s = Street("bgfall", 2011, 0, 25)
+        after = s.walk(State(0,0), wo)
+        assert after.time == 139
+        assert after.weight == 139
+        
+    def test_walk_back_elev(self):
+        wo = WalkOptions()
+        wo.walking_speed = 13
+        
+        s = Street("uwhillclimb", 1604, 0, 127)
+        after = s.walk_back(State(0,0),wo)
+        assert after.time == -245
+        assert after.weight == 306
+        
+        s = Street("uwhillclimb", 1604, 127, 0)
+        after = s.walk_back(State(0,0),wo)
+        assert after.time == -47
+        assert after.weight == 47
+        
+        s = Street("bgfall", 2011, 0, 25)
+        after = s.walk_back(State(0,0),wo)
+        assert after.time == -178
+        assert after.weight == 190
+        
+        s = Street("bgfall", 2011, 25, 0)
+        after = s.walk_back(State(0,0), wo)
+        assert after.time == -139
+        assert after.weight == 139
+        
     def test_getstate(self):
         s = Street("longstreet", 2)
         
