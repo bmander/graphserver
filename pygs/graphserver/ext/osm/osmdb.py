@@ -415,10 +415,10 @@ def test_wayrecord():
     wr1, wr2 = wr.split(0, (5,5), "extra")
     assert( (wr1, wr2) == (None,None) )
 
-def osm_to_osmdb(osm_filename, osmdb_filename):
+def osm_to_osmdb(osm_filename, osmdb_filename, tolerant=False):
     osmdb = OSMDB( osmdb_filename, overwrite=True )
     fp = open( osm_filename )
-    lp = OSM( fp )
+    lp = OSM( fp, tolerant=tolerant )
     osmdb.populate( lp, accept=lambda tags: 'highway' in tags, reporter=sys.stdout )
     fp.close()
 
@@ -432,7 +432,7 @@ def main():
     #osm_to_osmdb("bartarea.osm", "bartarea.sqlite")
 
     
-    usage = "python osmdb.py osm_filename osmdb_filename"
+    usage = "python osmdb.py osm_filename osmdb_filename [tolerant]"
     if len(argv) < 3:
         print usage
         exit()
@@ -440,7 +440,9 @@ def main():
     osm_filename = argv[1]
     osmdb_filename = argv[2]
     
-    osm_to_osmdb(osm_filename, osmdb_filename)
+    tolerant = 'tolerant' in argv
+    
+    osm_to_osmdb(osm_filename, osmdb_filename, tolerant)
 
 if __name__=='__main__':
     main()
