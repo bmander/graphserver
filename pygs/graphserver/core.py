@@ -348,7 +348,6 @@ class Vertex(CShadow):
             if index == -1:
                 return e
             else: 
-                print "return none1"
                 return None
         i = 0
         while node:
