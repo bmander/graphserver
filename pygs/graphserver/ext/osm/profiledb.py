@@ -35,8 +35,12 @@ class ProfileDB:
         c = self.conn.cursor()
         c.execute( "SELECT profile FROM profiles WHERE id = ?", (id,) )
         
-        (profile,) = next(c)
-        c.close()
+        try:
+            (profile,) = next(c)
+        except StopIteration:
+            return None
+        finally:
+            c.close()
         
         return [(ss/100.0, ee/100.0) for ss, ee in json.loads( profile )]
         
