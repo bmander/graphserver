@@ -170,9 +170,19 @@ def link_nearby_stops(g, gtfsdb, range=0.05, obstruction=1.4):
             
             g.add_edge( "sta-%s"%stop_id1, "sta-%s"%stop_id2, Street("walk", dd) )
             g.add_edge( "sta-%s"%stop_id2, "sta-%s"%stop_id1, Street("walk", dd) )
-            
 
-def load_streets_to_graph(g, osmdb, reporter=None):
+def profile_rise_fall(profile):
+    rise = 0
+    fall = 0
+    for (s1, e1), (s2,e2) in cons(profile):
+        diff = e2-e1
+        if diff>0:
+            rise += diff
+        elif diff<0:
+            fall -= diff
+    return (rise,fall)
+
+def load_streets_to_graph(g, osmdb, profiledb=None, reporter=None):
     
     n_ways = osmdb.count_ways()
     
@@ -185,10 +195,17 @@ def load_streets_to_graph(g, osmdb, reporter=None):
         vertex1_label = "osm-%s"%way.nds[0]
         vertex2_label = "osm-%s"%way.nds[-1]
         
+        rise=0
+        fall=0
+        if profiledb:
+            profile = profiledb.get( way.id )
+            if profile:
+                rise, fall = profile_rise_fall( profile )
+        
         g.add_vertex( vertex1_label )
         g.add_vertex( vertex2_label )
-        g.add_edge( vertex1_label, vertex2_label, Street( way.id, distance ) )
-        g.add_edge( vertex2_label, vertex1_label, Street( way.id, distance ) )
+        g.add_edge( vertex1_label, vertex2_label, Street( way.id, distance, rise, fall ) )
+        g.add_edge( vertex2_label, vertex1_label, Street( way.id, distance, fall, rise ) )
         
 def load_transit_street_links_to_graph( g, osmdb, gtfsdb, reporter=None ):
     n = gtfsdb.count_stops()

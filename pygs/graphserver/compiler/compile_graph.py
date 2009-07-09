@@ -1,20 +1,28 @@
 from graphserver.graphdb import GraphDatabase
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
 from graphserver.ext.osm.osmdb import OSMDB
+from graphserver.ext.osm.profiledb import ProfileDB
 from graphserver import compiler
 from graphserver.core import Graph
 import sys
 from sys import argv
     
-def process_street_graph(osmdb_filename, graphdb_filename):
+def process_street_graph(osmdb_filename, graphdb_filename, profiledb_filename):
     OSMDB_FILENAME = "ext/osm/bartarea.sqlite"
     GRAPHDB_FILENAME = "bartstreets.db"
     
     print( "Opening OSM-DB '%s'"%osmdb_filename )
     osmdb = OSMDB( osmdb_filename )
     
+    if profiledb_filename:
+        print( "Opening ProfileDB '%s'"%profiledb_filename )
+        profiledb = ProfileDB( profiledb_filename )
+    else:
+        print( "No ProfileDB supplied" )
+        profiledb = None
+    
     g = Graph()
-    compiler.load_streets_to_graph( g, osmdb, sys.stdout )
+    compiler.load_streets_to_graph( g, osmdb, profiledb, reporter=sys.stdout )
     
     graphdb = GraphDatabase( graphdb_filename, overwrite=True )
     graphdb.populate( g, reporter=sys.stdout )
@@ -26,7 +34,7 @@ def process_transit_graph(graphdb_filename, gtfsdb_filenames, osmdb_filename=Non
         # Load osmdb ===============================
         print( "Opening OSM-DB '%s'"%osmdb_filename )
         osmdb = OSMDB( osmdb_filename )
-        compiler.load_streets_to_graph( g, osmdb, sys.stdout )
+        compiler.load_streets_to_graph( g, osmdb, reporter=sys.stdout )
     
     # Load gtfsdb ==============================
    
@@ -58,6 +66,9 @@ def main():
     parser.add_option("-g", "--gtfsdb",
                       action="append", dest="gtfsdb_files", default=[],
                       help="compile with the specified GTFS file(s)")
+    parser.add_option("-p", "--profiledb",
+                      dest="profiledb_filename", default=None,
+                      help="compile road network with elevation information from profiledb")
 
     (options, args) = parser.parse_args()
     
@@ -70,7 +81,7 @@ def main():
 
     # just street graph compilation
     if options.osmdb_filename and not len(options.gtfsdb_files):
-        process_street_graph(options.osmdb_filename, graphdb_filename)
+        process_street_graph(options.osmdb_filename, graphdb_filename, options.profiledb_filename)
         exit(0)
     
     
