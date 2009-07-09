@@ -11,7 +11,7 @@ woNew() {
     ret->walking_speed = 0.85; //meters per second
     ret->walking_reluctance = 1;
     ret->uphill_slowness = 0.08; //Factor by which someone's speed is slowed going uphill. A 15 mph rider on a flat will climb at 1.2 mph, for example.
-    ret->downhill_fastness = 0.6; // s/ft. Number of seconds regained for every foot dropped. 10 feet dropped will gain you six seconds.
+    ret->downhill_fastness = 1.96; // s/m. Number of seconds regained for every foot dropped. 10 feet dropped will gain you six seconds.
     ret->hill_reluctance = 1.5; //Factor by which an uphill stretch is penalized, in addition to whatever time is lost by simply gaining.
     ret->max_walk = 10000; //meters
     ret->walking_overage = 0.1;

@@ -96,7 +96,7 @@ class TestGraph(unittest.TestCase):
         assert e
         assert e.from_v.label == "home"
         assert e.to_v.label == "work"
-        assert str(e)=="<Edge><Street name='helloworld' length='1.000000' /></Edge>"
+        assert str(e)=="<Edge><Street name='helloworld' length='1.000000' rise='0.000000' fall='0.000000'/></Edge>"
         
         g.destroy()
     
@@ -892,7 +892,7 @@ class TestStreet(unittest.TestCase):
         assert s.length == 1.1
         assert s.rise == 0
         assert s.fall == 0
-        assert s.to_xml() == "<Street name='mystreet' length='1.100000' />"
+        assert s.to_xml() == "<Street name='mystreet' length='1.100000' rise='0.000000' fall='0.000000'/>"
         
     def test_street_elev(self):
         s = Street("mystreet", 1.1, 24.5, 31.2)
@@ -900,7 +900,7 @@ class TestStreet(unittest.TestCase):
         assert s.length == 1.1
         assert round(s.rise,3) == 24.5
         assert round(s.fall,3) == 31.2
-        assert s.to_xml() == "<Street name='mystreet' length='1.100000' />"
+        assert s.to_xml() == "<Street name='mystreet' length='1.100000' rise='24.500000' fall='31.200001'/>"
         
     def test_destroy(self):
         s = Street("mystreet", 1.1)
@@ -913,7 +913,7 @@ class TestStreet(unittest.TestCase):
         assert s.name == "longstreet"
         assert s.length == 240000
 
-        assert s.to_xml() == "<Street name='longstreet' length='240000.000000' />"
+        assert s.to_xml() == "<Street name='longstreet' length='240000.000000' rise='0.000000' fall='0.000000'/>"
         
     def test_walk(self):
         s = Street("longstreet", 2)
@@ -939,49 +939,49 @@ class TestStreet(unittest.TestCase):
         assert before.num_agencies == 0
         
     def test_walk_elev(self):
-        s = Street("uwhillclimb", 1604, 127, 0)
+        s = Street("uwhillclimb", 488.8992, 38.7096, 0)
         
         wo = WalkOptions()
-        wo.walking_speed = 13
+        wo.walking_speed = 4
         after = s.walk(State(0,0),wo)
-        assert after.time == 245
-        assert after.weight == 306
+        assert after.time == 242
+        assert after.weight == 302
         
-        s = Street("uwhillclimb", 1604, 0, 127)
+        s = Street("uwhillclimb", 488.8992, 0, 38.7096)
         after = s.walk(State(0,0),wo)
         assert after.time == 47
         assert after.weight == 47
         
-        s = Street("bgfall", 2011, 25, 0)
+        s = Street("bgfall", 612.9528, 7.62, 0)
         after = s.walk(State(0,0),wo)
-        assert after.time == 178
-        assert after.weight == 190
+        assert after.time == 176
+        assert after.weight == 187
         
-        s = Street("bgfall", 2011, 0, 25)
+        s = Street("bgfall", 612.9528, 0, 7.62)
         after = s.walk(State(0,0), wo)
         assert after.time == 139
         assert after.weight == 139
         
     def test_walk_back_elev(self):
         wo = WalkOptions()
-        wo.walking_speed = 13
+        wo.walking_speed = 4
         
-        s = Street("uwhillclimb", 1604, 0, 127)
+        s = Street("uwhillclimb", 488.8992, 0, 38.7096)
         after = s.walk_back(State(0,0),wo)
-        assert after.time == -245
-        assert after.weight == 306
+        assert after.time == -242
+        assert after.weight == 302
         
-        s = Street("uwhillclimb", 1604, 127, 0)
+        s = Street("uwhillclimb", 488.8992, 38.7096, 0)
         after = s.walk_back(State(0,0),wo)
         assert after.time == -47
         assert after.weight == 47
         
-        s = Street("bgfall", 2011, 0, 25)
+        s = Street("bgfall", 612.9528, 0, 7.62)
         after = s.walk_back(State(0,0),wo)
-        assert after.time == -178
-        assert after.weight == 190
+        assert after.time == -176
+        assert after.weight == 187
         
-        s = Street("bgfall", 2011, 25, 0)
+        s = Street("bgfall", 612.9528, 7.62, 0)
         after = s.walk_back(State(0,0), wo)
         assert after.time == -139
         assert after.weight == 139
@@ -1979,8 +1979,7 @@ class TestEngine(unittest.TestCase):
         
         eng = Engine(gg)
         
-        print eng.walk_edges("A", time=0)
-        assert eng.walk_edges("A", time=0) == "<?xml version='1.0'?><vertex><state time='0' weight='0' dist_walked='0.0' num_transfers='0' prev_edge_type='5' prev_edge_name='None' trip_id='None'></state><outgoing_edges><edge><destination label='C'><state time='11' weight='11' dist_walked='10.0' num_transfers='0' prev_edge_type='0' prev_edge_name='4' trip_id='None'></state></destination><payload><Street name='4' length='10.000000' /></payload></edge><edge><destination label='B'><state time='11' weight='11' dist_walked='10.0' num_transfers='0' prev_edge_type='0' prev_edge_name='1' trip_id='None'></state></destination><payload><Street name='1' length='10.000000' /></payload></edge></outgoing_edges></vertex>"
+        assert eng.walk_edges("A", time=0) == "<?xml version='1.0'?><vertex><state time='0' weight='0' dist_walked='0.0' num_transfers='0' prev_edge_type='5' prev_edge_name='None' trip_id='None'></state><outgoing_edges><edge><destination label='C'><state time='11' weight='11' dist_walked='10.0' num_transfers='0' prev_edge_type='0' prev_edge_name='4' trip_id='None'></state></destination><payload><Street name='4' length='10.000000' rise='0.000000' fall='0.000000'/></payload></edge><edge><destination label='B'><state time='11' weight='11' dist_walked='10.0' num_transfers='0' prev_edge_type='0' prev_edge_name='1' trip_id='None'></state></destination><payload><Street name='1' length='10.000000' rise='0.000000' fall='0.000000'/></payload></edge></outgoing_edges></vertex>"
 
     def xtest_outgoing_edges_entire_osm(self):
         gg = Graph()
@@ -3358,7 +3357,7 @@ class TestWalkOptions(unittest.TestCase):
         assert wo.max_walk == 10000
         assert round(wo.walking_overage,3) == 0.1
         assert round(wo.uphill_slowness,3) == 0.08
-        assert round(wo.downhill_fastness,3) == 0.6
+        assert round(wo.downhill_fastness,3) == 1.96
         assert round(wo.hill_reluctance,3) == 1.5
         
         wo.transfer_penalty = 50

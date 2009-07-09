@@ -850,7 +850,7 @@ class Street(EdgePayload):
     def to_xml(self):
         self.check_destroyed()
         
-        return "<Street name='%s' length='%f' />" % (self.name, self.length)
+        return "<Street name='%s' length='%f' rise='%f' fall='%f'/>" % (self.name, self.length, self.rise, self.fall)
         
     def __getstate__(self):
         return (self.name, self.length, self.rise, self.fall)
@@ -859,7 +859,7 @@ class Street(EdgePayload):
         self.__init__(*state)
         
     def __repr__(self):
-        return "<Street name='%s' length=%f>"%(self.name, self.length)
+        return "<Street name='%s' length=%f rise=%f fall=%f>"%(self.name, self.length, self.rise, self.fall)
         
     @classmethod
     def reconstitute(self, state, resolver):
