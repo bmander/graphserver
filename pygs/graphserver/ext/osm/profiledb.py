@@ -60,6 +60,8 @@ def main():
         else:
             for (id,) in list( pdb.execute( "SELECT id from profiles" ) ):
                 print id
+    else:
+        print "python profiledb.py profiledb_filename [profile_id]"
 
 if __name__ == '__main__':
     main()
