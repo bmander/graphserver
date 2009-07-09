@@ -853,17 +853,22 @@ class Street(EdgePayload):
         return "<Street name='%s' length='%f' rise='%f' fall='%f'/>" % (self.name, self.length, self.rise, self.fall)
         
     def __getstate__(self):
-        return (self.name, self.length, self.rise, self.fall)
+        return (self.name, self.length, self.rise, self.fall, self.slog)
         
     def __setstate__(self, state):
-        self.__init__(*state)
+        name, length, rise, fall, slog = state
+        self.__init__(name, length, rise, fall)
+        self.slog = slog
         
     def __repr__(self):
         return "<Street name='%s' length=%f rise=%f fall=%f>"%(self.name, self.length, self.rise, self.fall)
         
     @classmethod
     def reconstitute(self, state, resolver):
-        return Street( *state )
+        name, length, rise, fall, slog = state
+        ret = Street( name, length, rise, fall )
+        ret.slog = slog
+        return ret
 
 class Egress(EdgePayload):
     length = cproperty(lgs.egressGetLength, c_double)
