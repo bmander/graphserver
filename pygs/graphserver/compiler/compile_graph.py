@@ -7,7 +7,7 @@ from graphserver.core import Graph
 import sys
 from sys import argv
     
-def process_street_graph(osmdb_filename, graphdb_filename, profiledb_filename):
+def process_street_graph(osmdb_filename, graphdb_filename, profiledb_filename, slogs={}):
     OSMDB_FILENAME = "ext/osm/bartarea.sqlite"
     GRAPHDB_FILENAME = "bartstreets.db"
     
@@ -22,7 +22,7 @@ def process_street_graph(osmdb_filename, graphdb_filename, profiledb_filename):
         profiledb = None
     
     g = Graph()
-    compiler.load_streets_to_graph( g, osmdb, profiledb, reporter=sys.stdout )
+    compiler.load_streets_to_graph( g, osmdb, profiledb, slogs, reporter=sys.stdout )
     
     graphdb = GraphDatabase( graphdb_filename, overwrite=True )
     graphdb.populate( g, reporter=sys.stdout )
@@ -69,8 +69,17 @@ def main():
     parser.add_option("-p", "--profiledb",
                       dest="profiledb_filename", default=None,
                       help="compile road network with elevation information from profiledb")
+    parser.add_option("-s", "--slog",
+                      action="append", dest="slog_strings", default=[],
+                      help="specify slog for highway type, in highway_type:slog form. For example, 'motorway:10.5'")
 
     (options, args) = parser.parse_args()
+    
+    slogs = {}
+    for slog_string in options.slog_strings:
+        highway_type,slog_penalty = slog_string.split(":")
+        slogs[highway_type] = float(slog_penalty)
+    print slogs
     
     if len(args) != 1 or not options.osmdb_filename and not len(options.gtfsdb_files):
         #print len(args)
@@ -81,7 +90,7 @@ def main():
 
     # just street graph compilation
     if options.osmdb_filename and not len(options.gtfsdb_files):
-        process_street_graph(options.osmdb_filename, graphdb_filename, options.profiledb_filename)
+        process_street_graph(options.osmdb_filename, graphdb_filename, options.profiledb_filename, slogs)
         exit(0)
     
     

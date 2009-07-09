@@ -182,7 +182,7 @@ def profile_rise_fall(profile):
             fall -= diff
     return (rise,fall)
 
-def load_streets_to_graph(g, osmdb, profiledb=None, reporter=None):
+def load_streets_to_graph(g, osmdb, profiledb=None, slogs={}, reporter=None ):
     
     n_ways = osmdb.count_ways()
     
@@ -192,9 +192,13 @@ def load_streets_to_graph(g, osmdb, profiledb=None, reporter=None):
         
         distance = sum( [vincenty(y1,x1,y2,x2) for (x1,y1), (x2,y2) in cons(way.geom)] )
         
+        # insert end vertices of edge to graph
         vertex1_label = "osm-%s"%way.nds[0]
         vertex2_label = "osm-%s"%way.nds[-1]
+        g.add_vertex( vertex1_label )
+        g.add_vertex( vertex2_label )
         
+        # Find rise/fall of edge, if profiledb is given
         rise=0
         fall=0
         if profiledb:
@@ -202,10 +206,20 @@ def load_streets_to_graph(g, osmdb, profiledb=None, reporter=None):
             if profile:
                 rise, fall = profile_rise_fall( profile )
         
-        g.add_vertex( vertex1_label )
-        g.add_vertex( vertex2_label )
-        g.add_edge( vertex1_label, vertex2_label, Street( way.id, distance, rise, fall ) )
-        g.add_edge( vertex2_label, vertex1_label, Street( way.id, distance, fall, rise ) )
+        # Create edges to be inserted into graph
+        s1 = Street( way.id, distance, rise, fall )
+        s2 = Street( way.id, distance, fall, rise )
+        
+        # See if the way's highway tag is penalized with a 'slog' value; if so, set it in the edges
+        slog = slogs.get( way.tags.get("highway") )
+        if slog:
+            s1.slog = s2.slog = slog
+        
+        # Add the forward edge and the return edge if the edge is not oneway
+        g.add_edge( vertex1_label, vertex2_label, s1 )
+        oneway = way.tags.get("oneway")
+        if oneway != "true" and oneway != "yes":
+            g.add_edge( vertex2_label, vertex1_label, s2 )
         
 def load_transit_street_links_to_graph( g, osmdb, gtfsdb, reporter=None ):
     n = gtfsdb.count_stops()
