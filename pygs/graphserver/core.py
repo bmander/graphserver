@@ -842,6 +842,7 @@ class Street(EdgePayload):
     name   = cproperty(lgs.streetGetName, c_char_p)
     rise = cproperty(lgs.streetGetRise, c_float)
     fall = cproperty(lgs.streetGetFall, c_float)
+    slog = cproperty(lgs.streetGetSlog, c_float, setter=lgs.streetSetSlog)
     
     def __init__(self,name,length,rise=0,fall=0):
         self.soul = self._cnew(name, length, rise, fall)

@@ -892,7 +892,11 @@ class TestStreet(unittest.TestCase):
         assert s.length == 1.1
         assert s.rise == 0
         assert s.fall == 0
+        assert s.slog == 1
         assert s.to_xml() == "<Street name='mystreet' length='1.100000' rise='0.000000' fall='0.000000'/>"
+        
+        s.slog = 2500
+        assert s.slog == 2500
         
     def test_street_elev(self):
         s = Street("mystreet", 1.1, 24.5, 31.2)
@@ -921,6 +925,18 @@ class TestStreet(unittest.TestCase):
         after = s.walk(State(0,0),WalkOptions())
         assert after.time == 2
         assert after.weight == 2
+        assert after.dist_walked == 2
+        assert after.prev_edge_type == 0
+        assert after.prev_edge_name == "longstreet"
+        assert after.num_agencies == 0
+        
+    def test_walk_slog(self):
+        s = Street("longstreet", 2)
+        s.slog = 10
+        
+        after = s.walk(State(0,0),WalkOptions())
+        assert after.time == 2
+        assert after.weight == 20
         assert after.dist_walked == 2
         assert after.prev_edge_type == 0
         assert after.prev_edge_name == "longstreet"

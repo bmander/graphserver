@@ -323,6 +323,7 @@ typedef struct Street {
    double length;
    float rise;
    float fall;
+   float slog;
 } Street;
 
 Street*

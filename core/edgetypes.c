@@ -340,6 +340,7 @@ streetNew(const char *name, double length) {
   ret->length = length;
   ret->rise = 0;
   ret->fall = 0;
+  ret->slog = 1;
     
   //bind functions to methods
   ret->walk = &streetWalk;
@@ -380,6 +381,16 @@ streetGetRise(Street* this) {
 float
 streetGetFall(Street* this) {
     return this->fall;
+}
+
+float
+streetGetSlog(Street* this) {
+    return this->slog;
+}
+
+void
+streetSetSlog(Street* this, float slog) {
+    this->slog = slog;
 }
 
 //EGRESS FUNCTIONS

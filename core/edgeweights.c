@@ -150,7 +150,7 @@ streetWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
   if (end_dist > ABSOLUTE_MAX_WALK) //TODO profile this to see if it's worth it
     ret->weight = MAX_LONG;
   else
-    ret->weight       += delta_w;
+    ret->weight       += this->slog*delta_w;
   ret->dist_walked    = end_dist;
   ret->prev_edge_type = PL_STREET;
   ret->prev_edge_name = this->name;
