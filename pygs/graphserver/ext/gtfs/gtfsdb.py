@@ -89,7 +89,7 @@ class TripBundle:
     def add_trip(self, trip_id):
         self.trip_ids.append( trip_id )
         
-    def stop_time_bundle( self, stop_sequence, service_id ):
+    def stop_time_bundle( self, stop_id, service_id ):
         c = self.gtfsdb.conn.cursor()
         
         query = """
@@ -97,26 +97,19 @@ SELECT stop_times.* FROM stop_times, trips
   WHERE stop_times.trip_id = trips.trip_id 
         AND trips.trip_id IN (%s) 
         AND trips.service_id = ? 
-        AND stop_times.stop_sequence = ? 
+        AND stop_times.stop_id = ? 
   ORDER BY departure_time"""%(",".join(["'%s'"%x for x in self.trip_ids]))
       
-        c.execute(query, (service_id,stop_sequence))
+        c.execute(query, (service_id,str(stop_id)))
         
         return list(c)
-        
+    
     def stop_time_bundles( self, service_id ):
-        i = 1
-        while True:
-            yld = self.stop_time_bundle( i, service_id )
-            if len(yld)==0:
-                break
-            else:
-                yield yld
-            
-            i += 1
+        for stop_id in self.pattern.stop_ids:
+            yield self.stop_time_bundle( stop_id, service_id )
             
     def __repr__(self):
-        return "<TripBundle n_trips: %d n_stops: %d>"%(len(self.trip_ids), len(self.pattern_signature[0]))
+        return "<TripBundle n_trips: %d n_stops: %d>"%(len(self.trip_ids), len(self.pattern.stop_ids))
 
 class GTFSDatabase:
     TRIPS_DEF = ("trips", (("route_id",   None, None),

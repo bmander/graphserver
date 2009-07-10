@@ -55,6 +55,10 @@ def load_bundle_to_boardalight_graph(g, agency_namespace, bundle, service_id, sc
     if len(stop_time_bundles)<2:
         return
         
+    # If there are no stop_times in a bundle on this service day, there is nothing to load
+    if len(stop_time_bundles[0])==0:
+        return
+        
     #add board edges
     for i, stop_time_bundle in enumerate(stop_time_bundles[:-1]):
         
@@ -93,7 +97,7 @@ def load_bundle_to_boardalight_graph(g, agency_namespace, bundle, service_id, sc
     for j, crossing_time in enumerate(bundle.pattern.crossings):
         c = Crossing( crossing_time )
         g.add_edge( "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,j), "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,j+1), c )
-
+            
 def load_gtfsdb_to_boardalight_graph(g, agency_namespace, gtfsdb, agency_id, service_ids, reporter=sys.stdout):
     
     # get graphserver.core.Timezone and graphserver.core.ServiceCalendars from gtfsdb for agency with given agency_id
