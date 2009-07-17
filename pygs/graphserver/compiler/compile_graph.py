@@ -27,14 +27,21 @@ def process_street_graph(osmdb_filename, graphdb_filename, profiledb_filename, s
     graphdb = GraphDatabase( graphdb_filename, overwrite=True )
     graphdb.populate( g, reporter=sys.stdout )
     
-def process_transit_graph(graphdb_filename, gtfsdb_filenames, osmdb_filename=None, agency_id=None, link_stations=False):
+def process_transit_graph(graphdb_filename, gtfsdb_filenames, osmdb_filename=None, profiledb_filename=None, agency_id=None, link_stations=False, slogs={}):
     g = Graph()
+
+    if profiledb_filename:
+        print( "Opening ProfileDB '%s'"%profiledb_filename )
+        profiledb = ProfileDB( profiledb_filename )
+    else:
+        print( "No ProfileDB supplied" )
+        profiledb = None
 
     if osmdb_filename:
         # Load osmdb ===============================
         print( "Opening OSM-DB '%s'"%osmdb_filename )
         osmdb = OSMDB( osmdb_filename )
-        compiler.load_streets_to_graph( g, osmdb, reporter=sys.stdout )
+        compiler.load_streets_to_graph( g, osmdb, profiledb, slogs, reporter=sys.stdout )
     
     # Load gtfsdb ==============================
    
@@ -96,7 +103,8 @@ def main():
     
     process_transit_graph(graphdb_filename, options.gtfsdb_files,
                           osmdb_filename=options.osmdb_filename,
-                          link_stations=options.link and not options.osmdb_filename)
+                          profiledb_filename=options.profiledb_filename,
+                          link_stations=options.link and not options.osmdb_filename, slogs=slogs)
     exit(0)
         
 if __name__=='__main__': main()
