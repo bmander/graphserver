@@ -324,6 +324,7 @@ typedef struct Street {
    float rise;
    float fall;
    float slog;
+   long way;
 } Street;
 
 Street*
@@ -352,6 +353,12 @@ streetGetRise(Street* this);
 
 float
 streetGetFall(Street* this);
+
+long
+streetGetWay(Street* this);
+
+void
+streetSetWay(Street* this, long way);
 
 //---------------DECLARATIONS FOR TRIPBOARD CLASS------------------------------------------
 

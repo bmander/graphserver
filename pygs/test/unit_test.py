@@ -893,10 +893,13 @@ class TestStreet(unittest.TestCase):
         assert s.rise == 0
         assert s.fall == 0
         assert s.slog == 1
+        assert s.way == 0
         assert s.to_xml() == "<Street name='mystreet' length='1.100000' rise='0.000000' fall='0.000000'/>"
         
         s.slog = 2500
+        s.way = 232323
         assert s.slog == 2500
+        assert s.way == 232323
         
     def test_street_elev(self):
         s = Street("mystreet", 1.1, 24.5, 31.2)
@@ -1005,7 +1008,7 @@ class TestStreet(unittest.TestCase):
     def test_getstate(self):
         s = Street("longstreet", 2)
         
-        assert s.__getstate__() == ('longstreet', 2, 0, 0)
+        assert s.__getstate__() == ('longstreet', 2.0, 0.0, 0.0, 1.0)
 
 class TestEgress(unittest.TestCase):
     def test_street(self):
