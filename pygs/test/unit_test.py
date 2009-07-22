@@ -1574,7 +1574,7 @@ class TestTriphopSchedule(unittest.TestCase):
         assert s.time == 3600
         assert s.weight == 3600
         assert s.dist_walked == 0
-        assert s.num_transfers == 0
+        assert s.num_transfers == 1
         assert s.prev_edge.type == 2
         assert s.prev_edge.trip_id == "Foo to Bar"
         assert s.num_agencies == 2
@@ -1582,7 +1582,7 @@ class TestTriphopSchedule(unittest.TestCase):
         assert s.service_period(0).begin_time == 0
         assert s.service_period(0).end_time == 86400
         assert s.service_period(1) == None
-        assert str(s) == "<state time='3600' weight='3600' dist_walked='0.0' num_transfers='0' trip_id='None'><ServicePeriod begin_time='0' end_time='86400' service_ids='0,1'/></state>"
+        assert str(s) == "<state time='3600' weight='3600' dist_walked='0.0' num_transfers='1' trip_id='None'><ServicePeriod begin_time='0' end_time='86400' service_ids='0,1'/></state>"
         
         rawhops = [(0,     1*3600,'auth1trip0'),
                    (1*3600,2*3600,'auth1trip1')]
@@ -1618,7 +1618,7 @@ class TestTriphopSchedule(unittest.TestCase):
         assert s.time == 7200
         assert s.weight == 3600
         assert s.dist_walked == 0.0
-        assert s.num_transfers == 0
+        assert s.num_transfers == 1
         assert s.prev_edge.trip_id == "Bar to Cow"
         assert s.num_agencies == 2
         assert str(s.service_period(0)) == "<ServicePeriod begin_time='0' end_time='86400' service_ids='0,1'/>"
@@ -1638,7 +1638,7 @@ class TestTriphopSchedule(unittest.TestCase):
         assert sfinal.time == 3600
         assert sfinal.weight == 7200
         assert sfinal.dist_walked == 0.0
-        assert sfinal.num_transfers == 1
+        assert sfinal.num_transfers == 2
         assert sfinal.prev_edge.type == 2
         assert sfinal.prev_edge.trip_id == "auth1trip0"
         assert sfinal.num_agencies == 2

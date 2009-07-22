@@ -35,8 +35,7 @@ linkWalkBack(EdgePayload* this, State* params, WalkOptions* options) {
     
   State* ret = stateDup( params );
 
-  ret->prev_edge_type = PL_LINK;
-  ret->prev_edge_name = ((Link*)this)->name;
+  ret->prev_edge = this;
 
   return ret;
 }
@@ -56,8 +55,7 @@ elapseTimeWalkBack(EdgePayload* this, State* params, WalkOptions* options) {
 
   // this could have a multiplier via WalkOptions, but this is currently not necessary
   ret->weight += delta_t;
-  ret->prev_edge_type = PL_ELAPSE_TIME;
-  //ret->prev_edge_name = ((ElapseTime*)this)->name;
+  ret->prev_edge = this;
 
   return ret;
 }
@@ -70,7 +68,7 @@ waitWalk(EdgePayload* superthis, State* params, WalkOptions* options) {
     
     State* ret = stateDup( params );
     
-    ret->prev_edge_type = PL_WAIT;
+    ret->prev_edge = superthis;
     
     long secs_since_local_midnight = (params->time+tzUtcOffset(this->timezone, params->time))%SECS_IN_DAY;
     long wait_time = this->end - secs_since_local_midnight;
@@ -81,7 +79,7 @@ waitWalk(EdgePayload* superthis, State* params, WalkOptions* options) {
     ret->time += wait_time;
     ret->weight += wait_time;
     
-    if(params->prev_edge_type==PL_TRIPHOP) {
+    if(params->prev_edge && params->prev_edge->type==PL_TRIPHOP) {
         ret->weight += options->transfer_penalty;
     }
     
@@ -94,7 +92,7 @@ waitWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
     
     State* ret = stateDup( params );
     
-    ret->prev_edge_type = PL_WAIT;
+    ret->prev_edge = superthis;
     
     long secs_since_local_midnight = (params->time+tzUtcOffset(this->timezone, params->time))%SECS_IN_DAY;
     long wait_time = secs_since_local_midnight - this->end;
@@ -105,7 +103,7 @@ waitWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
     ret->time -= wait_time;
     ret->weight += wait_time;
     
-    if(params->prev_edge_type==PL_TRIPHOP) {
+    if(params->prev_edge && params->prev_edge->type==PL_TRIPHOP) {
         ret->weight += options->transfer_penalty;
     }
     
@@ -152,8 +150,7 @@ streetWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
   else
     ret->weight       += this->slog*delta_w;
   ret->dist_walked    = end_dist;
-  ret->prev_edge_type = PL_STREET;
-  ret->prev_edge_name = this->name;
+  ret->prev_edge = superthis;
 
   return ret;
 }
@@ -180,8 +177,7 @@ egressWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
 
   ret->weight        += delta_w;
   ret->dist_walked    = end_dist;
-  ret->prev_edge_type = PL_EGRESS;
-  ret->prev_edge_name = this->name;
+  ret->prev_edge = superthis;
 
   return ret;
 }
@@ -260,9 +256,10 @@ triphopWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
   
     long transfer_penalty=0;
     //if this is a transfer
-    if( params->prev_edge_type != PL_TRIPHOP  ||    //the last edge wasn't a bus
-        !params->prev_edge_name               ||    //it was a bus, but the trip_id was NULL
-        strcmp( params->prev_edge_name, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
+    if( !params->prev_edge || //there was no last edge
+        params->prev_edge->type != PL_TRIPHOP  ||    //the last edge wasn't a bus
+        !((TripHop*)params->prev_edge)->trip_id               ||    //it was a bus, but the trip_id was NULL
+        strcmp( ((TripHop*)params->prev_edge)->trip_id, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
 
       transfer_penalty = options->transfer_penalty; //penalty of making a transfer; flat rate. "all things being equal, transferring costs a little"
 
@@ -298,8 +295,7 @@ triphopWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
     }
 #endif
     ret->dist_walked    = 0;
-    ret->prev_edge_type = PL_TRIPHOP;
-    ret->prev_edge_name = this->trip_id;
+    ret->prev_edge = superthis;
     
     return ret;
 }
@@ -339,9 +335,10 @@ headwayWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
   
     long transfer_penalty=0;
     //if this is a transfer
-    if( params->prev_edge_type != PL_HEADWAY  ||    //the last edge wasn't a bus
-        !params->prev_edge_name               ||    //it was a bus, but the trip_id was NULL
-        strcmp( params->prev_edge_name, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
+    if( !params->prev_edge ||
+        params->prev_edge->type != PL_HEADWAY  ||    //the last edge wasn't a bus
+        !((Headway*)params->prev_edge)->trip_id               ||    //it was a bus, but the trip_id was NULL
+        strcmp( ((Headway*)params->prev_edge)->trip_id, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
 
       transfer_penalty = options->transfer_penalty; //penalty of making a transfer; flat rate. "all things being equal, transferring costs a little"
 
@@ -358,9 +355,10 @@ headwayWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
     
     if( adjusted_time <= this->begin_time ) {
         wait = this->begin_time - adjusted_time;
-    } else if( !(params->prev_edge_type == PL_HEADWAY || params->prev_edge_type == PL_HEADWAY)  ||    //the last edge wasn't a bus
-        !params->prev_edge_name               ||    //it was a bus, but the trip_id was NULL
-        strcmp( params->prev_edge_name, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
+    } else if( !params->prev_edge ||
+        !params->prev_edge->type == PL_HEADWAY  ||    //the last edge wasn't a bus
+        !((Headway*)params->prev_edge)->trip_id               ||    //it was a bus, but the trip_id was NULL
+        strcmp( ((Headway*)params->prev_edge)->trip_id, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
         wait = this->wait_period;
     }
     
@@ -380,9 +378,10 @@ headwayWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
     
     if( adjusted_time >= this->end_time ) {
         wait = adjusted_time - this->begin_time;
-    } else if( !(params->prev_edge_type == PL_HEADWAY || params->prev_edge_type == PL_HEADWAY)  ||    //the last edge wasn't a bus
-        !params->prev_edge_name               ||    //it was a bus, but the trip_id was NULL
-        strcmp( params->prev_edge_name, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
+    } else if( !params->prev_edge ||
+        !params->prev_edge->type == PL_HEADWAY  ||    //the last edge wasn't a bus
+        !((Headway*)params->prev_edge)->trip_id               ||    //it was a bus, but the trip_id was NULL
+        strcmp( ((Headway*)params->prev_edge)->trip_id, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
         wait = this->wait_period;
     }
     
@@ -396,8 +395,7 @@ headwayWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
     }
 #endif
     ret->dist_walked    = 0;
-    ret->prev_edge_type = PL_HEADWAY;
-    ret->prev_edge_name = this->trip_id;
+    ret->prev_edge = superthis;
 
     return ret;
 }
