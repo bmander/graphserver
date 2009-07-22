@@ -207,6 +207,42 @@ class ShortestPathTree(Graph):
         #destroy the vertex State instances, but not the edge EdgePayload instances, as they're owned by the parent graph
         super(ShortestPathTree, self).destroy(1, 0)
 
+class EdgePayload(CShadow, Walkable):
+    def __init__(self):
+        if self.__class__ == EdgePayload:
+            raise "EdgePayload is an abstract type."
+    
+    def destroy(self):
+        self.check_destroyed()
+        
+        self._cdel(self.soul)
+        self.soul = None
+        
+    def __str__(self):
+        return self.to_xml()
+
+    def to_xml(self):
+        self.check_destroyed()
+        return "<abstractedgepayload type='%s'/>" % self.type
+    
+    type = cproperty(lgs.epGetType, c_int)
+    
+    @classmethod
+    def from_pointer(cls, ptr):
+        """ Overrides the default behavior to return the appropriate subtype."""
+        if ptr is None:
+            return None
+        
+        payloadtype = EdgePayload._subtypes[EdgePayload._cget_type(ptr)]
+        if payloadtype is GenericPyPayload:
+            p = lgs.cpSoul(ptr)
+            # this is required to prevent garbage collection of the object
+            Py_INCREF(p)
+            return p
+        ret = instantiate(payloadtype)
+        ret.soul = ptr
+        return ret
+
 class State(CShadow):
     
     def __init__(self, n_agencies, time=None):
@@ -249,13 +285,11 @@ class State(CShadow):
         self.check_destroyed()  
         
         ret = "<state time='%d' weight='%s' dist_walked='%s' " \
-              "num_transfers='%s' prev_edge_type='%s' prev_edge_name='%s' trip_id='%s'>" % \
+              "num_transfers='%s' trip_id='%s'>" % \
                (self.time,
                self.weight,
                self.dist_walked,
               self.num_transfers,
-               self.prev_edge_type,
-               self.prev_edge_name,
                self.trip_id)
         for i in range(self.num_agencies):
             if self.service_period(i) is not None:
@@ -266,8 +300,7 @@ class State(CShadow):
     weight         = cproperty(lgs.stateGetWeight, c_long, setter=lgs.stateSetWeight)
     dist_walked    = cproperty(lgs.stateGetDistWalked, c_double, setter=lgs.stateSetDistWalked)
     num_transfers  = cproperty(lgs.stateGetNumTransfers, c_int, setter=lgs.stateSetNumTransfers)
-    prev_edge_type = cproperty(lgs.stateGetPrevEdgeType, c_int, setter=lgs.stateSetPrevEdgeType) # should not use: setter=lgs.stateSetPrevEdgeType)
-    prev_edge_name = cproperty(lgs.stateGetPrevEdgeName, c_char_p, setter=lgs.stateSetPrevEdgeName)
+    prev_edge      = cproperty(lgs.stateGetPrevEdge, c_void_p, EdgePayload, setter=lgs.stateSetPrevEdge )
     num_agencies     = cproperty(lgs.stateGetNumAgencies, c_int)
     trip_id          = cproperty(lgs.stateGetTripId, c_char_p)
     
@@ -407,41 +440,7 @@ class ListNode(CShadow):
         return self._cnext(self.soul)
 
             
-class EdgePayload(CShadow, Walkable):
-    def __init__(self):
-        if self.__class__ == EdgePayload:
-            raise "EdgePayload is an abstract type."
-    
-    def destroy(self):
-        self.check_destroyed()
-        
-        self._cdel(self.soul)
-        self.soul = None
-        
-    def __str__(self):
-        return self.to_xml()
 
-    def to_xml(self):
-        self.check_destroyed()
-        return "<abstractedgepayload type='%s'/>" % self.type
-    
-    type = cproperty(lgs.epGetType, c_int)
-    
-    @classmethod
-    def from_pointer(cls, ptr):
-        """ Overrides the default behavior to return the appropriate subtype."""
-        if ptr is None:
-            return None
-        
-        payloadtype = EdgePayload._subtypes[EdgePayload._cget_type(ptr)]
-        if payloadtype is GenericPyPayload:
-            p = lgs.cpSoul(ptr)
-            # this is required to prevent garbage collection of the object
-            Py_INCREF(p)
-            return p
-        ret = instantiate(payloadtype)
-        ret.soul = ptr
-        return ret
 
 
 def failsafe(return_arg_num_on_failure):

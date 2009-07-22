@@ -7,6 +7,8 @@
 #include "hashtable_itr.h"
 #include "statetypes.h"
 
+typedef struct EdgePayload EdgePayload;
+
 typedef enum {    
   PL_STREET,
   PL_TRIPHOPSCHED,
@@ -81,8 +83,7 @@ typedef struct State {
    long          weight;
    double        dist_walked;    //meters
    int           num_transfers;
-   edgepayload_t prev_edge_type;
-   char*         prev_edge_name;
+   EdgePayload*  prev_edge;
    char*         trip_id;
    int           n_agencies;
    ServicePeriod** service_periods;
@@ -109,11 +110,8 @@ stateGetDistWalked( State* this );
 int
 stateGetNumTransfers( State* this );
 
-edgepayload_t
-stateGetPrevEdgeType( State* this );
-
-char*
-stateGetPrevEdgeName( State* this );
+EdgePayload*
+stateGetPrevEdge( State* this );
 
 char*
 stateGetTripId( State* this );
@@ -140,18 +138,15 @@ void
 stateSetNumTransfers( State* this, int n);
 
 void
-stateSetPrevEdgeType( State* this, edgepayload_t type );
-
-void
-stateSetPrevEdgeName( State* this, char* name );
+stateSetPrevEdge( State* this, EdgePayload* edge );
 
 //---------------DECLARATIONS FOR EDGEPAYLOAD CLASS---------------------
 
-typedef struct EdgePayload {
+struct EdgePayload {
   edgepayload_t type;
   State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
   State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
-} EdgePayload;
+} ;
 
 EdgePayload*
 epNew( edgepayload_t type, void* payload );

@@ -111,9 +111,8 @@ stateNew(int n_agencies, long time) {
   ret->weight = 0;
   ret->dist_walked = 0;
   ret->num_transfers = 0;
-  ret->prev_edge_name = NULL;
   ret->trip_id = NULL;
-  ret->prev_edge_type = PL_NONE;
+  ret->prev_edge = NULL;
   ret->n_agencies = n_agencies;
   ret->service_periods = (ServicePeriod**)malloc(n_agencies*sizeof(ServicePeriod*)); //hash of strings->calendardays
 
@@ -155,11 +154,8 @@ stateGetDistWalked( State* this ) { return this->dist_walked; }
 int
 stateGetNumTransfers( State* this ) { return this->num_transfers; }
 
-edgepayload_t
-stateGetPrevEdgeType( State* this ) { return this->prev_edge_type; }
-
-char*
-stateGetPrevEdgeName( State* this ) { return this->prev_edge_name; }
+EdgePayload*
+stateGetPrevEdge( State* this ) { return this->prev_edge; }
 
 char*
 stateGetTripId( State* this ) { return this->trip_id; }
@@ -186,10 +182,7 @@ void
 stateSetServicePeriod( State* this,  int agency, ServicePeriod* cal ) { this->service_periods[agency] = cal; }
 
 void
-stateSetPrevEdgeName( State* this, char* name ) { this->prev_edge_name = name; }
-
-void
-stateSetPrevEdgeType( State* this, edgepayload_t type ) { this->prev_edge_type = type; }
+stateSetPrevEdge( State* this, EdgePayload* edge ) { this->prev_edge = edge; }
 
 //--------------------EDGEPAYLOAD FUNCTIONS-------------------
 
@@ -1689,13 +1682,13 @@ cpMethods( CustomPayload* this ) {
 State*
 cpWalk(CustomPayload* this, State* params, WalkOptions* walkoptions) {
 	State* s = this->methods->walk(this->soul, params, walkoptions);
-	s->prev_edge_type = PL_EXTERNVALUE;
+	s->prev_edge = (EdgePayload*)this;
 	return s;
 }
 State*
 cpWalkBack(CustomPayload* this, State* params, WalkOptions* walkoptions) {
 	State* s = this->methods->walkBack(this->soul, params, walkoptions);
-	s->prev_edge_type = PL_EXTERNVALUE;
+	s->prev_edge = (EdgePayload*)this;
 	return s;
 }
 

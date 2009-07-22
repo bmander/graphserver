@@ -321,7 +321,7 @@ class TestGraph(unittest.TestCase):
         wo = WalkOptions()
         sprime = e.walk(State(g.numagencies,0), wo)
         wo.destroy()
-        assert str(sprime)=="<state time='282352' weight='2147483647' dist_walked='240000.0' num_transfers='0' prev_edge_type='0' prev_edge_name='helloworld' trip_id='None'></state>"
+        assert str(sprime)=="<state time='282352' weight='2147483647' dist_walked='240000.0' num_transfers='0' trip_id='None'></state>"
 
         g.destroy()
         
@@ -813,8 +813,7 @@ class TestState(unittest.TestCase):
         assert s.weight == 0
         assert s.dist_walked == 0
         assert s.num_transfers == 0
-        assert s.prev_edge_name == None
-        assert s.prev_edge_type == 5
+        assert s.prev_edge == None
         assert s.num_agencies == 1
         assert s.service_period(0) == None
         assert s.trip_id == None
@@ -825,8 +824,7 @@ class TestState(unittest.TestCase):
         assert s.weight == 0
         assert s.dist_walked == 0
         assert s.num_transfers == 0
-        assert s.prev_edge_name == None
-        assert s.prev_edge_type == 5
+        assert s.prev_edge == None
         assert s.num_agencies == 2
         assert s.service_period(0) == None
         assert s.service_period(1) == None
@@ -880,8 +878,7 @@ class TestState(unittest.TestCase):
         assert s2.weight == 0
         assert s2.dist_walked == 0
         assert s2.num_transfers == 0
-        assert s2.prev_edge_name == None
-        assert s2.prev_edge_type == 5
+        assert s2.prev_edge == None
         assert s2.num_agencies == 1
         assert s2.service_period(0).to_xml() == "<ServicePeriod begin_time='0' end_time='86400' service_ids='1,2'/>"
 
@@ -929,8 +926,8 @@ class TestStreet(unittest.TestCase):
         assert after.time == 2
         assert after.weight == 2
         assert after.dist_walked == 2
-        assert after.prev_edge_type == 0
-        assert after.prev_edge_name == "longstreet"
+        assert after.prev_edge.type == 0
+        assert after.prev_edge.name == "longstreet"
         assert after.num_agencies == 0
         
     def test_walk_slog(self):
@@ -941,8 +938,8 @@ class TestStreet(unittest.TestCase):
         assert after.time == 2
         assert after.weight == 20
         assert after.dist_walked == 2
-        assert after.prev_edge_type == 0
-        assert after.prev_edge_name == "longstreet"
+        assert after.prev_edge.type == 0
+        assert after.prev_edge.name == "longstreet"
         assert after.num_agencies == 0
         
     def test_walk_back(self):
@@ -953,8 +950,8 @@ class TestStreet(unittest.TestCase):
         assert before.time == 98
         assert before.weight == 2
         assert before.dist_walked == 2.0
-        assert before.prev_edge_type == 0
-        assert before.prev_edge_name == "longstreet"
+        assert before.prev_edge.type == 0
+        assert before.prev_edge.name == "longstreet"
         assert before.num_agencies == 0
         
     def test_walk_elev(self):
@@ -1100,8 +1097,7 @@ class TestElapseTime(unittest.TestCase):
         assert after.time == 2
         assert after.weight == 2
         assert after.dist_walked == 0
-        assert after.prev_edge_type == 14
-        assert after.prev_edge_name == None
+        assert after.prev_edge.type == 14
         assert after.num_agencies == 0
         
     def test_walk_back(self):
@@ -1112,8 +1108,7 @@ class TestElapseTime(unittest.TestCase):
         assert before.time == 98
         assert before.weight == 2
         assert before.dist_walked == 0
-        assert before.prev_edge_type == 14
-        assert before.prev_edge_name == None
+        assert before.prev_edge.type == 14
         assert before.num_agencies == 0
         
     def test_getstate(self):
@@ -1247,8 +1242,8 @@ class TestLink(unittest.TestCase):
         assert after.time==0
         assert after.weight==0
         assert after.dist_walked==0
-        assert after.prev_edge_type==3
-        assert after.prev_edge_name=="LINK"
+        assert after.prev_edge.type == 3
+        assert after.prev_edge.name == "LINK"
         assert after.num_agencies == 1
         
     def test_walk_back(self):
@@ -1259,8 +1254,8 @@ class TestLink(unittest.TestCase):
         assert before.time == 0
         assert before.weight == 0
         assert before.dist_walked == 0.0
-        assert before.prev_edge_type == 3
-        assert before.prev_edge_name == "LINK"
+        assert before.prev_edge.type == 3
+        assert before.prev_edge.name == "LINK"
         assert before.num_agencies == 1
         
     def test_getstate(self):
@@ -1438,8 +1433,7 @@ class TestHeadway(unittest.TestCase):
         assert ret.time == 3720
         assert ret.weight == 3720
         assert ret.num_transfers == 1
-        assert ret.prev_edge_type == 7
-        assert ret.prev_edge_name == "HEADWAY"
+        assert ret.prev_edge.type == 7
         
         #right at beginning of headway
         s = State(1, 3600)
@@ -1447,8 +1441,7 @@ class TestHeadway(unittest.TestCase):
         assert ret.time == 3720
         assert ret.weight == 120
         assert ret.num_transfers == 1
-        assert ret.prev_edge_type == 7
-        assert ret.prev_edge_name == "HEADWAY"
+        assert ret.prev_edge.type == 7
         
         #in the middle of the headway
         s = State(1, 4000)
@@ -1456,8 +1449,7 @@ class TestHeadway(unittest.TestCase):
         assert ret.time == 4000+60+120
         assert ret.weight == 60+120
         assert ret.num_transfers == 1
-        assert ret.prev_edge_type == 7
-        assert ret.prev_edge_name == "HEADWAY"
+        assert ret.prev_edge.type == 7
         
         #the last second of the headway
         s = State(1, 2*3600)
@@ -1465,19 +1457,17 @@ class TestHeadway(unittest.TestCase):
         assert ret.time == 2*3600+60+120
         assert ret.weight == 60+120
         assert ret.num_transfers == 1
-        assert ret.prev_edge_type == 7
-        assert ret.prev_edge_name == "HEADWAY"
+        assert ret.prev_edge.type == 7
         
         #no-transfer
         s = State(1, 4000)
-        s.prev_edge_name = "HEADWAY"
-        s.prev_edge_type = 7
+        s.prev_edge = headway = Headway( 3600, 2*3600, 60, 120, "HEADWAY", sc, tz, 0, "WKDY" )
         ret = headway.walk( s,WalkOptions() )
         assert ret.time == 4000+120
         assert ret.weight == 120
         assert ret.num_transfers == 0
-        assert ret.prev_edge_type == 7
-        assert ret.prev_edge_name == "HEADWAY"
+        assert ret.prev_edge.type == 7
+        assert ret.prev_edge.trip_id == "HEADWAY"
         
     def test_getstate(self):
         sc = ServiceCalendar()
@@ -1584,15 +1574,15 @@ class TestTriphopSchedule(unittest.TestCase):
         assert s.time == 3600
         assert s.weight == 3600
         assert s.dist_walked == 0
-        assert s.num_transfers == 1
-        assert s.prev_edge_type == 2
-        assert s.prev_edge_name == "Foo to Bar"
+        assert s.num_transfers == 0
+        assert s.prev_edge.type == 2
+        assert s.prev_edge.trip_id == "Foo to Bar"
         assert s.num_agencies == 2
         assert s.service_period(0).service_ids == [0,1]
         assert s.service_period(0).begin_time == 0
         assert s.service_period(0).end_time == 86400
         assert s.service_period(1) == None
-        assert str(s) == "<state time='3600' weight='3600' dist_walked='0.0' num_transfers='1' prev_edge_type='2' prev_edge_name='Foo to Bar' trip_id='None'><ServicePeriod begin_time='0' end_time='86400' service_ids='0,1'/></state>"
+        assert str(s) == "<state time='3600' weight='3600' dist_walked='0.0' num_transfers='0' trip_id='None'><ServicePeriod begin_time='0' end_time='86400' service_ids='0,1'/></state>"
         
         rawhops = [(0,     1*3600,'auth1trip0'),
                    (1*3600,2*3600,'auth1trip1')]
@@ -1605,8 +1595,8 @@ class TestTriphopSchedule(unittest.TestCase):
         assert sfinal.time == 7200
         assert sfinal.weight == 7200
         assert sfinal.dist_walked == 0.0
-        assert sfinal.prev_edge_type == 2
-        assert sfinal.prev_edge_name == "auth1trip1"
+        assert sfinal.prev_edge.type == 2
+        assert sfinal.prev_edge.trip_id == "auth1trip1"
         assert sfinal.service_period(0).service_ids == [0,1]
         assert sfinal.service_period(1).service_ids == [0,1]
     
@@ -1628,8 +1618,8 @@ class TestTriphopSchedule(unittest.TestCase):
         assert s.time == 7200
         assert s.weight == 3600
         assert s.dist_walked == 0.0
-        assert s.num_transfers == 1
-        assert s.prev_edge_name == "Bar to Cow"
+        assert s.num_transfers == 0
+        assert s.prev_edge.trip_id == "Bar to Cow"
         assert s.num_agencies == 2
         assert str(s.service_period(0)) == "<ServicePeriod begin_time='0' end_time='86400' service_ids='0,1'/>"
         assert s.service_period(0).service_ids == [0,1]
@@ -1648,9 +1638,9 @@ class TestTriphopSchedule(unittest.TestCase):
         assert sfinal.time == 3600
         assert sfinal.weight == 7200
         assert sfinal.dist_walked == 0.0
-        assert sfinal.num_transfers == 2
-        assert sfinal.prev_edge_type == 2
-        assert sfinal.prev_edge_name == "auth1trip0"
+        assert sfinal.num_transfers == 1
+        assert sfinal.prev_edge.type == 2
+        assert sfinal.prev_edge.trip_id == "auth1trip0"
         assert sfinal.num_agencies == 2
         assert str(sfinal.service_period(0))=="<ServicePeriod begin_time='0' end_time='86400' service_ids='0,1'/>"
         assert str(sfinal.service_period(1))=="<ServicePeriod begin_time='0' end_time='86400' service_ids='0,1'/>"
@@ -1998,7 +1988,7 @@ class TestEngine(unittest.TestCase):
         
         eng = Engine(gg)
         
-        assert eng.walk_edges("A", time=0) == "<?xml version='1.0'?><vertex><state time='0' weight='0' dist_walked='0.0' num_transfers='0' prev_edge_type='5' prev_edge_name='None' trip_id='None'></state><outgoing_edges><edge><destination label='C'><state time='11' weight='11' dist_walked='10.0' num_transfers='0' prev_edge_type='0' prev_edge_name='4' trip_id='None'></state></destination><payload><Street name='4' length='10.000000' rise='0.000000' fall='0.000000'/></payload></edge><edge><destination label='B'><state time='11' weight='11' dist_walked='10.0' num_transfers='0' prev_edge_type='0' prev_edge_name='1' trip_id='None'></state></destination><payload><Street name='1' length='10.000000' rise='0.000000' fall='0.000000'/></payload></edge></outgoing_edges></vertex>"
+        assert eng.walk_edges("A", time=0) == "<?xml version='1.0'?><vertex><state time='0' weight='0' dist_walked='0.0' num_transfers='0' trip_id='None'></state><outgoing_edges><edge><destination label='C'><state time='11' weight='11' dist_walked='10.0' num_transfers='0' trip_id='None'></state></destination><payload><Street name='4' length='10.000000' rise='0.000000' fall='0.000000'/></payload></edge><edge><destination label='B'><state time='11' weight='11' dist_walked='10.0' num_transfers='0' trip_id='None'></state></destination><payload><Street name='1' length='10.000000' rise='0.000000' fall='0.000000'/></payload></edge></outgoing_edges></vertex>"
 
     def xtest_outgoing_edges_entire_osm(self):
         gg = Graph()
