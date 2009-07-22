@@ -190,6 +190,8 @@ def load_streets_to_graph(g, osmdb, profiledb=None, slogs={}, reporter=None ):
     
     n_ways = osmdb.count_ways()
     
+    street_id_counter = 0
+    street_names = {}
     for i, way in enumerate( osmdb.ways() ):
         
         if reporter and i%(n_ways//100+1)==0: reporter.write( "%d/%d ways loaded\n"%(i, n_ways))
@@ -209,10 +211,23 @@ def load_streets_to_graph(g, osmdb, profiledb=None, slogs={}, reporter=None ):
             profile = profiledb.get( way.id )
             if profile:
                 rise, fall = profile_rise_fall( profile )
+                
+        # create ID for the way's street
+        street_name = way.tags.get("name")
+        if street_name is None:
+            street_id_counter += 1
+            street_id = street_id_counter
+        else:
+            if street_name not in street_names:
+                street_id_counter += 1
+                street_names[street_name] = street_id_counter
+            street_id = street_names[street_name]
         
         # Create edges to be inserted into graph
         s1 = Street( way.id, distance, rise, fall )
         s2 = Street( way.id, distance, fall, rise )
+        s1.way = street_id
+        s2.way = street_id
         
         # See if the way's highway tag is penalized with a 'slog' value; if so, set it in the edges
         slog = slogs.get( way.tags.get("highway") )
