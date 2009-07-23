@@ -1002,6 +1002,21 @@ class TestStreet(unittest.TestCase):
         assert after.time == -139
         assert after.weight == 139
         
+    def test_street_turn(self):
+        wo = WalkOptions()
+        wo.turn_penalty = 20
+
+        e0 = Street("a1", 10)
+        e0.way = 42
+        e1 = Street("a2", 10)
+        e1.way = 43
+        s0 = State(0,0)
+        s0.prev_edge = e0
+        
+        s1 = e1.walk(s0, wo)
+        assert s1.weight == 31
+        
+        
     def test_getstate(self):
         s = Street("longstreet", 2)
         
@@ -3361,6 +3376,7 @@ class TestWalkOptions(unittest.TestCase):
         assert wo
         
         assert wo.transfer_penalty == 0
+        assert wo.turn_penalty == 0
         assert wo.walking_speed*100//1 == 85.0
         assert wo.walking_reluctance == 1.0
         assert wo.max_walk == 10000
@@ -3371,6 +3387,9 @@ class TestWalkOptions(unittest.TestCase):
         
         wo.transfer_penalty = 50
         assert wo.transfer_penalty == 50
+        
+        wo.turn_penalty = 3
+        assert wo.turn_penalty == 3
         
         wo.walking_speed = 1.05
         assert round(wo.walking_speed*100) == 105.0
@@ -3462,30 +3481,30 @@ if __name__ == '__main__':
     tl = unittest.TestLoader()
     
     testables = [\
-                 TestGraph,
-                 TestGraphPerformance,
-                 TestState,
-                 TestPyPayload,
-                 TestLink,
-                 TestWait,
-                 TestTripHop,
-                 TestTriphopSchedule,
+                 #TestGraph,
+                 #TestGraphPerformance,
+                 #TestState,
+                 #TestPyPayload,
+                 #TestLink,
+                 #TestWait,
+                 #TestTripHop,
+                 #TestTriphopSchedule,
                  TestStreet,
-                 TestHeadway,
-                 TestListNode,
-                 TestVertex,
-                 TestServicePeriod,
-                 TestServiceCalendar,
-                 TestEngine,
-                 TestTimezone,
-                 TestTimezonePeriod,
-                 TestTripBoard,
-                 TestCrossing,
-                 TestAlight,
-                 TestHeadwayBoard,
-                 TestHeadwayAlight,
-                 TestWalkOptions,
-                 TestElapseTime,
+                 #TestHeadway,
+                 #TestListNode,
+                 #TestVertex,
+                 #TestServicePeriod,
+                 #TestServiceCalendar,
+                 #TestEngine,
+                 #TestTimezone,
+                 #TestTimezonePeriod,
+                 #TestTripBoard,
+                 #TestCrossing,
+                 #TestAlight,
+                 #TestHeadwayBoard,
+                 #TestHeadwayAlight,
+                 #TestWalkOptions,
+                 #TestElapseTime,
                  ]
 
     for testable in testables:

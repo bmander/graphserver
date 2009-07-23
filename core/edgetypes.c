@@ -8,6 +8,7 @@ WalkOptions*
 woNew() {
     WalkOptions* ret = (WalkOptions*)malloc( sizeof(WalkOptions) );
     ret->transfer_penalty = 0;
+    ret->turn_penalty = 0;
     ret->walking_speed = 0.85; //meters per second
     ret->walking_reluctance = 1;
     ret->uphill_slowness = 0.08; //Factor by which someone's speed is slowed going uphill. A 15 mph rider on a flat will climb at 1.2 mph, for example.
@@ -101,6 +102,16 @@ woGetWalkingOverage( WalkOptions* this ) {
 void
 woSetWalkingOverage( WalkOptions* this, float walking_overage ) {
     this->walking_overage = walking_overage;
+}
+
+int
+woGetTurnPenalty( WalkOptions* this ) {
+    return this->turn_penalty;
+}
+
+void
+woSetTurnPenalty( WalkOptions* this, int turn_penalty ) {
+    this->turn_penalty = turn_penalty;
 }
 
 //STATE FUNCTIONS

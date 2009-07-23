@@ -325,6 +325,7 @@ class WalkOptions(CShadow):
         return ret
  
     transfer_penalty = cproperty(lgs.woGetTransferPenalty, c_int, setter=lgs.woSetTransferPenalty)
+    turn_penalty = cproperty(lgs.woGetTurnPenalty, c_int, setter=lgs.woSetTurnPenalty)
     walking_speed = cproperty(lgs.woGetWalkingSpeed, c_float, setter=lgs.woSetWalkingSpeed)
     walking_reluctance = cproperty(lgs.woGetWalkingReluctance, c_float, setter=lgs.woSetWalkingReluctance)
     uphill_slowness = cproperty(lgs.woGetUphillSlowness, c_float, setter=lgs.woSetUphillSlowness)

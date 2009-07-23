@@ -120,6 +120,7 @@ streetWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
   Street* this = (Street*)superthis;
   State* ret = stateDup( params );
 
+  // Elevation considerations
   long t_horiz = (long)(this->length/options->walking_speed);
 #ifndef ROUTE_REVERSE
   long t_up = (long)(this->rise/(options->walking_speed*options->uphill_slowness));
@@ -138,10 +139,18 @@ streetWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
   if( delta_w < 0 ) {
       delta_w = 0;
   }
-    
+
+  // max_walk overage considerations
   double end_dist = params->dist_walked + this->length;
   if(end_dist > options->max_walk)
     delta_w += (end_dist - options->max_walk)*options->walking_overage*delta_t;
+  
+  // turning considerations
+  if( params->prev_edge &&
+      params->prev_edge->type == PL_STREET &&
+      ((Street*)params->prev_edge)->way != this->way ) {
+    delta_w += options->turn_penalty;
+  }
 
   ELAPSE_TIME_AND_SERVICE_PERIOD(ret, delta_t);
 
