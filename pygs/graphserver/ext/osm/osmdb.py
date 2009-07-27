@@ -10,7 +10,6 @@ import binascii
 from vincenty import vincenty
 from struct import pack, unpack
 
-
 def cons(ary):
     for i in range(len(ary)-1):
         yield (ary[i], ary[i+1])
@@ -84,6 +83,8 @@ class OSMDB:
         
         if overwrite:
             self.setup()
+            
+        self.nodes_import_table = csv.writer(open('nodes_import_table.csv', 'w'))
         
     def setup(self):
         c = self.conn.cursor()
@@ -157,7 +158,9 @@ class OSMDB:
         self.conn.commit()
         c.close()
         
+        print "indexing primary tables...",
         self.create_indexes()
+        print "done"
         
     def set_endnode_ref_counts( self ):
         """Populate ways.endnode_refs. Necessary for splitting ways into single-edge sub-ways"""
@@ -166,12 +169,25 @@ class OSMDB:
         
         c = self.conn.cursor()
         
-        for i, way in enumerate(self.ways()):
+        endnode_ref_counts = {}
+        
+        c.execute( "SELECT nds from ways" )
+        
+        print "...counting"
+        for i, (nds_str,) in enumerate(c):
+            if i%5000==0:
+                print i
+                
+            nds = json.loads( nds_str )
+            endnode_ref_counts[ nds[0] ] = endnode_ref_counts.get( nds[0], 0 )+1
+            endnode_ref_counts[ nds[-1] ] = endnode_ref_counts.get( nds[-1], 0 )+1
+        
+        print "...updating nodes table"
+        for i, (node_id, ref_count) in enumerate(endnode_ref_counts.items()):
             if i%5000==0:
                 print i
             
-            nds = way.nds
-            c.execute( "UPDATE nodes SET endnode_refs = endnode_refs + 1 WHERE id=? OR id=?", (nds[0], nds[-1]) )
+            c.execute( "UPDATE nodes SET endnode_refs = ? WHERE id=?", (ref_count, node_id) )
             
         self.conn.commit()
         c.close()
@@ -216,8 +232,10 @@ class OSMDB:
                 else:
                     raise
         
+        print "indexing edges...",
         c.execute( "CREATE INDEX edges_id ON edges (id)" )
         c.execute( "CREATE INDEX edges_parent_id ON edges (parent_id)" )
+        print "done"
         
         self.conn.commit()
         c.close()
@@ -231,7 +249,6 @@ class OSMDB:
             ret = c.next()
             way_id, parent_id, from_nd, to_nd, dist, geom, tags = ret
             return (way_id, parent_id, from_nd, to_nd, dist, unpack_coords( geom ), json.loads(tags))
-            
         except StopIteration:
             c.close()
             raise IndexError( "Database does not have an edge with id '%s'"%id )
@@ -275,7 +292,6 @@ class OSMDB:
         if close_cursor:
             self.conn.commit()
             curs.close()
-        
         
     def nodes(self):
         c = self.conn.cursor()
