@@ -4,7 +4,10 @@ try:
 except ImportError:
     from osm import OSM
 import os
-import json
+try:
+     import json
+except ImportError:
+     import simplejson as json
 import sys
 
 def cons(ary):
@@ -174,7 +177,7 @@ class OSMDB:
         c.execute( "SELECT * FROM nodes WHERE id = ?", (id,) )
         
         try:
-            ret = next(c)
+            ret = c.next()
         except StopIteration:
             c.close()
             raise Exception( "Database does not have node with id '%s'"%id )
@@ -221,7 +224,7 @@ class OSMDB:
         
         c.execute( "SELECT id, tags, nds, geom FROM ways WHERE id = ?", (id,) )
         
-        id, tags_str, nds_str, geom_str = next(c)
+        id, tags_str, nds_str, geom_str = c.next()
         ret = WayRecord(id, tags_str, nds_str, geom_str)
         c.close()
         
@@ -231,7 +234,7 @@ class OSMDB:
         c = self.conn.cursor()
         c.execute( "SELECT nds FROM ways WHERE id = ?", (id,) )
         
-        (nds_str,) = next(c)
+        (nds_str,) = c.next()
         c.close()
         
         return json.loads( nds_str )
@@ -250,7 +253,7 @@ class OSMDB:
         c = self.conn.cursor()
         
         c.execute( "SELECT count(*) FROM ways" )
-        ret = next(c)[0]
+        ret = c.next()[0]
         
         c.close()
         
@@ -296,7 +299,7 @@ class OSMDB:
         c = self.conn.cursor()
         c.execute( "SELECT min(left), min(bottom), max(right), max(top) FROM ways" )
         
-        ret = next(c)
+        ret = c.next()
         c.close()
         return ret
     

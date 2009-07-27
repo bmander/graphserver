@@ -2,7 +2,10 @@ from graphserver.core import Graph, Link, Street, State
 from osmdb import OSMDB
 import time
 from vincenty import vincenty as dist_earth
-import json
+try:
+  import json
+except ImportError:
+  import simplejson as json
 
 class OSMDBFilter(object):
     def setup(self, db, *args):

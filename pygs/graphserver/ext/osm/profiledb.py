@@ -2,7 +2,10 @@
 
 import os
 import sqlite3
-import json
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 class ProfileDB:
     def __init__(self, dbname,overwrite=False):
@@ -36,7 +39,7 @@ class ProfileDB:
         c.execute( "SELECT profile FROM profiles WHERE id = ?", (id,) )
         
         try:
-            (profile,) = next(c)
+            (profile,) = c.next()
         except StopIteration:
             return None
         finally:
