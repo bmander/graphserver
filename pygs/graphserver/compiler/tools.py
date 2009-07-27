@@ -188,32 +188,34 @@ def profile_rise_fall(profile):
 
 def load_streets_to_graph(g, osmdb, profiledb=None, slogs={}, reporter=None ):
     
-    n_ways = osmdb.count_ways()
+    n_edges = osmdb.count_edges()
     
     street_id_counter = 0
     street_names = {}
-    for i, way in enumerate( osmdb.ways() ):
+    for i, (id, parent_id, node1, node2, distance, geom, tags) in enumerate( osmdb.edges() ):
         
-        if reporter and i%(n_ways//100+1)==0: reporter.write( "%d/%d ways loaded\n"%(i, n_ways))
-        
-        distance = sum( [vincenty(y1,x1,y2,x2) for (x1,y1), (x2,y2) in cons(way.geom)] )
+        if reporter and i%(n_edges//100+1)==0: reporter.write( "%d/%d edges loaded\n"%(i, n_edges))
         
         # insert end vertices of edge to graph
-        vertex1_label = "osm-%s"%way.nds[0]
-        vertex2_label = "osm-%s"%way.nds[-1]
+        vertex1_label = "osm-%s"%node1
+        vertex2_label = "osm-%s"%node2
         g.add_vertex( vertex1_label )
         g.add_vertex( vertex2_label )
+        
+        if node1 == "57808625":
+            print (id, parent_id, node1, node2, distance, geom, tags)
+            exit()
         
         # Find rise/fall of edge, if profiledb is given
         rise=0
         fall=0
         if profiledb:
-            profile = profiledb.get( way.id )
+            profile = profiledb.get( id )
             if profile:
                 rise, fall = profile_rise_fall( profile )
                 
         # create ID for the way's street
-        street_name = way.tags.get("name")
+        street_name = tags.get("name")
         if street_name is None:
             street_id_counter += 1
             street_id = street_id_counter
@@ -224,19 +226,19 @@ def load_streets_to_graph(g, osmdb, profiledb=None, slogs={}, reporter=None ):
             street_id = street_names[street_name]
         
         # Create edges to be inserted into graph
-        s1 = Street( way.id, distance, rise, fall )
-        s2 = Street( way.id, distance, fall, rise )
+        s1 = Street( id, distance, rise, fall )
+        s2 = Street( id, distance, fall, rise )
         s1.way = street_id
         s2.way = street_id
         
         # See if the way's highway tag is penalized with a 'slog' value; if so, set it in the edges
-        slog = slogs.get( way.tags.get("highway") )
+        slog = slogs.get( tags.get("highway") )
         if slog:
             s1.slog = s2.slog = slog
         
         # Add the forward edge and the return edge if the edge is not oneway
         g.add_edge( vertex1_label, vertex2_label, s1 )
-        oneway = way.tags.get("oneway")
+        oneway = tags.get("oneway")
         if oneway != "true" and oneway != "yes":
             g.add_edge( vertex2_label, vertex1_label, s2 )
         
