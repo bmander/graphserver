@@ -309,7 +309,7 @@ class OSMDB:
         c.execute( "SELECT * FROM nodes WHERE id = ?", (id,) )
         
         try:
-            ret = next(c)
+            ret = c.next()
         except StopIteration:
             c.close()
             raise IndexError( "Database does not have node with id '%s'"%id )
@@ -356,7 +356,7 @@ class OSMDB:
         c = self.conn.cursor()
         c.execute( "SELECT nds FROM ways WHERE id = ?", (id,) )
         
-        (nds_str,) = next(c)
+        (nds_str,) = c.next()
         c.close()
         
         return json.loads( nds_str )
@@ -375,7 +375,7 @@ class OSMDB:
         c = self.conn.cursor()
         
         c.execute( "SELECT count(*) FROM ways" )
-        ret = next(c)[0]
+        ret = c.next()[0]
         
         c.close()
         
@@ -402,7 +402,7 @@ class OSMDB:
         c = self.conn.cursor()
         c.execute( "SELECT min(lon), min(lat), max(lon), max(lat) FROM nodes" )
         
-        ret = next(c)
+        ret = c.next()
         c.close()
         return ret
     

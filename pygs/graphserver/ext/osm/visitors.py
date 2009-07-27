@@ -1,6 +1,9 @@
 
 from osmdb import OSMDB
-import json
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 
 class Visitor(object):
