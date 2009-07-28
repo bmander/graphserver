@@ -83,8 +83,6 @@ class OSMDB:
         
         if overwrite:
             self.setup()
-            
-        self.nodes_import_table = csv.writer(open('nodes_import_table.csv', 'w'))
         
     def setup(self):
         c = self.conn.cursor()
@@ -179,8 +177,8 @@ class OSMDB:
                 print i
                 
             nds = json.loads( nds_str )
-            endnode_ref_counts[ nds[0] ] = endnode_ref_counts.get( nds[0], 0 )+1
-            endnode_ref_counts[ nds[-1] ] = endnode_ref_counts.get( nds[-1], 0 )+1
+            for nd in nds:
+                endnode_ref_counts[ nd ] = endnode_ref_counts.get( nd, 0 )+1
         
         print "...updating nodes table"
         for i, (node_id, ref_count) in enumerate(endnode_ref_counts.items()):
@@ -211,7 +209,7 @@ class OSMDB:
                 curr_subway = [ way.nds[0] ]
                 for nd in way.nds[1:]:
                     curr_subway.append( nd )
-                    if self.node(nd)[4] > 0: # node reference count is greater than zero
+                    if self.node(nd)[4] > 1: # node reference count is greater than zero
                         subways.append( curr_subway )
                         curr_subway = [ nd ]
                 
@@ -320,7 +318,7 @@ class OSMDB:
     def nearest_node(self, lat, lon, range=0.005):
         c = self.conn.cursor()
         
-        c.execute( "SELECT id, lat, lon FROM nodes WHERE endnode_refs > 0 AND lat > ? AND lat < ? AND lon > ? AND lon < ?", (lat-range, lat+range, lon-range, lon+range) )
+        c.execute( "SELECT id, lat, lon FROM nodes WHERE endnode_refs > 1 AND lat > ? AND lat < ? AND lon > ? AND lon < ?", (lat-range, lat+range, lon-range, lon+range) )
         
         dists = [(nid, nlat, nlon, ((nlat-lat)**2+(nlon-lon)**2)**0.5) for nid, nlat, nlon in c]
             
@@ -345,10 +343,14 @@ class OSMDB:
         c = self.conn.cursor()
         
         c.execute( "SELECT id, tags, nds FROM ways WHERE id = ?", (id,) )
-        
-        id, tags_str, nds_str = next(c)
-        ret = WayRecord(id, tags_str, nds_str)
-        c.close()
+       
+        try: 
+          id, tags_str, nds_str = c.next()
+          ret = WayRecord(id, tags_str, nds_str)
+        except StopIteration:
+          raise Exception( "OSMDB has no way with id '%s'"%id )
+        finally:
+          c.close()
         
         return ret
         
@@ -385,7 +387,7 @@ class OSMDB:
         c = self.conn.cursor()
         
         c.execute( "SELECT count(*) FROM edges" )
-        ret = next(c)[0]
+        ret = c.next()[0]
         
         c.close()
         
