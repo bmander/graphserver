@@ -9,6 +9,7 @@ import xml.sax
 import binascii
 from vincenty import vincenty
 from struct import pack, unpack
+from rtree import Rtree
 
 def cons(ary):
     for i in range(len(ary)-1):
@@ -72,7 +73,7 @@ class WayRecord:
         return "<WayRecord id='%s'>"%self.id
 
 class OSMDB:
-    def __init__(self, dbname,overwrite=False):
+    def __init__(self, dbname,overwrite=False,rtree_index=True):
         if overwrite:
             try:
                 os.remove( dbname )
@@ -81,12 +82,17 @@ class OSMDB:
             
         self.conn = sqlite3.connect(dbname)
         
+        if rtree_index:
+            self.index = Rtree( dbname )
+        else:
+            self.index = None
+        
         if overwrite:
             self.setup()
         
     def setup(self):
         c = self.conn.cursor()
-        c.execute( "CREATE TABLE nodes (id TEXT, tags TEXT, lat FLOAT, lon FLOAT, endnode_refs INTEGER DEFAULT 0)" )
+        c.execute( "CREATE TABLE nodes (id TEXT, tags TEXT, lat FLOAT, lon FLOAT, endnode_refs INTEGER DEFAULT 1)" )
         c.execute( "CREATE TABLE ways (id TEXT, tags TEXT, nds TEXT)" )
         self.conn.commit()
         c.close()
@@ -185,13 +191,27 @@ class OSMDB:
             if i%5000==0:
                 print i
             
-            c.execute( "UPDATE nodes SET endnode_refs = ? WHERE id=?", (ref_count, node_id) )
+            if ref_count > 1:
+                c.execute( "UPDATE nodes SET endnode_refs = ? WHERE id=?", (ref_count, node_id) )
             
         self.conn.commit()
         c.close()
+    
+    def index_endnodes( self ):
+        print "indexing endpoint nodes into rtree"
         
+        c = self.conn.cursor()
+        
+        c.execute( "SELECT id, lat, lon FROM nodes WHERE endnode_refs > 1" )
+        
+        for id, lat, lon in c:
+            self.index.add( int(id), (lon, lat, lon, lat) )
+            
+        c.close()
+    
     def create_and_populate_edges_table( self, tolerant=False ):
         self.set_endnode_ref_counts()
+        self.index_endnodes()
         
         print "splitting ways and inserting into edge table"
         
@@ -318,7 +338,13 @@ class OSMDB:
     def nearest_node(self, lat, lon, range=0.005):
         c = self.conn.cursor()
         
-        c.execute( "SELECT id, lat, lon FROM nodes WHERE endnode_refs > 1 AND lat > ? AND lat < ? AND lon > ? AND lon < ?", (lat-range, lat+range, lon-range, lon+range) )
+        if self.index:
+            print "YOUR'RE USING THE INDEX"
+            id = self.index.nearest( (lon, lat), 1 )[0]
+            print "THE ID IS %d"%id
+            c.execute( "SELECT id, lat, lon FROM nodes WHERE id = ?", (id,) )
+        else:
+            c.execute( "SELECT id, lat, lon FROM nodes WHERE endnode_refs > 1 AND lat > ? AND lat < ? AND lon > ? AND lon < ?", (lat-range, lat+range, lon-range, lon+range) )
         
         dists = [(nid, nlat, nlon, ((nlat-lat)**2+(nlon-lon)**2)**0.5) for nid, nlat, nlon in c]
             
