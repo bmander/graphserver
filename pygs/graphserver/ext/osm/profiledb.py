@@ -6,6 +6,15 @@ try:
     import json
 except ImportError:
     import simplejson as json
+import binascii
+from struct import pack, unpack
+    
+def pack_coords(coords):
+    return binascii.b2a_base64( "".join([pack( "ff", *coord ) for coord in coords]) )
+        
+def unpack_coords(str):
+    bin = binascii.a2b_base64( str )
+    return [unpack( "ff", bin[i:i+8] ) for i in range(0, len(bin), 8)]
 
 class ProfileDB:
     def __init__(self, dbname,overwrite=False):
@@ -30,7 +39,7 @@ class ProfileDB:
     def store(self, id, profile):
         c = self.conn.cursor()
         
-        c.execute( "INSERT INTO profiles VALUES (?, ?)", (id, json.dumps( profile  )) )
+        c.execute( "INSERT INTO profiles VALUES (?, ?)", (id, pack_coords( profile )) )
         
         c.close()
         
@@ -45,7 +54,7 @@ class ProfileDB:
         finally:
             c.close()
         
-        return [(ss/100.0, ee/100.0) for ss, ee in json.loads( profile )]
+        return unpack_coords( profile )
         
     def execute(self,sql,args=None):
         c = self.conn.cursor()
