@@ -3423,8 +3423,6 @@ class TestWalkOptions(unittest.TestCase):
         assert wo1.soul == wo.soul
         wo.destroy()
         
-        
-        
 class TestEdge(unittest.TestCase):
     def test_basic(self):
         v1 = Vertex( "A" )
@@ -3432,6 +3430,10 @@ class TestEdge(unittest.TestCase):
         e1 = Edge( v1, v2, Street( "atob", 10.0 ) )
         
         assert e1.thickness == -1
+        assert e1.enabled == True
+        
+        e1.enabled = False
+        assert e1.enabled == False
 
 class TestGraphDatabase:
     def test_basic(self):
@@ -3481,30 +3483,31 @@ if __name__ == '__main__':
     tl = unittest.TestLoader()
     
     testables = [\
-                 #TestGraph,
-                 #TestGraphPerformance,
-                 #TestState,
-                 #TestPyPayload,
-                 #TestLink,
-                 #TestWait,
-                 #TestTripHop,
-                 #TestTriphopSchedule,
+                 TestGraph,
+                 TestGraphPerformance,
+                 TestEdge,
+                 TestState,
+                 TestPyPayload,
+                 TestLink,
+                 TestWait,
+                 TestTripHop,
+                 TestTriphopSchedule,
                  TestStreet,
-                 #TestHeadway,
-                 #TestListNode,
-                 #TestVertex,
-                 #TestServicePeriod,
-                 #TestServiceCalendar,
-                 #TestEngine,
-                 #TestTimezone,
-                 #TestTimezonePeriod,
-                 #TestTripBoard,
-                 #TestCrossing,
-                 #TestAlight,
-                 #TestHeadwayBoard,
-                 #TestHeadwayAlight,
-                 #TestWalkOptions,
-                 #TestElapseTime,
+                 TestHeadway,
+                 TestListNode,
+                 TestVertex,
+                 TestServicePeriod,
+                 TestServiceCalendar,
+                 TestEngine,
+                 TestTimezone,
+                 TestTimezonePeriod,
+                 TestTripBoard,
+                 TestCrossing,
+                 TestAlight,
+                 TestHeadwayBoard,
+                 TestHeadwayAlight,
+                 TestWalkOptions,
+                 TestElapseTime,
                  ]
 
     for testable in testables:

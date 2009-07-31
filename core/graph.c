@@ -417,6 +417,7 @@ eNew(Vertex* from, Vertex* to, EdgePayload* payload) {
     this->payload = payload;
     this->geom = NULL;
     this->thickness = -1;
+    this->enabled = 1;
     return this;
 }
 
@@ -471,6 +472,16 @@ eGetTo(Edge *this) {
 EdgePayload*
 eGetPayload(Edge *this) {
   return this->payload;
+}
+
+int
+eGetEnabled(Edge *this) {
+    return this->enabled;
+}
+
+void
+eSetEnabled(Edge *this, int enabled) {
+    this->enabled = enabled;
 }
 
 // LIST FUNCTIONS
