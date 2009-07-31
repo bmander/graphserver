@@ -67,17 +67,6 @@ gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload ) {
   return vLink( vtx_from, vtx_to, payload );
 }
 
-Edge*
-gAddEdgeGeom( Graph* this, char *from, char *to, EdgePayload *payload, char * datageom ) {
-  Vertex* vtx_from = gGetVertex( this, from );
-  Vertex* vtx_to   = gGetVertex( this, to );
-
-  if(!(vtx_from && vtx_to))
-    return NULL;
-
-  return vLinkGeom( vtx_from, vtx_to, payload, datageom ); // link two vertices
-}
-
 Vertex**
 gVertices( Graph* this, long* num_vertices ) {
   unsigned int nn = hashtable_count(this->vertices);
@@ -315,20 +304,6 @@ vLink(Vertex* this, Vertex* to, EdgePayload* payload) {
     return link;
 }
 
-Edge*
-vLinkGeom(Vertex* this, Vertex* to, EdgePayload* payload, char* datageom) {
-    // create edge object
-    Edge* link = eNewGeom(this, to, payload, datageom);
-
-    ListNode* outlistnode = liNew( link );
-    liInsertAfter( this->outgoing, outlistnode );
-    this->degree_out++;
-    ListNode* inlistnode = liNew( link );
-    liInsertAfter( to->incoming, inlistnode );
-    to->degree_in++;
-    return link;
-}
-
 //the comments say it all
 Edge*
 vSetParent( Vertex* this, Vertex* parent, EdgePayload* payload ) {
@@ -342,19 +317,6 @@ vSetParent( Vertex* this, Vertex* parent, EdgePayload* payload ) {
 
     //add incoming edge
     return vLink( parent, this, payload );
-}
-
-Edge*
-vSetParentGeom( Vertex* this, Vertex* parent, EdgePayload* payload, char * geomdata ) {
-    //delete all incoming edges
-    ListNode* edges = vGetIncomingEdgeList( this );
-    while(edges) {
-      eDestroy( edges->data, 0 );
-      edges = edges->next;
-    }
-
-    //add incoming edge
-    return vLinkGeom( parent, this, payload, geomdata);
 }
 
 ListNode*
@@ -415,19 +377,8 @@ eNew(Vertex* from, Vertex* to, EdgePayload* payload) {
     this->from = from;
     this->to = to;
     this->payload = payload;
-    this->geom = NULL;
     this->thickness = -1;
     this->enabled = 1;
-    return this;
-}
-
-Edge*
-eNewGeom(Vertex* from, Vertex* to, EdgePayload* payload,char * datageom) {
-    Edge *this = (Edge *)malloc(sizeof(Edge));
-    this->from = from;
-    this->to = to;
-    this->payload = payload;
-    this->geom = geomNew(datageom);
     return this;
 }
 
@@ -439,7 +390,6 @@ eDestroy(Edge *this, int destroy_payload) {
 
     vRemoveOutEdgeRef( this->from, this );
     vRemoveInEdgeRef( this->to, this );
-    geomDestroy(this->geom);
     free(this);
 }
 
@@ -451,12 +401,6 @@ eWalk(Edge *this, State* params, WalkOptions* options) {
 State*
 eWalkBack(Edge *this, State* params, WalkOptions* options) {
   return epWalkBack( this->payload, params, options );
-}
-
-Edge*
-eGeom(Edge* this,char * datageom) {
-	this->geom = geomNew(datageom);
-	return this;
 }
 
 Vertex*

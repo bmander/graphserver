@@ -821,32 +821,4 @@ cpCollapse(CustomPayload* this, State* params);
 EdgePayload*
 cpCollapseBack(CustomPayload* this, State* params);
 
-// ------------ DECLARATIONS FOR GEOM --------------------------
-
-typedef struct Geom {
-	char *data;
-}Geom;
-
-Geom*
-geomNew (char * geomdata);
-
-void
-geomDestroy(Geom* this);
-
-
-//--------------DECLARATIONS FOR COORDINATES---------------------
-typedef struct Coordinates {
-   long lat;
-   long lon;
-}Coordinates;
-
-Coordinates*
-coordinatesNew(long latitude,long length);
-
-void
-coordinatesDestroy(Coordinates* this);
-
-Coordinates*
-coordinatesDup(Coordinates* this);
-
 #endif

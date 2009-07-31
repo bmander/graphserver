@@ -1522,52 +1522,6 @@ triphopNew(int depart, int arrive, char* trip_id, ServiceCalendar* calendar, Tim
     return ret;
 }
 
-//GEOM FUNTIONS
-
-Geom*
-geomNew (char * geomdata) {
-
-        if (geomdata==NULL)
-		return NULL;
-	Geom* tmp=(Geom *)malloc(sizeof(Geom));
-        tmp->data=strdup(geomdata);
-	return tmp;
-}
-
-void
-geomDestroy(Geom* this){
-
-	if (this!=NULL)
-	{
-		if (this->data!=NULL) free(this->data);
-		free(this);
-		this=NULL;
-	}
-}
-
-
-//COORDINATES FUNTIONS
-Coordinates*
-coordinatesNew(long latitude,long length)
-{
-	Coordinates* ret=(Coordinates*)malloc(sizeof(Coordinates));
-	ret->lat=latitude;
-	ret->lon=length;
-	return ret;
-}
-
-void
-coordinatesDestroy(Coordinates* this){
-	if (this!=NULL) free(this);
-}
-
-Coordinates*
-coordinatesDup(Coordinates* this) {
-	Coordinates* ret=(Coordinates*)malloc(sizeof(Coordinates));
-	memcpy(ret,this,sizeof( Coordinates ));
-	return ret;
-}
-
 //DEBUG CODE
 void
 thsPrintHops(TripHopSchedule* this) {
