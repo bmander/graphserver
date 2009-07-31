@@ -315,13 +315,14 @@ class TestGraph(unittest.TestCase):
         
         fromv = g.add_vertex("home")
         tov = g.add_vertex("work")
-        s = Street( "helloworld", 240000 )
+        s = Street( "helloworld", 24000 )
         e = g.add_edge("home", "work", s)
         
         wo = WalkOptions()
         sprime = e.walk(State(g.numagencies,0), wo)
         wo.destroy()
-        assert str(sprime)=="<state time='282352' weight='2147483647' dist_walked='240000.0' num_transfers='0' trip_id='None'></state>"
+        print str(sprime)
+        assert str(sprime)=="<state time='28235' weight='39557235' dist_walked='24000.0' num_transfers='0' trip_id='None'></state>"
 
         g.destroy()
         
