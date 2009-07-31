@@ -24,6 +24,12 @@
   }
 #endif
 
+inline TripHop*
+#ifndef ROUTE_REVERSE
+thsCollapse(TripHopSchedule* this, State* params);
+#else
+thsCollapseBack(TripHopSchedule* this, State* params);
+#endif
 
 
 inline State*

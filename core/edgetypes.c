@@ -273,36 +273,6 @@ epWalkBack( EdgePayload* this, State* params, WalkOptions* options ) {
   return this->walkBack( this, params, options );
 }
 
-EdgePayload*
-epCollapse( EdgePayload* this, State* params ) {
-  switch( this->type ) {
-    case PL_TRIPHOPSCHED:
-      return (EdgePayload*)thsCollapse( (TripHopSchedule*)this, params) ;
-    case PL_EXTERNVALUE:
-      return (EdgePayload*)cpCollapse( (CustomPayload*)this, params );
-    default:
-      return (EdgePayload*)this;
-  }
-}
-
-EdgePayload*
-epCollapseBack( EdgePayload* this, State* params ) {
-  switch( this->type ) {
-    case PL_TRIPHOPSCHED:
-      return (EdgePayload*)thsCollapseBack( (TripHopSchedule*)this, params);
-    case PL_EXTERNVALUE:
-      return (EdgePayload*)cpCollapseBack( (CustomPayload*)this, params );
-    default:
-      return (EdgePayload*)this;
-  }
-}
-
-//EdgePayload*
-//epCollapse( EdgePayload* this, State* param );
-
-//EdgePayload*
-//epCollapseBack( EdgePayload* this, State* param );
-
 //LINK FUNCTIONS
 Link*
 linkNew() {
@@ -1602,15 +1572,11 @@ thsGetHop(TripHopSchedule* this, int i) { return this->hops[i]; }
 PayloadMethods*
 defineCustomPayloadType(void (*destroy)(void*),
 						State* (*walk)(void*,State*,WalkOptions*),
-						State* (*walkback)(void*,State*,WalkOptions*),
-						EdgePayload* (*collapse)(void*,State*),
-						EdgePayload* (*collapseBack)(void*,State*)) {
+						State* (*walkback)(void*,State*,WalkOptions*)) {
 	PayloadMethods* this = (PayloadMethods*)malloc(sizeof(PayloadMethods));
 	this->destroy = destroy;
 	this->walk = walk;
 	this->walkBack = walkback;
-	this->collapse = collapse;
-	this->collapseBack = collapseBack;
 	return this;
 }
 
@@ -1655,20 +1621,6 @@ cpWalkBack(CustomPayload* this, State* params, WalkOptions* walkoptions) {
 	State* s = this->methods->walkBack(this->soul, params, walkoptions);
 	s->prev_edge = (EdgePayload*)this;
 	return s;
-}
-
-EdgePayload*
-cpCollapse(CustomPayload* this, State* params) {
-	if (this->methods->collapse)
-		return this->methods->collapse(this->soul, params);
-	return (EdgePayload*)this;
-}
-
-EdgePayload*
-cpCollapseBack(CustomPayload* this, State* params) {
-	if (this->methods->collapseBack)
-		return this->methods->collapseBack(this->soul, params);
-	return (EdgePayload*)this;
 }
 
 #undef ROUTE_REVERSE

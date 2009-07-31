@@ -25,12 +25,6 @@ These classes map C structs to Python Ctypes Structures.
 
 """
 
-class Collapsable:
-    def collapse(self, state):
-        return self._ccollapse(self.soul, state.soul)
-    
-    def collapse_back(self,state):
-        return self._ccollapse_back(self.soul, state.soul)
 
 class Walkable:
     """ Implements the walkable interface. """
@@ -492,14 +486,6 @@ class GenericPyPayload(EdgePayload):
         s = state.clone()
         s.prev_edge_name = self.name
         return self.walk_back_impl(s, walkoptions)
-
-    @failsafe(0)
-    def collapse(self, state):
-        return self.collapse_impl(state)
-
-    @failsafe(0)
-    def collapse_back(self, state):
-        return self.collapse_back_impl(state)
      
     """ These methods should be overridden by subclasses as deemed fit. """
     def walk_impl(self, state, walkoptions):
@@ -508,24 +494,12 @@ class GenericPyPayload(EdgePayload):
     def walk_back_impl(self, state, walkoptions):
         return state
 
-    def collapse_impl(self, state):
-        return self
-
-    def collapse_back_impl(self, state):
-        return self
-
     """ These methods provide the interface from the C world to py method implementation. """
     def _cwalk(self, stateptr, walkoptionsptr):
         return self.walk(State.from_pointer(stateptr), WalkOptions.from_pointer(walkoptionsptr)).soul
 
     def _cwalk_back(self, stateptr, walkoptionsptr):
         return self.walk_back(State.from_pointer(stateptr), WalkOptions.from_pointer(walkoptionsptr)).soul
-
-    def _ccollapse(self, stateptr):
-        return self.collapse(State.from_pointer(stateptr)).soul
-
-    def _ccollapse_back(self, stateptr):
-        return self.collapse_back(State.from_pointer(stateptr)).soul
 
     def _cfree(self):
         #print "Freeing %s..." % self
@@ -537,9 +511,7 @@ class GenericPyPayload(EdgePayload):
         
     _cmethodptrs = [PayloadMethodTypes.destroy(_cfree),
                     PayloadMethodTypes.walk(_cwalk),
-                    PayloadMethodTypes.walk_back(_cwalk_back),
-                    PayloadMethodTypes.collapse(_ccollapse),
-                    PayloadMethodTypes.collapse_back(_ccollapse_back)]
+                    PayloadMethodTypes.walk_back(_cwalk_back)]
 
     _cmethods = lgs.defineCustomPayloadType(*_cmethodptrs)
 
@@ -1453,8 +1425,6 @@ EdgePayload._subtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,4:GenericPy
 EdgePayload._cget_type = lgs.epGetType
 EdgePayload._cwalk = lgs.epWalk
 EdgePayload._cwalk_back = lgs.epWalkBack
-EdgePayload._ccollapse = ccast(lgs.epCollapse, EdgePayload)
-EdgePayload._ccollapse_back = ccast(lgs.epCollapseBack, EdgePayload)
 
 ServicePeriod._cnew = lgs.spNew
 ServicePeriod._crewind = ccast(lgs.spRewind, ServicePeriod)
@@ -1487,9 +1457,6 @@ TripHopSchedule._cwalk = lgs.thsWalk
 TripHopSchedule._cwalk_back = lgs.thsWalkBack
 TripHopSchedule._cget_last_hop = lgs.thsGetLastHop
 TripHopSchedule._cget_next_hop = lgs.thsGetNextHop
-#TripHopSchedule._ccollapse = ccast(lgs.thsCollapse, TripHop)
-#TripHopSchedule._ccollapse_back = lgs.thsCollapseBack
-#TripHopSchedule._collapse_type = TripHop
 
 Street._cnew = lgs.streetNewElev
 Street._cdel = lgs.streetDestroy

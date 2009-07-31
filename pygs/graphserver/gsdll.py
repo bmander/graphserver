@@ -180,8 +180,6 @@ pycapi(lgs.eWalkBack, c_void_p, [c_void_p, c_void_p, c_int])
 pycapi(lgs.epGetType, c_int, [c_void_p])
 pycapi(lgs.epWalk, c_void_p, [c_void_p, c_void_p, c_int])
 pycapi(lgs.epWalkBack, c_void_p, [c_void_p, c_void_p, c_int])
-pycapi(lgs.epCollapse, c_void_p, [c_void_p, c_void_p])
-pycapi(lgs.epCollapseBack, c_void_p, [c_void_p, c_void_p])
 
 #LINKNODE API
 pycapi(lgs.linkNew, c_void_p)
@@ -246,8 +244,6 @@ class PayloadMethodTypes:
     destroy = CFUNCTYPE(c_void_p, py_object)
     walk = CFUNCTYPE(c_void_p, py_object, c_void_p, c_void_p)
     walk_back = CFUNCTYPE(c_void_p, py_object, c_void_p, c_void_p)
-    collapse = CFUNCTYPE(c_void_p, py_object, c_void_p)
-    collapse_back = CFUNCTYPE(c_void_p, py_object, c_void_p)
     
 pycapi(lgs.cpSoul, py_object, [c_void_p])
 # args are not specified to allow for None

@@ -81,21 +81,10 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
         old_w = INFINITY;
       }
 
-      /*TODO: proposed edge evaluation procedure:
-        (1) collapse edge using du
-        (2) find node impedance from incoming collapsed edge to outgoing collapsed edge
-        (3) new_dv = eWalk( collapsed_edge, nodeWalk( incoming, outgoing, node, du ) )
-      */
-
 #ifndef RETRO
-      EdgePayload *collapsed = epCollapse( edge->payload, du );
-      //EdgePayload* prev_collapsed = vParent( spt_u )->payload;
-      //State *du_with_penalty = vWalk( spt_u, prev_collapsed, collapsed, du );
-      //State *new_dv = epWalk( collapsed, du_with_penalty );
-      State *new_dv = epWalk( collapsed, du, options );
+      State *new_dv = eWalk( edge, du, options );
 #else
-      EdgePayload *collapsed = epCollapseBack( edge->payload, du );
-      State *new_dv = epWalkBack( collapsed, du, options );
+      State *new_dv = eWalkBack( edge, du, options );
 #endif
 
       // When an edge leads nowhere (as indicated by returning NULL), the iteration is over.
@@ -129,7 +118,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
             stateDestroy(spt_v->payload);
         spt_v->payload = new_dv;                      //Set the State of v in the SPT to the current winner
 
-        vSetParent( spt_v, spt_u, collapsed );      //Make u the parent of v in the SPT
+        vSetParent( spt_v, spt_u, edge->payload );      //Make u the parent of v in the SPT
       } else {
         stateDestroy(new_dv); //new_dv will never be used; merge it with the infinite.
       }

@@ -271,8 +271,8 @@ class TestGraph(unittest.TestCase):
         spt = g.shortest_path_tree("home", "work", State(g.numagencies,0), WalkOptions())
         assert spt
         assert spt.__class__ == ShortestPathTree
-        assert spt.get_vertex("home").outgoing[0].payload.__class__ == TripHop
-        assert spt.get_vertex("work").incoming[0].payload.__class__ == TripHop
+        assert spt.get_vertex("home").outgoing[0].payload.__class__ == TripHopSchedule
+        assert spt.get_vertex("work").incoming[0].payload.__class__ == TripHopSchedule
         assert spt.get_vertex("home").degree_out==1
         assert spt.get_vertex("home").degree_in==0
         assert spt.get_vertex("work").degree_in==1
@@ -299,9 +299,8 @@ class TestGraph(unittest.TestCase):
         spt = g.shortest_path_tree_retro("home", "work", State(g.numagencies,2*3600), WalkOptions())
         assert spt
         assert spt.__class__ == ShortestPathTree
-        assert spt.get_vertex("home").incoming[0].payload.__class__ == TripHop
-        assert spt.get_vertex("work").outgoing[0].payload.__class__ == TripHop
-        assert spt.get_vertex("home").incoming[0].payload.trip_id == "Bar to Cow"
+        assert spt.get_vertex("home").incoming[0].payload.__class__ == TripHopSchedule
+        assert spt.get_vertex("work").outgoing[0].payload.__class__ == TripHopSchedule
         assert spt.get_vertex("home").degree_out==0
         assert spt.get_vertex("home").degree_in==1
         assert spt.get_vertex("work").degree_in==0
@@ -466,7 +465,7 @@ class TestGraph(unittest.TestCase):
         vertices, edges = spt.path( "Portland" )
         
         assert [v.label for v in vertices] == ['Seattle', 'Seattle-busstop', 'Portland-busstop', 'Portland']
-        assert [e.payload.__class__ for e in edges] == [Link, TripHop, Link]
+        assert [e.payload.__class__ for e in edges] == [Link, TripHopSchedule, Link]
         
         spt.destroy()
         g.destroy()
@@ -519,7 +518,7 @@ class TestGraph(unittest.TestCase):
         vertices, edges = spt.path_retro( "Seattle" )
         
         assert [v.label for v in vertices] == ['Seattle', 'Seattle-busstop', 'Portland-busstop', 'Portland']
-        assert [e.payload.__class__ for e in edges] == [Link, TripHop, Link]
+        assert [e.payload.__class__ for e in edges] == [Link, TripHopSchedule, Link]
         
         spt.destroy()
         g.destroy()
@@ -1169,9 +1168,6 @@ class TestPyPayload(unittest.TestCase):
                 state.weight = 0
                 return state
             
-            def collapse(self, state):
-                return Link()
-            
         g = self._minimal_graph()
         ed = g.add_edge( "Seattle", "Portland", IncTimePayload())
         assert(isinstance(ed.payload,IncTimePayload))
@@ -1195,10 +1191,6 @@ class TestPyPayload(unittest.TestCase):
                 raise Exception("I am designed to fail.")
             walk_impl = walk_bad_stuff
             walk_back_impl = walk_bad_stuff
-            def collapse_bad_stuff(self, state):
-                raise Exception("I am designed to fail.")
-            collapse_impl = collapse_bad_stuff
-            collapse_back_impl = collapse_bad_stuff
 
         g = self._minimal_graph()
         ed = g.add_edge( "Seattle", "Portland", ExceptionRaiser())
@@ -1206,8 +1198,6 @@ class TestPyPayload(unittest.TestCase):
         
         ed.walk(State(1,0), WalkOptions()) 
         ed.walk_back(State(1,0), WalkOptions())
-        ed.payload.collapse(State(1,0))
-        ed.payload.collapse_back(State(1,0))
         g.destroy()
         
     def test_basic_graph(self):
@@ -1671,31 +1661,6 @@ class TestTriphopSchedule(unittest.TestCase):
         s = ths.walk(State(1,0), WalkOptions())
         
         assert s == None
-    
-    def test_collapse_wrong_day(self):
-
-        cal = ServiceCalendar()
-        cal.add_period( 0, 10, ["WKDY"] )
-        rawhops = [(10,     20,'Foo to Bar')]
-        ths = TripHopSchedule(hops=rawhops, service_id="SAT", calendar=cal, timezone=Timezone(), agency=0)
-        
-        th = ths.collapse(State(1,0))
-        
-        assert th == None
-    
-    def test_collapse(self):
-        rawhops = [(0,     1*3600,'Foo to Bar'),
-                   (1*3600,2*3600,'Bar to Cow')]
-        cal = ServiceCalendar()
-        cal.add_period( 0, 1*3600*24, ["WKDY","SAT"] )
-        ths = TripHopSchedule(hops=rawhops, service_id="WKDY", calendar=cal, timezone=Timezone(), agency=0)
-        
-        th = ths.collapse(State(1,0))
-        
-        assert th.depart == 0
-        assert th.arrive == 3600
-        assert th.transit == 3600
-        assert th.trip_id == "Foo to Bar"
     
 
 class TestListNode(unittest.TestCase):

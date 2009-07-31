@@ -170,12 +170,6 @@ epWalk( EdgePayload* this, State* param, WalkOptions* options );
 State*
 epWalkBack( EdgePayload* this, State* param, WalkOptions* options );
 
-EdgePayload*
-epCollapse( EdgePayload* this, State* param );
-
-EdgePayload*
-epCollapseBack( EdgePayload* this, State* param );
-
 //---------------DECLARATIONS FOR LINK  CLASS---------------------
 
 typedef struct Link {
@@ -740,12 +734,6 @@ triphopWalk( EdgePayload* superthis, State* params, WalkOptions* options);
 inline State*
 triphopWalkBack( EdgePayload* superthis, State* params, WalkOptions* options );
 
-inline TripHop*
-thsCollapse( TripHopSchedule* this, State* params );
-
-inline TripHop*
-thsCollapseBack( TripHopSchedule* this, State* params );
-
 //convert time, N seconds since the epoch, to seconds since midnight within the span of the service day
 inline long
 thsSecondsSinceMidnight( TripHopSchedule* this, State* param );
@@ -775,8 +763,6 @@ typedef struct PayloadMethods {
 	void (*destroy)(void*);
 	State* (*walk)(void*,State*,WalkOptions*);
 	State* (*walkBack)(void*,State*,WalkOptions*);
-	EdgePayload* (*collapse)(void*,State*);
-	EdgePayload* (*collapseBack)(void*,State*);
 	//char* (*to_str)(void*);
 } PayloadMethods;
 
@@ -789,9 +775,7 @@ typedef struct CustomPayload {
 PayloadMethods*
 defineCustomPayloadType(void (*destroy)(void*),
 						State* (*walk)(void*,State*,WalkOptions*),
-						State* (*walkback)(void*,State*,WalkOptions*),
-						EdgePayload* (*collapse)(void*,State*),
-						EdgePayload* (*collapseBack)(void*,State*));
+						State* (*walkback)(void*,State*,WalkOptions*));
 
 
 void
@@ -814,11 +798,5 @@ cpWalk(CustomPayload* this, State* params, struct WalkOptions* walkoptions);
 
 State*
 cpWalkBack(CustomPayload* this, State* params, struct WalkOptions* walkoptions);
-
-EdgePayload*
-cpCollapse(CustomPayload* this, State* params);
-
-EdgePayload*
-cpCollapseBack(CustomPayload* this, State* params);
 
 #endif
