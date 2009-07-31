@@ -200,21 +200,6 @@ pycapi(lgs.egressDestroy, c_void_p)
 pycapi(lgs.egressWalk, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.egressWalkBack, c_void_p, [c_void_p, c_void_p])
 
-#TRIPHOPSCHEDULE API
-pycapi(lgs.thsNew, c_void_p) # args are dynamic, and not specified
-pycapi(lgs.thsDestroy, c_void_p)
-pycapi(lgs.thsGetHop, c_void_p, [c_void_p, c_int])
-pycapi(lgs.thsWalk, c_void_p, [c_void_p, c_void_p, c_int])
-pycapi(lgs.thsWalkBack, c_void_p, [c_void_p, c_void_p, c_int])
-pycapi(lgs.thsCollapse, c_void_p, [c_void_p, c_void_p])
-pycapi(lgs.thsCollapseBack, c_void_p, [c_void_p, c_void_p])
-pycapi(lgs.thsGetNextHop, c_void_p, [c_void_p, c_long])
-pycapi(lgs.thsGetLastHop, c_void_p, [c_void_p, c_long])
-
-#TRIPHOP API
-pycapi(lgs.triphopWalk, c_void_p, [c_void_p, c_void_p, c_int])
-pycapi(lgs.triphopWalkBack, c_void_p, [c_void_p, c_void_p, c_int])
-
 #HEADWAY API
 pycapi(lgs.headwayWalk, c_void_p, [c_void_p, c_void_p, c_int])
 pycapi(lgs.headwayWalkBack, c_void_p, [c_void_p, c_void_p, c_int])

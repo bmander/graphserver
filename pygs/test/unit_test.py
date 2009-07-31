@@ -252,63 +252,6 @@ class TestGraph(unittest.TestCase):
         spt.destroy()
         g.destroy()
         
-    def test_shortest_path_tree_triphopschedule(self):
-        g = Graph()
-        g.add_vertex("home")
-        g.add_vertex("work")
-        
-        cal = ServiceCalendar()
-        cal.add_period( 0, 1*3600*24, ["WKDY","SAT"] )
-        
-        rawhops = [(0,     1*3600,'Foo to Bar'),
-                   (1*3600,2*3600,'Bar to Cow')]
-        tz = Timezone()
-        tz.add_period( TimezonePeriod( 0, 1*3600*24, 0 ) )
-        ths = TripHopSchedule(hops=rawhops, service_id="WKDY", calendar=cal, timezone=tz,agency=0)
-        
-        g.add_edge("home", "work", ths )
-        
-        spt = g.shortest_path_tree("home", "work", State(g.numagencies,0), WalkOptions())
-        assert spt
-        assert spt.__class__ == ShortestPathTree
-        assert spt.get_vertex("home").outgoing[0].payload.__class__ == TripHopSchedule
-        assert spt.get_vertex("work").incoming[0].payload.__class__ == TripHopSchedule
-        assert spt.get_vertex("home").degree_out==1
-        assert spt.get_vertex("home").degree_in==0
-        assert spt.get_vertex("work").degree_in==1
-        assert spt.get_vertex("work").degree_out==0
-        
-        spt.destroy()
-        g.destroy()
-        
-    def test_spt_ths_retro(self):
-        g = Graph()
-        g.add_vertex("home")
-        g.add_vertex("work")
-        
-        cal = ServiceCalendar()
-        cal.add_period( 0, 1*3600*24, ["WKDY","SAT"] )
-        rawhops = [(0,     1*3600,'Foo to Bar'),
-                   (1*3600,2*3600,'Bar to Cow')]
-        tz = Timezone()
-        tz.add_period( TimezonePeriod( 0, 1*3600*24, 0 ) )
-        ths = TripHopSchedule(hops=rawhops, service_id="WKDY", calendar=cal, timezone=tz,agency=0)
-        
-        g.add_edge("home", "work", ths )
-        
-        spt = g.shortest_path_tree_retro("home", "work", State(g.numagencies,2*3600), WalkOptions())
-        assert spt
-        assert spt.__class__ == ShortestPathTree
-        assert spt.get_vertex("home").incoming[0].payload.__class__ == TripHopSchedule
-        assert spt.get_vertex("work").outgoing[0].payload.__class__ == TripHopSchedule
-        assert spt.get_vertex("home").degree_out==0
-        assert spt.get_vertex("home").degree_in==1
-        assert spt.get_vertex("work").degree_in==0
-        assert spt.get_vertex("work").degree_out==1
-        
-        spt.destroy()
-        g.destroy()
-        
     def test_walk_longstreet(self):
         g = Graph()
         
@@ -370,25 +313,6 @@ class TestGraph(unittest.TestCase):
         
         assert sp
         
-    def test_shortest_path_tree_triphopschedule_wrongday(self):
-        g = Graph()
-        
-        rawhops = [(10,     20,'Foo to Bar')]
-        cal = ServiceCalendar()
-        cal.add_period( 0, 10, ["WKDY"] )
-        tz = Timezone()
-        tz.add_period( TimezonePeriod( 0, 10, 0 ) )
-        ths = TripHopSchedule(hops=rawhops, service_id="SAT", calendar=cal, timezone=tz,agency=0)
-        
-        g.add_vertex("A")
-        g.add_vertex("B")
-        
-        g.add_edge("A", "B", ths)
-        
-        sp = g.shortest_path_tree("A", "B", State(g.numagencies,0), WalkOptions() )
-        
-        assert sp.vertices
-        
     def xtestx_shortest_path_bigweight(self):
         g = Graph()
         fromv = g.add_vertex("home")
@@ -446,79 +370,39 @@ class TestGraph(unittest.TestCase):
         assert spt.get_vertex("Portland").incoming[0].payload.__class__ == Street
         spt.destroy()
         
-        cal = ServiceCalendar()
-        cal.add_period( 0, 86400, ["WKDY","SAT"] )
-        rawhops = [(10,     20,'A'),
-                   (15,     30,'B'),
-                   (400,   430,'C')]
+        sc = ServiceCalendar()
+        sc.add_period( 0, 86400, ["WKDY","SAT"] )
         tz = Timezone()
         tz.add_period( TimezonePeriod( 0, 86400, 0 ) )
-        ths = TripHopSchedule(hops=rawhops, service_id="WKDY", calendar=cal, timezone=tz,agency=0)
         
-        g.add_edge( "Seattle-busstop", "Portland-busstop", ths )
+        g.add_vertex( "Portland-busstop-onbus" )
+        g.add_vertex( "Seattle-busstop-onbus" )
+        
+        tb = TripBoard("WKDY", sc, tz, 0)
+        tb.add_boarding( "A", 10 )
+        tb.add_boarding( "B", 15 )
+        tb.add_boarding( "C", 400 )
+        
+        cr = Crossing(20)
+        
+        al = Alight("WKDY", sc, tz, 0)
+        al.add_alighting( "A", 10+20 )
+        al.add_alighting( "B", 15+20 )
+        al.add_alighting( "C", 400+20 )
+        
+        g.add_edge( "Seattle-busstop", "Seattle-busstop-onbus", tb )
+        g.add_edge( "Seattle-busstop-onbus", "Portland-busstop-onbus", cr )
+        g.add_edge( "Portland-busstop-onbus", "Portland-busstop", al )
         
         spt = g.shortest_path_tree( "Seattle", "Portland", State(g.numagencies,0), WalkOptions() )
         
-        assert spt.get_vertex( "Portland" ).incoming[0].from_v.incoming[0].from_v.incoming[0].from_v.label == "Seattle"
+        assert spt.get_vertex( "Portland" ).incoming[0].from_v.incoming[0].from_v.incoming[0].from_v.incoming[0].from_v.incoming[0].from_v.label == "Seattle"
         
         spt = g.shortest_path_tree( "Seattle", "Portland", State(g.numagencies,0), WalkOptions() )
         vertices, edges = spt.path( "Portland" )
         
-        assert [v.label for v in vertices] == ['Seattle', 'Seattle-busstop', 'Portland-busstop', 'Portland']
-        assert [e.payload.__class__ for e in edges] == [Link, TripHopSchedule, Link]
-        
-        spt.destroy()
-        g.destroy()
-        
-    def test_hello_world_retro(self):
-        g = Graph()
-        
-        g.add_vertex( "Seattle" )
-        g.add_vertex( "Portland" )
-        
-        g.add_edge( "Seattle", "Portland", Street("I-5 south", 5000) )
-        g.add_edge( "Portland", "Seattle", Street("I-5 north", 5500) )
-        
-        spt = g.shortest_path_tree_retro( "Seattle", "Portland", State(g.numagencies,0), WalkOptions() )
-        
-        assert spt.get_vertex("Seattle").incoming[0].payload.name == "I-5 south"
-        
-        g.add_vertex( "Portland-busstop" )
-        g.add_vertex( "Seattle-busstop" )
-        
-        g.add_edge( "Seattle", "Seattle-busstop", Link() )
-        g.add_edge( "Seattle-busstop", "Seattle", Link() )
-        g.add_edge( "Portland", "Portland-busstop", Link() )
-        g.add_edge( "Portland-busstop", "Portland", Link() )
-        
-        spt = g.shortest_path_tree_retro( "Seattle", "Seattle-busstop", State(g.numagencies,0), WalkOptions() )
-        assert spt.get_vertex("Seattle-busstop").outgoing[0].payload.__class__ == Link
-        spt.destroy()
-        
-        spt = g.shortest_path_tree_retro( "Seattle-busstop", "Portland", State(g.numagencies,0), WalkOptions() )
-        assert spt.get_vertex("Portland").outgoing[0].payload.__class__ == Street
-        spt.destroy()
-        
-        cal = ServiceCalendar()
-        cal.add_period( 0, 86400, ["WKDY","SAT"] )
-        rawhops = [(10,     20,'A'),
-                   (15,     30,'B'),
-                   (400,   430,'C')]
-        tz = Timezone()
-        tz.add_period( TimezonePeriod( 0, 86400, 0 ) )
-        ths = TripHopSchedule(hops=rawhops, service_id="WKDY", calendar=cal, timezone=tz,agency=0)
-        
-        g.add_edge( "Seattle-busstop", "Portland-busstop", ths )
-        
-        spt = g.shortest_path_tree_retro( "Seattle", "Portland", State(g.numagencies,430), WalkOptions() )
-        
-        assert spt.get_vertex("Portland").outgoing[0].to_v.outgoing[0].to_v.outgoing[0].to_v.label == "Seattle"
-        
-        spt = g.shortest_path_tree_retro( "Seattle", "Portland", State(g.numagencies,430), WalkOptions() )
-        vertices, edges = spt.path_retro( "Seattle" )
-        
-        assert [v.label for v in vertices] == ['Seattle', 'Seattle-busstop', 'Portland-busstop', 'Portland']
-        assert [e.payload.__class__ for e in edges] == [Link, TripHopSchedule, Link]
+        assert [v.label for v in vertices] == ['Seattle', 'Seattle-busstop', "Seattle-busstop-onbus", "Portland-busstop-onbus", 'Portland-busstop', 'Portland']
+        assert [e.payload.__class__ for e in edges] == [Link, TripBoard, Crossing, Alight, Link]
         
         spt.destroy()
         g.destroy()
@@ -1326,78 +1210,6 @@ class TestWait(unittest.TestCase):
         w = Wait(43200, tz)
         
         assert w.__getstate__() == (43200, tz.soul)
-
-class TestTripHop(unittest.TestCase):
-    
-    def test_triphop(self):
-        sc = ServiceCalendar()
-        sc.add_period( 0, 86400, ["WEEKDAY"] )
-        
-        tz = Timezone()
-        tz.add_period( TimezonePeriod( 0, 86400, 0 ) )
-        th = TripHop(25, 100, "foo", sc, timezone=tz, agency=0, service_id="WEEKDAY")
-
-        assert th.depart == 25
-        assert th.arrive == 100
-        assert th.transit == 75
-        assert th.trip_id == "foo"
-        assert th.calendar.head.begin_time==0
-        assert th.timezone.soul == tz.soul
-        assert th.agency == 0
-        assert th.service_id == "WEEKDAY"
-
-        s = State(1,0)
-        sprime = th.walk(s, WalkOptions())
-        assert sprime.time == 100
-        assert sprime.weight == 100
-
-        s = State(1, 200)
-        sprime = th.walk_back(s,WalkOptions())
-        assert sprime
-        assert sprime.time==25
-        assert sprime.weight==175
-        
-    def test_unixtime(self):
-        sc = ServiceCalendar()
-        sc.add_period( 0,86399,["WEEKDAY"] )
-        sc.add_period( 86400, 86400+86399, ["WEEKDAY"] )
-        
-        tz = Timezone()
-        tz.add_period( TimezonePeriod( 0, 86400+86399, 0 ) )
-        th = TripHop(25,100,"foo",sc, timezone=tz, agency=0, service_id="WEEKDAY")
-        
-        time = 25+86400
-        
-        s = State(1,time)  
-        sprime = th.walk(s, WalkOptions())
-        assert sprime.weight==75
-        assert sprime.time==time+75
-        
-    def test_august(self):
-        sc = ServiceCalendar()
-        #beginning of august 27 to end of august 27, America/Los_Angeles.
-        sc.add_period( 1219820400, 1219906799, ["WEEKDAY"] )
-        tz = Timezone.generate("America/Los_Angeles")
-        
-        #triphop from 12:00 noon to 12:05 PM. timezone offset is -7 hours, corresponding to west coast on daylight savings time
-        th = TripHop( 43200, 43500, "foo", sc, timezone=tz, agency=0, service_id="WEEKDAY" )
-        
-        # noon on august 27th, America/Los_Angeles
-        time = 1219863600
-        
-        s = State(1,time)
-        ret = th.walk(s, WalkOptions())
-        assert ret.time == 1219863900 #12:05PM august 27th, America/Los_Angeles
-        
-    def test_getstate(self):
-        sc = ServiceCalendar()
-        sc.add_period( 0, 86400, ["WEEKDAY"] )
-        
-        tz = Timezone()
-        tz.add_period( TimezonePeriod( 0, 86400, 0 ) )
-        th = TripHop(25, 100, "foo", sc, timezone=tz, agency=0, service_id="WEEKDAY")
-        
-        assert th.__getstate__() == (25, 100, "foo", sc.soul, tz.soul, 0, "WEEKDAY")
         
 class TestHeadway(unittest.TestCase):
     def test_basic(self):
@@ -1484,183 +1296,6 @@ class TestHeadway(unittest.TestCase):
         headway = Headway( 0, 1*3600*24, 60, 120, "HEADWAY", sc, tz, 0, "WKDY" )
         
         assert headway.__getstate__() == (0, 1*3600*24, 60, 120, "HEADWAY", sc.soul, tz.soul, 0, "WKDY")
-
-class TestTriphopSchedule(unittest.TestCase):
-    
-    def setUp(self):
-        pass
-        
-    def tearDown(self):
-        pass
-    
-    def test_triphop_schedule(self):
-        
-        rawhops = [(0,     1*3600,'Foo to Bar'),
-                   (1*3600,2*3600,'Bar to Cow')]
-        # using a tuple
-        sc = ServiceCalendar()
-        sc.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
-        tz = Timezone()
-        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
-        ths = TripHopSchedule(rawhops, "WKDY", sc, tz, agency=0)
-        
-        assert ths.timezone.soul == tz.soul
-        
-        h1 = ths.triphops[0]
-        assert h1.depart == 0
-        assert h1.arrive == 1*3600
-        assert h1.trip_id == "Foo to Bar"
-        h2 = ths.triphops[1]
-        assert h2.depart == 1*3600
-        assert h2.arrive == 2*3600
-        assert h2.trip_id == "Bar to Cow"
-                               
-        assert(ths.triphops[0].trip_id == 'Foo to Bar')
-        assert(len(ths.triphops) == 2)
-        assert str(ths)=="<TripHopSchedule service_id='WKDY'><TripHop depart='00:00:00' arrive='01:00:00' transit='3600' trip_id='Foo to Bar' service_id='WKDY' agency='0'/><TripHop depart='01:00:00' arrive='02:00:00' transit='3600' trip_id='Bar to Cow' service_id='WKDY' agency='0'/></TripHopSchedule>"
-    
-    def test_destroy(self):
-        rawhops = [(0,     1*3600,'Foo to Bar'),
-                   (1*3600,2*3600,'Bar to Cow')]
-        cal = ServiceCalendar()
-        cal.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
-        ths = TripHopSchedule(hops=rawhops, service_id="WKDY", calendar=cal, timezone=Timezone(), agency=0)
-        
-        ths.destroy()
-        
-        assert ths.soul == None
-        
-    def test_get_calendar(self):
-        rawhops = [(0,     1*3600,'Foo to Bar'),
-                   (1*3600,2*3600,'Bar to Cow')]
-        cal = ServiceCalendar()
-        cal.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
-        
-        ths = TripHopSchedule(hops=rawhops, service_id="WKDY", calendar=cal, timezone=Timezone(), agency=0)
-        
-        assert ths.calendar.head.end_time==86400
-        
-    def test_get_next_hop(self):
-        rawhops = [(0,     1*3600,'Foo to Bar'),
-                   (1*3600,2*3600,'Bar to Cow')]
-        cal = ServiceCalendar()
-        cal.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
-        ths = TripHopSchedule(hops=rawhops, service_id="WKDY", calendar=cal, timezone=Timezone(), agency=0)
-        
-        assert ths.get_next_hop( 0 ).trip_id == "Foo to Bar"
-        assert ths.get_next_hop( 1 ).trip_id == "Bar to Cow"
-        assert ths.get_next_hop( 3600 ).trip_id == "Bar to Cow"
-        assert ths.get_next_hop( 3601 ) == None
-        
-    def test_get_last_hop(self):
-        rawhops = [(0,     1*3600,'Foo to Bar'),
-                   (1*3600,2*3600,'Bar to Cow')]
-        cal = ServiceCalendar()
-        cal.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
-        ths = TripHopSchedule(hops=rawhops, service_id="WKDY", calendar=cal, timezone=Timezone(), agency=0)
-        
-        assert ths.get_last_hop( 0 ) == None
-        assert ths.get_last_hop( 3600 ).trip_id == "Foo to Bar"
-        assert ths.get_last_hop( 3601 ).trip_id == "Foo to Bar"
-        assert ths.get_last_hop( 2*3600-1).trip_id == "Foo to Bar"
-        assert ths.get_last_hop( 2*3600 ).trip_id == "Bar to Cow"
-        assert ths.get_last_hop( 100000 ).trip_id == "Bar to Cow"
-    
-    def test_walk(self):
-        rawhops = [(0,     1*3600,'Foo to Bar'),
-                   (1*3600,2*3600,'Bar to Cow')]
-        cal = ServiceCalendar()
-        cal.add_period( 0, 1*3600*24, ["WKDY","SAT"] )
-        tz = Timezone()
-        tz.add_period( TimezonePeriod( 0, 1*3600*24, 0 ) )
-        ths = TripHopSchedule(hops=rawhops, service_id="WKDY", calendar=cal, timezone=tz, agency=0)
-        
-        s = ths.walk(State(2,0), WalkOptions())
-        
-        assert s.time == 3600
-        assert s.weight == 3600
-        assert s.dist_walked == 0
-        assert s.num_transfers == 1
-        assert s.prev_edge.type == 2
-        assert s.prev_edge.trip_id == "Foo to Bar"
-        assert s.num_agencies == 2
-        assert s.service_period(0).service_ids == [0,1]
-        assert s.service_period(0).begin_time == 0
-        assert s.service_period(0).end_time == 86400
-        assert s.service_period(1) == None
-        assert str(s) == "<state time='3600' weight='3600' dist_walked='0.0' num_transfers='1' trip_id='None'><ServicePeriod begin_time='0' end_time='86400' service_ids='0,1'/></state>"
-        
-        rawhops = [(0,     1*3600,'auth1trip0'),
-                   (1*3600,2*3600,'auth1trip1')]
-        cal = ServiceCalendar()
-        cal.add_period( 0, 1*3600*24, ["B","C"] )
-        ths = TripHopSchedule(hops=rawhops, service_id="B", calendar=cal, timezone=tz, agency=1)
-        
-        sfinal = ths.walk(s,WalkOptions())
-        
-        assert sfinal.time == 7200
-        assert sfinal.weight == 7200
-        assert sfinal.dist_walked == 0.0
-        assert sfinal.prev_edge.type == 2
-        assert sfinal.prev_edge.trip_id == "auth1trip1"
-        assert sfinal.service_period(0).service_ids == [0,1]
-        assert sfinal.service_period(1).service_ids == [0,1]
-    
-    
-    def test_walk_back(self):
-        rawhops = [(1*3600,2*3600,'Foo to Bar'),
-                   (2*3600,3*3600,'Bar to Cow')]
-        cal = ServiceCalendar()
-        cal.add_period( 0, 1*3600*24, ["WKDY","SAT"] )
-        tz = Timezone()
-        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
-        ths = TripHopSchedule(hops=rawhops, service_id="WKDY", calendar=cal, timezone=tz, agency=0)
-        
-        assert ths.walk_back(State(1,0), WalkOptions()) == None
-        assert ths.walk_back(State(1,2*3600-1), WalkOptions()) == None
-        
-        s = ths.walk_back(State(2,3*3600), WalkOptions()) 
-        
-        assert s.time == 7200
-        assert s.weight == 3600
-        assert s.dist_walked == 0.0
-        assert s.num_transfers == 1
-        assert s.prev_edge.trip_id == "Bar to Cow"
-        assert s.num_agencies == 2
-        assert str(s.service_period(0)) == "<ServicePeriod begin_time='0' end_time='86400' service_ids='0,1'/>"
-        assert s.service_period(0).service_ids == [0,1]
-        assert s.service_period(0).begin_time == 0
-        assert s.service_period(0).end_time == 86400
-        assert s.service_period(1) == None
-        
-        rawhops = [(1*3600,2*3600,'auth1trip0'),
-                   (2*3600,3*3600,'auth1trip1')]
-        cal = ServiceCalendar()
-        cal.add_period( 0, 1*3600*24, ["B","C"] )
-        ths = TripHopSchedule(hops=rawhops, service_id="B", calendar=cal, timezone=tz, agency=1)
-        
-        sfinal = ths.walk_back(s,WalkOptions())
-        
-        assert sfinal.time == 3600
-        assert sfinal.weight == 7200
-        assert sfinal.dist_walked == 0.0
-        assert sfinal.num_transfers == 2
-        assert sfinal.prev_edge.type == 2
-        assert sfinal.prev_edge.trip_id == "auth1trip0"
-        assert sfinal.num_agencies == 2
-        assert str(sfinal.service_period(0))=="<ServicePeriod begin_time='0' end_time='86400' service_ids='0,1'/>"
-        assert str(sfinal.service_period(1))=="<ServicePeriod begin_time='0' end_time='86400' service_ids='0,1'/>"
-    
-    
-    def test_walk_wrong_day(self):
-        rawhops = [(10,     20,'Foo to Bar')]
-        cal = ServiceCalendar()
-        cal.add_period( 0, 10, ["A"] )
-        ths = TripHopSchedule(hops=rawhops, service_id="B", calendar=cal, timezone=Timezone(), agency=0)
-        
-        s = ths.walk(State(1,0), WalkOptions())
-        
-        assert s == None
     
 
 class TestListNode(unittest.TestCase):
@@ -3456,8 +3091,6 @@ if __name__ == '__main__':
                  TestPyPayload,
                  TestLink,
                  TestWait,
-                 TestTripHop,
-                 TestTriphopSchedule,
                  TestStreet,
                  TestHeadway,
                  TestListNode,

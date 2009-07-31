@@ -1,7 +1,7 @@
 try:
-    from graphserver.core import Graph, State, TripHop, Headway, Street, WalkOptions
+    from graphserver.core import Graph, State, Headway, Street, WalkOptions
 except ImportError:
-    from core import Graph, State
+    from core import Graph, State, Headway, Street, WalkOptions
 from time import time as now
 
 try:

@@ -11,8 +11,8 @@ typedef struct EdgePayload EdgePayload;
 
 typedef enum {    
   PL_STREET,
-  PL_TRIPHOPSCHED,
-  PL_TRIPHOP,
+  PL_TRIPHOPSCHED_DEPRIC,
+  PL_TRIPHOP_DEPRIC,
   PL_LINK,
   PL_EXTERNVALUE,
   PL_NONE, // 5
@@ -645,119 +645,6 @@ alWalk(EdgePayload* this, State* params, WalkOptions* options);
 
 inline State*
 alWalkBack(EdgePayload* this, State* params, WalkOptions* options);
-
-//---------------DECLARATIONS FOR TRIPHOPSCHEDULE and TRIPHOP  CLASSES---------------------
-
-#define INFINITY 100000000
-#define SECONDS_IN_WEEK 604800
-#define SECONDS_IN_DAY 86400
-#define SECONDS_IN_HOUR 3600
-#define SECONDS_IN_MINUTE 60
-#define DAYS_IN_WEEK 7
-
-typedef struct TripHopSchedule TripHopSchedule;
-
-typedef struct TripHop {
-  edgepayload_t type;
-  State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
-  State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
-    
-  int depart;
-  int arrive;
-  int transit;
-  char* trip_id;
-  ServiceCalendar* calendar;
-  Timezone* timezone;
-  int agency;
-  ServiceId service_id;
-} TripHop;
-
-struct TripHopSchedule {
-  edgepayload_t type;
-  State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
-  State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
-    
-  int n;
-  TripHop** hops;
-  ServiceId service_id;
-  ServiceCalendar* calendar;
-  Timezone* timezone;
-  int agency;
-};
-
-TripHopSchedule*
-thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int agency );
-
-void
-thsDestroy(TripHopSchedule* this);
-
-TripHop*
-triphopNew( int depart, int arrive, char* trip_id, ServiceCalendar* calendar, Timezone* timezone, int agency, ServiceId service_id );
-
-void
-triphopDestroy( TripHop* this );
-
-int
-triphopDepart( TripHop* this );
-
-int
-triphopArrive( TripHop* this );
-
-int
-triphopTransit( TripHop* this );
-
-char *
-triphopTripId( TripHop* this );
-
-ServiceCalendar*
-triphopCalendar( TripHop* this );
-
-Timezone*
-triphopTimezone( TripHop* this );
-
-int
-triphopAuthority( TripHop* this );
-
-int
-triphopServiceId( TripHop* this );
-
-
-inline State*
-thsWalk(EdgePayload* superthis, State* params, WalkOptions* options);
-
-inline State*
-thsWalkBack(EdgePayload* superthis, State* params, WalkOptions* options);
-
-inline State*
-triphopWalk( EdgePayload* superthis, State* params, WalkOptions* options);
-
-inline State*
-triphopWalkBack( EdgePayload* superthis, State* params, WalkOptions* options );
-
-//convert time, N seconds since the epoch, to seconds since midnight within the span of the service day
-inline long
-thsSecondsSinceMidnight( TripHopSchedule* this, State* param );
-
-inline TripHop*
-thsGetNextHop(TripHopSchedule* this, long time);
-
-inline TripHop*
-thsGetLastHop(TripHopSchedule* this, long time);
-
-int
-thsGetN(TripHopSchedule* this);
-
-ServiceId
-thsGetServiceId(TripHopSchedule* this);
-
-TripHop*
-thsGetHop(TripHopSchedule* this, int i);
-
-ServiceCalendar*
-thsGetCalendar(TripHopSchedule* this );
-
-Timezone*
-thsGetTimezone(TripHopSchedule* this );
 
 typedef struct PayloadMethods {
 	void (*destroy)(void*);

@@ -24,13 +24,6 @@
   }
 #endif
 
-inline TripHop*
-#ifndef ROUTE_REVERSE
-thsCollapse(TripHopSchedule* this, State* params);
-#else
-thsCollapseBack(TripHopSchedule* this, State* params);
-#endif
-
 
 inline State*
 #ifndef ROUTE_REVERSE
@@ -85,10 +78,6 @@ waitWalk(EdgePayload* superthis, State* params, WalkOptions* options) {
     ret->time += wait_time;
     ret->weight += wait_time;
     
-    if(params->prev_edge && params->prev_edge->type==PL_TRIPHOP) {
-        ret->weight += options->transfer_penalty;
-    }
-    
     return ret;
 }
 #else
@@ -108,10 +97,6 @@ waitWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
     
     ret->time -= wait_time;
     ret->weight += wait_time;
-    
-    if(params->prev_edge && params->prev_edge->type==PL_TRIPHOP) {
-        ret->weight += options->transfer_penalty;
-    }
     
     return ret;
 }
@@ -195,124 +180,6 @@ egressWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
   ret->prev_edge = superthis;
 
   return ret;
-}
-
-
-// This function is never called by the router - it's mostly a convenience method to be wrapped
-// by a higher-level langauge for the purpose of debugging.
-inline State*
-#ifndef ROUTE_REVERSE
-thsWalk(EdgePayload* superthis, State* params, WalkOptions* options) {
-#else
-thsWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
-#endif
-    TripHopSchedule* this = (TripHopSchedule*)superthis;
-    
-    TripHop* th;
-#ifndef ROUTE_REVERSE
-    th = thsCollapse(this, params);
-#else
-    th = thsCollapseBack(this, params);
-#endif
-    
-    if(!th)
-        return NULL;
-    
-    State* ret;
-#ifndef ROUTE_REVERSE
-    ret = th->walk((EdgePayload*)th, params, options);
-#else
-    ret = th->walkBack((EdgePayload*)th, params, options);
-#endif
-    
-    return ret;
-}
-
-inline State*
-#ifndef ROUTE_REVERSE
-triphopWalk(EdgePayload* superthis, State* params, WalkOptions* options) {
-#else
-triphopWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
-#endif
-    
-    TripHop* this = (TripHop*)superthis;
-    
-    // if the params->service_period is NULL, use the params->time to find the service_period
-    // the service_period is actually a denormalization of the params->time
-    // this way, the user doesn't need to worry about it
-    
-    ServicePeriod* service_period = params->service_periods[this->agency];
-    if( !service_period )
-#ifndef ROUTE_REVERSE
-        service_period = scPeriodOfOrAfter( this->calendar, params->time );
-#else
-        service_period = scPeriodOfOrBefore( this->calendar, params->time );
-#endif
-    params->service_periods[this->agency] = service_period;
-    
-    // if the schedule never runs
-    // or if the schedule does not run on this day
-    // this link goes nowhere
-    if( !service_period ||
-        !spPeriodHasServiceId( service_period, this->service_id) ) {
-      return NULL;
-    }
-    
-    State* ret = stateDup( params );
-    
-    long adjusted_time = spNormalizeTime( service_period, tzUtcOffset(this->timezone, params->time), params->time );
-    
-    long wait;
-#ifndef ROUTE_REVERSE
-    wait = (this->depart - adjusted_time);
-#else
-    wait = (adjusted_time - this->arrive);
-#endif
-  
-    long transfer_penalty=0;
-    //if this is a transfer
-    if( !params->prev_edge || //there was no last edge
-        params->prev_edge->type != PL_TRIPHOP  ||    //the last edge wasn't a bus
-        !((TripHop*)params->prev_edge)->trip_id               ||    //it was a bus, but the trip_id was NULL
-        strcmp( ((TripHop*)params->prev_edge)->trip_id, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
-
-      transfer_penalty = options->transfer_penalty; //penalty of making a transfer; flat rate. "all things being equal, transferring costs a little"
-
-      ret->num_transfers += 1;
-    }
-
-    int i;
-#ifndef ROUTE_REVERSE
-    ret->time           += wait + this->transit;
-    if(adjusted_time>this->depart) {
-        stateDestroy( ret );
-        return NULL;
-    } else {
-        ret->weight += wait + this->transit + transfer_penalty;
-    }
-    for(i=0; i<params->n_agencies; i++) {
-        if( ret->service_periods[i] && ret->time >= ret->service_periods[i]->end_time) {
-          ret->service_periods[i] = ret->service_periods[i]->next_period;
-        }
-    }
-#else
-    ret->time           -= (wait + this->transit);
-    if(adjusted_time<this->arrive) {
-        stateDestroy( ret );
-        return NULL;
-    } else {
-        ret->weight += wait + this->transit + transfer_penalty;
-    }
-    for(i=0; i<params->n_agencies; i++) {
-        if( ret->service_periods[i] && ret->time < ret->service_periods[i]->begin_time) {
-          ret->service_periods[i] = ret->service_periods[i]->prev_period;
-        }
-    }
-#endif
-    ret->dist_walked    = 0;
-    ret->prev_edge = superthis;
-    
-    return ret;
 }
 
 inline State*
@@ -413,96 +280,4 @@ headwayWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
     ret->prev_edge = superthis;
 
     return ret;
-}
-
-// Note that this has the side effect of filling in the params->service_period if it is not already set
-inline TripHop*
-#ifndef ROUTE_REVERSE
-thsCollapse(TripHopSchedule* this, State* params) {
-#else
-thsCollapseBack(TripHopSchedule* this, State* params) {
-#endif
-
-    // if the params->service_period is NULL, use the params->time to find the service_period
-    // the service_period is actually a denormalization of the params->time
-    // this way, the user doesn't need to worry about it
-    
-    ServicePeriod* service_period = params->service_periods[this->agency];
-    
-    if( !service_period )
-#ifndef ROUTE_REVERSE
-        service_period = scPeriodOfOrAfter( this->calendar, params->time );
-#else
-        service_period = scPeriodOfOrBefore( this->calendar, params->time );
-#endif
-    params->service_periods[this->agency] = service_period;
-    
-    // if the schedule never runs
-    // or if the schedule does not run on this day
-    // this link goes nowhere
-    if( !service_period ||
-        !spPeriodHasServiceId( service_period, this->service_id) ) {
-      return NULL;
-    }
-    
-    long adjusted_time = spNormalizeTime( service_period, tzUtcOffset(this->timezone, params->time), params->time );
-    
-#ifndef ROUTE_REVERSE
-    return thsGetNextHop(this, adjusted_time);
-#else
-    return thsGetLastHop(this, adjusted_time);
-#endif
-
-}
-
-#ifndef ROUTE_REVERSE
-inline TripHop* thsGetNextHop(TripHopSchedule* this, long time) {
-#else
-inline TripHop* thsGetLastHop(TripHopSchedule* this, long time) {
-#endif
-  int low = -1;
-  int high = this->n;
-  int mid = 0;   //initialize cursor to make compiler happy
-
-  if(high == 0)    //bail if there are no departures
-    return NULL;
-
-  while( low != high-1 ) {
-#ifndef ROUTE_REVERSE
-    mid = (low+high)/2;
-#else
-    mid = ceil( (low+high)/2.0 );
-#endif
-
-    TripHop* inquestion = this->hops[mid];
-
-#ifndef ROUTE_REVERSE
-    if( time < inquestion->depart ) {
-      high = mid;
-    } else if( time > inquestion->depart ){
-      low = mid;
-    } else {  //time == the departure at the cursor
-      return inquestion;
-    }
-  }
-  
-  if( high == this->n ) //there is no next departure
-    return NULL;
-  else
-    return this->hops[high];
-#else
-    if( time < inquestion->arrive ) {
-      high = mid;
-    } else if( time > inquestion->arrive ){
-      low = mid;
-    } else {  //time == the arrival at the cursor
-      return inquestion;
-    }
-  }
-  
-  if( low == -1 ) //thee is no previous arrival
-    return NULL;
-  else
-    return this->hops[low];
-#endif
 }

@@ -906,48 +906,7 @@ class ElapseTime(EdgePayload):
         return cls(state)
 
 
-class TripHop(EdgePayload):
-    
-    depart = cproperty( lgs.triphopDepart, c_int )
-    arrive = cproperty( lgs.triphopArrive, c_int )
-    transit = cproperty( lgs.triphopTransit, c_int )
-    trip_id = cproperty( lgs.triphopTripId, c_char_p )
-    calendar = cproperty( lgs.triphopCalendar, c_void_p, ServiceCalendar )
-    timezone = cproperty( lgs.triphopTimezone, c_void_p, Timezone )
-    agency = cproperty( lgs.triphopAuthority, c_int )
-    int_service_id = cproperty( lgs.triphopServiceId, c_int )
 
-    SEC_IN_HOUR = 3600
-    SEC_IN_MINUTE = 60
-    
-    def __init__(self, depart, arrive, trip_id, calendar, timezone, agency, service_id ):
-        if type(service_id)!=type('string'):
-            raise TypeError("service_id is supposed to be a string")
-            
-        if arrive < depart:
-            raise Exception("The triphop cannot arrive earlier than it departs. depart:%d arrive:%d"%(depart, arrive))
-            
-        int_sid = calendar.get_service_id_int( service_id )
-        self.soul = lgs.triphopNew(depart, arrive, trip_id.encode("ascii"), calendar.soul, timezone.soul, c_int(agency), ServiceIdType(int_sid))
-    
-    @classmethod
-    def _daysecs_to_str(cls,daysecs):
-        return "%02d:%02d:%02d"%(int(daysecs/cls.SEC_IN_HOUR), int(daysecs%cls.SEC_IN_HOUR/cls.SEC_IN_MINUTE), int(daysecs%cls.SEC_IN_MINUTE))
-        
-    @property
-    def service_id(self):
-        return self.calendar.get_service_id_string( self.int_service_id )
-
-    def to_xml(self):
-        print self.service_id
-        return "<TripHop depart='%s' arrive='%s' transit='%s' trip_id='%s' service_id='%s' agency='%d'/>" % \
-                        (self._daysecs_to_str(self.depart),
-                        self._daysecs_to_str(self.arrive),
-                        self.transit, self.trip_id,self.service_id,self.agency)
-    
-    def __getstate__(self):
-        return (self.depart, self.arrive, self.trip_id, self.calendar.soul, self.timezone.soul, self.agency, self.calendar.get_service_id_string(self.int_service_id))
-    
 class Headway(EdgePayload):
     
     begin_time = cproperty( lgs.headwayBeginTime, c_int )
@@ -984,84 +943,6 @@ class Headway(EdgePayload):
     
     def __getstate__(self):
         return (self.begin_time, self.end_time, self.wait_period, self.transit, self.trip_id, self.calendar.soul, self.timezone.soul, self.agency, self.calendar.get_service_id_string(self.int_service_id))
-    
-class TripHopSchedule(EdgePayload):
-    
-    calendar = cproperty( lgs.thsGetCalendar, c_void_p, ServiceCalendar )
-    timezone = cproperty( lgs.thsGetTimezone, c_void_p, Timezone )
-    
-    def __init__(self, hops, service_id, calendar, timezone, agency):
-        #TripHopSchedule* thsNew( int *departs, int *arrives, char **trip_ids, int n, ServiceId service_id, ServicePeriod* calendar, int timezone_offset );
-        
-        n = len(hops)
-        departs = (c_int * n)()
-        arrives = (c_int * n)()
-        trip_ids = (c_char_p * n)()
-        for i in range(n):
-            departs[i] = hops[i][0]
-            arrives[i] = hops[i][1]
-            trip_ids[i] = c_char_p(hops[i][2])
-        
-        self.soul = lgs.thsNew(departs, arrives, trip_ids, n, calendar.get_service_id_int( service_id ), calendar.soul, timezone.soul, c_int(agency) )
-    
-    n = cproperty(lgs.thsGetN, c_int)
-    service_id_int = cproperty(lgs.thsGetServiceId, c_int)
-    
-    @property
-    def service_id(self):
-        return self.calendar.get_service_id_string( self.service_id_int )
-        
-    def triphop(self, i):
-        self.check_destroyed()
-        
-        return self._chop(self.soul, i)
-    
-    @property
-    def triphops(self):
-        self.check_destroyed()
-        
-        hops = []
-        for i in range(self.n):
-            hops.append( self.triphop( i ) )
-        return hops
-    
-    def to_xml(self):
-        self.check_destroyed()
-        
-        ret = "<TripHopSchedule service_id='%s'>" % self.service_id
-        for triphop in self.triphops:
-          ret += triphop.to_xml()
-
-        ret += "</TripHopSchedule>"
-        return ret
-        
-    def collapse(self, state):
-        self.check_destroyed()
-        
-        func = lgs.thsCollapse
-        func.restype = c_void_p
-        func.argtypes = [c_void_p, c_void_p]
-        
-        triphopsoul = func(self.soul, state.soul)
-        
-        return TripHop.from_pointer( triphopsoul )
-        
-    def collapse_back(self, state):
-        self.check_destroyed()
-        
-        func = lgs.thsCollapseBack
-        func.restype = c_void_p
-        func.argtypes = [c_void_p, c_void_p]
-        
-        triphopsoul = func(self.soul, state.soul)
-        
-        return TripHop.from_pointer( triphopsoul )
-        
-    def get_next_hop(self, time):
-        return TripHop.from_pointer( self._cget_next_hop(self.soul, time) )
-        
-    def get_last_hop(self, time):
-        return TripHop.from_pointer( self._cget_last_hop(self.soul, time) )
         
 class TripBoard(EdgePayload):
     calendar = cproperty( lgs.tbGetCalendar, c_void_p, ServiceCalendar )
@@ -1419,7 +1300,7 @@ Edge._cpayload = ccast(lgs.eGetPayload, EdgePayload)
 Edge._cwalk = ccast(lgs.eWalk, State)
 Edge._cwalk_back = lgs.eWalkBack
 
-EdgePayload._subtypes = {0:Street,1:TripHopSchedule,2:TripHop,3:Link,4:GenericPyPayload,5:None,
+EdgePayload._subtypes = {0:Street,1:None,2:None,3:Link,4:GenericPyPayload,5:None,
                          6:Wait,7:Headway,8:TripBoard,9:Crossing,10:Alight,
                          11:HeadwayBoard,12:Egress,13:HeadwayAlight,14:ElapseTime}
 EdgePayload._cget_type = lgs.epGetType
@@ -1445,18 +1326,6 @@ State._ccopy = ccast(lgs.stateDup, State)
 
 ListNode._cdata = ccast(lgs.liGetData, Edge)
 ListNode._cnext = ccast(lgs.liGetNext, ListNode)
-
-TripHop._cnew = lgs.triphopNew
-TripHop._cdel = lgs.triphopDestroy
-TripHop._cwalk = lgs.triphopWalk
-TripHop._cwalk_back = lgs.triphopWalkBack
-
-TripHopSchedule._cdel = lgs.thsDestroy
-TripHopSchedule._chop = ccast(lgs.thsGetHop, TripHop)
-TripHopSchedule._cwalk = lgs.thsWalk
-TripHopSchedule._cwalk_back = lgs.thsWalkBack
-TripHopSchedule._cget_last_hop = lgs.thsGetLastHop
-TripHopSchedule._cget_next_hop = lgs.thsGetNextHop
 
 Street._cnew = lgs.streetNewElev
 Street._cdel = lgs.streetDestroy
