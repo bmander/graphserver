@@ -3035,6 +3035,43 @@ class TestEdge(unittest.TestCase):
         
         e1.enabled = False
         assert e1.enabled == False
+        
+    def test_walk(self):
+        v1 = Vertex( "A" )
+        v2 = Vertex( "B" )
+        e1 = Edge( v1, v2, Street( "atob", 10.0 ) )
+        
+        assert e1.walk( State(0,0), WalkOptions() ) is not None
+        assert e1.walk( State(0,0), WalkOptions() ).weight == 11
+        
+    def test_disable(self):
+        v1 = Vertex( "A" )
+        v2 = Vertex( "B" )
+        e1 = Edge( v1, v2, Street( "atob", 10.0 ) )
+        
+        assert e1.walk( State(0,0), WalkOptions() ) is not None
+        assert e1.walk( State(0,0), WalkOptions() ).weight == 11
+        
+        e1.enabled = False
+        
+        assert e1.walk( State(0,0), WalkOptions() ) == None
+        
+        gg = Graph()
+        gg.add_vertex( "A" )
+        gg.add_vertex( "B" )
+        heavy = Street( "Heavy", 100 )
+        light = Street( "Light", 1 )
+        gg.add_edge( "A", "B", heavy )
+        gg.add_edge( "A", "B", light )
+        
+        assert gg.shortest_path_tree( "A", "B", State(0,0), WalkOptions() ).path("B")[1][0].payload.name == "Light"
+        
+        lightedge = gg.get_vertex("A").outgoing[0]
+        lightedge.enabled = False
+        
+        assert gg.shortest_path_tree( "A", "B", State(0,0), WalkOptions() ).path("B")[1][0].payload.name == "Heavy"
+        
+        
 
 class TestGraphDatabase:
     def test_basic(self):

@@ -395,12 +395,20 @@ eDestroy(Edge *this, int destroy_payload) {
 
 State*
 eWalk(Edge *this, State* params, WalkOptions* options) {
-  return epWalk( this->payload, params, options );
+  if( this->enabled ) {
+    return epWalk( this->payload, params, options );
+  } else {
+    return NULL;
+  }
 }
 
 State*
 eWalkBack(Edge *this, State* params, WalkOptions* options) {
-  return epWalkBack( this->payload, params, options );
+  if( this->enabled ) {
+    return epWalkBack( this->payload, params, options );
+  } else {
+    return NULL;
+  }
 }
 
 Vertex*
