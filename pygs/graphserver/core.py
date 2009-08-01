@@ -91,6 +91,12 @@ class Graph(CShadow):
             raise VertexNotFoundError(fromv)
         raise VertexNotFoundError(tov)
         
+    def set_vertex_enabled( self, vertex_label, enabled ):
+        #void gSetVertexEnabled( Graph *this, char *label, int enabled );
+        self.check_destroyed()
+        
+        lgs.gSetVertexEnabled( self.soul, vertex_label, enabled )
+        
     @property
     def vertices(self):
         self.check_destroyed()

@@ -3071,8 +3071,42 @@ class TestEdge(unittest.TestCase):
         
         assert gg.shortest_path_tree( "A", "B", State(0,0), WalkOptions() ).path("B")[1][0].payload.name == "Heavy"
         
+    def test_disable_vertex(self):
+        gg = Graph()
+        gg.add_vertex( "A" )
+        gg.add_vertex( "B" )
+        gg.add_vertex( "C" )
+        gg.add_vertex( "D" )
+        gg.add_edge( "A", "B", Street( "atob", 1 ) )
+        gg.add_edge( "B", "D", Street( "btod", 1 ) )
+        gg.add_edge( "A", "C", Street( "atoc", 1 ) )
+        gg.add_edge( "C", "D", Street( "ctod", 1 ) )
         
-
+        for edge in gg.get_vertex("B").outgoing:
+            assert edge.enabled == True
+        for edge in gg.get_vertex("B").incoming:
+            assert edge.enabled == True
+            
+        gg.set_vertex_enabled( "B", False )
+        
+        for edge in gg.get_vertex("B").outgoing:
+            assert edge.enabled == False
+        for edge in gg.get_vertex("B").incoming:
+            assert edge.enabled == False
+            
+        for edge in gg.get_vertex("C").outgoing:
+            assert edge.enabled == True
+        for edge in gg.get_vertex("C").incoming:
+            assert edge.enabled == True
+            
+        gg.set_vertex_enabled( "B", True )
+        
+        for edge in gg.get_vertex("B").outgoing:
+            assert edge.enabled == True
+        for edge in gg.get_vertex("B").incoming:
+            assert edge.enabled == True
+        
+        
 class TestGraphDatabase:
     def test_basic(self):
         g = Graph()
@@ -3121,29 +3155,29 @@ if __name__ == '__main__':
     tl = unittest.TestLoader()
     
     testables = [\
-                 TestGraph,
-                 TestGraphPerformance,
+                 #TestGraph,
+                 #TestGraphPerformance,
                  TestEdge,
-                 TestState,
-                 TestPyPayload,
-                 TestLink,
-                 TestWait,
-                 TestStreet,
-                 TestHeadway,
-                 TestListNode,
-                 TestVertex,
-                 TestServicePeriod,
-                 TestServiceCalendar,
-                 TestEngine,
-                 TestTimezone,
-                 TestTimezonePeriod,
-                 TestTripBoard,
-                 TestCrossing,
-                 TestAlight,
-                 TestHeadwayBoard,
-                 TestHeadwayAlight,
-                 TestWalkOptions,
-                 TestElapseTime,
+                 #TestState,
+                 #TestPyPayload,
+                 #TestLink,
+                 #TestWait,
+                 #TestStreet,
+                 #TestHeadway,
+                 #TestListNode,
+                 #TestVertex,
+                 #TestServicePeriod,
+                 #TestServiceCalendar,
+                 #TestEngine,
+                 #TestTimezone,
+                 #TestTimezonePeriod,
+                 #TestTripBoard,
+                 #TestCrossing,
+                 #TestAlight,
+                 #TestHeadwayBoard,
+                 #TestHeadwayAlight,
+                 #TestWalkOptions,
+                 #TestElapseTime,
                  ]
 
     for testable in testables:

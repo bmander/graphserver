@@ -246,6 +246,27 @@ gSize( Graph* this ) {
   return hashtable_count( this->vertices );
 }
 
+void
+gSetVertexEnabled( Graph *this, char *label, int enabled ) {
+    
+    Vertex *vv = gGetVertex( this, label );
+    
+    ListNode* outgoing_edge_node = vGetOutgoingEdgeList( vv );
+
+    while(outgoing_edge_node) {
+        eSetEnabled( outgoing_edge_node->data, enabled );
+        outgoing_edge_node = outgoing_edge_node->next;
+    }
+
+    ListNode* incoming_edge_node = vGetIncomingEdgeList( vv );
+
+    while(incoming_edge_node) {
+        eSetEnabled( incoming_edge_node->data, enabled );
+        incoming_edge_node = incoming_edge_node->next;
+    }
+    
+}
+
 
 // VERTEX FUNCTIONS
 

@@ -92,6 +92,10 @@ gSize( Graph* this );
 void
 gSetThicknesses( Graph* this, char *root_label );
 
+void
+gSetVertexEnabled( Graph *this, char *label, int enabled );
+
+
 //VERTEX FUNCTIONS
 
 Vertex *
