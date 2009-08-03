@@ -43,6 +43,17 @@ gAddVertex( Graph* this, char *label ) {
   return exists;
 }
 
+void
+gRemoveVertex( Graph* this, char *label, int free_vertex_payload, int free_edge_payloads ) {
+    Vertex *exists = gGetVertex( this, label );
+    if(!exists) {
+        return;
+    }
+    
+    hashtable_remove( this->vertices, label );
+    vDestroy( exists, free_vertex_payload, free_edge_payloads );
+}
+
 void 
 gAddVertices( Graph* this, char **labels, int n ) {
   int i;

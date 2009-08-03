@@ -73,6 +73,11 @@ class Graph(CShadow):
         
         return self._cadd_vertex(self.soul, label)
         
+    def remove_vertex(self, label, free_vertex_payload, free_edge_payload):
+        #void gRemoveVertex( Graph* this, char *label, int free_vertex_payload, int free_edge_payloads );
+        
+        return self._cremove_vertex(self.soul, label, free_vertex_payload, free_edge_payload)
+        
     def get_vertex(self, label):
         #Vertex* gGetVertex( Graph* this, char *label );
         self.check_destroyed()
@@ -401,6 +406,9 @@ class Vertex(CShadow):
     def get_incoming_edge(self,i):
         self.check_destroyed()
         return self._edges(self._cincoming_edges, i)
+        
+    def __hash__(self):
+        return int(self.soul)
 
 class Edge(CShadow, Walkable):
     def __init__(self, from_v, to_v, payload):
@@ -1288,6 +1296,7 @@ class VertexNotFoundError(Exception): pass
 Graph._cnew = lgs.gNew
 Graph._cdel = lgs.gDestroy
 Graph._cadd_vertex = ccast(lgs.gAddVertex, Vertex)
+Graph._cremove_vertex = lgs.gRemoveVertex
 Graph._cget_vertex = ccast(lgs.gGetVertex, Vertex)
 Graph._cadd_edge = ccast(lgs.gAddEdge, Edge)
 Graph._cshortest_path_tree = ccast(lgs.gShortestPathTree, ShortestPathTree)

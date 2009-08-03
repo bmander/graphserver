@@ -64,6 +64,9 @@ gDestroy( Graph* this, int free_vertex_payloads, int free_edge_payloads );
 Vertex*
 gAddVertex( Graph* this, char *label );
 
+void
+gRemoveVertex( Graph* this, char *label, int free_vertex_payload, int free_edge_payloads );
+
 Vertex*
 gGetVertex( Graph* this, char *label );
 

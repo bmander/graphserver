@@ -50,6 +50,22 @@ class TestGraph(unittest.TestCase):
         
         g.destroy()
         
+    def test_remove_vertex(self):
+        g = Graph()
+        g.add_vertex( "A" )
+        g.get_vertex( "A" ).label == "A"
+        g.remove_vertex( "A", True, True )
+        assert g.get_vertex( "A" ) == None
+        
+        g.add_vertex( "A" )
+        g.add_vertex( "B" )
+        pl = Street( "AB", 1 )
+        g.add_edge( "A", "B", pl )
+        g.remove_vertex( "A", True, False )
+        assert pl.name == "AB"
+        assert g.get_vertex( "A" ) == None
+        assert g.get_vertex( "B" ).label == "B"
+        
     def test_add_vertices(self):
         g = Graph()
         verts = range(0,100000)
@@ -3155,9 +3171,9 @@ if __name__ == '__main__':
     tl = unittest.TestLoader()
     
     testables = [\
-                 #TestGraph,
+                 TestGraph,
                  #TestGraphPerformance,
-                 TestEdge,
+                 #TestEdge,
                  #TestState,
                  #TestPyPayload,
                  #TestLink,
