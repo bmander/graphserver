@@ -1,7 +1,7 @@
 
 import atexit
 from ctypes import cdll, CDLL, pydll, PyDLL, CFUNCTYPE
-from ctypes import string_at, byref, c_int, c_long, c_float, c_size_t, c_char_p, c_double, c_void_p, py_object, c_bool
+from ctypes import string_at, byref, c_int, c_long, c_float, c_size_t, c_char_p, c_double, c_void_p, py_object
 from ctypes import Structure, pointer, cast, POINTER, addressof
 from ctypes.util import find_library
 
@@ -115,7 +115,7 @@ def ccast(func, cls):
 pycapi(lgs.gNew, c_void_p)
 pycapi(lgs.gDestroy, c_void_p, [c_void_p,c_int,c_int])
 pycapi(lgs.gAddVertex, c_void_p, [c_void_p, c_char_p])
-pycapi(lgs.gRemoveVertex, c_void_p, [c_void_p, c_char_p, c_bool, c_bool])
+pycapi(lgs.gRemoveVertex, c_void_p, [c_void_p, c_char_p, c_int, c_int])
 pycapi(lgs.gGetVertex, c_void_p, [c_void_p, c_char_p])
 pycapi(lgs.gAddEdge, c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p])
 pycapi(lgs.gVertices, c_void_p, [c_void_p, c_void_p])
@@ -124,7 +124,7 @@ pycapi(lgs.gShortestPathTreeRetro,c_void_p, [c_void_p, c_char_p, c_char_p, c_voi
 pycapi(lgs.gSize,c_void_p, [c_long])
 pycapi(lgs.sptPathRetro,c_void_p, [c_void_p, c_char_p, c_void_p])
 pycapi(lgs.gShortestPathTreeRetro,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p, c_int, c_long])
-pycapi(lgs.gSetVertexEnabled,c_void_p, [c_void_p, c_char_p, c_bool])
+pycapi(lgs.gSetVertexEnabled,c_void_p, [c_void_p, c_char_p, c_int])
 
 # SERVICE PERIOD API 
 pycapi(lgs.spNew, c_void_p, [c_long, c_long, c_int, c_void_p])
