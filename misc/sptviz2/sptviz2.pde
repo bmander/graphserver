@@ -86,56 +86,66 @@ class SPTLine {
   String v1;
   String v2;
   Vector points;
-  float x1;
-  float y1;
-  float z1;
-  float x2;
-  float y2;
-  float z2;
   float width;
 
-  SPTLine(String linetype, String v1, String v2, float x1, float y1, float z1, float x2, float y2, float z2) throws JSONException{
+  SPTLine(String linetype, String v1, String v2) throws JSONException{
     this.linetype = linetype;
     this.width = 1;
     this.v1 = v1;
     this.v2 = v2;
-    this.x1 = x1;
-    this.y1 = y1;
-    this.z1 = z1;
-    this.x2 = x2;
-    this.y2 = y2;
-    this.z2 = z2;
+    this.points = new Vector();
+  }
+  
+  Point first() {
+    return (Point)this.points.get(0); 
+  }
+  
+  Point last() {
+    return (Point)this.points.get(this.points.size()-1);
+  }
+  
+  void add_point( Point pp ) {
+    this.points.add( pp ); 
+  }
+  
+  void draw_line( float xscale, float yscale, float zscale, float maxz ) {
+    for(int i=0; i<this.points.size()-1; i++) {
+      Point p1 = (Point)this.points.get( i );
+      Point p2 = (Point)this.points.get( i+1 );
+      line(p1.x*xscale, p1.y*yscale, p1.z*zscale, p2.x*xscale, p2.y*yscale, p2.z*zscale);
+    } 
   }
 
   void draw(float xscale, float yscale, float zscale, float maxz) {
-    if( this.z2 > maxz ){
+    if( this.last().z > maxz ){
       return; 
     }
     
     if( this.linetype.equals( "Board" ) ) {
       strokeWeight(1*this.width);
       stroke(0,255,0);
-      line(this.x1*xscale, this.y1*yscale, this.z1*zscale, this.x2*xscale, this.y2*yscale, this.z2*zscale);
+      draw_line( xscale, yscale, zscale, maxz );
     } else if (this.linetype.equals( "Distance" )) {
       strokeWeight(1*this.width);
       stroke(0,0,255);
-      line(this.x1*xscale, this.y1*yscale, this.z1*zscale, this.x2*xscale, this.y2*yscale, this.z2*zscale);
+      draw_line( xscale, yscale, zscale, maxz );
     } else if (this.linetype.equals( "Alight" )){
       strokeWeight(2*this.width);
       stroke(255,0,0);
-      line(this.x1*xscale, this.y1*yscale, this.z1*zscale,this.x1*xscale+0.1, this.y1*yscale+0.1, this.z1*zscale+0.1);
+      Point first = this.first();
+      line(first.x*xscale, first.y*yscale, first.z*zscale, first.x*xscale+0.1, first.y*yscale+0.1, first.z*zscale+0.1);
     } else if (this.linetype.equals( "OSMStreet" )) {
       strokeWeight(1*this.width);
       stroke(0,0,0);
-      line(this.x1*xscale, this.y1*yscale, this.z1*zscale, this.x2*xscale, this.y2*yscale, this.z2*zscale);
+      draw_line( xscale, yscale, zscale, maxz );
     }  else if (this.linetype.equals( "StationLink" )) {
       strokeWeight(1*this.width);
       stroke(0,255,255);
-      line(this.x1*xscale, this.y1*yscale, this.z1*zscale, this.x2*xscale, this.y2*yscale, this.z2*zscale);
+      draw_line( xscale, yscale, zscale, maxz );
     } else {
       strokeWeight(1*this.width);
       stroke(0);
-      line(this.x1*xscale, this.y1*yscale, this.z1*zscale, this.x2*xscale, this.y2*yscale, this.z2*zscale);
+      draw_line( xscale, yscale, zscale, maxz );
     }
     
   }
@@ -171,22 +181,20 @@ class SPT {
       String v1 = rawline[1];
       String v2 = rawline[2];
       
-      //for(int j=2; j<rawline.length; j+=3) {
-      float x1 = float(rawline[3]);
-      float y1 = float(rawline[4]);
-      float z1 = float(rawline[5]);
-      float x2 = float(rawline[6]);
-      float y2 = float(rawline[7]);
-      float z2 = float(rawline[8]);
+      this.lines[i] = new SPTLine( rawline[0], v1, v2 );
+      for(int j=3; j<rawline.length; j+=3) {
+        float x = float(rawline[j]);
+        float y = float(rawline[j+1]);
+        float z = float(rawline[j+2]);
+        this.lines[i].add_point( new Point(x,y,z) );
+        minx = min(minx,x);
+        maxx = max(maxx,x);
+        miny = min(miny,y);
+        maxy = max(maxy,y);
+        minz = min(minz,z);
+        maxz = max(maxz,z);
+      }
       
-      minx = min(minx,x1,x2);
-      maxx = max(maxx,x1,x2);
-      miny = min(miny,y1,y2);
-      maxy = max(maxy,y1,y2);
-      minz = min(minz,z1,z2);
-      maxz = max(maxz,z1,z2);
-      
-      this.lines[i] = new SPTLine( rawline[0], v1, v2, x1, y1, z1, x2, y2, z2 );
       this.parent.put( v2, this.lines[i] );
     }
 
@@ -215,12 +223,12 @@ class SPT {
     for(int i=0; i<this.lines.length; i++){
       SPTLine curr = this.lines[i];
       //float currdist = min( dist(x, y, curr.x1, curr.y1), dist(x, y, curr.x2, curr.y2) );
-      float currdist = dist(x, y, curr.x1, curr.y1);
+      float currdist = dist(x, y, curr.first().x, curr.first().y);
       if (currdist < winnerdist) {
         winnerdist = currdist;
         winner = curr.v1; 
       }
-      currdist = dist(x, y, curr.x2, curr.y2);
+      currdist = dist(x, y, curr.first().x, curr.first().y);
       if (currdist < winnerdist) {
         winnerdist = currdist;
         winner = curr.v2; 
@@ -572,7 +580,8 @@ void mouseReleased() {
       spt.highlightPath( topnode, 1 );
     }
     topnode = spt.closest_node(clicky_x, clicky_y);
-    spt.highlightPath( topnode, 5 );
+    println( topnode );
+    //spt.highlightPath( topnode, 5 );
   }
 }
 
