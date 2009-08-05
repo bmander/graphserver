@@ -225,6 +225,24 @@ class TestGraph(unittest.TestCase):
         spt.destroy()
         g.destroy()
         
+    def test_spt_retro_chain(self):
+        g = Graph()
+        
+        g.add_vertex( "A" )
+        g.add_vertex( "B" )
+        g.add_vertex( "C" )
+        g.add_vertex( "D" )
+        
+        g.add_edge( "A", "B", Street( "AB", 1 ) )
+        g.add_edge( "B", "C", Street( "BC", 1 ) )
+        g.add_edge( "C", "D", Street( "CD", 1 ) )
+        
+        spt = g.shortest_path_tree_retro( "A", "D", State(g.numagencies,0), WalkOptions() )
+        
+        assert spt.get_vertex( "A" ).payload.time
+        
+        spt.destroy()
+        
         
     def test_shortst_path_tree_link(self):
         g = Graph()
