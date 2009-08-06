@@ -119,11 +119,10 @@ pycapi(lgs.gRemoveVertex, c_void_p, [c_void_p, c_char_p])
 pycapi(lgs.gGetVertex, c_void_p, [c_void_p, c_char_p])
 pycapi(lgs.gAddEdge, c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p])
 pycapi(lgs.gVertices, c_void_p, [c_void_p, c_void_p])
-pycapi(lgs.gShortestPathTree,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p, c_int, c_long])
-pycapi(lgs.gShortestPathTreeRetro,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p, c_int, c_long])
+pycapi(lgs.gShortestPathTree,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p, c_int, c_long, c_int])
+pycapi(lgs.gShortestPathTreeRetro,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p, c_int, c_long, c_int])
 pycapi(lgs.gSize,c_void_p, [c_long])
 pycapi(lgs.sptPathRetro,c_void_p, [c_void_p, c_char_p, c_void_p])
-pycapi(lgs.gShortestPathTreeRetro,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p, c_int, c_long])
 pycapi(lgs.gSetVertexEnabled,c_void_p, [c_void_p, c_char_p, c_int])
 
 # SPT API        

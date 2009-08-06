@@ -133,7 +133,7 @@ class Graph(CShadow):
                 edges.append(e)
         return edges    
     
-    def shortest_path_tree(self, fromv, tov, initstate, walk_options=None, maxtime=2000000000):
+    def shortest_path_tree(self, fromv, tov, initstate, walk_options=None, maxtime=2000000000, hoplimit=1000000):
         #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
         self.check_destroyed()
         if not tov:
@@ -141,13 +141,13 @@ class Graph(CShadow):
         
         if walk_options is None:
             walk_options = WalkOptions()
-            ret = self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(maxtime) )
+            ret = self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(maxtime), c_int(hoplimit) )
             walk_options.destroy()
             return ret
         else:
-            return self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(maxtime) )
+            return self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(maxtime), c_int(hoplimit) )
         
-    def shortest_path_tree_retro(self, fromv, tov, finalstate, walk_options=None, mintime=0):
+    def shortest_path_tree_retro(self, fromv, tov, finalstate, walk_options=None, mintime=0, hoplimit=1000000):
         #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
         self.check_destroyed()
         if not fromv:
@@ -155,11 +155,11 @@ class Graph(CShadow):
             
         if walk_options is None:
             walk_options = WalkOptions()
-            ret = self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime) )
+            ret = self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime), c_int(hoplimit) )
             walk_options.destroy()
             return ret
         else:
-            return self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime) )
+            return self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime), c_int(hoplimit) )
 
     def to_dot(self):
         self.check_destroyed()
@@ -222,15 +222,9 @@ class ShortestPathTree(CShadow):
         verts = []
         arr = cast(p_va, POINTER(c_void_p)) # a bit of necessary voodoo
         for i in range(count.value):
-            v = Vertex.from_pointer(arr[i])
+            v = SPTVertex.from_pointer(arr[i])
             verts.append(v)
         return verts
-    
-    def add_vertices(self, vs):
-        a = (c_char_p * len(vs))()
-        for i, v in enumerate(vs):
-            a[i] = str(v)
-        lgs.sptAddVertices(self.soul, a, len(vs))
     
     @property
     def edges(self):

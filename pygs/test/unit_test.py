@@ -67,7 +67,7 @@ class TestGraph(unittest.TestCase):
         
     def test_add_vertices(self):
         g = Graph()
-        verts = range(0,100000)
+        verts = range(0,1000)
         t0 = time.time()
         g.add_vertices(verts)
         print "add vertices elapsed ", (time.time() - t0)
@@ -612,6 +612,38 @@ class TestGraph(unittest.TestCase):
         spt = g.shortest_path_tree( "A", "B", State(1,201), WalkOptions() )
         assert spt.get_vertex( "B" ) == None
         spt.destroy()
+        
+    def test_hop_limit(self):
+        gg = Graph()
+        gg.add_vertex( "A" )
+        gg.add_vertex( "B" )
+        gg.add_vertex( "C" )
+        gg.add_vertex( "D" )
+        gg.add_vertex( "E" )
+        gg.add_edge( "A", "B", Street( "AB", 1 ) )
+        gg.add_edge( "B", "C", Street( "BC", 1 ) )
+        gg.add_edge( "C", "D", Street( "CD", 1 ) )
+        gg.add_edge( "D", "E", Street( "DE", 1 ) )
+        
+        spt = gg.shortest_path_tree( "A", "E", State(0,0), WalkOptions() )
+        assert spt.get_vertex( "E" ).state.weight == 4
+        spt.destroy()
+        
+        spt = gg.shortest_path_tree( "A", "E", State(0,0), WalkOptions(), hoplimit=1 )
+        assert spt.get_vertex("A") != None
+        assert spt.get_vertex("B") != None
+        assert spt.get_vertex("C") == None
+        assert spt.get_vertex("D") == None
+        assert spt.get_vertex("E") == None
+        
+        spt = gg.shortest_path_tree( "A", "E", State(0,0), WalkOptions(), hoplimit=3 )
+        assert spt.get_vertex("A") != None
+        assert spt.get_vertex("B") != None
+        assert spt.get_vertex("C") != None
+        assert spt.get_vertex("D") != None
+        assert spt.get_vertex("E") == None
+        
+        
 
 class TestShortestPathTree(unittest.TestCase):
     
@@ -649,20 +681,6 @@ class TestShortestPathTree(unittest.TestCase):
         assert pl.name == "AB"
         assert spt.get_vertex( "A" ) == None
         assert spt.get_vertex( "B" ).label == "B"
-        
-    def test_add_vertices(self):
-        spt = ShortestPathTree()
-        verts = range(0,1000)
-        t0 = time.time()
-        spt.add_vertices(verts)
-        print "add vertices elapsed ", (time.time() - t0)
-        vlist = spt.vertices
-        assert len(vlist) == len(verts)
-        vlist.sort(lambda x, y: int(x.label) - int(y.label))
-        assert vlist[0].label == "0"
-        assert vlist[-1].label == str(verts[-1])
-        spt.destroy()
-        
         
     def test_double_add_vertex(self):
         spt = ShortestPathTree()
