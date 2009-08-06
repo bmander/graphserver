@@ -54,15 +54,14 @@ class TestGraph(unittest.TestCase):
         g = Graph()
         g.add_vertex( "A" )
         g.get_vertex( "A" ).label == "A"
-        g.remove_vertex( "A", True, True )
+        g.remove_vertex( "A" )
         assert g.get_vertex( "A" ) == None
         
         g.add_vertex( "A" )
         g.add_vertex( "B" )
         pl = Street( "AB", 1 )
         g.add_edge( "A", "B", pl )
-        g.remove_vertex( "A", True, False )
-        assert pl.name == "AB"
+        g.remove_vertex( "A" )
         assert g.get_vertex( "A" ) == None
         assert g.get_vertex( "B" ).label == "B"
         
@@ -155,11 +154,11 @@ class TestGraph(unittest.TestCase):
         assert spt.__class__ == ShortestPathTree
         assert spt.get_vertex("home").degree_out==1
         assert spt.get_vertex("home").degree_in==0
-        assert spt.get_vertex("home").payload.weight==0
+        assert spt.get_vertex("home").state.weight==0
         assert spt.get_vertex("work").degree_in==1
         assert spt.get_vertex("work").degree_out==0
-        print spt.get_vertex("work").payload.weight
-        assert spt.get_vertex("work").payload.weight==1
+        print spt.get_vertex("work").state.weight
+        assert spt.get_vertex("work").state.weight==1
         
         spt.destroy()
         g.destroy()
@@ -217,10 +216,10 @@ class TestGraph(unittest.TestCase):
         assert spt.get_vertex("home").degree_out == 0
         print spt.get_vertex("home").degree_in
         assert spt.get_vertex("home").degree_in == 1
-        assert spt.get_vertex("home").payload.weight == 1
+        assert spt.get_vertex("home").state.weight == 1
         assert spt.get_vertex("work").degree_in == 0
         assert spt.get_vertex("work").degree_out == 1
-        assert spt.get_vertex("work").payload.weight == 0
+        assert spt.get_vertex("work").state.weight == 0
         
         spt.destroy()
         g.destroy()
@@ -237,9 +236,9 @@ class TestGraph(unittest.TestCase):
         g.add_edge( "B", "C", Street( "BC", 1 ) )
         g.add_edge( "C", "D", Street( "CD", 1 ) )
         
-        spt = g.shortest_path_tree_retro( "A", "D", State(g.numagencies,0), WalkOptions() )
+        spt = g.shortest_path_tree_retro( "A", "D", State(g.numagencies,10000), WalkOptions() )
         
-        assert spt.get_vertex( "A" ).payload.time
+        assert spt.get_vertex( "A" ).state.time
         
         spt.destroy()
         
@@ -461,8 +460,8 @@ class TestGraph(unittest.TestCase):
         spt = g.shortest_path_tree( v85thStreet, vBeaconAve, State(g.numagencies,0), WalkOptions() )
         vertices, edges = spt.path( vBeaconAve )
         
-        assert spt.get_vertex("53072051").payload.time == 31439
-        assert spt.get_vertex("53072051").payload.weight == 17311963
+        assert spt.get_vertex("53072051").state.time == 31439
+        assert spt.get_vertex("53072051").state.weight == 17311963
         
         assert( False not in [l==r for l,r in zip( [v.label for v in vertices], idealVertices )] )
         assert( False not in [l==r for l,r in zip( [e.payload.name for e in edges], idealEdges )] )
@@ -475,8 +474,8 @@ class TestGraph(unittest.TestCase):
         spt = g.shortest_path_tree( vBallardAve, vLakeCityWay, State(g.numagencies,0), WalkOptions() )
         vertices, edges = spt.path( vLakeCityWay )
         
-        assert spt.get_vertex("124175598").payload.time == 13684
-        assert spt.get_vertex("124175598").payload.weight == 190321
+        assert spt.get_vertex("124175598").state.time == 13684
+        assert spt.get_vertex("124175598").state.weight == 190321
         
         assert( False not in [l==r for l,r in zip( [v.label for v in vertices], idealVertices )] )
         assert( False not in [l==r for l,r in zip( [e.payload.name for e in edges], idealEdges )] )
@@ -491,9 +490,9 @@ class TestGraph(unittest.TestCase):
         spt = g.shortest_path_tree( vSandPointWay, vAirportWay, State(g.numagencies,0), WalkOptions() )
         vertices, edges = spt.path( vAirportWay )
         
-        assert spt.get_vertex("60147448").payload.time == 21082
-        print spt.get_vertex("60147448").payload.weight
-        assert spt.get_vertex("60147448").payload.weight == 4079909
+        assert spt.get_vertex("60147448").state.time == 21082
+        print spt.get_vertex("60147448").state.weight
+        assert spt.get_vertex("60147448").state.weight == 4079909
         
         assert( False not in [l==r for l,r in zip( [v.label for v in vertices], idealVertices )] )
         assert( False not in [l==r for l,r in zip( [e.payload.name for e in edges], idealEdges )] )
@@ -518,8 +517,8 @@ class TestGraph(unittest.TestCase):
         spt = g.shortest_path_tree_retro( v85thStreet, vBeaconAve, State(g.numagencies,31505), WalkOptions() )
         vertices, edges = spt.path_retro( v85thStreet )
     
-        assert spt.get_vertex(v85thStreet).payload.time == 63
-        assert spt.get_vertex(v85thStreet).payload.weight == 17022003
+        assert spt.get_vertex(v85thStreet).state.time == 63
+        assert spt.get_vertex(v85thStreet).state.weight == 17022003
         
         assert [v.label for v in vertices] == idealVertices
         assert [e.payload.name for e in edges] == idealEdges
@@ -532,8 +531,8 @@ class TestGraph(unittest.TestCase):
         spt = g.shortest_path_tree_retro( vBallardAve, vLakeCityWay, State(g.numagencies,13684) )
         vertices, edges = spt.path_retro( vBallardAve )
         
-        assert spt.get_vertex(vBallardAve).payload.time == -8
-        assert spt.get_vertex(vBallardAve).payload.weight == 196300
+        assert spt.get_vertex(vBallardAve).state.time == -8
+        assert spt.get_vertex(vBallardAve).state.weight == 196300
         
         assert [v.label for v in vertices] == idealVertices
         assert [e.payload.name for e in edges] == idealEdges
@@ -592,22 +591,22 @@ class TestGraph(unittest.TestCase):
                 
         verts, edges =  spt.path( "B" )
         assert [vert.label for vert in verts] == ["A", "A-1", "B-1", "B"]
-        assert [vert.payload.weight for vert in verts] == [0, 51, 61, 61]
-        assert [vert.payload.time for vert in verts] == [0, 50, 60, 60]
+        assert [vert.state.weight for vert in verts] == [0, 51, 61, 61]
+        assert [vert.state.time for vert in verts] == [0, 50, 60, 60]
         spt.destroy()
             
         spt = g.shortest_path_tree( "A", "B", State(1,50), WalkOptions() )
         verts, edges =  spt.path( "B" )
         assert [vert.label for vert in verts] == ["A", "A-1", "B-1", "B"]
-        assert [vert.payload.weight for vert in verts] == [0, 1, 11, 11]
-        assert [vert.payload.time for vert in verts] == [50, 50, 60, 60]
+        assert [vert.state.weight for vert in verts] == [0, 1, 11, 11]
+        assert [vert.state.time for vert in verts] == [50, 50, 60, 60]
         spt.destroy()
         
         spt = g.shortest_path_tree( "A", "B", State(1,51), WalkOptions() )
         verts, edges =  spt.path( "B" )
         assert [vert.label for vert in verts] == ["A", "A-1", "B-1", "B"]
-        assert [vert.payload.weight for vert in verts] == [0, 50, 60, 60]
-        assert [vert.payload.time for vert in verts] == [51, 100, 110, 110]
+        assert [vert.state.weight for vert in verts] == [0, 50, 60, 60]
+        assert [vert.state.time for vert in verts] == [51, 100, 110, 110]
         spt.destroy()
         
         spt = g.shortest_path_tree( "A", "B", State(1,201), WalkOptions() )
@@ -615,30 +614,163 @@ class TestGraph(unittest.TestCase):
         spt.destroy()
 
 class TestShortestPathTree(unittest.TestCase):
+    
     def test_basic(self):
-        g = Graph()
+        spt = ShortestPathTree()
+        assert spt
         
-        g.add_vertex( "A" )
-        g.add_vertex( "B" )
-        g.add_vertex( "C" )
-        g.add_vertex( "D" )
-        g.add_vertex( "E" )
-        g.add_edge( "A", "B", Street("atob", 10) )
-        g.add_edge( "A", "C", Street("atoc", 10) )
-        g.add_edge( "C", "D", Street("ctod", 10) )
-        g.add_edge( "B", "D", Street("btod", 10) )
-        g.add_edge( "D", "E", Street("btoe", 10) )
+        spt.destroy()
+        
+    def test_empty_graph(self):
+        spt = ShortestPathTree()
+        assert spt.vertices == []
+        
+        spt.destroy()
+        
+    def test_add_vertex(self):
+        spt = ShortestPathTree()
+        v = spt.add_vertex("home")
+        assert v.label == "home"
+        
+        spt.destroy()
+        
+    def test_remove_vertex(self):
+        spt = ShortestPathTree()
+        spt.add_vertex( "A" )
+        spt.get_vertex( "A" ).label == "A"
+        spt.remove_vertex( "A" )
+        assert spt.get_vertex( "A" ) == None
+        
+        spt.add_vertex( "A" )
+        spt.add_vertex( "B" )
+        pl = Street( "AB", 1 )
+        spt.add_edge( "A", "B", pl )
+        spt.remove_vertex( "A" )
+        assert pl.name == "AB"
+        assert spt.get_vertex( "A" ) == None
+        assert spt.get_vertex( "B" ).label == "B"
+        
+    def test_add_vertices(self):
+        spt = ShortestPathTree()
+        verts = range(0,1000)
+        t0 = time.time()
+        spt.add_vertices(verts)
+        print "add vertices elapsed ", (time.time() - t0)
+        vlist = spt.vertices
+        assert len(vlist) == len(verts)
+        vlist.sort(lambda x, y: int(x.label) - int(y.label))
+        assert vlist[0].label == "0"
+        assert vlist[-1].label == str(verts[-1])
+        spt.destroy()
+        
+        
+    def test_double_add_vertex(self):
+        spt = ShortestPathTree()
+        v = spt.add_vertex("double")
+        assert v.label == "double"
+        assert spt.size == 1
+        v = spt.add_vertex("double")
+        assert spt.size == 1
+        assert v.label == "double"
+        
+        spt.destroy()
+        
+    def test_get_vertex(self):
+        spt = ShortestPathTree()
+        
+        spt.add_vertex("home")
+        v = spt.get_vertex("home")
+        assert v.label == "home"
+        v = spt.get_vertex("bogus")
+        assert v == None
+        
+        spt.destroy()
+        
+    def test_add_edge(self):
+        spt = ShortestPathTree()
+        
+        fromv = spt.add_vertex("home")
+        tov = spt.add_vertex("work")
+        s = Street( "helloworld", 1 )
+        e = spt.add_edge("home", "work", s)
+        assert e
+        assert e.from_v.label == "home"
+        assert e.to_v.label == "work"
+        assert str(e)=="<Edge><Street name='helloworld' length='1.000000' rise='0.000000' fall='0.000000' way='0'/></Edge>"
+        
+        spt.destroy()
+    
+    def test_add_edge_effects_vertices(self):
+        spt = ShortestPathTree()
+        
+        fromv = spt.add_vertex("home")
+        tov = spt.add_vertex("work")
+        s = Street( "helloworld", 1 )
+        e = spt.add_edge("home", "work", s)
+        
+        assert fromv.degree_out==1
+        assert tov.degree_in==1
+        
+        spt.destroy()
+    
+    def test_vertices(self):
+        spt = ShortestPathTree()
+        
+        fromv = spt.add_vertex("home")
+        tov = spt.add_vertex("work")
+        
+        assert spt.vertices
+        assert len(spt.vertices)==2
+        assert spt.vertices[0].label == 'home'
+        
+        spt.destroy()
+
+        
+    def test_walk_longstreet(self):
+        spt = ShortestPathTree()
+        
+        fromv = spt.add_vertex("home")
+        tov = spt.add_vertex("work")
+        s = Street( "helloworld", 24000 )
+        e = spt.add_edge("home", "work", s)
         
         wo = WalkOptions()
-        wo.walking_speed = 1
-        spt = g.shortest_path_tree( "A", None, State(1,0), wo )
-        spt.set_thicknesses( "A" )
+        sprime = e.walk(State(spt.numagencies,0), wo)
+        wo.destroy()
+        print str(sprime)
+        assert str(sprime)=="<state time='28235' weight='39557235' dist_walked='24000.0' num_transfers='0' trip_id='None'></state>"
+
+        spt.destroy()
+    
         
-        for edge in spt.get_vertex( "A" ).outgoing:
-            if edge.to_v.label == "B":
-                assert edge.thickness == 10
-            elif edge.to_v.label == "C":
-                assert edge.thickness == 30
+    def test_add_link(self):
+        spt = ShortestPathTree()
+        
+        fromv = spt.add_vertex("home")
+        tov = spt.add_vertex("work")
+        s = Street( "helloworld", 1 )
+        e = spt.add_edge("home", "work", s)
+        
+        assert e.payload
+        assert e.payload.__class__ == Street
+        
+        x = spt.add_edge("work", "home", Link())
+        assert x.payload
+        assert x.payload.name == "LINK"
+        
+        spt.destroy()
+        
+    def test_edgeclass(self):
+        spt = ShortestPathTree()
+        spt.add_vertex( "A" )
+        spt.add_vertex( "B" )
+        spt.add_edge( "A", "B", Street("AB", 1) )
+        
+        vv = spt.get_vertex( "A" )
+        assert vv.__class__ == SPTVertex
+        assert vv.outgoing[0].__class__ == SPTEdge
+        assert vv.outgoing[0].to_v.__class__ == SPTVertex
+    
 
 import time
 from random import randint
@@ -1135,8 +1267,8 @@ class TestPyPayload(unittest.TestCase):
         spt = g.shortest_path_tree("Seattle", "Portland", State(0,0), WalkOptions())
         assert spt
         assert spt.__class__ == ShortestPathTree
-        assert spt.get_vertex("Portland").payload.weight==5
-        assert spt.get_vertex("Portland").payload.time==10
+        assert spt.get_vertex("Portland").state.weight==5
+        assert spt.get_vertex("Portland").state.time==10
 
         spt.destroy()
         g.destroy()
@@ -1369,6 +1501,40 @@ class TestVertex(unittest.TestCase):
     def test_prettyprint(self):
         v = Vertex("home")
         assert v.to_xml() == "<Vertex degree_out='0' degree_in='0' label='home'/>"
+        
+class TestSPTVertex(unittest.TestCase):
+    def test_basic(self):
+        v=SPTVertex("home")
+        assert v
+        
+    def test_destroy(self): #mostly just check that it doesn't segfault. the stress test will check if it works or not.
+        v=SPTVertex("home")
+        v.destroy()
+        
+        try:
+            v.label
+            assert False #pop exception by now
+        except:
+            pass
+        
+    def test_label(self):
+        v=SPTVertex("home")
+        print v.label
+        assert v.label == "home"
+    
+    def test_incoming(self):
+        v=SPTVertex("home")
+        assert v.incoming == []
+        assert v.degree_in == 0
+        
+    def test_outgoing(self):
+        v=SPTVertex("home")
+        assert v.outgoing == []
+        assert v.degree_out == 0
+        
+    def test_prettyprint(self):
+        v = SPTVertex("home")
+        assert v.to_xml() == "<SPTVertex degree_out='0' degree_in='0' label='home'/>"
 
 class TestServicePeriod(unittest.TestCase):
     def test_service_period(self):
@@ -3063,8 +3229,7 @@ class TestEdge(unittest.TestCase):
         v1 = Vertex( "A" )
         v2 = Vertex( "B" )
         e1 = Edge( v1, v2, Street( "atob", 10.0 ) )
-        
-        assert e1.thickness == -1
+
         assert e1.enabled == True
         
         e1.enabled = False
@@ -3191,6 +3356,7 @@ if __name__ == '__main__':
     testables = [\
                  TestGraph,
                  TestGraphPerformance,
+                 TestShortestPathTree,
                  TestEdge,
                  TestState,
                  TestPyPayload,
@@ -3200,6 +3366,7 @@ if __name__ == '__main__':
                  TestHeadway,
                  TestListNode,
                  TestVertex,
+                 TestSPTVertex,
                  TestServicePeriod,
                  TestServiceCalendar,
                  TestEngine,

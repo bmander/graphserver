@@ -12,7 +12,7 @@ gNew() {
 }
 
 void
-gDestroy( Graph* this, int kill_vertex_payloads, int kill_edge_payloads ) {
+gDestroy( Graph* this ) {
 
   //destroy each vertex contained within
   struct hashtable_itr *itr = hashtable_iterator(this->vertices);
@@ -20,7 +20,7 @@ gDestroy( Graph* this, int kill_vertex_payloads, int kill_edge_payloads ) {
 
   while(itr && next_exists) {
     Vertex* vtx = hashtable_iterator_value( itr );
-    vDestroy( vtx, kill_vertex_payloads, kill_edge_payloads );
+    vDestroy( vtx, 1 );
     next_exists = hashtable_iterator_advance( itr );
   }
 
@@ -44,14 +44,14 @@ gAddVertex( Graph* this, char *label ) {
 }
 
 void
-gRemoveVertex( Graph* this, char *label, int free_vertex_payload, int free_edge_payloads ) {
+gRemoveVertex( Graph* this, char *label ) {
     Vertex *exists = gGetVertex( this, label );
     if(!exists) {
         return;
     }
     
     hashtable_remove( this->vertices, label );
-    vDestroy( exists, free_vertex_payload, free_edge_payloads );
+    vDestroy( exists, 1 );
 }
 
 void 
@@ -98,33 +98,6 @@ gVertices( Graph* this, long* num_vertices ) {
   return ret;
 }
 
-long
-set_spt_edge_thickness( Edge* edge ) {
-    long thickness = edge->to->payload->weight - edge->from->payload->weight;
-    
-    ListNode* outgoing_edge_node = vGetOutgoingEdgeList( edge->to );
-    while(outgoing_edge_node) {
-        thickness += set_spt_edge_thickness( outgoing_edge_node->data );
-        outgoing_edge_node = outgoing_edge_node->next;
-    }
-    
-    edge->thickness = thickness;
-    
-    return thickness;
-}
-
-void
-gSetThicknesses( Graph* this, char *root_label ) {
-    Vertex* root = gGetVertex( this, root_label );
-
-    ListNode* outgoing_edge_node = vGetOutgoingEdgeList( root );
-
-    while(outgoing_edge_node) {
-        set_spt_edge_thickness( outgoing_edge_node->data );
-        outgoing_edge_node = outgoing_edge_node->next;
-    }
-}
-
 #undef RETRO
 #include "router.c"
 #define RETRO
@@ -146,18 +119,18 @@ gShortestPath( Graph* this, char *from, char *to, State* init_state, int directi
   }
 
   //find minimum spanning tree
-  Graph *raw_tree;
-  Vertex *curr;
+  ShortestPathTree *raw_tree;
+  SPTVertex *curr;
   if(direction) {
     raw_tree = gShortestPathTree( this, from, to, init_state, options, timelimit );
-    curr = gGetVertex( raw_tree, to );
+    curr = sptGetVertex( raw_tree, to );
   } else {
     raw_tree = gShortestPathTreeRetro( this, from, to, init_state, options, timelimit );
-    curr = gGetVertex( raw_tree, from );
+    curr = sptGetVertex( raw_tree, from );
   }
 
   if( !curr ) {
-    gDestroy(raw_tree, 1, 0); //destroy raw_table and contents, as they won't be used
+    sptDestroy(raw_tree); //destroy raw_table and contents, as they won't be used
     fprintf( stderr, "Destination vertex never reached\n" );
     return NULL;
   }
@@ -169,19 +142,19 @@ gShortestPath( Graph* this, char *from, char *to, State* init_state, int directi
   int i=0;
   while( curr ) {
     if( i > LARGEST_ROUTE_SIZE ) {         //Bail if our crude memory management techniques fail
-      gDestroy( raw_tree, 1, 0 );
+      sptDestroy( raw_tree );
       free(temppath);
       fprintf( stderr, "Route %d hops long, larger than preallocated %d hops\n", i, LARGEST_ROUTE_SIZE );
       return NULL;
     }
 
-    temppath[i] = *((State*)(curr->payload));
+    temppath[i] = *((State*)(curr->state));
     i++;
 
     if( curr->degree_in == 0 )
       break;
     else
-      curr = vGetIncomingEdgeList( curr )->data->from;
+      curr = (SPTVertex*)sptvGetIncomingEdgeList( curr )->data->from;
   }
 
   int n = i;
@@ -278,29 +251,113 @@ gSetVertexEnabled( Graph *this, char *label, int enabled ) {
     
 }
 
+// SPT METHODS
+
+ShortestPathTree*
+sptNew() {
+    return (ShortestPathTree*)gNew();
+}
+
+void
+sptDestroy( ShortestPathTree *this ) {
+  //destroy each vertex contained within
+  struct hashtable_itr *itr = hashtable_iterator(this->vertices);
+  int next_exists = hashtable_count(this->vertices);
+
+  while(itr && next_exists) {
+    SPTVertex* vtx = hashtable_iterator_value( itr );
+    sptvDestroy( vtx );
+    next_exists = hashtable_iterator_advance( itr );
+  }
+
+  free(itr);
+  //destroy the table
+  hashtable_destroy( this->vertices, 0 );
+  //destroy the graph object itself
+  free( this );
+}
+
+SPTVertex*
+sptAddVertex( ShortestPathTree *this, char *label ) {
+  SPTVertex* exists = sptGetVertex( this, label );
+  if( !exists ) {
+    exists = sptvNew( label );
+    hashtable_insert_string( this->vertices, label, exists );
+  }
+
+  return exists;
+}
+
+void
+sptRemoveVertex( ShortestPathTree *this, char *label ) {
+    SPTVertex *exists = sptGetVertex( this, label );
+    if(!exists) {
+        return;
+    }
+    
+    hashtable_remove( this->vertices, label );
+    sptvDestroy( exists );
+}
+
+SPTVertex*
+sptGetVertex( ShortestPathTree *this, char *label ) {
+    return (SPTVertex*)gGetVertex( (Graph*)this, label );
+}
+
+void
+sptAddVertices( ShortestPathTree *this, char **labels, int n ) {
+  int i;
+  for (i = 0; i < n; i++) {
+  	sptAddVertex(this, labels[i]);
+  }
+}
+
+Edge*
+sptAddEdge( ShortestPathTree *this, char *from, char *to, EdgePayload *payload ) {
+  SPTVertex* vtx_from = sptGetVertex( this, from );
+  SPTVertex* vtx_to   = sptGetVertex( this, to );
+
+  if(!(vtx_from && vtx_to))
+    return NULL;
+
+  return sptvLink( vtx_from, vtx_to, payload );
+}
+
+SPTVertex**
+sptVertices( ShortestPathTree *this, long* num_vertices ) {
+    return (SPTVertex**)gVertices( (Graph*)this, num_vertices );
+}
+
+long
+sptSize( ShortestPathTree* this ) {
+    return gSize( (Graph*)this );
+}
+
 
 // VERTEX FUNCTIONS
 
-Vertex *
-vNew( char* label ) {
-    Vertex *this = (Vertex *)malloc(sizeof(Vertex)) ;
+void vInit( Vertex *this, char *label ) {
     this->degree_in = 0;
     this->degree_out = 0;
     this->outgoing = liNew( NULL ) ;
     this->incoming = liNew( NULL ) ;
-    this->payload = NULL;
 
     size_t labelsize = strlen(label)+1;
     this->label = (char*)malloc(labelsize*sizeof(char));
     strcpy(this->label, label);
+}
+
+Vertex *
+vNew( char* label ) {
+    Vertex *this = (Vertex *)malloc(sizeof(Vertex)) ;
+
+    vInit( this, label );
 
     return this ;
 }
 
 void
-vDestroy(Vertex *this, int free_vertex_payload, int free_edge_payloads) {
-    if( free_vertex_payload && this->payload )
-      stateDestroy( this->payload );
+vDestroy(Vertex *this, int free_edge_payloads) {
 
     //delete incoming edges
     while(this->incoming->next != NULL) {
@@ -386,19 +443,74 @@ vDegreeIn( Vertex* this ) {
     return this->degree_in;
 }
 
-State*
-vPayload( Vertex* this ) {
-	return this->payload;
-}
+//SPTVERTEX METHODS
 
-long
-eGetThickness(Edge *this) {
-    return this->thickness;
+SPTVertex *
+sptvNew( char* label ) {
+    SPTVertex *this = (SPTVertex *)malloc(sizeof(SPTVertex));
+    
+    vInit( (Vertex*)this, label );
+    this->state = NULL;
+    
+    return this;
 }
 
 void
-eSetThickness(Edge *this, long thickness) {
-    this->thickness = thickness;
+sptvDestroy(SPTVertex* this) {
+    if( this->state ) {
+        stateDestroy( this->state );
+    }
+    vDestroy( (Vertex*)this, 0 );
+}
+
+Edge*
+sptvLink(SPTVertex* this, SPTVertex* to, EdgePayload* payload) {
+    return vLink( (Vertex*)this, (Vertex*)to, payload );
+}
+
+Edge*
+sptvSetParent( SPTVertex* this, SPTVertex* parent, EdgePayload* payload ) {
+    return vSetParent( (Vertex*)this, (Vertex*)parent, payload );
+}
+
+inline ListNode*
+sptvGetOutgoingEdgeList( SPTVertex* this ) {
+    return vGetOutgoingEdgeList( (Vertex*)this );
+}
+
+inline ListNode*
+sptvGetIncomingEdgeList( SPTVertex* this ) {
+    return vGetIncomingEdgeList( (Vertex*)this );
+}
+
+void
+sptvRemoveOutEdgeRef( SPTVertex* this, Edge* todie ) {
+    vRemoveOutEdgeRef( (Vertex*)this, todie );
+}
+
+void
+sptvRemoveInEdgeRef( SPTVertex* this, Edge* todie ) {
+    vRemoveInEdgeRef( (Vertex*)this, todie );
+}
+    
+char*
+sptvGetLabel( SPTVertex* this ) {
+    return vGetLabel( (Vertex*)this );
+}
+
+int
+sptvDegreeOut( SPTVertex* this ) {
+    return vDegreeOut( (Vertex*)this );
+}
+
+int
+sptvDegreeIn( SPTVertex* this ) {
+    return vDegreeIn( (Vertex*)this );
+}
+
+State*
+sptvState( SPTVertex* this ) {
+    return this->state;
 }
 
 // EDGE FUNCTIONS
@@ -409,7 +521,6 @@ eNew(Vertex* from, Vertex* to, EdgePayload* payload) {
     this->from = from;
     this->to = to;
     this->payload = payload;
-    this->thickness = -1;
     this->enabled = 1;
     return this;
 }

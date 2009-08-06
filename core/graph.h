@@ -15,8 +15,14 @@ typedef struct Vertex Vertex;
 typedef struct Edge Edge;
 typedef struct ListNode ListNode;
 typedef struct Graph Graph;
+typedef struct ShortestPathTree ShortestPathTree;
+typedef struct SPTVertex SPTVertex;
 
 struct Graph {
+   struct hashtable* vertices;
+};
+
+struct ShortestPathTree {
    struct hashtable* vertices;
 };
 
@@ -37,14 +43,21 @@ struct Vertex {
    ListNode* outgoing;
    ListNode* incoming;
    char* label;
-   State* payload;
+} ;
+
+struct SPTVertex {
+   int degree_out;
+   int degree_in;
+   ListNode* outgoing;
+   ListNode* incoming;
+   char* label;
+   State* state;
 } ;
 
 struct Edge {
   Vertex* from;
   Vertex* to;
   EdgePayload* payload;
-  long thickness;
   int enabled;
 } ;
 
@@ -59,13 +72,13 @@ Graph*
 gNew();
 
 void
-gDestroy( Graph* this, int free_vertex_payloads, int free_edge_payloads );
+gDestroy( Graph* this );
 
 Vertex*
 gAddVertex( Graph* this, char *label );
 
 void
-gRemoveVertex( Graph* this, char *label, int free_vertex_payload, int free_edge_payloads );
+gRemoveVertex( Graph* this, char *label );
 
 Vertex*
 gGetVertex( Graph* this, char *label );
@@ -79,10 +92,10 @@ gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload );
 Vertex**
 gVertices( Graph* this, long* num_vertices );
 
-Graph*
+ShortestPathTree*
 gShortestPathTree( Graph* this, char *from, char *to, State* init_state, WalkOptions* options, long maxtime );
 
-Graph*
+ShortestPathTree*
 gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, WalkOptions* options, long mintime );
 
 //direction specifies forward or retro routing
@@ -93,10 +106,36 @@ long
 gSize( Graph* this );
 
 void
-gSetThicknesses( Graph* this, char *root_label );
+gSetVertexEnabled( Graph *this, char *label, int enabled );
+
+//SPT METHODS
+
+ShortestPathTree*
+sptNew();
 
 void
-gSetVertexEnabled( Graph *this, char *label, int enabled );
+sptDestroy( ShortestPathTree *this );
+
+SPTVertex*
+sptAddVertex( ShortestPathTree *this, char *label );
+
+void
+sptRemoveVertex( ShortestPathTree *this, char *label );
+
+SPTVertex*
+sptGetVertex( ShortestPathTree *this, char *label );
+
+void
+sptAddVertices( ShortestPathTree *this, char **labels, int n );
+
+Edge*
+sptAddEdge( ShortestPathTree *this, char *from, char *to, EdgePayload *payload );
+
+SPTVertex**
+sptVertices( ShortestPathTree *this, long* num_vertices );
+
+long
+sptSize( ShortestPathTree* this );
 
 
 //VERTEX FUNCTIONS
@@ -105,7 +144,7 @@ Vertex *
 vNew( char* label ) ;
 
 void
-vDestroy(Vertex* this, int free_vertex_payload, int free_edge_payloads) ;
+vDestroy(Vertex* this, int free_edge_payloads) ;
 
 void
 vMark(Vertex* this) ;
@@ -137,8 +176,43 @@ vDegreeOut( Vertex* this );
 int
 vDegreeIn( Vertex* this );
 
+//SPTVERTEX FUNCTIONS
+
+SPTVertex *
+sptvNew( char* label ) ;
+
+void
+sptvDestroy(SPTVertex* this) ;
+
+Edge*
+sptvLink(SPTVertex* this, SPTVertex* to, EdgePayload* payload) ;
+
+Edge*
+sptvSetParent( SPTVertex* this, SPTVertex* parent, EdgePayload* payload );
+
+inline ListNode*
+sptvGetOutgoingEdgeList( SPTVertex* this );
+
+inline ListNode*
+sptvGetIncomingEdgeList( SPTVertex* this );
+
+void
+sptvRemoveOutEdgeRef( SPTVertex* this, Edge* todie );
+
+void
+sptvRemoveInEdgeRef( SPTVertex* this, Edge* todie );
+
+char*
+sptvGetLabel( SPTVertex* this );
+
+int
+sptvDegreeOut( SPTVertex* this );
+
+int
+sptvDegreeIn( SPTVertex* this );
+
 State*
-vPayload( Vertex* this );
+sptvState( SPTVertex* this );
 
 //EDGE FUNCTIONS
 
@@ -171,12 +245,6 @@ eGetEnabled(Edge *this);
 
 void
 eSetEnabled(Edge *this, int enabled);
-
-long
-eGetThickness(Edge *this);
-
-void
-eSetThickness(Edge *this, long thickness);
 
 //LIST FUNCTIONS
 

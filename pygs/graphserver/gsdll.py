@@ -20,7 +20,7 @@ _dlldirs = [os.path.dirname(os.path.abspath(__file__)),
 for _dlldir in _dlldirs:
     _dllpath = os.path.join(_dlldir, 'libgraphserver.so')
     if os.path.exists(_dllpath):
-        print _dllpath
+        #print _dllpath
         lgs = PyDLL( _dllpath )
         break
 
@@ -113,9 +113,9 @@ def ccast(func, cls):
 
 # GRAPH API        
 pycapi(lgs.gNew, c_void_p)
-pycapi(lgs.gDestroy, c_void_p, [c_void_p,c_int,c_int])
+pycapi(lgs.gDestroy, c_void_p, [c_void_p])
 pycapi(lgs.gAddVertex, c_void_p, [c_void_p, c_char_p])
-pycapi(lgs.gRemoveVertex, c_void_p, [c_void_p, c_char_p, c_int, c_int])
+pycapi(lgs.gRemoveVertex, c_void_p, [c_void_p, c_char_p])
 pycapi(lgs.gGetVertex, c_void_p, [c_void_p, c_char_p])
 pycapi(lgs.gAddEdge, c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p])
 pycapi(lgs.gVertices, c_void_p, [c_void_p, c_void_p])
@@ -125,6 +125,16 @@ pycapi(lgs.gSize,c_void_p, [c_long])
 pycapi(lgs.sptPathRetro,c_void_p, [c_void_p, c_char_p, c_void_p])
 pycapi(lgs.gShortestPathTreeRetro,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p, c_int, c_long])
 pycapi(lgs.gSetVertexEnabled,c_void_p, [c_void_p, c_char_p, c_int])
+
+# SPT API        
+pycapi(lgs.sptNew, c_void_p)
+pycapi(lgs.sptDestroy, c_void_p, [c_void_p])
+pycapi(lgs.sptAddVertex, c_void_p, [c_void_p, c_char_p])
+pycapi(lgs.sptRemoveVertex, c_void_p, [c_void_p, c_char_p])
+pycapi(lgs.sptGetVertex, c_void_p, [c_void_p, c_char_p])
+pycapi(lgs.sptAddEdge, c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p])
+pycapi(lgs.sptVertices, c_void_p, [c_void_p, c_void_p])
+pycapi(lgs.sptSize,c_void_p, [c_long])
 
 # SERVICE PERIOD API 
 pycapi(lgs.spNew, c_void_p, [c_long, c_long, c_int, c_void_p])
@@ -164,11 +174,19 @@ pycapi(lgs.stateServicePeriod, c_void_p, [c_int])
 
 #VERTEX API
 pycapi(lgs.vNew, c_void_p, [c_char_p])
-pycapi(lgs.vDestroy, c_void_p, [c_void_p,c_int,c_int])
+pycapi(lgs.vDestroy, c_void_p, [c_void_p,c_int])
 pycapi(lgs.vDegreeIn, c_int, [c_void_p])
 pycapi(lgs.vDegreeOut, c_int, [c_void_p])
 pycapi(lgs.vGetOutgoingEdgeList, c_void_p, [c_void_p])
 pycapi(lgs.vGetIncomingEdgeList, c_void_p, [c_void_p])
+
+#SPTVERTEX API
+pycapi(lgs.sptvNew, c_void_p, [c_char_p])
+pycapi(lgs.sptvDestroy, c_void_p, [c_void_p])
+pycapi(lgs.sptvDegreeIn, c_int, [c_void_p])
+pycapi(lgs.sptvDegreeOut, c_int, [c_void_p])
+pycapi(lgs.sptvGetOutgoingEdgeList, c_void_p, [c_void_p])
+pycapi(lgs.sptvGetIncomingEdgeList, c_void_p, [c_void_p])
 
 #EDGE API
 pycapi(lgs.eNew, c_void_p, [c_void_p, c_void_p, c_void_p])
