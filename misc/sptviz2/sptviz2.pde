@@ -116,8 +116,12 @@ class SPTLine {
     } 
   }
 
-  void draw(float xscale, float yscale, float zscale, float maxz) {
+  void draw(float xscale, float yscale, float zscale, float maxz, float minz) {
     if( this.last().z > maxz ){
+      return; 
+    }
+    
+    if( this.first().z < minz ) {
       return; 
     }
     
@@ -250,12 +254,12 @@ class SPT {
     } 
   }
 
-  void draw( float maxz ) {
+  void draw( float maxz, float minz ) {
     //float t0 = (this.minz/3600)*3600;
     
     stroke(0);
     for(int i=0; i<this.lines.length; i++) {
-      this.lines[i].draw(this.xscale, this.yscale, this.zscale, maxz);
+      this.lines[i].draw(this.xscale, this.yscale, this.zscale, maxz, minz);
     }
   }
 }
@@ -498,19 +502,22 @@ long currtime;
 float maxsize;
 String topnode;
 float maxz;
+float minz;
+float zscale;
 
 void setup(){
-  size( 800, 800, P3D );
+  size( 1000, 1000, P3D );
   smooth();
 
   cameraMode=true;
   rotateMode=true;
+  zscale = 0.1;
   
   topnode = null;
 
   try {
 
-    spt = new SPT("ch.spt", 100, 100, 0.1);
+    spt = new SPT("ch.spt", 100, 100, zscale);
 
   }
   catch(JSONException je) {
@@ -526,7 +533,8 @@ void setup(){
   
   frame.addMouseWheelListener( new MouseWheelInput(spt) );
   
-  maxz = spt.extremes.maxz/0.005;
+  maxz = spt.extremes.maxz/zscale;
+  minz = spt.extremes.minz/zscale;
 
 }
 
@@ -546,7 +554,7 @@ void draw() {
 
   //strokeWeight(1);
   //stroke(0);
-  spt.draw( maxz );
+  spt.draw( maxz, minz );
   origin.draw();
 
   if( mousePressed ) {
@@ -589,11 +597,11 @@ void keyPressed() {
   if( key == CODED ) {
     if( keyCode == DOWN || keyCode == UP ) {
       if( keyCode == DOWN ) {
-        currtime -= 60;
-        maxz -= 60;
+        currtime -= 1;
+        maxz -= 1;
       } else if ( keyCode == UP ){
-        currtime += 60;
-        maxz += 60;
+        currtime += 1;
+        maxz += 1;
       }
       ortho(-maxsize*0.5, maxsize*0.5, -maxsize*0.5, maxsize*.5, -maxsize, maxsize);
       //SPT nspt = spts.nextTree(currtime);
