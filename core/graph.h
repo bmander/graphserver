@@ -79,7 +79,7 @@ Vertex*
 gAddVertex( Graph* this, char *label );
 
 void
-gRemoveVertex( Graph* this, char *label );
+gRemoveVertex( Graph* this, char *label, int free_edge_payloads );
 
 Vertex*
 gGetVertex( Graph* this, char *label );
@@ -211,6 +211,12 @@ sptvDegreeIn( SPTVertex* this );
 
 State*
 sptvState( SPTVertex* this );
+
+int
+sptvHop( SPTVertex* this );
+
+Edge*
+sptvGetParent( SPTVertex* this );
 
 //EDGE FUNCTIONS
 

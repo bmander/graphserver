@@ -61,7 +61,8 @@ class TestGraph(unittest.TestCase):
         g.add_vertex( "B" )
         pl = Street( "AB", 1 )
         g.add_edge( "A", "B", pl )
-        g.remove_vertex( "A" )
+        g.remove_vertex( "A", False )
+        assert pl.name == "AB"
         assert g.get_vertex( "A" ) == None
         assert g.get_vertex( "B" ).label == "B"
         
@@ -643,7 +644,16 @@ class TestGraph(unittest.TestCase):
         assert spt.get_vertex("D") != None
         assert spt.get_vertex("E") == None
         
+    def test_traverse(self):
+        gg = Graph()
+        gg.add_vertex( "A" )
+        gg.add_vertex( "B" )
+        gg.add_vertex( "C" )
+        gg.add_edge( "A", "B", Street("AB", 1) )
+        gg.add_edge( "A", "C", Street("AC", 1) )
         
+        vv = gg.get_vertex( "A" )
+        assert [ee.payload.name for ee in vv.outgoing] == ["AC", "AB"]
 
 class TestShortestPathTree(unittest.TestCase):
     
@@ -759,7 +769,6 @@ class TestShortestPathTree(unittest.TestCase):
         assert str(sprime)=="<state time='28235' weight='39557235' dist_walked='24000.0' num_transfers='0' trip_id='None'></state>"
 
         spt.destroy()
-    
         
     def test_add_link(self):
         spt = ShortestPathTree()
@@ -1522,11 +1531,11 @@ class TestVertex(unittest.TestCase):
         
 class TestSPTVertex(unittest.TestCase):
     def test_basic(self):
-        v=SPTVertex("home")
+        v=SPTVertex("home",0)
         assert v
         
     def test_destroy(self): #mostly just check that it doesn't segfault. the stress test will check if it works or not.
-        v=SPTVertex("home")
+        v=SPTVertex("home",0)
         v.destroy()
         
         try:
@@ -1536,23 +1545,26 @@ class TestSPTVertex(unittest.TestCase):
             pass
         
     def test_label(self):
-        v=SPTVertex("home")
-        print v.label
+        v=SPTVertex("home",0)
         assert v.label == "home"
     
     def test_incoming(self):
-        v=SPTVertex("home")
+        v=SPTVertex("home",0)
         assert v.incoming == []
         assert v.degree_in == 0
         
     def test_outgoing(self):
-        v=SPTVertex("home")
+        v=SPTVertex("home",0)
         assert v.outgoing == []
         assert v.degree_out == 0
         
     def test_prettyprint(self):
-        v = SPTVertex("home")
+        v = SPTVertex("home",0)
         assert v.to_xml() == "<SPTVertex degree_out='0' degree_in='0' label='home'/>"
+        
+    def test_hops(self):
+        v = SPTVertex("home",0)
+        assert v.hop == 0
 
 class TestServicePeriod(unittest.TestCase):
     def test_service_period(self):

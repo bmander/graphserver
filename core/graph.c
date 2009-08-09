@@ -44,14 +44,14 @@ gAddVertex( Graph* this, char *label ) {
 }
 
 void
-gRemoveVertex( Graph* this, char *label ) {
+gRemoveVertex( Graph* this, char *label, int free_edge_payloads ) {
     Vertex *exists = gGetVertex( this, label );
     if(!exists) {
         return;
     }
     
     hashtable_remove( this->vertices, label );
-    vDestroy( exists, 1 );
+    vDestroy( exists, free_edge_payloads );
 }
 
 void 
@@ -93,6 +93,8 @@ gVertices( Graph* this, long* num_vertices ) {
     next_exists = hashtable_iterator_advance( itr );
     i++;
   }
+  
+  free(itr);
 
   *num_vertices = nn;
   return ret;
@@ -504,6 +506,20 @@ sptvDegreeIn( SPTVertex* this ) {
 State*
 sptvState( SPTVertex* this ) {
     return this->state;
+}
+
+int
+sptvHop( SPTVertex* this ) {
+    return this->hop;
+}
+
+Edge*
+sptvGetParent( SPTVertex* this ) {
+    ListNode* first_node = vGetIncomingEdgeList( (Vertex*)this );
+    if( first_node )
+        return first_node->data;
+    else
+        return NULL;
 }
 
 // EDGE FUNCTIONS

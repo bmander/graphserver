@@ -73,10 +73,10 @@ class Graph(CShadow):
         
         return self._cadd_vertex(self.soul, label)
         
-    def remove_vertex(self, label):
+    def remove_vertex(self, label, free_edge_payloads=True):
         #void gRemoveVertex( Graph* this, char *label, int free_vertex_payload, int free_edge_payloads );
         
-        return self._cremove_vertex(self.soul, label)
+        return self._cremove_vertex(self.soul, label, free_edge_payloads)
         
     def get_vertex(self, label):
         #Vertex* gGetVertex( Graph* this, char *label );
@@ -512,10 +512,11 @@ class SPTVertex(CShadow):
     label = cproperty(lgs.sptvGetLabel, c_char_p)
     degree_in = cproperty(lgs.sptvDegreeIn, c_int)
     degree_out = cproperty(lgs.sptvDegreeOut, c_int)
+    hop = cproperty(lgs.sptvHop, c_int)
     edgeclass = SPTEdge
     
-    def __init__(self,label):
-        self.soul = self._cnew(label)
+    def __init__(self,label,hop):
+        self.soul = self._cnew(label,hop)
         
     def destroy(self):
         #void vDestroy(Vertex* this, int free_vertex_payload, int free_edge_payloads) ;
