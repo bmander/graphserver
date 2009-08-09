@@ -280,11 +280,11 @@ sptDestroy( ShortestPathTree *this ) {
 }
 
 SPTVertex*
-sptAddVertex( ShortestPathTree *this, char *label, int hop ) {
-  SPTVertex* exists = sptGetVertex( this, label );
+sptAddVertex( ShortestPathTree *this, Vertex *mirror, int hop ) {
+  SPTVertex* exists = sptGetVertex( this, mirror->label );
   if( !exists ) {
-    exists = sptvNew( label, hop );
-    hashtable_insert_string( this->vertices, label, exists );
+    exists = sptvNew( mirror, hop );
+    hashtable_insert_string( this->vertices, mirror->label, exists );
   }
 
   return exists;
@@ -440,12 +440,13 @@ vDegreeIn( Vertex* this ) {
 //SPTVERTEX METHODS
 
 SPTVertex *
-sptvNew( char* label, int hop ) {
+sptvNew( Vertex* mirror, int hop ) {
     SPTVertex *this = (SPTVertex *)malloc(sizeof(SPTVertex));
     
-    vInit( (Vertex*)this, label );
+    vInit( (Vertex*)this, mirror->label );
     this->state = NULL;
     this->hop = hop;
+    this->mirror = mirror;
     
     return this;
 }
@@ -520,6 +521,11 @@ sptvGetParent( SPTVertex* this ) {
         return first_node->data;
     else
         return NULL;
+}
+
+Vertex*
+sptvMirror( SPTVertex* this ) {
+    return this->mirror;
 }
 
 // EDGE FUNCTIONS

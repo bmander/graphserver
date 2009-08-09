@@ -128,7 +128,7 @@ pycapi(lgs.gSetVertexEnabled,c_void_p, [c_void_p, c_char_p, c_int])
 # SPT API        
 pycapi(lgs.sptNew, c_void_p)
 pycapi(lgs.sptDestroy, c_void_p, [c_void_p])
-pycapi(lgs.sptAddVertex, c_void_p, [c_void_p, c_char_p])
+pycapi(lgs.sptAddVertex, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.sptRemoveVertex, c_void_p, [c_void_p, c_char_p])
 pycapi(lgs.sptGetVertex, c_void_p, [c_void_p, c_char_p])
 pycapi(lgs.sptAddEdge, c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p])
@@ -180,13 +180,14 @@ pycapi(lgs.vGetOutgoingEdgeList, c_void_p, [c_void_p])
 pycapi(lgs.vGetIncomingEdgeList, c_void_p, [c_void_p])
 
 #SPTVERTEX API
-pycapi(lgs.sptvNew, c_void_p, [c_char_p, c_int])
+pycapi(lgs.sptvNew, c_void_p, [c_void_p, c_int])
 pycapi(lgs.sptvDestroy, c_void_p, [c_void_p])
 pycapi(lgs.sptvDegreeIn, c_int, [c_void_p])
 pycapi(lgs.sptvDegreeOut, c_int, [c_void_p])
 pycapi(lgs.sptvGetOutgoingEdgeList, c_void_p, [c_void_p])
 pycapi(lgs.sptvGetIncomingEdgeList, c_void_p, [c_void_p])
-pycapi(lgs.sptvHop, c_void_p, [c_int])
+pycapi(lgs.sptvHop, c_int, [c_void_p])
+pycapi(lgs.sptvMirror, c_void_p, [c_void_p])
 
 #EDGE API
 pycapi(lgs.eNew, c_void_p, [c_void_p, c_void_p, c_void_p])
