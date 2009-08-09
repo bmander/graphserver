@@ -1531,7 +1531,11 @@ class TestVertex(unittest.TestCase):
         
 class TestSPTVertex(unittest.TestCase):
     def test_basic(self):
-        v=SPTVertex(Vertex("home"),0)
+        vv = Vertex( "home" )
+        v=SPTVertex(vv,0)
+        
+        assert v.mirror.soul == vv.soul
+        
         assert v
         
     def test_destroy(self): #mostly just check that it doesn't segfault. the stress test will check if it works or not.
