@@ -631,17 +631,17 @@ class TestGraph(unittest.TestCase):
         spt.destroy()
         
         spt = gg.shortest_path_tree( "A", "E", State(0,0), WalkOptions(), hoplimit=1 )
-        assert spt.get_vertex("A") != None
-        assert spt.get_vertex("B") != None
+        assert spt.get_vertex("A").hop == 0
+        assert spt.get_vertex("B").hop == 1
         assert spt.get_vertex("C") == None
         assert spt.get_vertex("D") == None
         assert spt.get_vertex("E") == None
         
         spt = gg.shortest_path_tree( "A", "E", State(0,0), WalkOptions(), hoplimit=3 )
-        assert spt.get_vertex("A") != None
-        assert spt.get_vertex("B") != None
-        assert spt.get_vertex("C") != None
-        assert spt.get_vertex("D") != None
+        assert spt.get_vertex("A").hop == 0
+        assert spt.get_vertex("B").hop == 1
+        assert spt.get_vertex("C").hop == 2
+        assert spt.get_vertex("D").hop == 3
         assert spt.get_vertex("E") == None
         
     def test_traverse(self):
@@ -3381,6 +3381,58 @@ class TestGraphDatabase:
         assert gdb.num_vertices() == 2
         assert gdb.num_edges() == 2
         
+class TestCombination(unittest.TestCase):
+    def test_basic(self):
+        s1 = Street( "A", 1 )
+        c0 = Combination( 1 )
+        c0.add( s1 )
+        
+        assert c0.__class__ == Combination
+        assert c0.get( -1 ) == None
+        assert c0.get( 0 ).__class__ == Street
+        assert c0.get( 1 ) == None
+        
+        assert c0.walk( State(0,0), WalkOptions() ).weight == 1
+        
+        s2 = Street( "B", 2 )
+        c1 = Combination( 2 )
+        c1.add( s1 )
+        c1.add( s2 )
+        
+        assert c1.__class__ == Combination
+        assert c1.get( -1 ) == None
+        assert c1.get( 0 ).__class__ == Street
+        assert c1.get( 0 ).name == "A"
+        assert c1.get( 1 ).__class__ == Street
+        assert c1.get( 1 ).name == "B"
+        assert c1.get( 2 ) == None
+        
+        assert c1.walk( State(0,0), WalkOptions() ).weight == 3
+        assert c1.walk_back( State(0, 100), WalkOptions() ).weight == 3
+        
+        s3 = Street( "C", 3 )
+        
+        c2 = Combination( 3 )
+        c2.add( s1 )
+        c2.add( s2 )
+        c2.add( s3 )
+        
+        assert c2.walk( State(0,0), WalkOptions() ).weight == 6
+        assert c2.walk_back( State(0,100), WalkOptions() ).weight == 6
+        
+        c3 = Combination( 2 )
+        c3.add( c1 )
+        c3.add( s3 )
+        
+        assert c3.walk( State(0,0), WalkOptions() ).weight == 6
+        assert c3.walk_back( State(0,100), WalkOptions() ).weight == 6
+        
+        s1.destroy()
+        s2.destroy()
+        s3.destroy()
+        c1.destroy()
+        c2.destroy()
+        
         
 def glen(gen):
     return len(list(gen))
@@ -3414,6 +3466,7 @@ if __name__ == '__main__':
                  TestHeadwayAlight,
                  TestWalkOptions,
                  TestElapseTime,
+                 TestCombination
                  ]
 
     for testable in testables:

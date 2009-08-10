@@ -1,8 +1,8 @@
 ShortestPathTree*
 #ifndef RETRO
-gShortestPathTree( Graph* this, char *from, char *to, State* init_state, WalkOptions* options, long maxtime, int hoplimit ) {
+gShortestPathTree( Graph* this, char *from, char *to, State* init_state, WalkOptions* options, long maxtime, int hoplimit, long weightlimit ) {
 #else
-gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, WalkOptions* options, long mintime, int hoplimit ) {
+gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, WalkOptions* options, long mintime, int hoplimit, long weightlimit ) {
 #endif
     
 /*
@@ -53,6 +53,10 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
       break;
     }
     
+    if( spt_u->state->weight > weightlimit ) {
+      break;
+    }
+    
     du = (State*)spt_u->state;                     //and get State of u 'du'.
     
 #ifndef RETRO
@@ -69,6 +73,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
     ListNode* edges = vGetIncomingEdgeList( u );
 #endif
     while( edges ) {                                 //For each Edge 'edge' connecting u
+        
       Edge* edge = edges->data;
 #ifndef RETRO
       v = edge->to;                                  //to Vertex v:

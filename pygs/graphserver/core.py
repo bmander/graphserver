@@ -133,7 +133,7 @@ class Graph(CShadow):
                 edges.append(e)
         return edges    
     
-    def shortest_path_tree(self, fromv, tov, initstate, walk_options=None, maxtime=2000000000, hoplimit=1000000):
+    def shortest_path_tree(self, fromv, tov, initstate, walk_options=None, maxtime=2000000000, hoplimit=1000000, weightlimit=2000000000):
         #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
         self.check_destroyed()
         if not tov:
@@ -141,13 +141,13 @@ class Graph(CShadow):
         
         if walk_options is None:
             walk_options = WalkOptions()
-            ret = self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(maxtime), c_int(hoplimit) )
+            ret = self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(maxtime), c_int(hoplimit), c_long(weightlimit) )
             walk_options.destroy()
             return ret
         else:
-            return self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(maxtime), c_int(hoplimit) )
+            return self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(maxtime), c_int(hoplimit), c_long(weightlimit) )
         
-    def shortest_path_tree_retro(self, fromv, tov, finalstate, walk_options=None, mintime=0, hoplimit=1000000):
+    def shortest_path_tree_retro(self, fromv, tov, finalstate, walk_options=None, mintime=0, hoplimit=1000000, weightlimit=2000000000):
         #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
         self.check_destroyed()
         if not fromv:
@@ -155,11 +155,11 @@ class Graph(CShadow):
             
         if walk_options is None:
             walk_options = WalkOptions()
-            ret = self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime), c_int(hoplimit) )
+            ret = self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime), c_int(hoplimit), c_long(weightlimit) )
             walk_options.destroy()
             return ret
         else:
-            return self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime), c_int(hoplimit) )
+            return self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime), c_int(hoplimit), c_long(weightlimit) )
 
     def to_dot(self):
         self.check_destroyed()
@@ -1333,6 +1333,23 @@ class Crossing(EdgePayload):
     def reconstitute(cls, state, resolver):
         return Crossing(state)
         
+class Combination(EdgePayload):
+    
+    n = cproperty( lgs.comboN, c_int )
+    
+    def __init__(self, cap):
+        self.soul = self._cnew(cap)
+        
+    def add(self, ep):
+        lgs.comboAdd( self.soul, ep.soul )
+        
+    def get(self, i):
+        return EdgePayload.from_pointer( lgs.comboGet( self.soul, i ) )
+        
+    def to_xml(self):
+        self.check_destroyed()
+        return "<Combination n=%d />"%self.n
+        
 class Alight(EdgePayload):
     calendar = cproperty( lgs.alGetCalendar, c_void_p, ServiceCalendar )
     timezone = cproperty( lgs.alGetTimezone, c_void_p, Timezone )
@@ -1477,7 +1494,7 @@ SPTEdge._cwalk_back = lgs.eWalkBack
 
 EdgePayload._subtypes = {0:Street,1:None,2:None,3:Link,4:GenericPyPayload,5:None,
                          6:Wait,7:Headway,8:TripBoard,9:Crossing,10:Alight,
-                         11:HeadwayBoard,12:Egress,13:HeadwayAlight,14:ElapseTime}
+                         11:HeadwayBoard,12:Egress,13:HeadwayAlight,14:ElapseTime,15:Combination}
 EdgePayload._cget_type = lgs.epGetType
 EdgePayload._cwalk = lgs.epWalk
 EdgePayload._cwalk_back = lgs.epWalkBack
@@ -1527,6 +1544,10 @@ ElapseTime._cdel = lgs.elapseTimeDestroy
 ElapseTime._cwalk = lgs.elapseTimeWalk
 ElapseTime._cwalk_back = lgs.elapseTimeWalkBack
 
+Combination._cnew = lgs.comboNew
+Combination._cdel = lgs.comboDestroy
+Combination._cwalk = lgs.comboWalk
+Combination._cwalk_back = lgs.comboWalkBack
 
 TripBoard._cnew = lgs.tbNew
 TripBoard._cdel = lgs.tbDestroy
