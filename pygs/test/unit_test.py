@@ -631,17 +631,17 @@ class TestGraph(unittest.TestCase):
         spt.destroy()
         
         spt = gg.shortest_path_tree( "A", "E", State(0,0), WalkOptions(), hoplimit=1 )
-        assert spt.get_vertex("A") != None
-        assert spt.get_vertex("B") != None
+        assert spt.get_vertex("A").hop == 0
+        assert spt.get_vertex("B").hop == 1
         assert spt.get_vertex("C") == None
         assert spt.get_vertex("D") == None
         assert spt.get_vertex("E") == None
         
         spt = gg.shortest_path_tree( "A", "E", State(0,0), WalkOptions(), hoplimit=3 )
-        assert spt.get_vertex("A") != None
-        assert spt.get_vertex("B") != None
-        assert spt.get_vertex("C") != None
-        assert spt.get_vertex("D") != None
+        assert spt.get_vertex("A").hop == 0
+        assert spt.get_vertex("B").hop == 1
+        assert spt.get_vertex("C").hop == 2
+        assert spt.get_vertex("D").hop == 3
         assert spt.get_vertex("E") == None
         
     def test_traverse(self):
