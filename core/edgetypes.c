@@ -1479,6 +1479,10 @@ comboNew(EdgePayload* first, EdgePayload* second) {
     ret->type = PL_COMBINATION;
     ret->first = first;
     ret->second = second;
+    
+    ret->walk = &comboWalk;
+    ret->walkBack = &comboWalkBack;
+    
     return ret;
 }
 

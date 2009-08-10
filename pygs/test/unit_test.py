@@ -3396,9 +3396,17 @@ class TestCombination(unittest.TestCase):
         assert s2.walk_back( State(0, 100), WalkOptions() ).time == 98
         assert c1.walk_back( State(0, 100), WalkOptions() ).time == 97
         
+        s3 = Street( "C", 3 )
+        c2 = Combination( c1, s3 )
+        
+        assert c2.walk( State(0,0), WalkOptions() ).weight == 6
+        assert c2.walk_back( State(0,100), WalkOptions() ).weight == 6
+        
         s1.destroy()
         s2.destroy()
+        s3.destroy()
         c1.destroy()
+        c2.destroy()
         
         
 def glen(gen):
