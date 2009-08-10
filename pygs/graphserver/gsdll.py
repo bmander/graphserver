@@ -244,12 +244,13 @@ pycapi(lgs.elapseTimeWalkBack, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.elapseTimeGetSeconds, c_long, [c_void_p])
 
 #COMBINATION API
-pycapi(lgs.comboNew, c_void_p, [c_void_p, c_void_p])
+pycapi(lgs.comboNew, c_void_p, [c_int])
 pycapi(lgs.comboDestroy, c_void_p, [c_void_p])
 pycapi(lgs.comboWalk, c_void_p, [c_void_p, c_void_p, c_void_p])
 pycapi(lgs.comboWalkBack, c_void_p, [c_void_p, c_void_p, c_void_p])
-pycapi(lgs.comboGetFirst, c_void_p, [c_void_p])
-pycapi(lgs.comboGetSecond, c_void_p, [c_void_p])
+pycapi(lgs.comboAdd, c_void_p, [c_void_p, c_void_p])
+pycapi(lgs.comboGet, c_void_p, [c_void_p, c_int])
+pycapi(lgs.comboN, c_int, [c_void_p])
 
 #CUSTOM TYPE API
 class PayloadMethodTypes:
