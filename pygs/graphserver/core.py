@@ -1332,6 +1332,18 @@ class Crossing(EdgePayload):
     def reconstitute(cls, state, resolver):
         return Crossing(state)
         
+class Combination(EdgePayload):
+    
+    first = cproperty( lgs.comboGetFirst, c_void_p, EdgePayload )
+    second = cproperty( lgs.comboGetSecond, c_void_p, EdgePayload )
+    
+    def __init__(self, left, right):
+        self.soul = self._cnew(left.soul, right.soul)
+        
+    def to_xml(self):
+        self.check_destroyed()
+        return "<Combination>%s%s</Combination>"%(self.first.to_xml(), self.second.to_xml())
+        
 class Alight(EdgePayload):
     calendar = cproperty( lgs.alGetCalendar, c_void_p, ServiceCalendar )
     timezone = cproperty( lgs.alGetTimezone, c_void_p, Timezone )
@@ -1475,7 +1487,7 @@ SPTEdge._cwalk_back = lgs.eWalkBack
 
 EdgePayload._subtypes = {0:Street,1:None,2:None,3:Link,4:GenericPyPayload,5:None,
                          6:Wait,7:Headway,8:TripBoard,9:Crossing,10:Alight,
-                         11:HeadwayBoard,12:Egress,13:HeadwayAlight,14:ElapseTime}
+                         11:HeadwayBoard,12:Egress,13:HeadwayAlight,14:ElapseTime,15:Combination}
 EdgePayload._cget_type = lgs.epGetType
 EdgePayload._cwalk = lgs.epWalk
 EdgePayload._cwalk_back = lgs.epWalkBack
@@ -1525,6 +1537,10 @@ ElapseTime._cdel = lgs.elapseTimeDestroy
 ElapseTime._cwalk = lgs.elapseTimeWalk
 ElapseTime._cwalk_back = lgs.elapseTimeWalkBack
 
+Combination._cnew = lgs.comboNew
+Combination._cdel = lgs.comboDestroy
+Combination._cwalk = lgs.comboWalk
+Combination._cwalk_back = lgs.comboWalkBack
 
 TripBoard._cnew = lgs.tbNew
 TripBoard._cdel = lgs.tbDestroy

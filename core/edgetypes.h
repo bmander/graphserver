@@ -24,7 +24,8 @@ typedef enum {
   PL_HEADWAYBOARD,
   PL_EGRESS,
   PL_HEADWAYALIGHT,
-  PL_ELAPSE_TIME
+  PL_ELAPSE_TIME,
+  PL_COMBINATION
 } edgepayload_t;
 
 //---------------DECLARATIONS FOR WALKOPTIONS CLASS---------------
@@ -685,5 +686,34 @@ cpWalk(CustomPayload* this, State* params, struct WalkOptions* walkoptions);
 
 State*
 cpWalkBack(CustomPayload* this, State* params, struct WalkOptions* walkoptions);
+
+//---------------DECLARATIONS FOR LINK  CLASS---------------------
+
+typedef struct Combination {
+  edgepayload_t type;
+  State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
+  State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
+    
+  EdgePayload* first;
+  EdgePayload* second;
+} Combination;
+
+Combination*
+comboNew(EdgePayload* first, EdgePayload* second);
+
+void
+comboDestroy(Combination* tokill);
+
+inline State*
+comboWalk(EdgePayload* this, State* param, WalkOptions* options);
+
+inline State*
+comboWalkBack(EdgePayload* this, State* param, WalkOptions* options);
+
+EdgePayload*
+comboGetFirst(Combination* this);
+
+EdgePayload*
+comboGetSecond(Combination* this);
 
 #endif

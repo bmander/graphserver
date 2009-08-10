@@ -3376,6 +3376,30 @@ class TestGraphDatabase:
         assert gdb.num_vertices() == 2
         assert gdb.num_edges() == 2
         
+class TestCombination(unittest.TestCase):
+    def test_basic(self):
+        s1 = Street( "A", 1 )
+        s2 = Street( "B", 2 )
+        c1 = Combination( s1, s2 )
+        
+        assert c1.__class__ == Combination
+        assert c1.first.__class__ == Street
+        assert c1.first.name == "A"
+        assert c1.second.__class__ == Street
+        assert c1.second.name == "B"
+        
+        assert s1.walk( State(0,0), WalkOptions() ).weight == 1
+        assert s2.walk( State(0,0), WalkOptions() ).weight == 2
+        assert c1.walk( State(0,0), WalkOptions() ).weight == 3
+        
+        assert s1.walk_back( State(0, 100), WalkOptions() ).time == 99
+        assert s2.walk_back( State(0, 100), WalkOptions() ).time == 98
+        assert c1.walk_back( State(0, 100), WalkOptions() ).time == 97
+        
+        s1.destroy()
+        s2.destroy()
+        c1.destroy()
+        
         
 def glen(gen):
     return len(list(gen))
@@ -3409,6 +3433,7 @@ if __name__ == '__main__':
                  TestHeadwayAlight,
                  TestWalkOptions,
                  TestElapseTime,
+                 TestCombination
                  ]
 
     for testable in testables:
