@@ -50,6 +50,15 @@ void pathDestroy( Path* this ) {
     free( this->payloads );
     free( this );
 }
+
+Combination* pathToEdgePayload( Path* this ) {
+    Combination* ret = comboNew( this->n );
+    int i;
+    for(i=0; i<this->n; i++) {
+        comboAdd( ret, this->payloads[i] );
+    }
+    return ret;
+}
     
 Path* dist( Graph *gg, char* from_v_label, char* to_v_label, WalkOptions *wo, int weightlimit, int return_full_path )  {
     if( strcmp( from_v_label, to_v_label ) == 0 ) {
@@ -184,7 +193,8 @@ void pqPush( fibheap *pq, Vertex* item, int priority ) {
     fibheap_insert( pq, priority, (void*)item );
 }
 
-Vertex* pqPop( fibheap *pq ) {
+Vertex* pqPop( fibheap *pq, int* priority ) {
+    *priority = fibheap_min_key( pq );
     return (Vertex*)fibheap_extract_min( pq );
 }
 
@@ -216,49 +226,39 @@ fibheap* init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit ) {
     return pq;
 }
 
-/*
-//def get_contraction_heirarchies(gg, hoplimit=2, max_contract=None):
-CH* get_contraction_heirarchies(Graph* gg) {
-    fibheap* pq = fibheap_new();
+
+CH* get_contraction_heirarchies(Graph* gg, WalkOptions* wo, int search_limit) {
+    fibheap* pq = init_priority_queue( gg, wo, search_limit );
 
     Graph* gup = gNew();
     Graph* gdown = gNew();
+    Vertex* vertex;
+    int n = gSize( gg );
     
-//    rolling_degree = 1.0
-//    search_limit = 1
-    
-    i = 0
-    while len(pq)>0:
-        if max_contract and i == max_contract:
-            break
+    int i;
+    while( !fibheap_empty(pq) ) {
         
-        i += 1
-        
-        #print "--==--"
-        #print "pq", pq
-        prio, vertex = heapq.heappop( pq )
-        rolling_degree = (rolling_degree*9+vertex.degree_out+vertex.degree_in)/11
-        print "contract %d/%d"%(i,len(vertex_order)), vertex
-        # make sure priority of current vertex
-        while True:
-            shortcuts = list(get_shortcuts( gg, vertex, 1, hoplimit ))
-            #print "shortcuts", shortcuts
-            new_prio = get_importance( vertex, shortcuts )
+        int prio;
+        vertex = pqPop( pq, &prio );
+
+        printf( "contract %d/%d %s\n", (i,gg), vertex->label );
+        // make sure priority of current vertex
+        Path* shortcuts;
+        int n_shortcuts;
+        while(1) {
+            shortcuts = get_shortcuts( gg, vertex, wo, search_limit, &n_shortcuts );
+            int new_prio = get_importance( vv->degree_in, vv->degree_out, n_shortcuts );
             if new_prio == prio:
-                #print "fine"
                 break
             else:
-                #print "reevaluate"
-                heapq.heappush( pq, (new_prio, vertex) )
-                prio, vertex = heapq.heappop( pq )
-                #print "new vertex", vertex
-                
-        vertex_order.append( vertex.label )
+                pqPush( pq, vertex, new_prio );
+                vertex = pqPop( pq, &prio );
+        }
             
-        # add shortcuts
-        for payloads, from_v, to_v in shortcuts:
-            # add shortcut
-            shortcut_payload = concatenate_payloads( payloads )
+        // ADD SHORTCUTS
+        for(i=0; i<n_shortcuts; i++) {
+            // ADD SHORTCUT
+            Combination* shortcut_payload = pathToEdgePayload( shortcuts[i] );
             #print "add", shortcut_payload, from_v, to_v
             gg.add_edge( from_v, to_v, shortcut_payload )
             
@@ -293,6 +293,6 @@ CH* get_contraction_heirarchies(Graph* gg) {
         
     return gup, gdown, vertex_order
     
-*/
+
 
 

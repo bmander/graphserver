@@ -1,5 +1,5 @@
 
-SRCS = testsetparent.c streetprofile.c testdestroystates.c thsprofile.c test_batch_create.c deadend.c
+SRCS = shortcut.c init_prio_queue.c combination.c
 TESTS = $(SRCS:.c=)
 
 all: $(TESTS)
