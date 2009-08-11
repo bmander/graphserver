@@ -1,5 +1,5 @@
 
-SRCS = shortcut.c init_prio_queue.c combination.c
+SRCS = shortcut.c init_prio_queue.c combination.c contract.c
 TESTS = $(SRCS:.c=)
 
 all: $(TESTS)
