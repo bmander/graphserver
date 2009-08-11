@@ -237,7 +237,7 @@ class TestGraph(unittest.TestCase):
         g.add_edge( "B", "C", Street( "BC", 1 ) )
         g.add_edge( "C", "D", Street( "CD", 1 ) )
         
-        spt = g.shortest_path_tree_retro( "A", "D", State(g.numagencies,0), WalkOptions() )
+        spt = g.shortest_path_tree_retro( "A", "D", State(g.numagencies,1000), WalkOptions() )
         
         assert spt.get_vertex( "A" ).payload.time
         
