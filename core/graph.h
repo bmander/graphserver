@@ -52,6 +52,9 @@ Graph*
 gNew();
 
 void
+gDestroyBasic( Graph* this, int free_edge_payloads );
+
+void
 gDestroy( Graph* this );
 
 Vertex*

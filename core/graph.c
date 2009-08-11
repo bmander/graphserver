@@ -24,7 +24,7 @@ gNew() {
 }
 
 void
-gDestroy( Graph* this ) {
+gDestroyBasic( Graph* this, int free_edge_payloads ) {
 
   //destroy each vertex contained within
   struct hashtable_itr *itr = hashtable_iterator(this->vertices);
@@ -42,6 +42,11 @@ gDestroy( Graph* this ) {
   //destroy the graph object itself
   free( this );
 
+}
+
+void
+gDestroy( Graph* this ) {
+  gDestroyBasic( this, 1 );
 }
 
 Vertex*
