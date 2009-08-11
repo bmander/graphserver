@@ -504,6 +504,7 @@ String topnode;
 float maxz;
 float minz;
 float zscale;
+boolean shiftdown;
 
 void setup(){
   size( 1000, 1000, P3D );
@@ -512,6 +513,7 @@ void setup(){
   cameraMode=true;
   rotateMode=true;
   zscale = 0.1;
+  shiftdown = false;
   
   topnode = null;
 
@@ -558,19 +560,26 @@ void draw() {
   origin.draw();
 
   if( mousePressed ) {
-    if( mouseButton == 37 ) {
-      
-      //eye.deltaTheta( 0.01*(mouseX-pmouseX) );
-      //eye.deltaPhi( 0.01*(mouseY-pmouseY) );
-      eye.nexttheta += 0.01*(mouseX-pmouseX);
-      eye.theta += 0.01*(mouseX-pmouseX);
-      eye.nextphi += 0.01*(mouseY-pmouseY);
-      eye.phi += 0.01*(mouseY-pmouseY);
+    if(shiftdown) {
+      minz += (mouseY-pmouseY);
+      maxz += (mouseX-pmouseX);
     } else {
-      float res = height/maxsize;
-      eye.moveY( (mouseX-pmouseX)/res );
-      eye.moveX( -(mouseY-pmouseY)/res );
-      
+    
+      if( mouseButton == 37 ) {
+        
+        //eye.deltaTheta( 0.01*(mouseX-pmouseX) );
+        //eye.deltaPhi( 0.01*(mouseY-pmouseY) );
+        eye.nexttheta += 0.01*(mouseX-pmouseX);
+        eye.theta += 0.01*(mouseX-pmouseX);
+        eye.nextphi += 0.01*(mouseY-pmouseY);
+        eye.phi += 0.01*(mouseY-pmouseY);
+      } else {
+        float res = height/maxsize;
+        eye.moveY( (mouseX-pmouseX)/res );
+        eye.moveX( -(mouseY-pmouseY)/res );
+        
+      }
+    
     }
   }
 }
@@ -593,15 +602,35 @@ void mouseReleased() {
   }
 }
 
+void keyReleased() {
+  if( key == CODED && keyCode == SHIFT ) {
+    shiftdown = false;
+  } 
+}
+
 void keyPressed() {
+  if( key == CODED && keyCode == SHIFT ) {
+    shiftdown = true; 
+  }
+  
   if( key == CODED ) {
     if( keyCode == DOWN || keyCode == UP ) {
-      if( keyCode == DOWN ) {
-        currtime -= 1;
-        maxz -= 1;
-      } else if ( keyCode == UP ){
-        currtime += 1;
-        maxz += 1;
+      if(!shiftdown) {
+        if( keyCode == DOWN ) {
+          currtime -= 1;
+          minz -= 1;
+        } else if ( keyCode == UP ){
+          currtime += 1;
+          minz += 1;
+        }
+      } else {
+        if( keyCode == DOWN ) {
+          currtime -= 1;
+          maxz -= 1;
+        } else if ( keyCode == UP ){
+          currtime += 1;
+          maxz += 1;
+        }
       }
       ortho(-maxsize*0.5, maxsize*0.5, -maxsize*0.5, maxsize*.5, -maxsize, maxsize);
       //SPT nspt = spts.nextTree(currtime);
