@@ -39,7 +39,8 @@ def load_gtfs_table_to_sqlite(fp, gtfs_basename, cc, header=None):
     rd = csv.reader( ur )
 
     # create map of field locations in gtfs header to field locations as specified by the table definition
-    gtfs_header = next(rd)
+    gtfs_header = rd.next()
+    
     gtfs_field_indices = dict(zip(gtfs_header, range(len(gtfs_header))))
     
     field_name_locations = [gtfs_field_indices[field_name] if field_name in gtfs_field_indices else None for field_name, field_type, field_converter in header]
@@ -192,7 +193,7 @@ class GTFSDatabase:
             if reporter: reporter.write( "loading table %s\n"%tablename )
             
             try:
-                trips_file = iterdecode( zf.open(tablename+".txt"), "utf-8" )
+                trips_file = iterdecode( zf.read(tablename+".txt").split("\n"), "utf-8" )
                 load_gtfs_table_to_sqlite(trips_file, tablename, c, table_def)
             except KeyError:
                 if reporter: reporter.write( "NOTICE: GTFS feed has no file %s.txt, cannot load\n"%tablename )
@@ -220,7 +221,7 @@ class GTFSDatabase:
     def stop(self, stop_id):
         c = self.conn.cursor()
         c.execute( "SELECT * FROM stops WHERE stop_id = ?", (stop_id,) )
-        ret = next(c)
+        ret = c.next()
         c.close()
         return ret
         
@@ -228,7 +229,7 @@ class GTFSDatabase:
         c = self.conn.cursor()
         c.execute( "SELECT count(*) FROM stops" )
         
-        ret = next(c)[0]
+        ret = c.next()[0]
         c.close()
         return ret
 
@@ -240,7 +241,7 @@ class GTFSDatabase:
         bundles = {}
 
         c.execute( "SELECT count(*) FROM trips" )
-        n_trips = next(c)[0]
+        n_trips = c.next()[0]
 
         c.execute( "SELECT trip_id FROM trips" )
         for i, (trip_id,) in enumerate(c):
@@ -288,7 +289,7 @@ class GTFSDatabase:
         
         c.execute( "SELECT min(stop_lon), min(stop_lat), max(stop_lon), max(stop_lat) FROM stops" )
         
-        ret = next(c)
+        ret = c.next()
         c.close()
         return ret
         
