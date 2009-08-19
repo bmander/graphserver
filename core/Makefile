@@ -13,7 +13,8 @@ OBJECTS= dirfibheap.o \
 	hashtable_itr.o \
 	hashtable_utility.o \
 	statetypes.o \
-    contraction.o
+    contraction.o \
+    heap.o
 
 # You know what? Honestly? I don't know what most of these switches do.
 CFLAGS=-g -fno-strict-aliasing -O2 -fPIC -Wall
