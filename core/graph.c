@@ -414,11 +414,13 @@ vGetIncomingEdgeList( Vertex* this ) {
 
 void
 vRemoveOutEdgeRef( Vertex* this, Edge* todie ) {
+    this->degree_out -= 1;
     liRemoveRef( this->outgoing, todie );
 }
 
 void
 vRemoveInEdgeRef( Vertex* this, Edge* todie ) {
+    this->degree_in -= 1;
     liRemoveRef( this->incoming, todie );
 }
 
