@@ -654,6 +654,21 @@ class TestGraph(unittest.TestCase):
         
         vv = gg.get_vertex( "A" )
         assert [ee.payload.name for ee in vv.outgoing] == ["AC", "AB"]
+            
+    def test_ch(self):
+        gg = Graph()
+        gg.add_vertex( "A" )
+        gg.add_vertex( "B" )
+        ab = gg.add_edge( "A", "B", Street( "AB", 1 ) )
+        ba = gg.add_edge( "B", "A", Street( "BA", 1 ) )
+        
+        absoul = gg.get_vertex("A").outgoing[0].payload.soul
+        basoul = gg.get_vertex("B").outgoing[0].payload.soul
+        
+        ch = gg.get_contraction_heirarchies( WalkOptions() )
+        
+        assert ch.upgraph.get_vertex("A").outgoing[0].payload.soul == absoul
+        assert ch.downgraph.get_vertex("B").outgoing[0].payload.soul == basoul
 
 class TestShortestPathTree(unittest.TestCase):
     
@@ -3432,7 +3447,18 @@ class TestCombination(unittest.TestCase):
         s3.destroy()
         c1.destroy()
         c2.destroy()
+
+
+class TestCH( unittest.TestCase ):
+    def test_basic(self):
+        gup = Graph()
+        gdown = Graph()
         
+        ch = ContractionHierarchy(gup, gdown)
+        assert ch.soul
+        
+        assert ch.upgraph.soul == gup.soul
+        assert ch.downgraph.soul == gdown.soul
         
 def glen(gen):
     return len(list(gen))
@@ -3466,7 +3492,8 @@ if __name__ == '__main__':
                  TestHeadwayAlight,
                  TestWalkOptions,
                  TestElapseTime,
-                 TestCombination
+                 TestCombination,
+                 TestCH,
                  ]
 
     for testable in testables:
