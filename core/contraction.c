@@ -1,6 +1,7 @@
 #include "graph.h"
 #include "contraction.h"
-#include "fibheap.h"
+//#include "fibheap.h"
+#include "heap.h"
 #define TRUE 1
 #define FALSE 0
 
@@ -9,6 +10,14 @@ CH* chNew(Graph *up, Graph *down) {
     ret->up = up;
     ret->down = down;
     return ret;
+}
+
+Graph* chUpGraph( CH* this ) {
+    return this->up;
+}
+
+Graph* chDownGraph( CH* this ) {
+    return this->down;
 }
 
 void chDestroy( CH* this ) {
@@ -218,27 +227,28 @@ Path** get_shortcuts( Graph *gg, Vertex* vv, WalkOptions* wo, int search_limit, 
     return ret;
 }
 
-void pqPush( fibheap *pq, Vertex* item, int priority ) {
-    fibheap_insert( pq, priority, (void*)item );
+void pqPush( Heap *pq, Vertex* item, long priority ) {
+    heapInsert( pq, (void*)item, priority );
+    //fibheap_insert( pq, priority, (void*)item );
 }
 
-Vertex* pqPop( fibheap *pq, int* priority ) {
-    *priority = fibheap_min_key( pq );
-    return (Vertex*)fibheap_extract_min( pq );
+Vertex* pqPop( Heap *pq, long* priority ) {
+    //*priority = fibheap_min_key( pq );
+    //return (Vertex*)fibheap_extract_min( pq );
+    return (Vertex*)heapPop( pq, priority );
+    
 }
 
-int get_importance(int degree_in, int degree_out, int n_shortcuts, int nds) {
+int get_importance(int degree_in, int degree_out, int n_shortcuts) {
     
     int edge_difference = n_shortcuts - (degree_in+degree_out);
     
-    printf( "nds: %d\n", nds );
-    printf( "ed: %d\n", edge_difference );
-    
-    return edge_difference + nds;
+    return edge_difference;
 }
 
-fibheap* init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit ) {
-    fibheap* pq = fibheap_new();
+Heap* init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit ) {
+    //fibheap* pq = fibheap_new();
+    Heap* pq = heapNew( 100 );
 
     long n;
     int i;
@@ -261,8 +271,8 @@ fibheap* init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit ) {
 }
 
 
-CH* get_contraction_heirarchies(Graph* gg, WalkOptions* wo, int search_limit) {
-    fibheap* pq = init_priority_queue( gg, wo, search_limit );
+CH* get_contraction_hierarchies(Graph* gg, WalkOptions* wo, int search_limit) {
+    Heap* pq = init_priority_queue( gg, wo, search_limit );
 
     Graph* gup = gNew();
     Graph* gdown = gNew();
@@ -272,10 +282,10 @@ CH* get_contraction_heirarchies(Graph* gg, WalkOptions* wo, int search_limit) {
     long n = gSize( gg );
     
     int i = 0;
-    while( !fibheap_empty(pq) ) {
+    while( !heapEmpty(pq) ) {
         i++;
         
-        int prio;
+        long prio;
         vertex = pqPop( pq, &prio );
         
         //printf( "new vertex candidate %s\n", vertex->label );
@@ -285,11 +295,11 @@ CH* get_contraction_heirarchies(Graph* gg, WalkOptions* wo, int search_limit) {
         int n_shortcuts;
         while(1) {
             shortcuts = get_shortcuts( gg, vertex, wo, search_limit, &n_shortcuts );
-            int new_prio = get_importance( vertex->degree_in, vertex->degree_out, n_shortcuts, vertex->nds );
+            long new_prio = get_importance( vertex->degree_in, vertex->degree_out, n_shortcuts );
             if(new_prio == prio) {
                 break;
             } else {
-                //printf( "updated priority %d != old priority %d, reevaluate\n", new_prio, prio );
+                printf( "updated priority %ld != old priority %ld, reevaluate\n", new_prio, prio );
                 
                 //the shortcuts are invalid; delete them
                 int k;
@@ -304,7 +314,7 @@ CH* get_contraction_heirarchies(Graph* gg, WalkOptions* wo, int search_limit) {
             }
         }
         
-        printf( "contract %d/%ld %s (prio:%d) with %d shortcuts\n", i, n, vertex->label, prio, n_shortcuts );
+        printf( "contract %d/%ld %s (prio:%ld) with %d shortcuts\n", i, n, vertex->label, prio, n_shortcuts );
             
         // ADD SHORTCUTS
         int j;
@@ -334,9 +344,6 @@ CH* get_contraction_heirarchies(Graph* gg, WalkOptions* wo, int search_limit) {
         ListNode* incoming = vGetIncomingEdgeList( vertex );
         while(incoming) {
             Edge* ee = incoming->data;
-            
-            ee->from->nds = ee->from->nds + 1; //increment neighbors deleted
-            
             gAddVertex( gdown, ee->from->label );
             gAddEdge( gdown, ee->from->label, ee->to->label, ee->payload );
             incoming = incoming->next;
@@ -356,7 +363,7 @@ CH* get_contraction_heirarchies(Graph* gg, WalkOptions* wo, int search_limit) {
         gRemoveVertex( gg, vertex->label, FALSE );
     }
     
-    fibheap_delete( pq );
+    heapDestroy( pq );
     
     return ret;
 }
