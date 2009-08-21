@@ -201,6 +201,8 @@ pycapi(lgs.eWalkBack, c_void_p, [c_void_p, c_void_p, c_int])
 
 #EDGEPAYLOAD API
 pycapi(lgs.epGetType, c_int, [c_void_p])
+pycapi(lgs.epGetExternalId, c_long, [c_void_p])
+pycapi(lgs.epSetExternalId, c_void_p, [c_void_p, c_long])
 pycapi(lgs.epWalk, c_void_p, [c_void_p, c_void_p, c_int])
 pycapi(lgs.epWalkBack, c_void_p, [c_void_p, c_void_p, c_int])
 

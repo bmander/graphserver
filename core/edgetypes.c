@@ -200,6 +200,7 @@ stateSetPrevEdge( State* this, EdgePayload* edge ) { this->prev_edge = edge; }
 EdgePayload*
 epNew( edgepayload_t type, void* payload ) {
   EdgePayload* ret = (EdgePayload*)malloc(sizeof(EdgePayload));
+  ret->external_id = 0;
   ret->type = PL_NONE;
   return ret;
 }
@@ -240,6 +241,16 @@ epDestroy( EdgePayload* this ) {
 edgepayload_t
 epGetType( EdgePayload* this ) {
     return this->type;
+}
+
+long
+epGetExternalId( EdgePayload* this ) {
+    return this->external_id;
+}
+
+void
+epSetExternalId( EdgePayload* this, long external_id ) {
+    this->external_id = external_id;
 }
 
 State*
@@ -302,6 +313,7 @@ linkReturnOne(Link* this) {
 Street*
 streetNew(const char *name, double length, int reverse_of_source) {
   Street* ret = (Street*)malloc(sizeof(Street));
+  ret->external_id=0;
   ret->type = PL_STREET;
   ret->name = (char*)malloc((strlen(name)+1)*sizeof(char));
   strcpy(ret->name, name);
@@ -377,6 +389,7 @@ streetSetWay(Street* this, long way) {
 Egress*
 egressNew(const char *name, double length) {
   Egress* ret = (Egress*)malloc(sizeof(Egress));
+  ret->external_id=0;
   ret->type = PL_EGRESS;
   ret->name = (char*)malloc((strlen(name)+1)*sizeof(char));
   strcpy(ret->name, name);
@@ -414,6 +427,7 @@ streetGetReverseOfSource(Street* this) {
 Wait*
 waitNew(long end, Timezone* timezone) {
     Wait* ret = (Wait*)malloc(sizeof(Wait));
+    ret->external_id=0;
     ret->type = PL_WAIT;
     ret->end = end;
     ret->timezone = timezone;
@@ -443,6 +457,7 @@ waitGetTimezone(Wait* this) {
 ElapseTime*
 elapseTimeNew(long seconds) {
     ElapseTime* ret = (ElapseTime*)malloc(sizeof(ElapseTime));
+    ret->external_id=0;
     ret->type = PL_ELAPSE_TIME;
     ret->seconds = seconds;
     
@@ -467,7 +482,7 @@ elapseTimeGetSeconds(ElapseTime* this) {
 Headway*
 headwayNew(int begin_time, int end_time, int wait_period, int transit, char* trip_id, ServiceCalendar* calendar, Timezone* timezone, int agency, ServiceId service_id) {
     Headway* ret = (Headway*)malloc(sizeof(Headway));
-    
+    ret->external_id=0;
     ret->type = PL_HEADWAY;
     ret->begin_time = begin_time;
     ret->end_time = end_time;
@@ -526,6 +541,7 @@ headwayServiceId(Headway* this) { return this->service_id; }
 TripBoard*
 tbNew( ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int agency ) {
   TripBoard* ret = (TripBoard*)malloc(sizeof(TripBoard));
+  ret->external_id=0;
   ret->type = PL_TRIPBOARD;
   ret->n = 0;
   ret->departs = NULL;
@@ -802,7 +818,7 @@ HeadwayBoard*
 hbNew(  ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int agency, char* trip_id, int start_time, int end_time, int headway_secs ) {
   HeadwayBoard* ret = (HeadwayBoard*)malloc(sizeof(HeadwayBoard));
   ret->type = PL_HEADWAYBOARD;
-
+  ret->external_id=0;
   int n = strlen(trip_id)+1;
   ret->trip_id = (char*)malloc(sizeof(char)*(n));
   memcpy(ret->trip_id, trip_id, n);
@@ -959,6 +975,7 @@ HeadwayAlight*
 haNew(  ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int agency, char* trip_id, int start_time, int end_time, int headway_secs ) {
   HeadwayAlight* ret = (HeadwayAlight*)malloc(sizeof(HeadwayAlight));
   ret->type = PL_HEADWAYALIGHT;
+  ret->external_id=0;
 
   int n = strlen(trip_id)+1;
   ret->trip_id = (char*)malloc(sizeof(char)*(n));
@@ -1108,6 +1125,7 @@ haWalkBack( EdgePayload* superthis, State* params, WalkOptions* options ) {
 Crossing*
 crNew( int crossing_time ) {
   Crossing* ret = (Crossing*)malloc(sizeof(Crossing));
+  ret->external_id=0;
   ret->type = PL_CROSSING;
   ret->crossing_time = crossing_time;
     
@@ -1176,6 +1194,7 @@ crWalkBack( EdgePayload* superthis, State* state, WalkOptions* options ) {
 Alight*
 alNew( ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int agency ) {
   Alight* ret = (Alight*)malloc(sizeof(Alight));
+  ret->external_id=0;
   ret->type = PL_ALIGHT;
   ret->n = 0;
   ret->arrivals = NULL;
@@ -1481,6 +1500,7 @@ cpWalkBack(CustomPayload* this, State* params, WalkOptions* walkoptions) {
 Combination*
 comboNew(int cap) {
     Combination* ret = (Combination*)malloc(sizeof(Combination));
+    ret->external_id=0;
     ret->type = PL_COMBINATION;
     ret->cap = cap;
     ret->n = 0;

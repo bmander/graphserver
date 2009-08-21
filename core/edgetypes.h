@@ -152,6 +152,7 @@ stateSetPrevEdge( State* this, EdgePayload* edge );
 
 struct EdgePayload {
   edgepayload_t type;
+  long external_id;
   State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
   State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
 } ;
@@ -165,6 +166,9 @@ epDestroy( EdgePayload* this );
 edgepayload_t
 epGetType( EdgePayload* this );
 
+long
+epGetExternalId( EdgePayload* this );
+
 State*
 epWalk( EdgePayload* this, State* param, WalkOptions* options );
 
@@ -175,6 +179,7 @@ epWalkBack( EdgePayload* this, State* param, WalkOptions* options );
 
 typedef struct Link {
   edgepayload_t type;
+  long external_id;
   State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
   State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
     
@@ -201,6 +206,7 @@ linkGetName(Link* this);
 
 typedef struct Headway {
   edgepayload_t type;
+  long external_id;
   State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
   State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
     
@@ -258,6 +264,7 @@ headwayServiceId(Headway* this);
 
 typedef struct Wait {
     edgepayload_t type;
+    long external_id;
     State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
     State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
     
@@ -287,6 +294,7 @@ waitGetTimezone(Wait* this);
 
 typedef struct ElapseTime {
     edgepayload_t type;
+    long external_id;
     State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
     State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
     
@@ -313,6 +321,7 @@ elapseTimeGetSeconds(ElapseTime* this);
 
 typedef struct Street {
    edgepayload_t type;
+   long external_id;
    State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
    State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
     
@@ -366,6 +375,7 @@ streetGetReverseOfSource(Street* this) ;
 
 typedef struct TripBoard {
     edgepayload_t type;
+    long external_id;
     State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
     State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
     
@@ -430,6 +440,7 @@ tbWalkBack( EdgePayload* superthis, State* params, WalkOptions* options );
 
 typedef struct Egress {
    edgepayload_t type;
+   long external_id;
    State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
    State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
     
@@ -459,6 +470,7 @@ egressGetLength(Egress* this);
 
 typedef struct HeadwayBoard {
     edgepayload_t type;
+    long external_id;
     State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
     State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
     
@@ -513,6 +525,7 @@ hbWalkBack( EdgePayload* superthis, State* params, WalkOptions* options );
 
 typedef struct HeadwayAlight {
     edgepayload_t type;
+    long external_id;
     State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
     State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
     
@@ -567,6 +580,7 @@ haWalkBack( EdgePayload* superthis, State* params, WalkOptions* options );
 
 typedef struct Crossing {
     edgepayload_t type;
+    long external_id;
     State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
     State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
     
@@ -592,6 +606,7 @@ crWalkBack( EdgePayload* superthis, State* state, WalkOptions* options );
 
 typedef struct Alight {
     edgepayload_t type;
+    long external_id;
     State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
     State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
     
@@ -696,6 +711,7 @@ cpWalkBack(CustomPayload* this, State* params, struct WalkOptions* walkoptions);
 
 typedef struct Combination {
   edgepayload_t type;
+  long external_id;
   State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
   State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
     
