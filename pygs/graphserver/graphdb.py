@@ -55,6 +55,7 @@ class GraphDatabase:
         
         typeclass = cPickle.loads( str(type) )
         ret = typeclass.reconstitute( cPickle.loads( str(state) ), self )
+        ret.external_id = int(id)
         self.payloads_cache[id] = ret
         return ret
         
