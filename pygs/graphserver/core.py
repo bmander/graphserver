@@ -185,12 +185,22 @@ class ContractionHierarchy(CShadow):
         sptup = self.upgraph.shortest_path_tree( fromv_label, None, init_state, walk_options )
         sptdown = self.downgraph.shortest_path_tree_retro( None, tov_label, State(0,10000000), walk_options )
         
+        #print "upvertices"
+        #for vv in sptup.vertices:
+        #    print vv, vv.state.weight
+        #print "downvertices"
+        #for vv in sptdown.vertices:
+        #    print vv, vv.state.weight
+        
         # FIND SMALLEST MEETUP VERTEX
         meetup_vertices = []
         for upvv in sptup.vertices:
             downvv = sptdown.get_vertex( upvv.label )
             if downvv is not None:
                 meetup_vertices.append( (upvv.state.weight + downvv.state.weight, upvv.label ) )
+        
+        #print meetup_vertices
+                
         min_meetup = min(meetup_vertices)[1]
         
         # GET AND JOIN PATHS TO MEETUP VERTEX
@@ -206,6 +216,9 @@ class ContractionHierarchy(CShadow):
                 ret.extend( ee.payload.unpack() )
             else:
                 ret.append( ee.payload )
+                
+        sptup.destroy()
+        sptdown.destroy()
             
         return ret
 
@@ -1012,33 +1025,37 @@ class Street(EdgePayload):
     slog = cproperty(lgs.streetGetSlog, c_float, setter=lgs.streetSetSlog)
     way = cproperty(lgs.streetGetWay, c_long, setter=lgs.streetSetWay)
     
-    def __init__(self,name,length,rise=0,fall=0):
-        self.soul = self._cnew(name, length, rise, fall)
+    def __init__(self,name,length,rise=0,fall=0,reverse_of_source=False):
+        self.soul = self._cnew(name, length, rise, fall,reverse_of_source)
             
     def to_xml(self):
         self.check_destroyed()
         
-        return "<Street name='%s' length='%f' rise='%f' fall='%f' way='%ld'/>" % (self.name, self.length, self.rise, self.fall, self.way)
+        return "<Street name='%s' length='%f' rise='%f' fall='%f' way='%ld' reverse='%s'/>" % (self.name, self.length, self.rise, self.fall, self.way,self.reverse_of_source)
         
     def __getstate__(self):
-        return (self.name, self.length, self.rise, self.fall, self.slog, self.way)
+        return (self.name, self.length, self.rise, self.fall, self.slog, self.way, self.reverse_of_source)
         
     def __setstate__(self, state):
-        name, length, rise, fall, slog, way = state
-        self.__init__(name, length, rise, fall)
+        name, length, rise, fall, slog, way, reverse_of_source = state
+        self.__init__(name, length, rise, fall, reverse_of_source)
         self.slog = slog
         self.way = way
         
     def __repr__(self):
-        return "<Street name='%s' length=%f rise=%f fall=%f way=%ld>"%(self.name, self.length, self.rise, self.fall, self.way)
+        return "<Street name='%s' length=%f rise=%f fall=%f way=%ld reverse=%s>"%(self.name, self.length, self.rise, self.fall, self.way,self.reverse_of_source)
         
     @classmethod
     def reconstitute(self, state, resolver):
-        name, length, rise, fall, slog, way = state
-        ret = Street( name, length, rise, fall )
+        name, length, rise, fall, slog, way, reverse_of_source = state
+        ret = Street( name, length, rise, fall, reverse_of_source )
         ret.slog = slog
         ret.way = way
         return ret
+        
+    @property
+    def reverse_of_source(self):
+        return lgs.streetGetReverseOfSource(self.soul)==1
 
 class Egress(EdgePayload):
     length = cproperty(lgs.egressGetLength, c_double)

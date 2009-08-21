@@ -300,7 +300,7 @@ linkReturnOne(Link* this) {
 
 //STREET FUNCTIONS
 Street*
-streetNew(const char *name, double length) {
+streetNew(const char *name, double length, int reverse_of_source) {
   Street* ret = (Street*)malloc(sizeof(Street));
   ret->type = PL_STREET;
   ret->name = (char*)malloc((strlen(name)+1)*sizeof(char));
@@ -310,6 +310,7 @@ streetNew(const char *name, double length) {
   ret->fall = 0;
   ret->slog = 1;
   ret->way = 0;
+  ret->reverse_of_source = reverse_of_source;
     
   //bind functions to methods
   ret->walk = &streetWalk;
@@ -319,8 +320,8 @@ streetNew(const char *name, double length) {
 }
 
 Street*
-streetNewElev(const char *name, double length, float rise, float fall) {
-    Street* ret = streetNew( name, length );
+streetNewElev(const char *name, double length, float rise, float fall, int reverse_of_source) {
+    Street* ret = streetNew( name, length, reverse_of_source );
     ret->rise = rise;
     ret->fall = fall;
     return ret;
@@ -404,6 +405,10 @@ egressGetLength(Egress* this) {
     return this->length;
 }
 
+int
+streetGetReverseOfSource(Street* this) {
+    return this->reverse_of_source;
+}
 
 //WAIT FUNCTIONS
 Wait*

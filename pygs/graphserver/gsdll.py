@@ -211,8 +211,8 @@ pycapi(lgs.linkWalk, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.linkWalkBack, c_void_p, [c_void_p, c_void_p])
 
 #STREET API
-pycapi(lgs.streetNew, c_void_p, [c_char_p, c_double])
-pycapi(lgs.streetNewElev, c_void_p, [c_char_p, c_double, c_float, c_float])
+pycapi(lgs.streetNew, c_void_p, [c_char_p, c_double, c_int])
+pycapi(lgs.streetNewElev, c_void_p, [c_char_p, c_double, c_float, c_float, c_int])
 pycapi(lgs.streetDestroy, c_void_p)
 pycapi(lgs.streetWalk, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.streetWalkBack, c_void_p, [c_void_p, c_void_p])

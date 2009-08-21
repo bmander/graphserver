@@ -226,8 +226,8 @@ def load_streets_to_graph(g, osmdb, profiledb=None, slogs={}, reporter=None ):
             street_id = street_names[street_name]
         
         # Create edges to be inserted into graph
-        s1 = Street( id, distance, rise, fall )
-        s2 = Street( id, distance, fall, rise )
+        s1 = Street( id, distance, rise, fall, reverse_of_source=False )
+        s2 = Street( id, distance, fall, rise, reverse_of_source=True )
         s1.way = street_id
         s2.way = street_id
         

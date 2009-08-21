@@ -322,13 +322,15 @@ typedef struct Street {
    float fall;
    float slog;
    long way;
+    
+   int reverse_of_source;
 } Street;
 
 Street*
-streetNew(const char *name, double length);
+streetNew(const char *name, double length, int reverse_of_source);
 
 Street*
-streetNewElev(const char *name, double length, float rise, float fall);
+streetNewElev(const char *name, double length, float rise, float fall, int reverse_of_source);
 
 void
 streetDestroy(Street* tokill);
@@ -356,6 +358,9 @@ streetGetWay(Street* this);
 
 void
 streetSetWay(Street* this, long way);
+
+int
+streetGetReverseOfSource(Street* this) ;
 
 //---------------DECLARATIONS FOR TRIPBOARD CLASS------------------------------------------
 
