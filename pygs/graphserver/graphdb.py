@@ -1,7 +1,7 @@
 import os
 import sqlite3
 import cPickle
-from graphserver.core import State, Graph
+from graphserver.core import State, Graph, Combination
 from graphserver import core
 from sys import argv
 import sys
@@ -21,15 +21,42 @@ class GraphDatabase:
             self.setup()
             
         self.resources_cache = {}
+        self.payloads_cache = {}
         
     def setup(self):
         c = self.conn.cursor()
         c.execute( "CREATE TABLE vertices (label)" )
-        c.execute( "CREATE TABLE edges (vertex1 TEXT, vertex2 TEXT, edgetype TEXT, edgestate TEXT)" )
+        c.execute( "CREATE TABLE payloads (id TEXT UNIQUE ON CONFLICT IGNORE, type TEXT, state TEXT)" )
+        c.execute( "CREATE TABLE edges (vertex1 TEXT, vertex2 TEXT, epid TEXT)" )
         c.execute( "CREATE TABLE resources (name TEXT UNIQUE ON CONFLICT IGNORE, image TEXT)" )
     
         self.conn.commit()
         c.close()
+        
+    def put_edge_payload(self, edgepayload, cc):
+        
+        if edgepayload.__class__ == Combination:
+            for component in edgepayload.components:
+                self.put_edge_payload( component, cc )
+        
+        cc.execute( "INSERT INTO payloads VALUES (?, ?, ?)", ( str(edgepayload.soul), cPickle.dumps( edgepayload.__class__ ), cPickle.dumps( edgepayload.__getstate__() ) ) )
+        
+        return str(edgepayload.soul)
+        
+    def get_edge_payload(self, id):
+        queryresult = list(self.execute( "SELECT id, type, state FROM payloads WHERE id=?", (id,) ))
+        if len(queryresult)==0:
+            return None
+        
+        id, type, state = queryresult[0]
+        
+        if id in self.payloads_cache:
+            return self.payloads_cache[id]
+        
+        typeclass = cPickle.loads( str(type) )
+        ret = typeclass.reconstitute( cPickle.loads( str(state) ), self )
+        self.payloads_cache[id] = ret
+        return ret
         
     def populate(self, graph, reporter=None):
         c = self.conn.cursor()
@@ -40,7 +67,8 @@ class GraphDatabase:
             
             c.execute( "INSERT INTO vertices VALUES (?)", (vv.label,) )
             for ee in vv.outgoing:
-                c.execute( "INSERT INTO edges VALUES (?, ?, ?, ?)", (ee.from_v.label, ee.to_v.label, cPickle.dumps( ee.payload.__class__ ), cPickle.dumps( ee.payload.__getstate__() ) ) )
+                epid = self.put_edge_payload( ee.payload, c )
+                c.execute( "INSERT INTO edges VALUES (?, ?, ?)", (ee.from_v.label, ee.to_v.label, epid) )
                 
                 if hasattr(ee.payload, "__resources__"):
                     for name, resource in ee.payload.__resources__():
@@ -69,26 +97,20 @@ class GraphDatabase:
             yield vertex_label
     
     def all_edges(self):
-        for vertex1, vertex2, edgetype, edgestate in self.execute( "SELECT vertex1, vertex2, edgetype, edgestate FROM edges" ):
-            try:
-                edgetype = cPickle.loads( str(edgetype) )
-            except ImportError:
-                print str(edgetype)
-                raise
-            edgestate = cPickle.loads( str(edgestate) )
-            yield vertex1, vertex2, edgetype.reconstitute(edgestate, self)
+        for vertex1, vertex2, epid in self.execute( "SELECT vertex1, vertex2, epid FROM edges" ):
+            ep = self.get_edge_payload( epid )
+            
+            yield vertex1, vertex2, ep
+    
     
     def all_outgoing(self, vertex1_label):
-        for vertex1, vertex2, edgetype, edgestate in self.execute( "SELECT vertex1, vertex2, edgetype, edgestate FROM edges WHERE vertex1=?", (vertex1_label,) ):
-            edgetype = cPickle.loads( str(edgetype) )
-            edgestate = cPickle.loads( str(edgestate) )
-            yield vertex1, vertex2, edgetype.reconstitute(edgestate, self)
-            
+        for vertex1, vertex2, epid in self.execute( "SELECT vertex1, vertex2, epid FROM edges WHERE vertex1=?", (vertex1_label,) ):
+            yield vertex1, vertex2, self.get_edge_payload( epid )
+    
     def all_incoming(self, vertex2_label):
-        for vertex1, vertex2, edgetype, edgestate in self.execute( "SELECT vertex1, vertex2, edgetype, edgestate FROM edges WHERE vertex2=?", (vertex2_label,) ):
-            edgetype = cPickle.loads( str(edgetype) )
-            edgestate = cPickle.loads( str(edgestate) )
-            yield vertex1, vertex2, edgetype.reconstitute(edgestate, self)
+        for vertex1, vertex2, epid in self.execute( "SELECT vertex1, vertex2, epid FROM edges WHERE vertex2=?", (vertex2_label,) ):
+            yield vertex1, vertex2, self.get_edge_payload( epid )
+    
             
     def store(self, name, obj):
         c = self.conn.cursor()
@@ -114,6 +136,7 @@ class GraphDatabase:
     def index(self):
         c = self.conn.cursor()
         c.execute( "CREATE INDEX vertices_label ON vertices (label)" )
+        c.execute( "CREATE INDEX ep_ids ON payloads (id)" )
         self.conn.commit()
         c.close()
         
