@@ -113,13 +113,8 @@ streetWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
 
   // Elevation considerations
   long t_horiz = (long)(this->length/options->walking_speed);
-#ifndef ROUTE_REVERSE
   long t_up = (long)(this->rise/(options->walking_speed*options->uphill_slowness));
   long t_down = (long)(this->fall*options->downhill_fastness);
-#else
-  long t_up = (long)(this->fall/(options->walking_speed*options->uphill_slowness));
-  long t_down = (long)(this->rise*options->downhill_fastness);
-#endif
     
   long delta_t = t_horiz + t_up - t_down;
   if( delta_t < 0 ) {
