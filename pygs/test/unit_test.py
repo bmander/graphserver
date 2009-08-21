@@ -112,7 +112,7 @@ class TestGraph(unittest.TestCase):
         assert e
         assert e.from_v.label == "home"
         assert e.to_v.label == "work"
-        assert str(e)=="<Edge><Street name='helloworld' length='1.000000' rise='0.000000' fall='0.000000' way='0'/></Edge>"
+        assert str(e)=="<Edge><Street name='helloworld' length='1.000000' rise='0.000000' fall='0.000000' way='0' reverse='False'/></Edge>"
         
         g.destroy()
     
@@ -665,7 +665,7 @@ class TestGraph(unittest.TestCase):
         absoul = gg.get_vertex("A").outgoing[0].payload.soul
         basoul = gg.get_vertex("B").outgoing[0].payload.soul
         
-        ch = gg.get_contraction_heirarchies( WalkOptions() )
+        ch = gg.get_contraction_hierarchies( WalkOptions() )
         
         assert ch.upgraph.get_vertex("A").outgoing[0].payload.soul == absoul
         assert ch.downgraph.get_vertex("B").outgoing[0].payload.soul == basoul
@@ -739,7 +739,7 @@ class TestShortestPathTree(unittest.TestCase):
         assert e
         assert e.from_v.label == "home"
         assert e.to_v.label == "work"
-        assert str(e)=="<Edge><Street name='helloworld' length='1.000000' rise='0.000000' fall='0.000000' way='0'/></Edge>"
+        assert str(e)=="<Edge><Street name='helloworld' length='1.000000' rise='0.000000' fall='0.000000' way='0' reverse='False'/></Edge>"
         
         spt.destroy()
     
@@ -976,14 +976,15 @@ class TestState(unittest.TestCase):
 
 class TestStreet(unittest.TestCase):
     def test_street(self):
-        s = Street("mystreet", 1.1)
+        s = Street("mystreet", 1.1, reverse_of_source=True)
         assert s.name == "mystreet"
         assert s.length == 1.1
         assert s.rise == 0
         assert s.fall == 0
         assert s.slog == 1
         assert s.way == 0
-        assert s.to_xml() == "<Street name='mystreet' length='1.100000' rise='0.000000' fall='0.000000' way='0'/>"
+        assert s.reverse_of_source == True
+        assert s.to_xml() == "<Street name='mystreet' length='1.100000' rise='0.000000' fall='0.000000' way='0' reverse='True'/>"
         
         s.slog = 2500
         s.way = 232323
@@ -996,7 +997,7 @@ class TestStreet(unittest.TestCase):
         assert s.length == 1.1
         assert round(s.rise,3) == 24.5
         assert round(s.fall,3) == 31.2
-        assert s.to_xml() == "<Street name='mystreet' length='1.100000' rise='24.500000' fall='31.200001' way='0'/>"
+        assert s.to_xml() == "<Street name='mystreet' length='1.100000' rise='24.500000' fall='31.200001' way='0' reverse='False'/>"
         
     def test_destroy(self):
         s = Street("mystreet", 1.1)
@@ -1009,7 +1010,7 @@ class TestStreet(unittest.TestCase):
         assert s.name == "longstreet"
         assert s.length == 240000
 
-        assert s.to_xml() == "<Street name='longstreet' length='240000.000000' rise='0.000000' fall='0.000000' way='0'/>"
+        assert s.to_xml() == "<Street name='longstreet' length='240000.000000' rise='0.000000' fall='0.000000' way='0' reverse='False'/>"
         
     def test_walk(self):
         s = Street("longstreet", 2)
@@ -1076,23 +1077,23 @@ class TestStreet(unittest.TestCase):
         
         s = Street("uwhillclimb", 488.8992, 0, 38.7096)
         after = s.walk_back(State(0,0),wo)
-        assert after.time == -242
-        assert after.weight == 302
-        
-        s = Street("uwhillclimb", 488.8992, 38.7096, 0)
-        after = s.walk_back(State(0,0),wo)
         assert after.time == -47
         assert after.weight == 47
         
+        s = Street("uwhillclimb", 488.8992, 38.7096, 0)
+        after = s.walk_back(State(0,0),wo)
+        assert after.time == -242
+        assert after.weight == 302
+        
         s = Street("bgfall", 612.9528, 0, 7.62)
         after = s.walk_back(State(0,0),wo)
-        assert after.time == -176
-        assert after.weight == 187
+        assert after.time == -139
+        assert after.weight == 139
         
         s = Street("bgfall", 612.9528, 7.62, 0)
         after = s.walk_back(State(0,0), wo)
-        assert after.time == -139
-        assert after.weight == 139
+        assert after.time == -176
+        assert after.weight == 187
         
     def test_street_turn(self):
         wo = WalkOptions()
@@ -1112,7 +1113,7 @@ class TestStreet(unittest.TestCase):
     def test_getstate(self):
         s = Street("longstreet", 2)
         
-        assert s.__getstate__() == ('longstreet', 2.0, 0.0, 0.0, 1.0,0)
+        assert s.__getstate__() == ('longstreet', 2.0, 0.0, 0.0, 1.0,0, False)
 
 class TestEgress(unittest.TestCase):
     def test_street(self):
@@ -1854,7 +1855,7 @@ class TestEngine(unittest.TestCase):
         
         eng = Engine(gg)
         
-        assert eng.walk_edges("A", time=0) == "<?xml version='1.0'?><vertex><state time='0' weight='0' dist_walked='0.0' num_transfers='0' trip_id='None'></state><outgoing_edges><edge><destination label='C'><state time='11' weight='11' dist_walked='10.0' num_transfers='0' trip_id='None'></state></destination><payload><Street name='4' length='10.000000' rise='0.000000' fall='0.000000' way='0'/></payload></edge><edge><destination label='B'><state time='11' weight='11' dist_walked='10.0' num_transfers='0' trip_id='None'></state></destination><payload><Street name='1' length='10.000000' rise='0.000000' fall='0.000000' way='0'/></payload></edge></outgoing_edges></vertex>"
+        assert eng.walk_edges("A", time=0) == "<?xml version='1.0'?><vertex><state time='0' weight='0' dist_walked='0.0' num_transfers='0' trip_id='None'></state><outgoing_edges><edge><destination label='C'><state time='11' weight='11' dist_walked='10.0' num_transfers='0' trip_id='None'></state></destination><payload><Street name='4' length='10.000000' rise='0.000000' fall='0.000000' way='0' reverse='False'/></payload></edge><edge><destination label='B'><state time='11' weight='11' dist_walked='10.0' num_transfers='0' trip_id='None'></state></destination><payload><Street name='1' length='10.000000' rise='0.000000' fall='0.000000' way='0' reverse='False'/></payload></edge></outgoing_edges></vertex>"
 
     def xtest_outgoing_edges_entire_osm(self):
         gg = Graph()
