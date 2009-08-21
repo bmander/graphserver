@@ -1481,6 +1481,9 @@ comboNew(int cap) {
     ret->n = 0;
     ret->payloads = (EdgePayload**)malloc(cap*sizeof(EdgePayload*));
     
+    ret->cache_state_forward = NULL;
+    ret->cache_state_reverse = NULL;
+    
     ret->walk = &comboWalk;
     ret->walkBack = &comboWalkBack;
     
@@ -1497,6 +1500,11 @@ comboAdd(Combination *this, EdgePayload *ep) {
 
 void
 comboDestroy(Combination* this) {
+    if( this->cache_state_forward )
+        stateDestroy( this->cache_state_forward );
+    if( this->cache_state_reverse )
+        stateDestroy( this->cache_state_reverse );
+    
     free( this->payloads );
     free( this );
 }
@@ -1504,6 +1512,13 @@ comboDestroy(Combination* this) {
 inline State*
 comboWalk(EdgePayload* superthis, State* param, WalkOptions* options) {
     Combination* this = (Combination*)superthis;
+    
+    if( this->cache_state_forward ) {
+        State* ret = stateDup( this->cache_state_forward );
+        ret->weight = param->weight+this->cache_deltaw_forward;
+        ret->time = param->time+this->cache_deltat_forward;
+        return ret;
+    }
     
     if( this->n == 0 ) return NULL;
         
@@ -1516,12 +1531,23 @@ comboWalk(EdgePayload* superthis, State* param, WalkOptions* options) {
         stateDestroy( intermediate );
     }
     
+    this->cache_state_forward = stateDup( ret );
+    this->cache_deltaw_forward = ret->weight - param->weight;
+    this->cache_deltat_forward = ret->time - param->time;
+    
     return ret;
 }
 
 inline State*
 comboWalkBack(EdgePayload* superthis, State* param, WalkOptions* options) {
     Combination* this = (Combination*)superthis;
+    
+    if( this->cache_state_reverse ) {
+        State* ret = stateDup( this->cache_state_reverse );
+        ret->weight = param->weight+this->cache_deltaw_reverse;
+        ret->time = param->time+this->cache_deltat_reverse;
+        return ret;
+    }
     
     if( this->n == 0 ) return NULL;
         
@@ -1533,6 +1559,10 @@ comboWalkBack(EdgePayload* superthis, State* param, WalkOptions* options) {
         ret = epWalkBack( this->payloads[i], intermediate, options );
         stateDestroy( intermediate );
     }
+    
+    this->cache_state_reverse = stateDup( ret );
+    this->cache_deltaw_reverse = ret->weight - param->weight;
+    this->cache_deltat_reverse = ret->time - param->time;
     
     return ret;
 }

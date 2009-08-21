@@ -697,6 +697,14 @@ typedef struct Combination {
   int cap;
   int n;
   EdgePayload** payloads;
+
+  long cache_deltaw_forward;
+  long cache_deltat_forward;
+  State *cache_state_forward;
+  long cache_deltaw_reverse;
+  long cache_deltat_reverse;
+  State *cache_state_reverse;
+    
 } Combination;
 
 Combination*
