@@ -6,8 +6,47 @@ OSMDB_NAME = "./data/osm/map2.osmdb"
 ELEV_BASENAME = "./data/83892907/83892907"
 PROFILEDB_NAME = "profile.db"
 
-def populate_profile_db( osmdb_name, profiledb_name, dem_basenames ):
+def compress(ary, ratio):
+    yield ary[0]
+    for i in range(1, len(ary)-1, ratio):
+        yield ary[i]
+    yield ary[-1]
 
+def cons(ary):
+    for i in range(len(ary)-1):
+        yield (ary[i], ary[i+1])
+
+class Profile(object):
+    def __init__(self):
+        self.segs = []
+        
+    def add(self, seg):
+        self.segs.append( seg )
+        
+    def concat(self, npoints=None):
+        ret = []
+        s = 0
+        
+        for seg in self.segs:
+            if len(seg)<2:
+                continue
+            
+            s0, e0 = seg[0]
+            ret.append( (s, e0) )
+            for (s0, e0), (s1, e1) in cons(seg):
+                s += abs(s1-s0)
+                ret.append( (s, e1) )
+                
+        if npoints is not None:
+            compression = int(len(ret)/float(npoints))
+            if compression <= 1:
+                return ret
+            
+            return list(compress(ret,compression))
+                
+        return ret
+
+def populate_profile_db( osmdb_name, profiledb_name, dem_basenames ):
 
     ddb = OSMDB( osmdb_name )
     elevs = ElevationPile()
