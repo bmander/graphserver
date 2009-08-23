@@ -210,12 +210,7 @@ class ContractionHierarchy(CShadow):
         vertices = upvertices+downvertices[1:]
         edges = upedges+downedges
         
-        ret = []
-        for ee in edges:
-            if ee.payload.__class__ == Combination:
-                ret.extend( ee.payload.unpack() )
-            else:
-                ret.append( ee.payload )
+        ret = [ee.payload for ee in edges]
                 
         sptup.destroy()
         sptdown.destroy()
