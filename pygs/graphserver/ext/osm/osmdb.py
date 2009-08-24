@@ -458,9 +458,11 @@ def test_wayrecord():
     assert wr.tags == {'highway':'bumpkis'}
     assert wr.nds == ['1','2','3']
 
-def osm_to_osmdb(osm_filename, osmdb_filename, tolerant=False):
+def osm_to_osmdb(osm_filename, osmdb_filename, tolerant=False, skipload=False):
     osmdb = OSMDB( osmdb_filename, overwrite=True )
-    osmdb.populate( osm_filename, accept=lambda tags: 'highway' in tags, reporter=sys.stdout )
+   
+    if not skipload: 
+        osmdb.populate( osm_filename, accept=lambda tags: 'highway' in tags, reporter=sys.stdout )
     osmdb.create_and_populate_edges_table(tolerant)
 
 def main():
@@ -475,8 +477,9 @@ def main():
     osmdb_filename = argv[2]
     
     tolerant = 'tolerant' in argv
-    
-    osm_to_osmdb(osm_filename, osmdb_filename, tolerant)
+    skipload = 'skipload' in argv
+ 
+    osm_to_osmdb(osm_filename, osmdb_filename, tolerant, skipload)
 
 if __name__=='__main__':
     main()
