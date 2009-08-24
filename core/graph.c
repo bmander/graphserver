@@ -340,6 +340,8 @@ void vInit( Vertex *this, char *label ) {
     this->degree_out = 0;
     this->outgoing = liNew( NULL ) ;
     this->incoming = liNew( NULL ) ;
+    
+    this->deleted_neighbors = 0;
 
     size_t labelsize = strlen(label)+1;
     this->label = (char*)malloc(labelsize*sizeof(char));

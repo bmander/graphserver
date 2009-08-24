@@ -239,11 +239,11 @@ Vertex* pqPop( Heap *pq, long* priority ) {
     
 }
 
-int get_importance(int degree_in, int degree_out, int n_shortcuts) {
+int get_importance(int degree_in, int degree_out, int n_shortcuts, int deleted_neighbors) {
     
     int edge_difference = n_shortcuts - (degree_in+degree_out);
     
-    return edge_difference;
+    return edge_difference + deleted_neighbors;
 }
 
 Heap* init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit ) {
@@ -257,7 +257,7 @@ Heap* init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit ) {
         Vertex* vv = vertices[i];
         int n_shortcuts;
         Path** shortcuts = get_shortcuts( gg, vv, wo, search_limit, &n_shortcuts );
-        int imp = get_importance( vv->degree_in, vv->degree_out, n_shortcuts );
+        int imp = get_importance( vv->degree_in, vv->degree_out, n_shortcuts, vv->deleted_neighbors );
         printf( "%s %d/%ld, prio:%d\n", vv->label, i+1, n, imp );
         pqPush( pq, vv, imp );
         int j;
@@ -295,7 +295,7 @@ CH* get_contraction_hierarchies(Graph* gg, WalkOptions* wo, int search_limit) {
         int n_shortcuts;
         while(1) {
             shortcuts = get_shortcuts( gg, vertex, wo, search_limit, &n_shortcuts );
-            long new_prio = get_importance( vertex->degree_in, vertex->degree_out, n_shortcuts );
+            long new_prio = get_importance( vertex->degree_in, vertex->degree_out, n_shortcuts, vertex->deleted_neighbors );
             if(new_prio == prio) {
                 break;
             } else {
@@ -314,6 +314,7 @@ CH* get_contraction_hierarchies(Graph* gg, WalkOptions* wo, int search_limit) {
             }
         }
         
+        printf( "%s has %d deleted neighbors\n", vertex->label, vertex->deleted_neighbors ); 
         printf( "contract %d/%ld %s (prio:%ld) with %d shortcuts\n", i, n, vertex->label, prio, n_shortcuts );
             
         // ADD SHORTCUTS
@@ -354,12 +355,17 @@ CH* get_contraction_hierarchies(Graph* gg, WalkOptions* wo, int search_limit) {
         ListNode* outgoing = vGetOutgoingEdgeList( vertex );
         while(outgoing) {
             Edge* ee = outgoing->data;
+            
+            ee->to->deleted_neighbors++;
+            
             gAddVertex( gup, ee->to->label );
             gAddEdge( gup, ee->from->label, ee->to->label, ee->payload );
             outgoing = outgoing->next;
         }
             
         // TODO inform neighbors their neighbor is being deleted
+        
+        
         gRemoveVertex( gg, vertex->label, FALSE );
     }
     
