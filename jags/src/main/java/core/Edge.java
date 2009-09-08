@@ -19,13 +19,11 @@ public class Edge extends AbstractEdge implements Serializable{
     }
     
     public WalkResult walk(State s0, WalkOptions wo) throws NegativeWeightException {
-    	WalkResult wr = this.payload.walk( s0, wo );
-        return wr;
+    	return payload.walk( s0, wo );
     }
     
     public WalkResult walkBack(State s0, WalkOptions wo) throws NegativeWeightException{
-    	WalkResult wr = this.payload.walkBack( s0, wo );
-        return wr;
+    	return payload.walkBack( s0, wo );
     }
     
     public String toString() {
