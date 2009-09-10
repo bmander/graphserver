@@ -2,19 +2,20 @@
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
 
-import spt.ShortestPathTree;
+import org.opentripplanner.jags.algorithm.kao.Kao;
+import org.opentripplanner.jags.algorithm.kao.KaoGraph;
+import org.opentripplanner.jags.algorithm.kao.Tree;
+import org.opentripplanner.jags.core.Edge;
+import org.opentripplanner.jags.core.Graph;
+import org.opentripplanner.jags.core.State;
+import org.opentripplanner.jags.core.Vertex;
+import org.opentripplanner.jags.core.WalkOptions;
+import org.opentripplanner.jags.edgetype.Hop;
+import org.opentripplanner.jags.edgetype.loader.GTFSHopLoader;
+import org.opentripplanner.jags.gtfs.Feed;
+import org.opentripplanner.jags.spt.ShortestPathTree;
 
-import core.Edge;
-import core.Graph;
-import core.State;
-import core.Vertex;
-import core.WalkOptions;
-import edgetype.Hop;
-import edgetype.loader.GTFSHopLoader;
-import gtfs.Feed;
-import algorithm.kao.Kao;
-import algorithm.kao.KaoGraph;
-import algorithm.kao.Tree;
+
 import junit.framework.TestCase;
 
 public class TestKao extends TestCase {
@@ -37,7 +38,7 @@ public class TestKao extends TestCase {
 		Graph gg = new Graph();
 		GTFSHopLoader h2 = new GTFSHopLoader(gg,feed);
 		h2.load();
-		ShortestPathTree spt = algorithm.Dijkstra.getShortestPathTree(gg, 
+		ShortestPathTree spt = org.opentripplanner.jags.algorithm.Dijkstra.getShortestPathTree(gg, 
 											   "Millbrae Caltrain", 
 											   "Mountain View Caltrain", 
 											   new State(t_0), 

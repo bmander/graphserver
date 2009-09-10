@@ -2,13 +2,14 @@
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
 
-import gtfs.Feed;
-import algorithm.kao.EdgeOption;
-import algorithm.kao.KaoGraph;
+import org.opentripplanner.jags.algorithm.kao.EdgeOption;
+import org.opentripplanner.jags.algorithm.kao.KaoGraph;
+import org.opentripplanner.jags.core.Vertex;
+import org.opentripplanner.jags.edgetype.Hop;
+import org.opentripplanner.jags.edgetype.loader.GTFSHopLoader;
+import org.opentripplanner.jags.gtfs.Feed;
+
 import junit.framework.TestCase;
-import core.Vertex;
-import edgetype.Hop;
-import edgetype.loader.GTFSHopLoader;
 
 public class TestKaoGraph extends TestCase {
 	public void testBasic() throws Exception {

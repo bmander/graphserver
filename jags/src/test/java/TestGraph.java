@@ -1,8 +1,9 @@
 
-import core.Edge;
-import core.Graph;
-import core.Vertex;
-import edgetype.Street;
+import org.opentripplanner.jags.core.Edge;
+import org.opentripplanner.jags.core.Graph;
+import org.opentripplanner.jags.core.Vertex;
+import org.opentripplanner.jags.edgetype.Street;
+
 import junit.framework.TestCase;
 
 public class TestGraph extends TestCase {

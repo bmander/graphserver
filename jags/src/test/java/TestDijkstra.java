@@ -1,14 +1,15 @@
 
 import java.util.GregorianCalendar;
 
-import spt.ShortestPathTree;
-import algorithm.Dijkstra;
-import core.Graph;
-import core.State;
-import core.WalkOptions;
-import edgetype.Hop;
-import edgetype.loader.GTFSHopLoader;
-import gtfs.Feed;
+import org.opentripplanner.jags.algorithm.Dijkstra;
+import org.opentripplanner.jags.core.Graph;
+import org.opentripplanner.jags.core.State;
+import org.opentripplanner.jags.core.WalkOptions;
+import org.opentripplanner.jags.edgetype.Hop;
+import org.opentripplanner.jags.edgetype.loader.GTFSHopLoader;
+import org.opentripplanner.jags.gtfs.Feed;
+import org.opentripplanner.jags.spt.ShortestPathTree;
+
 import junit.framework.TestCase;
 
 public class TestDijkstra extends TestCase {

@@ -1,15 +1,16 @@
 
 import junit.framework.TestCase;
-import edgetype.factory.GTFSHopFactory;
-import edgetype.Hop;
-import gtfs.Feed;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.GregorianCalendar;
 
-import core.State;
-import core.WalkOptions;
+import org.opentripplanner.jags.core.State;
+import org.opentripplanner.jags.core.WalkOptions;
+import org.opentripplanner.jags.edgetype.Hop;
+import org.opentripplanner.jags.edgetype.factory.GTFSHopFactory;
+import org.opentripplanner.jags.gtfs.Feed;
+
 
 public class TestHop extends TestCase {
 	

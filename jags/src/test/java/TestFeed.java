@@ -1,9 +1,10 @@
 
-import gtfs.Feed;
-import gtfs.ServiceCalendar;
-import gtfs.Table;
-import gtfs.Trip;
-import gtfs.types.GTFSDate;
+import org.opentripplanner.jags.gtfs.Feed;
+import org.opentripplanner.jags.gtfs.ServiceCalendar;
+import org.opentripplanner.jags.gtfs.Table;
+import org.opentripplanner.jags.gtfs.Trip;
+import org.opentripplanner.jags.gtfs.types.GTFSDate;
+
 import junit.framework.TestCase;
 
 public class TestFeed extends TestCase {

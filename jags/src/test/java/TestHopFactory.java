@@ -2,9 +2,10 @@
 import java.util.ArrayList;
 import java.util.Collections;
 
-import edgetype.Hop;
-import edgetype.factory.GTFSHopFactory;
-import gtfs.Feed;
+import org.opentripplanner.jags.edgetype.Hop;
+import org.opentripplanner.jags.edgetype.factory.GTFSHopFactory;
+import org.opentripplanner.jags.gtfs.Feed;
+
 import junit.framework.TestCase;
 
 
