@@ -1,3 +1,4 @@
+package org.opentripplanner.jags.test;
 
 import org.opentripplanner.jags.core.Edge;
 import org.opentripplanner.jags.core.Graph;

@@ -1,3 +1,4 @@
+package org.opentripplanner.jags.test;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;

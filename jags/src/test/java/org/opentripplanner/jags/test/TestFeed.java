@@ -1,3 +1,4 @@
+package org.opentripplanner.jags.test;
 
 import org.opentripplanner.jags.gtfs.Feed;
 import org.opentripplanner.jags.gtfs.ServiceCalendar;
