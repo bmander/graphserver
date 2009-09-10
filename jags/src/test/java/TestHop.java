@@ -1,4 +1,3 @@
-package test;
 
 import junit.framework.TestCase;
 import edgetype.factory.GTFSHopFactory;

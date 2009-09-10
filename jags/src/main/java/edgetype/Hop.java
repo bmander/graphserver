@@ -15,7 +15,6 @@ public class Hop extends AbstractPayload implements Comparable<Hop> {
 	
 	public static class HopArrivalTimeComparator implements Comparator<Hop> {
 
-		@Override
 		public int compare(Hop arg0, Hop arg1) {
 			Integer v1 = new Integer(arg0.end.arrival_time.getSecondsSinceMidnight());
 			Integer v2 = new Integer(arg1.end.arrival_time.getSecondsSinceMidnight());

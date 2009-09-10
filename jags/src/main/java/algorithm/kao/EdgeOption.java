@@ -11,7 +11,6 @@ public class EdgeOption implements Comparable<EdgeOption>{
 		this.timeToArrival = timeToArrival;
 	}
 
-	@Override
 	public int compareTo(EdgeOption arg0) {
 		return (int)(timeToArrival-arg0.timeToArrival);
 	}

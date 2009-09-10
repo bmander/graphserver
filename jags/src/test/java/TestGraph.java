@@ -1,4 +1,3 @@
-package test;
 
 import core.Edge;
 import core.Graph;
