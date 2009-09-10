@@ -68,7 +68,6 @@ public class Hop extends AbstractPayload implements Comparable<Hop> {
     	}
     	
     	State state1 = state0.clone();
-    	state1.time = (GregorianCalendar)state0.time.clone();
     	state1.time.add(GregorianCalendar.SECOND, wait+elapsed);
     	return new WalkResult(wait+elapsed, state1);
     }
@@ -96,7 +95,6 @@ public class Hop extends AbstractPayload implements Comparable<Hop> {
     	}
     	
     	State state1 = state0.clone();
-    	state1.time = (GregorianCalendar)state0.time.clone();
     	state1.time.add(GregorianCalendar.SECOND, -(wait+elapsed));
     	return new WalkResult(wait+elapsed, state1);
     	
