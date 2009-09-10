@@ -16,7 +16,7 @@ public class State {
 	
     public State clone() {
         State ret = new State();
-        //ret.time = (GregorianCalendar)time.clone();
+        ret.time = (GregorianCalendar)time.clone();
         return ret;
     }
     
