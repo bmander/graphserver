@@ -24,7 +24,7 @@ class GraphDatabase:
         
     def setup(self):
         c = self.conn.cursor()
-        c.execute( "CREATE TABLE vertices (label)" )
+        c.execute( "CREATE TABLE vertices (label TEXT UNIQUE ON CONFLICT IGNORE)" )
         c.execute( "CREATE TABLE edges (vertex1 TEXT, vertex2 TEXT, edgetype TEXT, edgestate TEXT)" )
         c.execute( "CREATE TABLE resources (name TEXT UNIQUE ON CONFLICT IGNORE, image TEXT)" )
     
@@ -50,6 +50,33 @@ class GraphDatabase:
         c.close()
         
         self.index()
+        
+    def get_cursor(self):
+        return self.conn.cursor()
+    def commit(self):
+        self.conn.commit()
+        
+    def add_vertex(self, vertex_label, outside_c=None):
+        c = outside_c or self.conn.cursor()
+        
+        c.execute( "INSERT INTO vertices VALUES (?)", (vertex_label,) )
+        
+        if outside_c is None:
+            self.conn.commit()
+            c.close()
+        
+    def add_edge(self, from_v_label, to_v_label, payload, outside_c=None):
+        c = outside_c or self.conn.cursor()
+            
+        c.execute( "INSERT INTO edges VALUES (?, ?, ?, ?)", (from_v_label, to_v_label, cPickle.dumps( payload.__class__ ), cPickle.dumps( payload.__getstate__() ) ) )
+        
+        if hasattr(payload, "__resources__"):
+            for name, resource in payload.__resources__():
+                self.store( name, resource )
+                
+        if outside_c is None:
+            self.conn.commit()
+            c.close()
         
     def execute(self, query, args=None):
         
