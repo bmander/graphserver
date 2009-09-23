@@ -56,7 +56,7 @@ def gdb_import_osm(gdb, osmdb, vertex_namespace):
     gdb.index()
 
 if __name__ == '__main__':
-    usage = """usage: python new_gdb.py <graphdb_filename> <osmdb_filename>"""
+    usage = """usage: python gdb_import_osm.py <graphdb_filename> <osmdb_filename>"""
     parser = OptionParser(usage=usage)
     parser.add_option("-n", "--namespace", dest="namespace", default="osm",
                       help="prefix all imported vertices with namespace string")
