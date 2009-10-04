@@ -55,7 +55,7 @@ def gdb_import_osm(gdb, osmdb, vertex_namespace):
     print "indexing vertices..."
     gdb.index()
 
-if __name__ == '__main__':
+def main():
     usage = """usage: python gdb_import_osm.py <graphdb_filename> <osmdb_filename>"""
     parser = OptionParser(usage=usage)
     parser.add_option("-n", "--namespace", dest="namespace", default="osm",
@@ -87,5 +87,8 @@ if __name__ == '__main__':
     gdb_import_osm(gdb, osmdb, options.namespace);
     
     print "done"
-    
+
+if __name__ == '__main__':
+    main()
+
     

@@ -2,7 +2,7 @@ from optparse import OptionParser
 from graphserver.graphdb import GraphDatabase
 import os
 
-if __name__=='__main__':
+def main():
     usage = """usage: python new_gdb.py [options] <graphdb_filename> """
     parser = OptionParser(usage=usage)
     parser.add_option("-o", "--overwrite",
@@ -23,3 +23,6 @@ if __name__=='__main__':
         graphdb = GraphDatabase( graphdb_filename, overwrite=options.overwrite )
     else:
         print "Graph database '%s' already exists. Use -o to overwrite"%graphdb_filename
+
+if __name__=='__main__':
+    main()

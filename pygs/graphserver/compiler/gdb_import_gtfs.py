@@ -111,8 +111,8 @@ def gdb_load_gtfsdb_to_boardalight(gdb, agency_namespace, gtfsdb, agency_id, cur
     for stop_id1, stop_id2, conn_type, distance in gtfsdb.execute( "SELECT * FROM connections" ):
         g.add_edge( "sta-%s"%stop_id1, "sta-%s"%stop_id2, Street( conn_type, distance ) )
         g.add_edge( "sta-%s"%stop_id2, "sta-%s"%stop_id1, Street( conn_type, distance ) )
-
-if __name__ == '__main__':
+        
+def main():
     usage = """usage: python gdb_import_gtfs.py [options] <graphdb_filename> <gtfsdb_filename> <agency_id>"""
     parser = OptionParser(usage=usage)
     parser.add_option("-n", "--namespace", dest="namespace", default="0",
@@ -137,3 +137,6 @@ if __name__ == '__main__':
     gdb.commit()
     
     print "done"
+
+if __name__ == '__main__':
+    main()
