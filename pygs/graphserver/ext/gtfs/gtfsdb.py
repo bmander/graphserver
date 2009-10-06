@@ -106,8 +106,32 @@ SELECT stop_times.* FROM stop_times, trips
         return list(c)
     
     def stop_time_bundles( self, service_id ):
-        for stop_id in self.pattern.stop_ids:
-            yield self.stop_time_bundle( stop_id, service_id )
+        
+        c = self.gtfsdb.conn.cursor()
+        
+        query = """
+        SELECT stop_times.trip_id, stop_times.arrival_time, stop_times.departure_time, stop_times.stop_id, stop_times.stop_sequence, stop_times.shape_dist_traveled FROM stop_times, trips
+        WHERE stop_times.trip_id = trips.trip_id
+        AND trips.trip_id IN (%s)
+        AND trips.service_id = ?"""%(",".join(["'%s'"%x for x in self.trip_ids]))
+        
+        bundle_sorter = {}
+        
+        for trip_id, arrival_time, departure_time, stop_id, stop_sequence, shape_dist_traveled in c.execute(query, (service_id,)):
+            if stop_sequence not in bundle_sorter:
+                bundle_sorter[stop_sequence] = []
+            
+            bundle_sorter[stop_sequence].append( (trip_id, arrival_time, departure_time, stop_id, stop_sequence, shape_dist_traveled) )
+            
+        bundles = bundle_sorter.values()
+        
+        for bundle in bundles:
+            bundle.sort( key=lambda x:x[2] )
+        
+        return bundles
+        
+        #for stop_id in self.pattern.stop_ids:
+        #    yield self.stop_time_bundle( stop_id, service_id )
             
     def __repr__(self):
         return "<TripBundle n_trips: %d n_stops: %d>"%(len(self.trip_ids), len(self.pattern.stop_ids))
@@ -233,7 +257,7 @@ class GTFSDatabase:
         c.close()
         return ret
 
-    def compile_trip_bundles(self, reporter=None):
+    def compile_trip_bundles(self, maxtrips=None, reporter=None):
         
         c = self.conn.cursor()
 
@@ -242,10 +266,17 @@ class GTFSDatabase:
 
         c.execute( "SELECT count(*) FROM trips" )
         n_trips = c.next()[0]
+        
+        if maxtrips is not None and maxtrips < n_trips:
+            n_trips = maxtrips;
 
-        c.execute( "SELECT trip_id FROM trips" )
+        if maxtrips is not None:
+            c.execute( "SELECT trip_id FROM trips LIMIT ?", (maxtrips,) )
+        else:
+            c.execute( "SELECT trip_id FROM trips" )
+            
         for i, (trip_id,) in enumerate(c):
-            if reporter and i%(n_trips//50)==0: reporter.write( "%d/%d trips grouped by %d patterns\n"%(i,n_trips,len(bundles)))
+            if reporter and i%(n_trips//50+1)==0: reporter.write( "%d/%d trips grouped by %d patterns\n"%(i,n_trips,len(bundles)))
             
             d = self.conn.cursor()
             d.execute( "SELECT trip_id, arrival_time, departure_time, stop_id FROM stop_times WHERE trip_id=? ORDER BY stop_sequence", (trip_id,) )
