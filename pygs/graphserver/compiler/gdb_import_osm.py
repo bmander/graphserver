@@ -5,7 +5,7 @@ from graphserver.core import Street
 from graphserver.ext.osm.osmdb import OSMDB
 import sys
 
-def gdb_import_osm(gdb, osmdb, vertex_namespace):
+def gdb_import_osm(gdb, osmdb, vertex_namespace, slogs):
     cursor = gdb.get_cursor()
 	
     n_edges = osmdb.count_edges()
@@ -84,7 +84,7 @@ def main():
     osmdb = OSMDB( osmdb_filename )
     gdb = GraphDatabase( graphdb_filename, overwrite=False )
     
-    gdb_import_osm(gdb, osmdb, options.namespace);
+    gdb_import_osm(gdb, osmdb, options.namespace, slogs);
     
     print "done"
 
