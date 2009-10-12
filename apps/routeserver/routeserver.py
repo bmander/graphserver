@@ -7,7 +7,10 @@ import sys
 import graphserver
 from graphserver.util import TimeHelpers
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
-import json
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 class RouteServer(Servable):
     def __init__(self, graphdb_filename, event_dispatch):
