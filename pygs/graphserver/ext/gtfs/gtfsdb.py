@@ -372,6 +372,9 @@ class GTFSDatabase:
     DOW_INDEX = dict(zip(range(len(DOWS)),DOWS))
     
     def service_periods(self, datetime):
+        datetimestr = datetime.strftime( "%Y%m%d" ) #datetime to string like "20081225"
+        datetimeint = int(datetimestr)              #int like 20081225. These ints have the same ordering as regular dates, so comparison operators work
+        
         # Get the gtfs date range. If the datetime is out of the range, no service periods are in effect
         start_date, end_date = self.date_range()
         if datetime < start_date or datetime > end_date:
@@ -379,10 +382,16 @@ class GTFSDatabase:
         
         # Use the day-of-week name to query for all service periods that run on that day
         dow_name = self.DOW_INDEX[datetime.weekday()]
-        sids = set( [x[0] for x in self.execute( "SELECT * FROM calendar WHERE %s=1"%dow_name )] )
+        service_periods = list( self.execute( "SELECT service_id, start_date, end_date FROM calendar WHERE %s=1"%dow_name ) )
+         
+        # Exclude service periods whose range does not include this datetime
+        service_periods = [x for x in service_periods if (int(x[1]) <= datetimeint and int(x[2]) >= datetimeint)]
+        
+        # Cut service periods down to service IDs
+        sids = set( [x[0] for x in service_periods] )
             
         # For each exception on the given datetime, add or remove service_id to the accumulating list
-        datetimestr = datetime.strftime( "%Y%m%d" )
+        
         for exception_sid, exception_type in self.execute( "select service_id, exception_type from calendar_dates WHERE date = ?", (datetimestr,) ):
             if exception_type == 1:
                 sids.add( exception_sid )
