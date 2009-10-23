@@ -110,28 +110,28 @@ SELECT stop_times.* FROM stop_times, trips
         c = self.gtfsdb.conn.cursor()
         
         query = """
-        SELECT stop_times.trip_id, stop_times.arrival_time, stop_times.departure_time, stop_times.stop_id, stop_times.stop_sequence, stop_times.shape_dist_traveled FROM stop_times, trips
+        SELECT stop_times.trip_id, 
+               stop_times.arrival_time, 
+               stop_times.departure_time, 
+               stop_times.stop_id, 
+               stop_times.stop_sequence, 
+               stop_times.shape_dist_traveled 
+        FROM stop_times, trips
         WHERE stop_times.trip_id = trips.trip_id
         AND trips.trip_id IN (%s)
-        AND trips.service_id = ?"""%(",".join(["'%s'"%x for x in self.trip_ids]))
+        AND trips.service_id = ?
+        ORDER BY stop_sequence"""%(",".join(["'%s'"%x for x in self.trip_ids]))
+            
+        #bundle queries by trip_id
         
-        bundle_sorter = {}
-        
+        trip_id_sorter = {}
         for trip_id, arrival_time, departure_time, stop_id, stop_sequence, shape_dist_traveled in c.execute(query, (service_id,)):
-            if stop_sequence not in bundle_sorter:
-                bundle_sorter[stop_sequence] = []
-            
-            bundle_sorter[stop_sequence].append( (trip_id, arrival_time, departure_time, stop_id, stop_sequence, shape_dist_traveled) )
-            
-        bundles = bundle_sorter.values()
+            if trip_id not in trip_id_sorter:
+                trip_id_sorter[trip_id] = []
+                
+            trip_id_sorter[trip_id].append( (trip_id, arrival_time, departure_time, stop_id, stop_sequence, shape_dist_traveled) )
         
-        for bundle in bundles:
-            bundle.sort( key=lambda x:x[2] )
-        
-        return bundles
-        
-        #for stop_id in self.pattern.stop_ids:
-        #    yield self.stop_time_bundle( stop_id, service_id )
+        return zip(*(trip_id_sorter.values()))
             
     def __repr__(self):
         return "<TripBundle n_trips: %d n_stops: %d>"%(len(self.trip_ids), len(self.pattern.stop_ids))

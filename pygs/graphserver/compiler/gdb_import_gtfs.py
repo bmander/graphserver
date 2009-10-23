@@ -10,7 +10,9 @@ def cons(ary):
         yield (ary[i], ary[i+1])
 
 def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, tz, cursor):
+    
     stop_time_bundles = bundle.stop_time_bundles(service_id)
+    
     n_trips = len(bundle.trip_ids)    
     
     # If there's less than two stations on this trip bundle, the trip bundle doesn't actually span two places
