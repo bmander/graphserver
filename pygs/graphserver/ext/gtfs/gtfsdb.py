@@ -60,7 +60,7 @@ def load_gtfs_table_to_sqlite(fp, gtfs_basename, cc, header=None):
         
         _line = []
         for i, converter in field_operator:
-            if i is not None:
+            if i is not None and line[i] != "":
                 if converter:
                     _line.append( converter(line[i]) )
                 else:
@@ -229,6 +229,7 @@ class GTFSDatabase:
     def _create_indices(self, c):
         
         c.execute( "CREATE INDEX stop_times_trip_id ON stop_times (trip_id)" )
+        c.execute( "CREATE INDEX stop_times_stop_id ON stop_times (stop_id)" )
         c.execute( "CREATE INDEX trips_trip_id ON trips (trip_id)" )
         c.execute( "CREATE INDEX stops_stop_lat ON stops (stop_lat)" )
         c.execute( "CREATE INDEX stops_stop_lon ON stops (stop_lon)" )
