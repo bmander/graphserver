@@ -305,14 +305,16 @@ class StitchDisjunctGraphs(OSMDBFilter):
         alias = {}
         
         # for each location that appears more than once
-        for nds, ct, lat, lon in osmdb.execute("SELECT group_concat(id), count(*) as cnt, lat, lon from nodes GROUP BY lat, lon HAVING cnt > 1"):
+        #for nds, ct, lat, lon in osmdb.execute("SELECT group_concat(id), count(*) as cnt, lat, lon from nodes GROUP BY lat, lon HAVING cnt > 1"):
+        # rounding degrees to 5 decimal places gives about 1 meter accuracy
+        for nds, ct, lat, lon in osmdb.execute("SELECT group_concat(id), count(*) as cnt, round(lat, 5) as rlat, round(lon, 5) as rlon from nodes GROUP BY rlat, rlon HAVING cnt > 1"):
             
             # get all the nodes that appear at that location
             #ids = map(lambda x:x[0], osmdb.execute("SELECT id FROM nodes WHERE lat=? AND lon=?", (lat,lon)))
             #print nds
             nds = nds.split(",")
             first = nds.pop(0)
-            alias[nds] = nds
+            alias.update( [(n, first) for n in nds] )
             # alias the duplicate node to an identical node
             #for id in ids:
             # if id != ids[0]:
@@ -335,13 +337,10 @@ class StitchDisjunctGraphs(OSMDBFilter):
             if i%1000==0: print "way %d"%i
             
             nds = json.loads(nds_str)
-            if nds[0] in alias:
-                nds[0] = alias[nds[0]]
-                print "replace header"
-            if nds[-1] in alias:
-                nds[-1] = alias[nds[-1]]
-                print "replace footer"
-            
+            for j in range( len(nds) ):
+                if nds[j] in alias:
+                    nds[j] = alias[nds[j]]
+                    print "replaced node %d of way %d" % (j, i)
             
             c.execute( "UPDATE ways SET nds=? WHERE id=?", (json.dumps(nds), id) )
         osmdb.conn.commit()
