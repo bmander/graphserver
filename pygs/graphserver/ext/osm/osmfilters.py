@@ -127,33 +127,32 @@ class PurgeDisjunctGraphsFilter(OSMDBFilter):
         
         f.run(db,*[])
         
-        node_ids = {}
+        purge_list = []
 
         if not threshold:
             largest = next(db.execute("SELECT graph_num, count(*) as cnt FROM graph_nodes GROUP BY graph_num ORDER BY cnt desc"))[0]
                     
             for x in db.execute("SELECT node_id FROM graph_nodes where graph_num != ?", (largest,)):
-                node_ids[x[0]] = 1
+                purge_list.append(x[0])
         else: 
             for x in db.execute("""SELECT node_id FROM graph_nodes where graph_num in
                                 (SELECT a.graph_num FROM 
                                   (SELECT graph_num, count(*) as cnt FROM graph_nodes GROUP BY graph_num HAVING cnt < %s) as a)""" % threshold):
-                node_ids[x[0]] = 1
+                purge_list.append(x[0])
 
         c = db.cursor()
 
-        purge_list = []
-        for way in db.ways():
-            if way.nds[0] in node_ids or way.nds[-1] in node_ids:
-                purge_list.append(way.id)
-
-        for i in range(0,len(purge_list),100):
-            query = "DELETE from ways WHERE id in ('%s')" % "','".join(purge_list[i:i+100])
+        # when slicing, end index can be larger than list size! very useful for blocking.
+        for i in range(0, len(purge_list), 100):
+            query = "DELETE from edges WHERE start_nd in ('%s')" % "','".join(purge_list[i:i+100])
+            c.execute(query)
+            query = "DELETE from edges WHERE end_nd   in ('%s')" % "','".join(purge_list[i:i+100])
             c.execute(query)
         db.conn.commit()
         c.close()
-        print "Deleted %s ways" % (len(purge_list))
-        DeleteOrphanNodesFilter().run(db,*[])
+        print "Deleted %s edges" % (len(purge_list))
+        
+        # don't need to delete the nodes, only those used by edges will be imported.
                 
         f.teardown(db)
         
@@ -197,8 +196,8 @@ class FindDisjunctGraphsFilter(OSMDBFilter):
 
     def teardown(self, db):
         c = db.cursor()
-        c.execute("DROP table if exists graph_nodes")
-        c.execute("DROP table if exists graph_edges")
+        #c.execute("DROP table if exists graph_nodes")
+        #c.execute("DROP table if exists graph_edges")
         db.conn.commit()
         c.close()
         
@@ -243,21 +242,21 @@ class FindDisjunctGraphsFilter(OSMDBFilter):
                 # should not be necessary, must be a relic from when i forgot to put in double edges
                 # g.remove_vertex(v.label, True, True)
                 #print v.label
-                for e in g.get_vertex(v.label).outgoing : # get edges from original graph, since spt is tree-like 
-                    lat1, lon1 = c.execute("SELECT lat, lon from nodes where id=?", (e.from_v.label, )).next()
-                    lat2, lon2 = c.execute("SELECT lat, lon from nodes where id=?", (e.to_v.label, )).next()
-                    if lat1 <= lat2 : # include only one edge of each pair, since ways are not directed. if they are at exactly the same lat, you will get 2.
-                        c.execute("INSERT into graph_edges VALUES (?, ?, ?)", 
-                                (iteration, e.from_v.label + '->' + e.to_v.label, "LINESTRING(%f %f, %f %f)" % (lon1, lat1, lon2, lat2)))
             spt.destroy()
             
             t1 = time.time()
             print "pass %s took: %f vertices remaining: %d"%(iteration, t1-t0, len(vertices))
             t0 = t1
             iteration += 1
-        c.close()
-        
+        osmdb.conn.commit()       
+        print 'Building edge geometry table...'
+        for way_id, parent_id, from_nd, to_nd, dist, coords, tags in osmdb.edges() :  
+            text_coords = [ "%f %f" % (lon, lat) for lon, lat in coords]
+            wkt_coords = "LINESTRING(%s)" % (','.join(text_coords))
+            graph_num = next(c.execute("SELECT graph_num from graph_nodes where node_id = ?", (from_nd,)))[0]
+            c.execute("INSERT into graph_edges VALUES (?, ?, ?)", (graph_num, from_nd + '->' + to_nd, wkt_coords))
         osmdb.conn.commit()
+        c.close()
         g.destroy()
         # audit
         for gnum, count in osmdb.execute("SELECT graph_num, count(*) FROM graph_nodes GROUP BY graph_num"):
