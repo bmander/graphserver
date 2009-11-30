@@ -146,15 +146,21 @@ class PurgeDisjunctGraphsFilter(OSMDBFilter):
         for i in range(0, len(purge_list), 100):
             query = "DELETE from edges WHERE start_nd in ('%s')" % "','".join(purge_list[i:i+100])
             c.execute(query)
+            # this should not be necessary since the graphs are by definition disjunct
             query = "DELETE from edges WHERE end_nd   in ('%s')" % "','".join(purge_list[i:i+100])
             c.execute(query)
         db.conn.commit()
         c.close()
         print "Deleted %s edges" % (len(purge_list))
         
-        # don't need to delete the nodes, only those used by edges will be imported.
-                
-        f.teardown(db)
+        # Don't need to delete the nodes from the OSM, only those used by edges will be imported.
+        # But unused nodes should be removed from the index so they are not used in linking.
+        for node_id in purge_list :
+            id, tags, lat, lon, endnode_refs = db.node(node_id)
+            db.index.delete(node_id, (lon, lat))
+            
+        # Leave the tables to visualize results in GIS.
+        #f.teardown(db)
         
 class StripOtherTagsFilter(OSMDBFilter):
     def filter(self, db, feature_type, *keep_tags):
@@ -196,6 +202,7 @@ class FindDisjunctGraphsFilter(OSMDBFilter):
 
     def teardown(self, db):
         c = db.cursor()
+        # commented out because purge disjunct filter calls teardown at the end
         #c.execute("DROP table if exists graph_nodes")
         #c.execute("DROP table if exists graph_edges")
         db.conn.commit()
