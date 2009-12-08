@@ -29,14 +29,26 @@ def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, t
     #add board edges
     for i, stop_time_bundle in enumerate(stop_time_bundles[:-1]):
         
-        trip_id, departure_time, arrival_time, stop_id, stop_sequence, stop_dist_traveled = stop_time_bundle[0]
+        trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_dist_traveled = stop_time_bundle[0]
         
-        patternstop_vx_name = "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,i)
+        if arrival_time != departure_time:
+            patternstop_vx_name = "psv-%s-%03d-%03d-depart"%(agency_namespace,bundle.pattern.pattern_id,i)
+            
+            # construct the board/alight/dwell triangle for this patternstop
+            patternstop_arrival_vx_name = "psv-%s-%03d-%03d-arrive"%(agency_namespace,bundle.pattern.pattern_id,i)
+            gdb.add_vertex( patternstop_arrival_vx_name, cursor )
+            gdb.add_edge( patternstop_arrival_vx_name, 
+                          patternstop_vx_name,
+                          Crossing( (departure_time-arrival_time) ), 
+                          cursor )
+            
+        else:
+            patternstop_vx_name = "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,i)
         
         gdb.add_vertex( patternstop_vx_name, cursor )
         
         b = TripBoard(service_id, sc, tz, 0)
-        for trip_id, departure_time, arrival_time, stop_id, stop_sequence, stop_dist_traveled in stop_time_bundle:
+        for trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_dist_traveled in stop_time_bundle:
             b.add_boarding( trip_id, departure_time )
             
         gdb.add_edge( "sta-%s"%stop_id, patternstop_vx_name, b, cursor )
@@ -44,22 +56,41 @@ def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, t
     #add alight edges
     for i, stop_time_bundle in enumerate(stop_time_bundles[1:]):
 
-        trip_id, departure_time, arrival_time, stop_id, stop_sequence, stop_dist_traveled = stop_time_bundle[0]
+        trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_dist_traveled = stop_time_bundle[0]
         
-        patternstop_vx_name = "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,i+1)
+        if arrival_time != departure_time:
+            patternstop_vx_name = "psv-%s-%03d-%03d-arrive"%(agency_namespace,bundle.pattern.pattern_id,i+1)
+        else:
+            patternstop_vx_name = "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,i+1)
+            
         gdb.add_vertex( patternstop_vx_name, cursor )
         
         al = Alight(service_id, sc, tz, 0)
-        for trip_id, departure_time, arrival_time, stop_id, stop_sequence, stop_dist_traveled in stop_time_bundle:
+        for trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_dist_traveled in stop_time_bundle:
             al.add_alighting( trip_id.encode('ascii'), arrival_time )
             
         gdb.add_edge( patternstop_vx_name, "sta-%s"%stop_id, al, cursor )
     
     # add crossing edges
-    for j, crossing_time in enumerate(bundle.pattern.crossings):
-        c = Crossing( crossing_time )
-        gdb.add_edge( "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,j), 
-                      "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,j+1), c, cursor )
+    for i, (from_stop_time_bundle, to_stop_time_bundle) in enumerate(cons(stop_time_bundles)):
+        
+        trip_id, from_arrival_time, from_departure_time, stop_id, stop_sequence, stop_dist_traveled = from_stop_time_bundle[0]
+        trip_id, to_arrival_time, to_departure_time, stop_id, stop_sequence, stop_dist_traveled = to_stop_time_bundle[0]
+        
+        if from_arrival_time!=from_departure_time:
+            from_patternstop_vx_name = "psv-%s-%03d-%03d-depart"%(agency_namespace,bundle.pattern.pattern_id,i)
+        else:
+            from_patternstop_vx_name = "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,i)
+            
+        if to_arrival_time!=to_departure_time:
+            to_patternstop_vx_name = "psv-%s-%03d-%03d-arrive"%(agency_namespace,bundle.pattern.pattern_id,i+1)
+        else:
+            to_patternstop_vx_name = "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,i+1)
+            
+        gdb.add_edge( from_patternstop_vx_name, 
+                      to_patternstop_vx_name, 
+                      Crossing( (to_arrival_time-from_departure_time) ), 
+                      cursor )
                       
     gdb.commit()
 
