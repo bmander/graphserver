@@ -22,7 +22,12 @@ class RouteServer(Servable):
         return "\n".join( [vv.label for vv in self.graph.vertices] )
     vertices.mime = "text/plain"
 
-    def path(self, origin, dest, currtime, transfer_penalty=0, walking_speed=1.0):
+    def path(self, origin, dest, currtime=None, time_offset=None, transfer_penalty=0, walking_speed=1.0):
+        if currtime is None:
+            currtime = int(time.time())
+            
+        if time_offset is not None:
+            currtime += time_offset
         
         wo = WalkOptions()
         wo.transfer_penalty=transfer_penalty
@@ -40,9 +45,14 @@ class RouteServer(Servable):
         
         spt.destroy()
         
-        return json.dumps(ret)
+        return json.dumps(ret, indent=2)
         
-    def path_retro(self, origin, dest, currtime, transfer_penalty=0, walking_speed=1.0):
+    def path_retro(self, origin, dest, currtime=None, time_offset=None, transfer_penalty=0, walking_speed=1.0):
+        if currtime is None:
+            currtime = int(time.time())
+            
+        if time_offset is not None:
+            currtime += time_offset
         
         wo = WalkOptions()
         wo.transfer_penalty = transfer_penalty
@@ -60,7 +70,7 @@ class RouteServer(Servable):
         
         spt.destroy()
         
-        return json.dumps(ret)
+        return json.dumps(ret, indent=2)
 
     def path_raw(self, origin, dest, currtime):
         
@@ -160,7 +170,8 @@ if __name__ == '__main__':
         return (what, where, when, loc)
         
     def street_event(vertex1, edge, vertex2):
-        return ("Walk", "", "", None)
+        when = "about %s"%str(TimeHelpers.unix_to_localtime( vertex1.payload.time, "America/Los_Angeles" ))
+        return ("Walk %s from %s to %s"%(edge.payload.length, vertex1.label, vertex2.label), "", when, None)
         
     event_dispatch = {graphserver.core.TripBoard:board_event,
                       graphserver.core.Alight:alight_event,
