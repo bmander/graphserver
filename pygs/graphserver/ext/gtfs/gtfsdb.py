@@ -143,7 +143,8 @@ class GTFSDatabase:
                            ("shape_id", None, None)))
     ROUTES_DEF = ("routes", (("route_id", None, None),
                              ("route_short_name", None, None),
-                             ("route_long_name", None, None)) )
+                             ("route_long_name", None, None),
+                             ("route_type", "INTEGER", None)))
     STOP_TIMES_DEF = ("stop_times", (("trip_id", None, None), 
                                      ("arrival_time", "INTEGER", parse_gtfs_time),
                                      ("departure_time", "INTEGER", parse_gtfs_time),
@@ -233,6 +234,8 @@ class GTFSDatabase:
         c.execute( "CREATE INDEX trips_trip_id ON trips (trip_id)" )
         c.execute( "CREATE INDEX stops_stop_lat ON stops (stop_lat)" )
         c.execute( "CREATE INDEX stops_stop_lon ON stops (stop_lon)" )
+        c.execute( "CREATE INDEX route_route_id ON routes (route_id)" )
+        c.execute( "CREATE INDEX trips_route_id ON trips (route_id)" )
 
     def stops(self):
         c = self.conn.cursor()
