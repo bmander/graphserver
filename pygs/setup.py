@@ -42,6 +42,7 @@ setup(  name='graphserver',
                 'gs_import_gtfs = graphserver.compiler.gdb_import_gtfs:main',
                 'gs_link_osm_gtfs = graphserver.compiler.gdb_link_osm_gtfs:main',
                 'gs_link_gtfs_gtfs = graphserver.compiler.gdb_link_gtfs_gtfs:main',
+                'gs_gdb_inspect = graphserver.graphdb:main',
             ],
             #'setuptools.installation': ['eggsecutable = umigis.server.setup:main']
         }
