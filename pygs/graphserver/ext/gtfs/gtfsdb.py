@@ -98,7 +98,9 @@ SELECT stop_times.* FROM stop_times, trips
   WHERE stop_times.trip_id = trips.trip_id 
         AND trips.trip_id IN (%s) 
         AND trips.service_id = ? 
-        AND stop_times.stop_id = ? 
+        AND stop_times.stop_id = ?
+        AND arrival_time NOT NULL
+        AND departure_time NOT NULL
   ORDER BY departure_time"""%(",".join(["'%s'"%x for x in self.trip_ids]))
       
         c.execute(query, (service_id,str(stop_id)))
@@ -120,6 +122,8 @@ SELECT stop_times.* FROM stop_times, trips
         WHERE stop_times.trip_id = trips.trip_id
         AND trips.trip_id IN (%s)
         AND trips.service_id = ?
+        AND arrival_time NOT NULL
+        AND departure_time NOT NULL
         ORDER BY stop_sequence"""%(",".join(["'%s'"%x for x in self.trip_ids]))
             
         #bundle queries by trip_id

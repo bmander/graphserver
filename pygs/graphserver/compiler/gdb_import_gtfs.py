@@ -109,7 +109,7 @@ def gdb_load_gtfsdb_to_boardalight(gdb, agency_namespace, gtfsdb, agency_id, cur
     # compile trip bundles from gtfsdb
     if reporter: reporter.write( "Compiling trip bundles...\n" )
     bundles = gtfsdb.compile_trip_bundles(maxtrips=maxtrips, reporter=reporter)
-
+    
     # load bundles to graph
     if reporter: reporter.write( "Loading trip bundles into graph...\n" )
     n_bundles = len(bundles)
