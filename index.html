@@ -11,9 +11,6 @@
 The open-source multi-modal trip planner.
  
 <h2>Code Repository</h2> 
- 
-The Graphserver Project has moved to GitHub!<br> 
-<br> 
 <a href="http://github.com/bmander/graphserver/tree/master">http://github.com/bmander/graphserver/tree/master</a> 
  
 <h2>Mailing List</h2> 
@@ -22,59 +19,68 @@ Direct questions and comments to the <a href="http://groups.google.com/group/gra
  
 <h2>Download</h2> 
  
-<pre style="background-color:#F5F5F5">
-$ wget http://github.com/bmander/graphserver/zipball/08132009
-</pre> 
+<pre style="background-color:#F5F5F5">$ wget http://github.com/bmander/graphserver/zipball/08132009</pre> 
  
 Or, for the stout of heart, get a copy of the current working branch
  
-<pre style="background-color:#F5F5F5"> 
-$ git clone git://github.com/bmander/graphserver.git 
-</pre> 
+<pre style="background-color:#F5F5F5"> $ git clone git://github.com/bmander/graphserver.git </pre>
  
-<h2>Install</h2> 
+<h2>Install</h2>
+
+<h3>Cold Start</h3>
+<p>You'll need a computer running linux. The following setup was tested and checked on <a href="http://aws.amazon.com/console/">Amazon EC2</a> small instance running Fedora, built from an image with id "ami-48aa4921", at a cost of $0.20/hour.<p>
+<p>Update your package repository</p>
+<p>You'll need to get git:</p>
+<p>On Ubuntu:</p>
+<pre style="background-color:#F5F5F5"> $ sudo apt-get install git-core </pre>
+<p>On Fedora:</p>
+<pre style="background-color:#F5F5F5"> $ yum install git-core</pre>
  
-<h3>Install core libraries</h3> 
+<h3>Get The Prerequisites</h3>
+
+<p>You're about to compile C code against python development libraries. You need to prepare for that.</p>
+
+On Ubuntu:
+<pre style="background-color:#F5F5F5">$ sudo apt-get install python-setuptools
+$ sudo apt-get install build-essential
+$ sudo apt-get install python-dev
+</pre>
+
+On Fedora:
+<pre style="background-color:#F5F5F5">
+$ yum install python-setuptools-devel
+$ yum install gcc
+$ yum install gcc-c++
+$ yum install python-devel
+$ easy_install simplejson
+</pre>
  
-<pre style="background-color:#F5F5F5"> 
-$ cd graphserver
-$ cd core
-$ make
-$ sudo make install
-$ cd ..
-</pre> 
- 
-<h3>Install Python wrappers</h3> 
- 
-Install dependencies
-<pre style="background-color:#F5F5F5"> 
-$ easy_install transitfeed
-$ easy_install pyproj
-$ easy_install pytz
-</pre> 
- 
-Install wrappers
-<pre style="background-color:#F5F5F5"> 
-$ cd pygs
+<h3>One-step Install</h3>
+<p>Get a copy of Graphserver</p>
+<pre style="background-color:#F5F5F5">$ git clone git://github.com/bmander/graphserver.git</pre> 
+
+This will download and compile the core, download and install package dependencies, and install the python wrappers in one go.
+
+<pre style="background-color:#F5F5F5">$ cd graphserver/pygs
 $ sudo python setup.py install
-$ cd ..
 </pre> 
  
-<h3>There are also a set of Ruby wrappers</h3> 
+<h3>Install RTree</h3>
+<p>If you want to load OSM Data (and you probably do), you have to laborously install RTree</p>
+<pre style="background-color:#F5F5F5"> $ wget http://download.osgeo.org/libspatialindex/spatialindex-1.4.0.tar.gz
+ $ gunzip spatialindex-1.4.0.tar.gz
+ $ tar -xvf spatialindex-1.4.0.tar
+ $ cd spatialindex-1.4.0
+ $ ./configure --prefix=/usr
+ $ make
+ $ make install
+ $ easy_install RTree
+ $ cp /usr/lib/python2.5/site-packages/Rtree-0.5.0-py2.5-linux-i686.egg/libsidx.so /usr/lib
+</pre>
+ 
+<h2>A Quick Tour of the Basics</h2> 
  
 <pre style="background-color:#F5F5F5"> 
-$ cd rbgs
-$ ruby extconf.rb
-$ make
-</pre> 
- 
-There is presently no installer for the ruby wrappers
- 
-<h2>Using Graphserver via Python Wrappers</h2> 
- 
-<h3>A Quick Tour of the Basics</h3> 
- 
-<pre style="background-color:#FFFFFF"> 
 $ python
 &gt;&gt;&gt; from graphserver.core import Graph, Street, State
 &gt;&gt;&gt; gg = Graph()
@@ -104,10 +110,8 @@ $ python
 <span class="computeroutput">[&lt;graphserver.core.Vertex object at 0xb7b9ae4c&gt;, &lt;graphserver.core.Vertex object at 0xb7b9adec&gt;]</span> 
 &gt;&gt;&gt; edges                                            <span class="pycomment"># a list of references to the SPT edges along the shortest path</span> 
 <span class="computeroutput">[&lt;graphserver.core.Edge object at 0xb7b9accc&gt;]</span> 
-&gt;&gt;&gt; edges[0].payload                                 <span class="pycomment"># the edge payload contains information about the edge</span> 
-<span class="computeroutput">&lt;graphserver.core.Street object at 0xb7b9ad8c&gt;</span> 
-&gt;&gt;&gt; edges[0].payload.name                            <span class="pycomment"># apparently, Street "2" is the shortest path between "A" and "B"</span> 
-<span class="computeroutput">'2'</span> 
+&gt;&gt;&gt; edges[0].payload                                 <span class="pycomment"># the edge payload contains information about the edge</span>
+<span class="computeroutput">&lt;Street name='2' length=50.000000 rise=0.000000 fall=0.000000 way=0&gt;</span> 
 &gt;&gt;&gt; vertices[-1].payload                             <span class="pycomment"># the payload of the final vertex has useful information</span> 
 <span class="computeroutput">&lt;graphserver.core.State object at 0xb7c4a92c&gt;</span> 
 &gt;&gt;&gt; vertices[-1].payload.time                        <span class="pycomment"># it takes 58 seconds to get from "A" to "B"</span> 
@@ -115,116 +119,65 @@ $ python
 &gt;&gt;&gt; spt.destroy()                                    <span class="pycomment"># these functions are thin wrappers around C functions</span> 
 &gt;&gt;&gt; gg.destroy()                                     <span class="pycomment"># so we have to perform garbage collection explicitly</span> 
 &gt;&gt;&gt; exit()
-</pre> 
-<h3>Loading OpenStreetMap Data</h3> 
-<pre> 
-$ cd /path/to/graphserver/pygs/examples/osm
-$ python
-&gt;&gt;&gt; from graphserver.ext.osm import OSM
-&gt;&gt;&gt; osm = OSM("sf.osm")
-&gt;&gt;&gt; len(osm.nodes)
-<span class="computeroutput">39406</span> 
-&gt;&gt;&gt; from graphserver.core import Graph, State
-&gt;&gt;&gt; from graphserver.ext.osm import OSMLoadable
-&gt;&gt;&gt; from pyproj import Proj
-&gt;&gt;&gt; class OSMGraph(Graph, OSMLoadable):               <span class="pycomment"># add the load_osm() function to the graph with a mixin</span> 
-...   pass
-... 
-&gt;&gt;&gt; gg = OSMGraph()
-&gt;&gt;&gt; gg.load_osm(osm, Proj(init='epsg:26910'))         <span class="pycomment"># specify projection to convert OSM data to meters</span> 
-&gt;&gt;&gt; gg.size
-<span class="computeroutput">39406</span> 
-&gt;&gt;&gt; fortmason = "osm65298435"                         <span class="pycomment"># a location near Fort Mason in San Francisco, California</span> 
-&gt;&gt;&gt; hollypark = "osm65297473"                         <span class="pycomment"># a location near Holly Park in San Francisco</span> 
-&gt;&gt;&gt; spt=gg.shortest_path_tree(fortmason,hollypark,State(1,0)) <span class="pycomment"># this took about 0.05 seconds</span> 
-&gt;&gt;&gt; vertices, edges = spt.path(hollypark)
-&gt;&gt;&gt; len(vertices), len(edges)                         <span class="pycomment"># the shortet path has 96 edge segments</span> 
-<span class="computeroutput">(97, 96)</span> 
-&gt;&gt;&gt; edges[0].payload.name                             <span class="pycomment"># the first of which has this id</span> 
-<span class="computeroutput">'8920043-48'</span> 
-&gt;&gt;&gt; vertices[-1].payload.time                         <span class="pycomment"># it takes a little over two and a half hours to walk that far</span> 
-<span class="computeroutput">9192</span> 
-&gt;&gt;&gt; spt.destroy()                                     <span class="pycomment"># remember to explicitly clean up</span> 
-&gt;&gt;&gt; gg.destroy()
-&gt;&gt;&gt; quit()
-</pre> 
- 
-Converting the raw IDs returned by Graphserver into a human-readable message is left as an exercise to the reader.
- 
+</pre>
+<h2>Compiling Graphs</h2>
+<h3>Loading OpenStreetMap Data</h3>
+
+Grab some OSM data. Here, we download an area around of Redding, CA, US from the OpenStreetMap HTTP API.
+<pre style="background-color:#F5F5F5"> $ wget http://api.openstreetmap.org/api/0.6/map?bbox=-122.4624,40.5505,-122.2876,40.6334 -O map.osm
+</pre>
+<p>Compile the OSM file into an OSMDB file, and then load that OSMDB file into a graph.</p>
+<pre style="background-color:#F5F5F5"> $ gs_osmdb_compile map.osm map.osmdb
+ $ gs_import_osm map.gdb map.osmdb
+</pre>
+<p>Take a look at your new graph. This prints every vertex label in the graph:</p>
+<pre style="background-color:#F5F5F5"> $ gs_gdb_inspect map.gdb</pre>
+<p>Pick one and see all edges outgoing from that vertex:</p>
+<pre style="background-color:#F5F5F5"> $ gs_gdb_inspect map.gdb osm-92080455</pre>
+Prints:
+<pre style="background-color:#F5F5F5">osm-92080455 -> osm-91938757
+	&lt;Street name='10585937-1' length=136.119463 rise=0.000000 fall=0.000000 way=849&gt;
+osm-92080455 -> osm-92080457
+	&lt;Street name='10585937-2' length=139.452776 rise=0.000000 fall=0.000000 way=849&gt;
+osm-92080455 -> osm-92601143
+	&lt;Street name='10596654-0' length=126.551782 rise=0.000000 fall=0.000000 way=1809&gt;
+osm-92080455 -> osm-92080381
+	&lt;Street name='10596654-1' length=6.382770 rise=0.000000 fall=0.000000 way=1809&gt;</pre>
+
 <h3>Loading Public Transit Data</h3> 
-Graphserver has built-in edge types to handle scheduled public transit. Public transit data is loaded into the graph via <a href="http://code.google.com/transit/spec/transit_feed_specification.html">Google Transit Feed Specification</a> (GTFS) files. <a href="http://code.google.com/p/googletransitdatafeed/wiki/PublicFeeds">Several transit agencies</a> publicly release schedule data in the GTFS format.
-<pre> 
-$ mkdir bart
-$ cd bart
-$ wget http://www.bart.gov/schedules/developers/latest_open.aspx
-$ unzip google_transit.zip
-$ cd ..
-$ python
-&gt;&gt;&gt; from graphserver.core import Graph, Link, State
-&gt;&gt;&gt; from graphserver.ext.gtfs import GTFSLoadable
-&gt;&gt;&gt; class GTFSGraph(Graph, GTFSLoadable):
-...   pass
-...
-&gt;&gt;&gt; gg = GTFSGraph()
-&gt;&gt;&gt; gg.load_gtfs( './bart' )
-&gt;&gt;&gt; [v.label for v in gg.vertices]
-<span class="computeroutput">['gtfsROCK', 'gtfsBALB', 'gtfsDELN', 'gtfsSANL', 'gtfsPLZA', 'gtfsLAFY', 'gtfs16TH', 'gtfsCAST', 'gtfs
-24TH', 'gtfs12TH', 'gtfsNBRK', 'gtfsDUBL', 'gtfsDALY', 'gtfsMCAR', 'gtfsORIN', 'gtfsFRMT', 'gtfsSHAY',
-'gtfsDBRK', 'gtfsSFIA', 'gtfsCONC', 'gtfsMONT', 'gtfsNCON', 'gtfsASBY', 'gtfsPHIL', 'gtfsBAYF', 'gtfsP
-ITT', 'gtfsOAK', 'gtfsLAKE', 'gtfsHAYW', 'gtfsRICH', 'gtfsMLBR', 'gtfsUCTY', 'gtfsSBRN', 'gtfs12TH_N',
-'gtfsGLEN', 'gtfsMCAR_S', 'gtfsSSAN', 'gtfsWOAK', 'gtfsCIVC', 'gtfs19TH', 'gtfsFTVL', 'gtfsWCRK', 'gtf
-sCOLM', 'gtfsPOWL', 'gtfsCOLS', 'gtfsEMBR']</span> 
-&gt;&gt;&gt; gg.add_edge("gtfs12TH", "gtfs12TH_N", Link())            <span class="pycomment"># explicitly link adjacent stations</span> 
-<span class="computeroutput">&lt;graphserver.core.Edge object at 0x85dee6c&gt;</span> 
-&gt;&gt;&gt; gg.add_edge("gtfs12TH_N", "gtfs12TH", Link())
-<span class="computeroutput">&lt;graphserver.core.Edge object at 0x85dedcc&gt;</span> 
-&gt;&gt;&gt; gg.add_edge("gtfsMCAR", "gtfsMCAR_S", Link())
-<span class="computeroutput">&lt;graphserver.core.Edge object at 0x85ded0c&gt;</span> 
-&gt;&gt;&gt; gg.add_edge("gtfsMCAR_S", "gtfsMCAR", Link())
-<span class="computeroutput">&lt;graphserver.core.Edge object at 0x85dee6c&gt;</span> 
-&gt;&gt;&gt; twothirtysix = 1217367385                                <span class="pycomment"># unix time for about 2:36PM July 29, 2008 UTC-0700</span> 
-&gt;&gt;&gt; spt = gg.shortest_path_tree( "gtfsCIVC", "gtfsPITT", State(1,twothirtysix)) <span class="pycomment"># civic center to pittsburg starting at 2:36PM on a weekday</span> 
-&gt;&gt;&gt; spt.get_vertex("gtfsCIVC").outgoing
-<span class="computeroutput">[&lt;graphserver.core.Edge object at 0x85decac&gt;, &lt;graphserver.core.Edge object at 0x85de1ec&gt;]</span> 
-&gt;&gt;&gt; spt.get_vertex("gtfsPITT").incoming
-<span class="computeroutput">[&lt;graphserver.core.Edge object at 0x85de1cc&gt;]</span> 
-&gt;&gt;&gt; vertices, edges = spt.path("gtfsPITT")
-&gt;&gt;&gt; [v.label for v in vertices]                              <span class="pycomment"># take a look at all vertex labels on the shortest path</span> 
-<span class="computeroutput">['gtfsCIVC', 'gtfsPOWL', 'gtfsMONT', 'gtfsEMBR', 'gtfsWOAK', 'gtfs12TH', 'gtfs19TH', 'gtfsMCAR', 'gtfsR
-OCK', 'gtfsORIN', 'gtfsLAFY', 'gtfsWCRK', 'gtfsPHIL', 'gtfsCONC', 'gtfsNCON', 'gtfsPITT']</span> 
-&gt;&gt;&gt; [e.payload.arrive for e in edges]                        <span class="pycomment"># take a look at the departure of each hop on the shortest path</span> 
-<span class="computeroutput">[52980, 53100, 53220, 53640, 54120, 54180, 54420, 54900, 55200, 55500, 55740, 55920, 56220, 56460, 56820]</span> 
-&gt;&gt;&gt; spt.destroy()
-&gt;&gt;&gt; gg.destroy()
-&gt;&gt;&gt; quit()
-</pre> 
- 
+
+Grab the GTFS file for your favorite transit agency. Here, we grab the GTFS for the transit system in Redding, CA:
+<pre style="background-color:#F5F5F5"> $ wget http://trilliumtransit.com/transit_feeds/redding/google_transit.zip -O redding_gtfs.zip</pre>
+<p>Compile the GTFS into a GTFSDB, and then compile that GTFSDB into a graph<p>
+<pre style="background-color:#F5F5F5"> $ gs_gtfsdb_build redding_gtfs.zip redding.gtfsdb
+ $ gs_import_gtfs redding.gdb redding.gtfsdb 25</pre>
+<p>Use gs_gdb_inspect to check that your new transit graph is in good shape</p>
+<pre style="background-color:#F5F5F5"> $ gs_gdb_inspect redding.gdb sta-3622</pre>
+should print
+<pre style="background-color:#F5F5F5">sta-3622 -> psv-0-000-004
+	&lt;TripBoard int_sid=0 sid=105A166 agency=0 calendar=165157760 timezone=164034504 boardings=[('1572A105B166', 23964), ('1598A105B166', 27564), ('1602A105B166', 31164), ('1607A105B166', 34764), ('1600A105B166', 38364), ('1605A105B166', 41964), ('1603A105B166', 45564), ('1608A105B166', 49164), ('1601A105B166', 52764), ('1606A105B166', 56364), ('1599A105B166', 59964), ('1604A105B166', 63564), ('1609A105B166', 67164)]&gt;
+sta-3622 -> psv-0-000-004
+	&lt;TripBoard int_sid=1 sid=106A166 agency=0 calendar=165157760 timezone=164034504 boardings=[('2459A106B166', 34764), ('1635A106B166', 38364), ('1640A106B166', 41964), ('1638A106B166', 45564), ('1643A106B166', 49164), ('1636A106B166', 52764), ('1641A106B166', 56364), ('1634A106B166', 59964), ('1639A106B166', 63564), ('1637A106B166', 67164)]&gt;
+</pre>
+
 <h3>Intermingling Public Transit and Street Data</h3> 
-Unlike the above working examples, this is more of an illustrative outline.
+<p>You can load both OSM and GTFS data into the same graph, then run a command to link them.</p>
+<pre style="background-color:#F5F5F5"> $ gs_import_gtfs redding_all.gdb redding.gtfsdb 25
+ $ gs_import_osm redding_all.gdb map.osmdb
+ $ gs_link_osm_gtfs redding_all.gdb map.osmdb redding.gtfsdb</pre>
+<p>Inspect:</p>
+<pre style="background-color:#F5F5F5"> $ gs_gdb_inspect redding.gdb sta-3622</pre>
+<p>prints:</p>
+<pre style="background-color:#F5F5F5">sta-3622 -> osm-92366549
+	&lt;graphserver.core.Link object at 0x9a0b20c&gt;
+sta-3622 -> psv-0-000-004
+	&lt;TripBoard int_sid=0 sid=105A166 agency=0 calendar=163855912 timezone=161122808 boardings=[('1572A105B166', 23964), ('1598A105B166', 27564), ('1602A105B166', 31164), ('1607A105B166', 34764), ('1600A105B166', 38364), ('1605A105B166', 41964), ('1603A105B166', 45564), ('1608A105B166', 49164), ('1601A105B166', 52764), ('1606A105B166', 56364), ('1599A105B166', 59964), ('1604A105B166', 63564), ('1609A105B166', 67164)]&gt;
+sta-3622 -> psv-0-000-004
+	&lt;TripBoard int_sid=1 sid=106A166 agency=0 calendar=163855912 timezone=161122808 boardings=[('2459A106B166', 34764), ('1635A106B166', 38364), ('1640A106B166', 41964), ('1638A106B166', 45564), ('1643A106B166', 49164), ('1636A106B166', 52764), ('1641A106B166', 56364), ('1634A106B166', 59964), ('1639A106B166', 63564), ('1637A106B166', 67164)]&gt;</pre>
+
  
-<pre> 
-$ python
->>> from graphserver.core import Graph, Like, State
->>> from graphserver.ext.osm import OSMLoadable
->>> from graphserver.ext.gtfs import GTFSLoadable
->>> class MultimodalGraph(Graph, OSMLoadable, GTFSLoadable):
-...   pass
-...
->>> gg = MultimodalGraph()
->>> gg.load_osm( "./path/to/osm.osm" )
->>> gg.load_gtfs( "./path/to/gtfsdir" )
->>> gg.add_edge( "aBusStopLabel", "aStreetIntersectionLabel", Link() ) <span class="pycomment"># explicitly link transit vertices to nearby street vertices</span> 
->>> gg.add_egge( "aStreetIntersectionLabel, "aBusStopLabel", Link() )
->>> spt = gg.shortest_path_tree( "someStreetLabel", "otherStreetLabel", State(1, unixtime) )
->>> vertices, edges = spt.path( "otherStreetLabel" )
->>> <span class="pycomment"># Convert vertices, edges into human-readable format</span> 
->>> spt.destroy()
->>> gg.destroy()
-</pre> 
- 
-<pre> 
-<a href="http://sourceforge.net"><img src="http://sflogo.sourceforge.net/sflogo.php?group_id=191374&amp;type=1" width="88" height="31" border="0" alt="SourceForge.net Logo" /></a> 
-<div> 
+<h3>What Next?</h3>
+TODO: describe how to set up a route server with your fancy new compiled graph.
 <script src="http://www.google-analytics.com/urchin.js" type="text/javascript"> 
 </script> 
 <script type="text/javascript"> 
