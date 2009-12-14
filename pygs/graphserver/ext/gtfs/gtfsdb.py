@@ -283,7 +283,7 @@ class GTFSDatabase:
             if reporter and i%(n_trips//50+1)==0: reporter.write( "%d/%d trips grouped by %d patterns\n"%(i,n_trips,len(bundles)))
             
             d = self.conn.cursor()
-            d.execute( "SELECT trip_id, arrival_time, departure_time, stop_id FROM stop_times WHERE trip_id=? ORDER BY stop_sequence", (trip_id,) )
+            d.execute( "SELECT trip_id, arrival_time, departure_time, stop_id FROM stop_times WHERE trip_id=? AND arrival_time NOT NULL AND departure_time NOT NULL ORDER BY stop_sequence", (trip_id,) )
             
             stop_times = list(d)
             
