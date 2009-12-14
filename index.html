@@ -29,7 +29,6 @@ Or, for the stout of heart, get a copy of the current working branch
 
 <h3>Cold Start</h3>
 <p>You'll need a computer running linux. The following setup was tested and checked on <a href="http://aws.amazon.com/console/">Amazon EC2</a> small instance running Fedora, built from an image with id "ami-48aa4921", at a cost of $0.20/hour.<p>
-<p>Update your package repository</p>
 <p>You'll need to get git:</p>
 <p>On Ubuntu:</p>
 <pre style="background-color:#F5F5F5"> $ sudo apt-get install git-core </pre>
@@ -175,6 +174,14 @@ sta-3622 -> psv-0-000-004
 sta-3622 -> psv-0-000-004
 	&lt;TripBoard int_sid=1 sid=106A166 agency=0 calendar=163855912 timezone=161122808 boardings=[('2459A106B166', 34764), ('1635A106B166', 38364), ('1640A106B166', 41964), ('1638A106B166', 45564), ('1643A106B166', 49164), ('1636A106B166', 52764), ('1641A106B166', 56364), ('1634A106B166', 59964), ('1639A106B166', 63564), ('1637A106B166', 67164)]&gt;</pre>
 
+<h3>Inspecting the graph with gs_crawl</h3>
+<p>Start gs_crawl, a little graph inspection web service</p>
+<pre style="background-color:#F5F5F5"> $ gs_crawl redding.gdb 80<pre>
+<p>Then steer your web browser to the appropriate location.<p>
+<p>If you're using Amazon EC2, using your own public DNS:</p>
+<pre style="background-color:#F5F5F5">http://YOUR-EC2-ADDRESS.compute-1.amazonaws.com/</pre>
+<p>Or if you're simply running on your local machine:</p>
+<pre style="background-color:#F5F5F5">http://localhost:80/</pre>
  
 <h3>What Next?</h3>
 TODO: describe how to set up a route server with your fancy new compiled graph.
