@@ -3,7 +3,8 @@ from optparse import OptionParser
 from graphserver.graphdb import GraphDatabase
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
 import sys
-from tools import gtfsdb_to_service_calendar
+import pytz
+from tools import service_calendar_from_timezone
 
 def cons(ary):
     for i in range(len(ary)-1):
@@ -94,11 +95,13 @@ def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, t
                       
     gdb.commit()
 
-def gdb_load_gtfsdb_to_boardalight(gdb, agency_namespace, gtfsdb, agency_id, cursor, maxtrips=None, reporter=sys.stdout):
+def gdb_load_gtfsdb_to_boardalight(gdb, agency_namespace, gtfsdb, cursor, agency_id=None, maxtrips=None, reporter=sys.stdout):
 
     # get graphserver.core.Timezone and graphserver.core.ServiceCalendars from gtfsdb for agency with given agency_id
-    tz = Timezone.generate(gtfsdb.agency_timezone_name( agency_id ))
-    sc = gtfsdb_to_service_calendar(gtfsdb, agency_id )
+    timezone_name = gtfsdb.agency_timezone_name(agency_id)
+    gs_tz = Timezone.generate( timezone_name )
+    print "constructing service calendar for timezone '%s'"%timezone_name
+    sc = service_calendar_from_timezone(gtfsdb, timezone_name )
 
     # enter station vertices
     for stop_id, stop_name, stop_lat, stop_lon in gtfsdb.stops():
@@ -117,7 +120,7 @@ def gdb_load_gtfsdb_to_boardalight(gdb, agency_namespace, gtfsdb, agency_id, cur
         if reporter: reporter.write( "%d/%d loading %s\n"%(i, n_bundles, bundle) )
         
         for service_id in [x.encode("ascii") for x in gtfsdb.service_ids()]:
-            gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, tz, cursor)
+            gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, gs_tz, cursor)
             
     # load headways
     if reporter: reporter.write( "Loading headways trips to graph...\n" )
@@ -125,8 +128,8 @@ def gdb_load_gtfsdb_to_boardalight(gdb, agency_namespace, gtfsdb, agency_id, cur
         service_id = list(gtfsdb.execute( "SELECT service_id FROM trips WHERE trip_id=?", (trip_id,) ))[0][0]
         service_id = service_id.encode('utf-8')
         
-        hb = HeadwayBoard( service_id, sc, tz, 0, trip_id.encode('utf-8'), start_time, end_time, headway_secs )
-        ha = HeadwayAlight( service_id, sc, tz, 0, trip_id.encode('utf-8'), start_time, end_time, headway_secs )
+        hb = HeadwayBoard( service_id, sc, gs_tz, 0, trip_id.encode('utf-8'), start_time, end_time, headway_secs )
+        ha = HeadwayAlight( service_id, sc, gs_tz, 0, trip_id.encode('utf-8'), start_time, end_time, headway_secs )
         
         stoptimes = list(gtfsdb.execute( "SELECT * FROM stop_times WHERE trip_id=? ORDER BY stop_sequence", (trip_id,)) )
         
@@ -151,7 +154,7 @@ def gdb_load_gtfsdb_to_boardalight(gdb, agency_namespace, gtfsdb, agency_id, cur
         gdb.add_edge( "sta-%s"%stop_id2, "sta-%s"%stop_id1, Street( conn_type, distance ) )
         
 def main():
-    usage = """usage: python gdb_import_gtfs.py [options] <graphdb_filename> <gtfsdb_filename> <agency_id>"""
+    usage = """usage: python gdb_import_gtfs.py [options] <graphdb_filename> <gtfsdb_filename> [<agency_id>]"""
     parser = OptionParser(usage=usage)
     parser.add_option("-n", "--namespace", dest="namespace", default="0",
                       help="agency namespace")
@@ -159,21 +162,21 @@ def main():
     
     (options, args) = parser.parse_args()
     
-    if len(args) != 3:
+    if len(args) != 2:
         parser.print_help()
         exit(-1)
     
     graphdb_filename = args[0]
     gtfsdb_filename  = args[1]
-    agency_id        = args[2]
+    agency_id        = args[2] if len(args)==3 else None
     
-    print "importing agency '%s' from gtfsdb '%s' into graphdb '%s'"%(agency_id, gtfsdb_filename, graphdb_filename)
+    print "importing from gtfsdb '%s' into graphdb '%s'"%(gtfsdb_filename, graphdb_filename)
     
     gtfsdb = GTFSDatabase( gtfsdb_filename )
     gdb = GraphDatabase( graphdb_filename, overwrite=False )
     
     maxtrips = int(options.maxtrips) if options.maxtrips else None
-    gdb_load_gtfsdb_to_boardalight(gdb, options.namespace, gtfsdb, agency_id, gdb.get_cursor(), maxtrips=maxtrips)
+    gdb_load_gtfsdb_to_boardalight(gdb, options.namespace, gtfsdb, gdb.get_cursor(), agency_id, maxtrips=maxtrips)
     gdb.commit()
     
     print "done"
