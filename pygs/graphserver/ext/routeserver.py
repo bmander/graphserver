@@ -119,7 +119,7 @@ class RouteServer(Servable):
 import sys
 
 def main():
-    usage = "python routeserver.py graphdb_filename gtfsdb_filename"
+    usage = "python routeserver.py graphdb_filename gtfsdb_filename [port]"
     
     if len(sys.argv) < 2:
         print usage
@@ -127,6 +127,11 @@ def main():
         
     graphdb_filename = sys.argv[1]
     gtfsdb_filename = sys.argv[2]
+    
+    if len(sys.argv)==3:
+        port = int(sys.argv[3])
+    else:
+        port = 8080
     
     gtfsdb = GTFSDatabase( gtfsdb_filename )
 
@@ -201,7 +206,7 @@ def main():
                       graphserver.core.HeadwayAlight:headwayalight_event}
     
     gc = RouteServer(graphdb_filename, event_dispatch)
-    gc.run_test_server()
+    gc.run_test_server(port)
 
 if __name__ == '__main__':
     main()
