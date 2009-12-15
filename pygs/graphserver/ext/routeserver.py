@@ -128,7 +128,7 @@ def main():
     graphdb_filename = sys.argv[1]
     gtfsdb_filename = sys.argv[2]
     
-    if len(sys.argv)==3:
+    if len(sys.argv)==4:
         port = int(sys.argv[3])
     else:
         port = 8080
@@ -206,7 +206,7 @@ def main():
                       graphserver.core.HeadwayAlight:headwayalight_event}
     
     gc = RouteServer(graphdb_filename, event_dispatch)
-    gc.run_test_server(port)
+    gc.run_test_server(port=port)
 
 if __name__ == '__main__':
     main()
