@@ -149,7 +149,7 @@ Grab the GTFS file for your favorite transit agency. Here, we grab the GTFS for 
 <pre style="background-color:#F5F5F5"> $ wget http://trilliumtransit.com/transit_feeds/redding/google_transit.zip -O redding_gtfs.zip</pre>
 <p>Compile the GTFS into a GTFSDB, and then compile that GTFSDB into a graph<p>
 <pre style="background-color:#F5F5F5"> $ gs_gtfsdb_build redding_gtfs.zip redding.gtfsdb
- $ gs_import_gtfs redding.gdb redding.gtfsdb 25</pre>
+ $ gs_import_gtfs redding.gdb redding.gtfsdb</pre>
 <p>Use gs_gdb_inspect to check that your new transit graph is in good shape</p>
 <pre style="background-color:#F5F5F5"> $ gs_gdb_inspect redding.gdb sta-3622</pre>
 should print
@@ -161,7 +161,7 @@ sta-3622 -> psv-0-000-004
 
 <h3>Intermingling Public Transit and Street Data</h3> 
 <p>You can load both OSM and GTFS data into the same graph, then run a command to link them.</p>
-<pre style="background-color:#F5F5F5"> $ gs_import_gtfs redding_all.gdb redding.gtfsdb 25
+<pre style="background-color:#F5F5F5"> $ gs_import_gtfs redding_all.gdb redding.gtfsdb
  $ gs_import_osm redding_all.gdb map.osmdb
  $ gs_link_osm_gtfs redding_all.gdb map.osmdb redding.gtfsdb</pre>
 <p>Inspect:</p>
