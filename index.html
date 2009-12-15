@@ -183,8 +183,15 @@ sta-3622 -> psv-0-000-004
 <p>Or if you're simply running on your local machine:</p>
 <pre style="background-color:#F5F5F5">http://localhost:80/</pre>
  
-<h3>What Next?</h3>
-TODO: describe how to set up a route server with your fancy new compiled graph.
+<h3>Getting routes with gs_routeserver</h3>
+<p>Fire up a routeserver on the compiled graph</p>
+<pre style="background-color:#F5F5F5"> $ gs_routeserver redding.gdb redding.gtfsdb 80</pre>
+<p>Get a list of all vertices in the system</p>
+<pre style="background-color:#F5F5F5">http://YOUR_DOMAIN_NAME/vertices</pre>
+<p>Get a route narrative</p>
+<pre style="background-color:#F5F5F5">http://YOUR_DOMAIN_NAME/path?origin="osm-92011649"&amp;dest="sta-3803"&amp;currtime=1260839444</pre>
+<p>or</p>
+<pre style="background-color:#F5F5F5">http://YOUR_DOMAIN_NAME/path_raw?origin="osm-92011649"&amp;dest="sta-3803"&amp;currtime=1260839444</pre>
 <script src="http://www.google-analytics.com/urchin.js" type="text/javascript"> 
 </script> 
 <script type="text/javascript"> 
