@@ -192,6 +192,29 @@ sta-3622 -> psv-0-000-004
 <pre style="background-color:#F5F5F5">http://YOUR_DOMAIN_NAME/path?origin="osm-92011649"&amp;dest="sta-3803"&amp;currtime=1260839444</pre>
 <p>or</p>
 <pre style="background-color:#F5F5F5">http://YOUR_DOMAIN_NAME/path_raw?origin="osm-92011649"&amp;dest="sta-3803"&amp;currtime=1260839444</pre>
+
+<h3>What about a really big city?</h3>
+<p>First, get Java 1.6. Or Java6. I think they're the same thing. Get the JDK, but not the JVM, the JRE, SDK, SDN, or the JCE. Note Java SE comes with Jave EE, which is apparently at version 5, and may or may not have anything to do with J2EE. I don't know what those have to do with anything. Google it or something. I don't know. They don't make it particularly easy for you. It's like, they've got more money than god and nothing pleases them better than pouring all that expertise into baffling the hell out of you. Honestly, I can't stand Java, but you need it to run Osmosis.</p>
+<p>Then, get Osmosis</p>
+<pre style="background-color:#F5F5F5"> $ wget http://gweb.bretth.com/osmosis-latest.zip
+ $ unzip osmosis-latest.zip
+ $ chmod a+x ./osmosis-0.30/bin/osmosis</pre>
+<p>Download a biggie GTFS file. Here's the one for the Seattle area:</p>
+<pre style="background-color:#F5F5F5"> $ wget http://www.gtfs-data-exchange.com/gtfs/badhill_20091208_1910.zip</pre>
+<p>Compile it into a GTFSDB. This will take a few minutes</p>
+<pre style="background-color:#F5F5F5"> $ gs_gtfsdb_build badhill_20091208_1910.zip kingco.gtfsdb</pre>
+<p>Check the bounds of the GTFSDB</p>
+<pre style="background-color:#F5F5F5"> $ sqlite3 kingco.gtfsdb "select min(stop_lon),min(stop_lat),max(stop_lon),max(stop_lat) from stops"</pre>
+returns:
+<pre style="background-color:#F5F5F5">-122.506729|47.1553345|-121.78244|47.9323654</pre>
+This will come in handy soon.
+<p>Get a huge chunk of OSM data from the CloudMade state files. Here's Washington State:</p>
+<pre style="background-color:#F5F5F5"> $ wget http://downloads.cloudmade.com/north_america/united_states/washington/washington.osm.highway.bz2
+ $ bunzip2 washington.osm.highway.bz2</pre>
+<p>Then, use the bounding box coordinates we just got to cut down the OSM file to the area surrounding the agency. Check it:<p>
+<pre style="background-color:#F5F5F5"> $ /path/to/osmosis-0.30/bin/osmosis --read-xml washington.osm.highway --bounding-box left=-122.506729 bottom=47.1553345 right=-121.78244 top=47.9323654 --write-xml kingco.osm</pre>
+<p>Then, compile and set it up like normal. It's a trip-planning bonanza.</p>
+
 <script src="http://www.google-analytics.com/urchin.js" type="text/javascript"> 
 </script> 
 <script type="text/javascript"> 
