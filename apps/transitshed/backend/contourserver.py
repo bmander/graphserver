@@ -7,10 +7,7 @@ from graphserver.ext.osm.osmdb import OSMDB
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
 from graphserver.util import TimeHelpers
 from contour import travel_time_contour, travel_time_surface, points_to_surface_grid
-try:
-    import json
-except ImportError:
-    import simplejson as json
+import json
 from rtree import Rtree
 from glineenc import encode_pairs
 from urllib import urlopen

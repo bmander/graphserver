@@ -39,8 +39,7 @@ def load_gtfs_table_to_sqlite(fp, gtfs_basename, cc, header=None):
     rd = csv.reader( ur )
 
     # create map of field locations in gtfs header to field locations as specified by the table definition
-    gtfs_header = rd.next()
-    
+    gtfs_header = next(rd)
     gtfs_field_indices = dict(zip(gtfs_header, range(len(gtfs_header))))
     
     field_name_locations = [gtfs_field_indices[field_name] if field_name in gtfs_field_indices else None for field_name, field_type, field_converter in header]
@@ -60,7 +59,7 @@ def load_gtfs_table_to_sqlite(fp, gtfs_basename, cc, header=None):
         
         _line = []
         for i, converter in field_operator:
-            if i is not None and line[i] != "":
+            if i is not None:
                 if converter:
                     _line.append( converter(line[i]) )
                 else:
@@ -98,9 +97,7 @@ SELECT stop_times.* FROM stop_times, trips
   WHERE stop_times.trip_id = trips.trip_id 
         AND trips.trip_id IN (%s) 
         AND trips.service_id = ? 
-        AND stop_times.stop_id = ?
-        AND arrival_time NOT NULL
-        AND departure_time NOT NULL
+        AND stop_times.stop_id = ? 
   ORDER BY departure_time"""%(",".join(["'%s'"%x for x in self.trip_ids]))
       
         c.execute(query, (service_id,str(stop_id)))
@@ -108,34 +105,8 @@ SELECT stop_times.* FROM stop_times, trips
         return list(c)
     
     def stop_time_bundles( self, service_id ):
-        
-        c = self.gtfsdb.conn.cursor()
-        
-        query = """
-        SELECT stop_times.trip_id, 
-               stop_times.arrival_time, 
-               stop_times.departure_time, 
-               stop_times.stop_id, 
-               stop_times.stop_sequence, 
-               stop_times.shape_dist_traveled 
-        FROM stop_times, trips
-        WHERE stop_times.trip_id = trips.trip_id
-        AND trips.trip_id IN (%s)
-        AND trips.service_id = ?
-        AND arrival_time NOT NULL
-        AND departure_time NOT NULL
-        ORDER BY stop_sequence"""%(",".join(["'%s'"%x for x in self.trip_ids]))
-            
-        #bundle queries by trip_id
-        
-        trip_id_sorter = {}
-        for trip_id, arrival_time, departure_time, stop_id, stop_sequence, shape_dist_traveled in c.execute(query, (service_id,)):
-            if trip_id not in trip_id_sorter:
-                trip_id_sorter[trip_id] = []
-                
-            trip_id_sorter[trip_id].append( (trip_id, arrival_time, departure_time, stop_id, stop_sequence, shape_dist_traveled) )
-        
-        return zip(*(trip_id_sorter.values()))
+        for stop_id in self.pattern.stop_ids:
+            yield self.stop_time_bundle( stop_id, service_id )
             
     def __repr__(self):
         return "<TripBundle n_trips: %d n_stops: %d>"%(len(self.trip_ids), len(self.pattern.stop_ids))
@@ -147,8 +118,7 @@ class GTFSDatabase:
                            ("shape_id", None, None)))
     ROUTES_DEF = ("routes", (("route_id", None, None),
                              ("route_short_name", None, None),
-                             ("route_long_name", None, None),
-                             ("route_type", "INTEGER", None)))
+                             ("route_long_name", None, None)) )
     STOP_TIMES_DEF = ("stop_times", (("trip_id", None, None), 
                                      ("arrival_time", "INTEGER", parse_gtfs_time),
                                      ("departure_time", "INTEGER", parse_gtfs_time),
@@ -222,7 +192,7 @@ class GTFSDatabase:
             if reporter: reporter.write( "loading table %s\n"%tablename )
             
             try:
-                trips_file = iterdecode( zf.read(tablename+".txt").split("\n"), "utf-8" )
+                trips_file = iterdecode( zf.open(tablename+".txt"), "utf-8" )
                 load_gtfs_table_to_sqlite(trips_file, tablename, c, table_def)
             except KeyError:
                 if reporter: reporter.write( "NOTICE: GTFS feed has no file %s.txt, cannot load\n"%tablename )
@@ -234,12 +204,9 @@ class GTFSDatabase:
     def _create_indices(self, c):
         
         c.execute( "CREATE INDEX stop_times_trip_id ON stop_times (trip_id)" )
-        c.execute( "CREATE INDEX stop_times_stop_id ON stop_times (stop_id)" )
         c.execute( "CREATE INDEX trips_trip_id ON trips (trip_id)" )
         c.execute( "CREATE INDEX stops_stop_lat ON stops (stop_lat)" )
         c.execute( "CREATE INDEX stops_stop_lon ON stops (stop_lon)" )
-        c.execute( "CREATE INDEX route_route_id ON routes (route_id)" )
-        c.execute( "CREATE INDEX trips_route_id ON trips (route_id)" )
 
     def stops(self):
         c = self.conn.cursor()
@@ -253,7 +220,7 @@ class GTFSDatabase:
     def stop(self, stop_id):
         c = self.conn.cursor()
         c.execute( "SELECT * FROM stops WHERE stop_id = ?", (stop_id,) )
-        ret = c.next()
+        ret = next(c)
         c.close()
         return ret
         
@@ -261,11 +228,11 @@ class GTFSDatabase:
         c = self.conn.cursor()
         c.execute( "SELECT count(*) FROM stops" )
         
-        ret = c.next()[0]
+        ret = next(c)[0]
         c.close()
         return ret
 
-    def compile_trip_bundles(self, maxtrips=None, reporter=None):
+    def compile_trip_bundles(self, reporter=None):
         
         c = self.conn.cursor()
 
@@ -273,21 +240,14 @@ class GTFSDatabase:
         bundles = {}
 
         c.execute( "SELECT count(*) FROM trips" )
-        n_trips = c.next()[0]
-        
-        if maxtrips is not None and maxtrips < n_trips:
-            n_trips = maxtrips;
+        n_trips = next(c)[0]
 
-        if maxtrips is not None:
-            c.execute( "SELECT trip_id FROM trips LIMIT ?", (maxtrips,) )
-        else:
-            c.execute( "SELECT trip_id FROM trips" )
-            
+        c.execute( "SELECT trip_id FROM trips" )
         for i, (trip_id,) in enumerate(c):
-            if reporter and i%(n_trips//50+1)==0: reporter.write( "%d/%d trips grouped by %d patterns\n"%(i,n_trips,len(bundles)))
+            if reporter and i%(n_trips//50)==0: reporter.write( "%d/%d trips grouped by %d patterns\n"%(i,n_trips,len(bundles)))
             
             d = self.conn.cursor()
-            d.execute( "SELECT trip_id, arrival_time, departure_time, stop_id FROM stop_times WHERE trip_id=? AND arrival_time NOT NULL AND departure_time NOT NULL ORDER BY stop_sequence", (trip_id,) )
+            d.execute( "SELECT trip_id, arrival_time, departure_time, stop_id FROM stop_times WHERE trip_id=? ORDER BY stop_sequence", (trip_id,) )
             
             stop_times = list(d)
             
@@ -328,7 +288,7 @@ class GTFSDatabase:
         
         c.execute( "SELECT min(stop_lon), min(stop_lat), max(stop_lon), max(stop_lat) FROM stops" )
         
-        ret = c.next()
+        ret = next(c)
         c.close()
         return ret
         
@@ -380,9 +340,6 @@ class GTFSDatabase:
     DOW_INDEX = dict(zip(range(len(DOWS)),DOWS))
     
     def service_periods(self, datetime):
-        datetimestr = datetime.strftime( "%Y%m%d" ) #datetime to string like "20081225"
-        datetimeint = int(datetimestr)              #int like 20081225. These ints have the same ordering as regular dates, so comparison operators work
-        
         # Get the gtfs date range. If the datetime is out of the range, no service periods are in effect
         start_date, end_date = self.date_range()
         if datetime < start_date or datetime > end_date:
@@ -390,16 +347,10 @@ class GTFSDatabase:
         
         # Use the day-of-week name to query for all service periods that run on that day
         dow_name = self.DOW_INDEX[datetime.weekday()]
-        service_periods = list( self.execute( "SELECT service_id, start_date, end_date FROM calendar WHERE %s=1"%dow_name ) )
-         
-        # Exclude service periods whose range does not include this datetime
-        service_periods = [x for x in service_periods if (int(x[1]) <= datetimeint and int(x[2]) >= datetimeint)]
-        
-        # Cut service periods down to service IDs
-        sids = set( [x[0] for x in service_periods] )
+        sids = set( [x[0] for x in self.execute( "SELECT * FROM calendar WHERE %s=1"%dow_name )] )
             
         # For each exception on the given datetime, add or remove service_id to the accumulating list
-        
+        datetimestr = datetime.strftime( "%Y%m%d" )
         for exception_sid, exception_type in self.execute( "select service_id, exception_type from calendar_dates WHERE date = ?", (datetimestr,) ):
             if exception_type == 1:
                 sids.add( exception_sid )

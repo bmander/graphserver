@@ -202,7 +202,6 @@ class OSMDB:
         
         c = self.conn.cursor()
         
-        #TODO index endnodes if they're at the end of oneways - which only have one way ref, but are still endnodes
         c.execute( "SELECT id, lat, lon FROM nodes WHERE endnode_refs > 1" )
         
         for id, lat, lon in c:
@@ -225,15 +224,14 @@ class OSMDB:
                 if i%5000==0:
                     print i
                 
+                #split way into several sub-ways
                 subways = []
-                curr_subway = [ way.nds[0] ] # add first node to the current subway
-                for nd in way.nds[1:-1]:     # for every internal node of the way
+                curr_subway = [ way.nds[0] ]
+                for nd in way.nds[1:]:
                     curr_subway.append( nd )
-                    if self.node(nd)[4] > 1: # node reference count is greater than one, node is shared by two ways
+                    if self.node(nd)[4] > 1: # node reference count is greater than zero
                         subways.append( curr_subway )
                         curr_subway = [ nd ]
-                curr_subway.append( way.nds[-1] ) # add the last node to the current subway, and store the subway
-                subways.append( curr_subway );
                 
                 #insert into edge table
                 for i, subway in enumerate(subways):
@@ -341,9 +339,9 @@ class OSMDB:
         c = self.conn.cursor()
         
         if self.index:
-            #print "YOUR'RE USING THE INDEX"
+            print "YOUR'RE USING THE INDEX"
             id = self.index.nearest( (lon, lat), 1 )[0]
-            #print "THE ID IS %d"%id
+            print "THE ID IS %d"%id
             c.execute( "SELECT id, lat, lon FROM nodes WHERE id = ?", (id,) )
         else:
             c.execute( "SELECT id, lat, lon FROM nodes WHERE endnode_refs > 1 AND lat > ? AND lat < ? AND lon > ? AND lon < ?", (lat-range, lat+range, lon-range, lon+range) )

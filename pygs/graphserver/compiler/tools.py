@@ -21,12 +21,8 @@ def cons(ary):
 def gtfsdb_to_service_calendar(gtfsdb, agency_id=None):
     """Given gtfsdb and agency_id, returns graphserver.core.ServiceCalendar"""
     
+    # grab pytz timezone by agency_id, via gtfsdb
     timezone_name = gtfsdb.agency_timezone_name( agency_id )
-    
-    return service_calendar_from_timezone( gtfsdb, timezone )
-    
-def service_calendar_from_timezone(gtfsdb, timezone_name):
-    
     timezone = pytz.timezone( timezone_name )
 
     # grab date, day service bounds
