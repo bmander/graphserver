@@ -10,6 +10,10 @@ def make_native_ch(basename):
     
     wo = WalkOptions()
     wo.hill_reluctance=20
+    wo.walking_speed=4
+    wo.walking_overage = 0
+    wo.turn_penalty = 15
+
     ch = gg.get_contraction_hierarchies( wo )
             
     chdowndb = GraphDatabase( basename+".down.gdb", overwrite=True )

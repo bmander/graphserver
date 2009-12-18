@@ -77,6 +77,10 @@ class RouteServer(Servable):
         
         for edgepayload in edgepayloads:
             geom, profile_seg = self.shortcut_cache.get( edgepayload.external_id )
+            
+            #geom = get_ep_geom( self.osmdb, edgepayload )
+            #profile_seg = get_ep_profile( self.profiledb, edgepayload )
+
             geoms.extend( geom )
             profile.add( profile_seg )
             

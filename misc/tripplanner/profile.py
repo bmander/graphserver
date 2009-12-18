@@ -46,7 +46,7 @@ class Profile(object):
                 
         return ret
 
-def populate_profile_db( osmdb_name, profiledb_name, dem_basenames ):
+def populate_profile_db( osmdb_name, profiledb_name, dem_basenames, resolution ):
 
     ddb = OSMDB( osmdb_name )
     elevs = ElevationPile()
@@ -60,7 +60,7 @@ def populate_profile_db( osmdb_name, profiledb_name, dem_basenames ):
     for i, (id, parent_id, node1, node2, dist, geom, tags) in enumerate( ddb.edges() ):
         if i%1000==0: print "%d/%d"%(i,n)
         
-        raw_profile = elevs.profile( geom )
+        raw_profile = elevs.profile( geom, resolution )
         profile = []
         
         tunnel = tags.get('tunnel')
@@ -83,13 +83,19 @@ def populate_profile_db( osmdb_name, profiledb_name, dem_basenames ):
 from sys import argv
 if __name__ == '__main__':
 
-    usage = "python profile.py osmdb_name profiledb_name dem_basename "
-    if len(argv) < 4:
+    usage = "python profile.py osmdb_name profiledb_name resolution dem_basename "
+    if len(argv) < 5:
         print usage
         exit()
 
     osmdb_name = argv[1]
     profiledb_name = argv[2]
-    dem_basenames = argv[3:]
+    resolution = int(argv[3])
+    dem_basenames = argv[4:]
+
+    print "osmdb name:", osmdb_name
+    print "profiledb name:", profiledb_name
+    print "resolution:", resolution
+    print "dem_basenames:", dem_basenames
     
-    populate_profile_db(osmdb_name, profiledb_name, dem_basenames)
+    populate_profile_db(osmdb_name, profiledb_name, dem_basenames, resolution)
