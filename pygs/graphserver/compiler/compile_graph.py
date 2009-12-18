@@ -89,7 +89,6 @@ def main():
     print slogs
     
     if len(args) != 1 or not options.osmdb_filename and not len(options.gtfsdb_files):
-        #print len(args)
         parser.print_help()
         exit(-1)
 
