@@ -30,8 +30,8 @@ class BoardEvent:
         what = "Board the %s"%route_desc
         where = stop_desc
         when = str(TimeHelpers.unix_to_localtime( event_time, self.timezone_name ))
-        loc = (lat,lon)
-        return (what, where, when, loc)
+        geom = (lat,lon)
+        return (what, where, when, geom)
 
 class AlightEvent:
     def __init__(self, gtfsdb_filename, timezone_name="America/Los_Angeles"):
@@ -52,8 +52,8 @@ class AlightEvent:
         what = "Alight"
         where = stop_desc
         when = str(TimeHelpers.unix_to_localtime( event_time, self.timezone_name ))
-        loc = (lat,lon)
-        return (what, where, when, loc)
+        geom = (lat,lon)
+        return (what, where, when, geom)
 
 class HeadwayBoardEvent:
     def __init__(self, gtfsdb_filename, timezone_name="America/Los_Angeles"):
@@ -76,8 +76,8 @@ class HeadwayBoardEvent:
         what = "Board the %s"%route_desc
         where = stop_desc
         when = "about %s"%str(TimeHelpers.unix_to_localtime( event_time, self.timezone_name ))
-        loc = (lat,lon)
-        return (what, where, when, loc)
+        geom = (lat,lon)
+        return (what, where, when, geom)
 
 class HeadwayAlightEvent:
     def __init__(self, gtfsdb_filename, timezone_name="America/Los_Angeles"):
@@ -98,8 +98,8 @@ class HeadwayAlightEvent:
         what = "Alight"
         where = stop_desc
         when = "about %s"%str(TimeHelpers.unix_to_localtime( event_time, self.timezone_name ))
-        loc = (lat,lon)
-        return (what, where, when, loc)
+        geom = (lat,lon)
+        return (what, where, when, geom)
 
 class StreetEvent:
     def __init__(self, timezone_name="America/Los_Angeles"):
@@ -131,7 +131,7 @@ class StreetStartEvent:
         what = "start"
         where = "on %s facing DIRECTION"%(street_name2)
         when = "about %s"%str(TimeHelpers.unix_to_localtime( vertex.payload.time, self.timezone_name ))
-        return (what,where,when)
+        return (what,where,when,None)
         
 class StreetEndEvent:
     def __init__(self, osmdb_filename, timezone_name = "America/Los_Angeles"):
@@ -151,7 +151,7 @@ class StreetEndEvent:
         what = "end"
         where = "on %s facing DIRECTION"%(street_name1)
         when = "about %s"%str(TimeHelpers.unix_to_localtime( vertex.payload.time, self.timezone_name ))
-        return (what,where,when)
+        return (what,where,when,None)
         
 class StreetTurnEvent:
     def __init__(self, osmdb_filename, timezone_name = "America/Los_Angeles"):
@@ -173,5 +173,5 @@ class StreetTurnEvent:
         what = "turn DIRECTION onto %s"%(street_name2)
         where = "%s & %s"%(street_name1, street_name2)
         when = "about %s"%str(TimeHelpers.unix_to_localtime( vertex.payload.time, self.timezone_name ))
-        return (what,where,when)
+        return (what,where,when,None)
     
