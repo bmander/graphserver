@@ -130,6 +130,19 @@ class StreetEvent:
         what = "walk %s meters"%edge.payload.length
         geom = self.osmdb.edge( edge.payload.name )[5]
         return NarrativeEvent(what,None,None,geom)
+        
+class CrossingEvent:
+    def __init__(self, gtfsdb_filename, timezone_name="America/Los_Angeles"):
+        self.gtfsdb = GTFSDatabase( gtfsdb_filename )
+        self.timezone_name = timezone_name
+        
+    @staticmethod
+    def applies_to(vertex1, edge, vertex2):
+        return edge is not None and isinstance(edge.payload, graphserver.core.Crossing)
+        
+    def __call__(self, v1, e, v2):
+        trip_id = v1.payload.trip_id
+        return (str(v1.payload), str(e), str(v2.payload))
 
 from math import asin, acos, degrees
 
