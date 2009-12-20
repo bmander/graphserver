@@ -2,7 +2,23 @@ from graphserver.util import TimeHelpers
 import graphserver.core
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
 from graphserver.ext.osm.osmdb import OSMDB
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
+class NarrativeEvent:
+    def __init__(self, what, where, when, geom):
+        self.what = what
+        self.where = where
+        self.when = when
+        self.geom = geom
+        
+    def to_jsonable(self):
+        return  {'what':self.what,
+                 'where':self.where,
+                 'when':self.when,
+                 'geom':self.geom}
 
 class BoardEvent:
     def __init__(self, gtfsdb_filename, timezone_name="America/Los_Angeles"):
@@ -31,7 +47,7 @@ class BoardEvent:
         where = stop_desc
         when = str(TimeHelpers.unix_to_localtime( event_time, self.timezone_name ))
         geom = (lon,lat)
-        return (what, where, when, geom)
+        return NarrativeEvent(what, where, when, geom)
 
 class AlightEvent:
     def __init__(self, gtfsdb_filename, timezone_name="America/Los_Angeles"):
@@ -53,7 +69,7 @@ class AlightEvent:
         where = stop_desc
         when = str(TimeHelpers.unix_to_localtime( event_time, self.timezone_name ))
         geom = (lon,lat)
-        return (what, where, when, geom)
+        return NarrativeEvent(what, where, when, geom)
 
 class HeadwayBoardEvent:
     def __init__(self, gtfsdb_filename, timezone_name="America/Los_Angeles"):
@@ -77,7 +93,7 @@ class HeadwayBoardEvent:
         where = stop_desc
         when = "about %s"%str(TimeHelpers.unix_to_localtime( event_time, self.timezone_name ))
         geom = (lon,lat)
-        return (what, where, when, geom)
+        return NarrativeEvent(what, where, when, geom)
 
 class HeadwayAlightEvent:
     def __init__(self, gtfsdb_filename, timezone_name="America/Los_Angeles"):
@@ -99,7 +115,7 @@ class HeadwayAlightEvent:
         where = stop_desc
         when = "about %s"%str(TimeHelpers.unix_to_localtime( event_time, self.timezone_name ))
         geom = (lon,lat)
-        return (what, where, when, geom)
+        return NarrativeEvent(what, where, when, geom)
 
 class StreetEvent:
     def __init__(self, osmdb_filename, timezone_name="America/Los_Angeles"):
@@ -113,7 +129,7 @@ class StreetEvent:
     def __call__(self, vertex1, edge, vertex2):
         what = "walk %s meters"%edge.payload.length
         geom = self.osmdb.edge( edge.payload.name )[5]
-        return (what,None,None,geom)
+        return NarrativeEvent(what,None,None,geom)
 
 from math import asin, acos, degrees
 
@@ -228,7 +244,7 @@ class StreetStartEvent:
         where = "on %s facing %s"%(street_name2, direction)
         when = "about %s"%str(TimeHelpers.unix_to_localtime( vertex.payload.time, self.timezone_name ))
         geom = [osm_node_lon, osm_node_lat]
-        return (what,where,when,geom)
+        return NarrativeEvent(what,where,when,geom)
         
 class StreetEndEvent:
     def __init__(self, osmdb_filename, timezone_name = "America/Los_Angeles"):
@@ -242,17 +258,17 @@ class StreetEndEvent:
                (edge1 and isinstance(edge1.payload, graphserver.core.Street))
     
     def __call__(self, edge1, vertex, edge2):
-        osm_way1 = edge2.payload.name.split("-")[0]
-        street_name1 = self.osmdb.way( osm_way2 ).tags['name']
+        osm_way1 = edge1.payload.name.split("-")[0]
+        street_name1 = self.osmdb.way( osm_way1 ).tags['name']
         
         osm_id = vertex.label.split("-")[1]
         osm_node_id, osm_node_tags, osm_node_lat, osm_node_lon, osm_node_refcount = self.osmdb.node( osm_id )
         
-        what = "end"
+        what = "arrive walking"
         where = "on %s"%(street_name1)
         when = "about %s"%str(TimeHelpers.unix_to_localtime( vertex.payload.time, self.timezone_name ))
         geom = [osm_node_lon, osm_node_lat]
-        return (what,where,when,geom)
+        return NarrativeEvent(what,where,when,geom)
         
 class StreetTurnEvent:
     def __init__(self, osmdb_filename, timezone_name = "America/Los_Angeles"):
@@ -300,5 +316,26 @@ class StreetTurnEvent:
         where = "%s & %s"%(street_name1, street_name2)
         when = "about %s"%str(TimeHelpers.unix_to_localtime( vertex.payload.time, self.timezone_name ))
         geom = (osm_node_lon, osm_node_lat)
-        return (what,where,when,geom)
+        return NarrativeEvent(what,where,when,geom)
     
+class AllVertexEvent:
+    def __init__(self):
+        pass
+        
+    @staticmethod
+    def applies_to(e1, v, e2):
+        return True
+        
+    def __call__(self, e1, v, e2):
+        return NarrativeEvent("vertex", str(e1), str(v), str(e2))
+        
+class AllEdgeEvent:
+    def __init__(self):
+        pass
+        
+    @staticmethod
+    def applies_to(v1, e, v2):
+        return True
+        
+    def __call__(self, v1, e, v2):
+        return NarrativeEvent("edge", str(v1), str(e), str(v2))

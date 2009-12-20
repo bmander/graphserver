@@ -16,6 +16,12 @@ import os
     
 from events import BoardEvent, AlightEvent, HeadwayBoardEvent, HeadwayAlightEvent, StreetEvent, StreetTurnEvent
 
+class SelfEncoderHelper(json.JSONEncoder):
+    def default(self, obj):
+        if hasattr(obj, "to_jsonable"):
+            return obj.to_jsonable()
+        return json.JSONEncoder.default(self, obj)
+
 def postprocess_path_raw(vertices, edges):
     retbuilder = []
     
@@ -77,7 +83,7 @@ class RouteServer(Servable):
         
         spt.destroy()
         
-        return json.dumps(ret, indent=2)
+        return json.dumps(ret, indent=2, cls=SelfEncoderHelper)
         
     def path_retro(self, origin, dest, currtime=None, time_offset=None, transfer_penalty=0, walking_speed=1.0):
         if currtime is None:
@@ -98,7 +104,7 @@ class RouteServer(Servable):
         
         spt.destroy()
         
-        return json.dumps(ret, indent=2)
+        return json.dumps(ret, indent=2, cls=SelfEncoderHelper)
 
     def path_raw(self, origin, dest, currtime=None):
         if currtime is None:
@@ -148,6 +154,12 @@ def import_class(handler_class_path_string):
     return handler_class
     
 def get_handler_instances( handler_definitions, handler_type ):
+    if handler_definitions is None:
+        return
+    
+    if handler_type not in handler_definitions:
+        return
+    
     for handler in handler_definitions[handler_type]:
         handler_class = import_class( handler['name'] )
         handler_instance = handler_class(**handler.get("args", {}))
