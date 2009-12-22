@@ -50,7 +50,7 @@ def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, t
         
         b = TripBoard(service_id, sc, tz, 0)
         for trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_dist_traveled in stop_time_bundle:
-            b.add_boarding( trip_id, departure_time )
+            b.add_boarding( trip_id, departure_time, stop_sequence )
             
         gdb.add_edge( "sta-%s"%stop_id, patternstop_vx_name, b, cursor )
         

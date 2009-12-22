@@ -86,9 +86,9 @@ class StressTest(unittest.TestCase):
         
         def func():
             tb = TripBoard( "WKDY", sc, tz, 0 )
-            tb.add_boarding( "1111", 50 )
-            tb.add_boarding( "2222", 100 )
-            tb.add_boarding( "3333", 200 )
+            tb.add_boarding( "1111", 50, 0 )
+            tb.add_boarding( "2222", 100, 0 )
+            tb.add_boarding( "3333", 200, 0 )
             
             tb.destroy()
             

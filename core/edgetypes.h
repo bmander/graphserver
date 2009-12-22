@@ -366,6 +366,7 @@ typedef struct TripBoard {
     int n;
     int* departs;
     char** trip_ids;
+    int* stop_sequences;
     
     ServiceCalendar* calendar;
     Timezone* timezone;
@@ -397,13 +398,16 @@ int
 tbGetNumBoardings(TripBoard* this);
 
 void
-tbAddBoarding(TripBoard* this, char* trip_id, int depart);
+tbAddBoarding(TripBoard* this, char* trip_id, int depart, int stop_sequence);
 
 char*
 tbGetBoardingTripId(TripBoard* this, int i);
 
 int
 tbGetBoardingDepart(TripBoard* this, int i);
+
+int
+tbGetBoardingStopSequence(TripBoard* this, int i);
 
 int
 tbSearchBoardingsList(TripBoard* this, int time);

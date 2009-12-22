@@ -210,9 +210,10 @@ pycapi(lgs.headwayWalkBack, c_void_p, [c_void_p, c_void_p, c_int])
 pycapi(lgs.tbNew, c_void_p, [c_int, c_void_p, c_void_p, c_int])
 pycapi(lgs.tbWalk, c_void_p, [c_void_p, c_void_p, c_int])
 pycapi(lgs.headwayWalk, c_void_p, [c_void_p, c_void_p, c_int])
-pycapi(lgs.tbAddBoarding, c_void_p, [c_void_p, c_char_p, c_int])
+pycapi(lgs.tbAddBoarding, c_void_p, [c_void_p, c_char_p, c_int, c_int])
 pycapi(lgs.tbGetBoardingTripId, c_char_p, [c_void_p, c_int])
 pycapi(lgs.tbGetBoardingDepart, c_int, [c_void_p, c_int])
+pycapi(lgs.tbGetBoardingStopSequence, c_int, [c_void_p, c_int])
 
 #ALIGHT API
 pycapi(lgs.alGetAlightingTripId, c_char_p, [c_void_p, c_int])

@@ -418,9 +418,9 @@ class TestGraph(unittest.TestCase):
         g.add_vertex( "Seattle-busstop-onbus" )
         
         tb = TripBoard("WKDY", sc, tz, 0)
-        tb.add_boarding( "A", 10 )
-        tb.add_boarding( "B", 15 )
-        tb.add_boarding( "C", 400 )
+        tb.add_boarding( "A", 10, 0 )
+        tb.add_boarding( "B", 15, 0 )
+        tb.add_boarding( "C", 400, 0 )
         
         cr = Crossing(20)
         
@@ -588,9 +588,9 @@ class TestGraph(unittest.TestCase):
         tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
         
         tb = TripBoard( "WKDY", sc, tz, 0 )
-        tb.add_boarding( "1", 50 )
-        tb.add_boarding( "2", 100 )
-        tb.add_boarding( "3", 200 )
+        tb.add_boarding( "1", 50, 0 )
+        tb.add_boarding( "2", 100, 0 )
+        tb.add_boarding( "3", 200, 0 )
         
         al = Alight( "WKDY", sc, tz, 0 )
         al.add_alighting( "1", 50 )
@@ -1929,15 +1929,15 @@ class TestTripBoard(unittest.TestCase):
         
         assert tb.overage == 0
         
-        tb.add_boarding( "midnight", 24*3600 )
+        tb.add_boarding( "midnight", 24*3600, 0 )
         
         assert tb.overage == 0
         
-        tb.add_boarding( "nightowl1", 24*3600+1 )
+        tb.add_boarding( "nightowl1", 24*3600+1, 0 )
         
         assert tb.overage == 1
         
-        tb.add_boarding( "nightowl2", 24*3600+3600 )
+        tb.add_boarding( "nightowl2", 24*3600+3600, 0 )
         
         assert tb.overage == 3600
         
@@ -1950,10 +1950,10 @@ class TestTripBoard(unittest.TestCase):
         tz.add_period( TimezonePeriod(0,2*3600*24,0) )
         
         tb = TripBoard( "WKDY", sc, tz, 0 )
-        tb.add_boarding( "eleven", 23*3600 )
-        tb.add_boarding( "midnight", 24*3600 )
-        tb.add_boarding( "one", 25*3600 )
-        tb.add_boarding( "two", 26*3600 )
+        tb.add_boarding( "eleven", 23*3600, 0 )
+        tb.add_boarding( "midnight", 24*3600, 0 )
+        tb.add_boarding( "one", 25*3600, 0 )
+        tb.add_boarding( "two", 26*3600, 0 )
         
         s0 = State(1, 0)
         s1 = tb.walk(s0,WalkOptions())
@@ -1996,10 +1996,10 @@ class TestTripBoard(unittest.TestCase):
         tz.add_period( TimezonePeriod(0,3*3600*24,0) )
         
         tb = TripBoard( "WKDY", sc, tz, 0 )
-        tb.add_boarding( "eleven", 23*3600 )
-        tb.add_boarding( "midnight", 24*3600 )
-        tb.add_boarding( "one", 25*3600 )
-        tb.add_boarding( "two", 26*3600 )
+        tb.add_boarding( "eleven", 23*3600, 0 )
+        tb.add_boarding( "midnight", 24*3600, 0 )
+        tb.add_boarding( "one", 25*3600, 0 )
+        tb.add_boarding( "two", 26*3600, 0 )
         
         s0 = State(1,3*3600*24) #midnight sunday
         s1 = tb.walk(s0,WalkOptions())
@@ -2019,11 +2019,11 @@ class TestTripBoard(unittest.TestCase):
         except Exception, ex:
             assert str(ex) == "Index 0 out of bounds"
     
-        tb.add_boarding( "morning", 0 )
+        tb.add_boarding( "morning", 0, 0 )
         
         assert tb.num_boardings == 1
         
-        assert tb.get_boarding( 0 ) == ("morning", 0)
+        assert tb.get_boarding( 0 ) == ("morning", 0, 0)
         
         try:
             tb.get_boarding( -1 )
@@ -2051,16 +2051,16 @@ class TestTripBoard(unittest.TestCase):
         except Exception, ex:
             assert str(ex) == "Index 0 out of bounds"
     
-        tb.add_boarding( "first", 0 )
+        tb.add_boarding( "first", 0, 0 )
         
         assert tb.num_boardings == 1
-        assert tb.get_boarding( 0 ) == ('first', 0)
+        assert tb.get_boarding( 0 ) == ('first', 0, 0)
         
-        tb.add_boarding( "second", 50 )
+        tb.add_boarding( "second", 50, 0 )
         assert tb.num_boardings == 2
         
-        assert tb.get_boarding( 0 ) == ('first', 0)
-        assert tb.get_boarding( 1 ) == ('second', 50)
+        assert tb.get_boarding( 0 ) == ('first', 0, 0)
+        assert tb.get_boarding( 1 ) == ('second', 50, 0)
         
         try:
             tb.get_boarding( -1 )
@@ -2074,12 +2074,12 @@ class TestTripBoard(unittest.TestCase):
         except Exception, ex:
             assert str(ex) == "Index 2 out of bounds"
 
-        tb.add_boarding( "third", 150 )
+        tb.add_boarding( "third", 150, 0 )
         assert tb.num_boardings == 3
         
-        assert tb.get_boarding( 0 ) == ('first', 0)
-        assert tb.get_boarding( 1 ) == ('second', 50)
-        assert tb.get_boarding( 2 ) == ('third', 150)
+        assert tb.get_boarding( 0 ) == ('first', 0, 0)
+        assert tb.get_boarding( 1 ) == ('second', 50, 0)
+        assert tb.get_boarding( 2 ) == ('third', 150, 0)
         
         try:
             tb.get_boarding( -1 )
@@ -2093,13 +2093,13 @@ class TestTripBoard(unittest.TestCase):
         except Exception, ex:
             assert str(ex) == "Index 3 out of bounds"
             
-        tb.add_boarding( "fourth", 150 )
+        tb.add_boarding( "fourth", 150, 0 )
         assert tb.num_boardings == 4
         
-        assert tb.get_boarding( 0 ) == ('first', 0)
-        assert tb.get_boarding( 1 ) == ('second', 50)
-        assert tb.get_boarding( 2 ) == ('third', 150) or tb.get_boarding( 2 ) == ('fourth', 150)
-        assert tb.get_boarding( 3 ) == ('third', 150) or tb.get_boarding( 3 ) == ('fourth', 150)
+        assert tb.get_boarding( 0 ) == ('first', 0, 0)
+        assert tb.get_boarding( 1 ) == ('second', 50, 0)
+        assert tb.get_boarding( 2 ) == ('third', 150, 0) or tb.get_boarding( 2 ) == ('fourth', 150, 0)
+        assert tb.get_boarding( 3 ) == ('third', 150, 0) or tb.get_boarding( 3 ) == ('fourth', 150, 0)
             
     def test_add_several_out_of_order(self):
         sc = ServiceCalendar()
@@ -2115,16 +2115,16 @@ class TestTripBoard(unittest.TestCase):
         except Exception, ex:
             assert str(ex) == "Index 0 out of bounds"
     
-        tb.add_boarding( "fourth", 150 )
+        tb.add_boarding( "fourth", 150, 0 )
         
         assert tb.num_boardings == 1
-        assert tb.get_boarding( 0 ) == ('fourth', 150)
+        assert tb.get_boarding( 0 ) == ('fourth', 150, 0)
         
-        tb.add_boarding( "first", 0 )
+        tb.add_boarding( "first", 0, 0 )
         assert tb.num_boardings == 2
         
-        assert tb.get_boarding( 0 ) == ('first', 0)
-        assert tb.get_boarding( 1 ) == ('fourth', 150)
+        assert tb.get_boarding( 0 ) == ('first', 0, 0)
+        assert tb.get_boarding( 1 ) == ('fourth', 150, 0)
         
         try:
             tb.get_boarding( -1 )
@@ -2138,12 +2138,12 @@ class TestTripBoard(unittest.TestCase):
         except Exception, ex:
             assert str(ex) == "Index 2 out of bounds"
 
-        tb.add_boarding( "third", 150 )
+        tb.add_boarding( "third", 150, 0 )
         assert tb.num_boardings == 3
         
-        assert tb.get_boarding( 0 ) == ('first', 0)
-        assert tb.get_boarding( 1 ) == ('third', 150)
-        assert tb.get_boarding( 2 ) == ('fourth', 150)
+        assert tb.get_boarding( 0 ) == ('first', 0, 0)
+        assert tb.get_boarding( 1 ) == ('third', 150, 0)
+        assert tb.get_boarding( 2 ) == ('fourth', 150, 0)
         
         try:
             tb.get_boarding( -1 )
@@ -2157,13 +2157,13 @@ class TestTripBoard(unittest.TestCase):
         except Exception, ex:
             assert str(ex) == "Index 3 out of bounds"
         
-        tb.add_boarding( "second", 50 )
+        tb.add_boarding( "second", 50, 0 )
         assert tb.num_boardings == 4
         
-        assert tb.get_boarding( 0 ) == ('first', 0)
-        assert tb.get_boarding( 1 ) == ('second', 50)
-        assert tb.get_boarding( 2 ) == ('third', 150) or tb.get_boarding( 2 ) == ('fourth', 150)
-        assert tb.get_boarding( 3 ) == ('third', 150) or tb.get_boarding( 3 ) == ('fourth', 150)
+        assert tb.get_boarding( 0 ) == ('first', 0, 0)
+        assert tb.get_boarding( 1 ) == ('second', 50, 0)
+        assert tb.get_boarding( 2 ) == ('third', 150, 0) or tb.get_boarding( 2 ) == ('fourth', 150, 0)
+        assert tb.get_boarding( 3 ) == ('third', 150, 0) or tb.get_boarding( 3 ) == ('fourth', 150, 0)
         
     def test_add_several_random(self):
         sc = ServiceCalendar()
@@ -2174,11 +2174,11 @@ class TestTripBoard(unittest.TestCase):
         tb = TripBoard("WKDY", sc, tz, 0)
         
         for i in range(1000):
-            tb.add_boarding( str(i), randint(0,10000) )
+            tb.add_boarding( str(i), randint(0,10000), 0 )
             
         last_depart = -1
         for i in range(tb.num_boardings):
-            trip_id, depart = tb.get_boarding(i)
+            trip_id, depart, stop_sequence = tb.get_boarding(i)
             assert last_depart <= depart
             last_depart = depart
     
@@ -2192,7 +2192,7 @@ class TestTripBoard(unittest.TestCase):
         
         assert tb.search_boardings_list(0) == 0
         
-        tb.add_boarding( "morning", 15 )
+        tb.add_boarding( "morning", 15, 0 )
         
         assert tb.search_boardings_list(5) == 0
         assert tb.search_boardings_list(15) == 0
@@ -2208,7 +2208,7 @@ class TestTripBoard(unittest.TestCase):
         
         assert tb.get_next_boarding_index(0) == -1
         
-        tb.add_boarding( "morning", 15 )
+        tb.add_boarding( "morning", 15, 0 )
         
         assert tb.get_next_boarding_index(5) == 0
         assert tb.get_next_boarding_index(15) == 0
@@ -2224,10 +2224,10 @@ class TestTripBoard(unittest.TestCase):
         
         assert tb.get_next_boarding(0) == None
         
-        tb.add_boarding( "morning", 15 )
+        tb.add_boarding( "morning", 15, 0 )
         
-        assert tb.get_next_boarding(5) == ( "morning", 15 )
-        assert tb.get_next_boarding(15) == ( "morning", 15 )
+        assert tb.get_next_boarding(5) == ( "morning", 15, 0 )
+        assert tb.get_next_boarding(15) == ( "morning", 15, 0 )
         assert tb.get_next_boarding(20) == None
         
     def test_get_next_boarding_several(self):
@@ -2240,18 +2240,18 @@ class TestTripBoard(unittest.TestCase):
         
         assert tb.get_next_boarding(0) == None
         
-        tb.add_boarding( "1", 15 )
+        tb.add_boarding( "1", 15, 0 )
         
-        assert tb.get_next_boarding(5) == ( "1", 15 )
-        assert tb.get_next_boarding(15) == ( "1", 15 )
+        assert tb.get_next_boarding(5) == ( "1", 15, 0 )
+        assert tb.get_next_boarding(15) == ( "1", 15, 0 )
         assert tb.get_next_boarding(20) == None
         
-        tb.add_boarding( "2", 25 )
+        tb.add_boarding( "2", 25, 0 )
         
-        assert tb.get_next_boarding(5) == ( "1", 15 )
-        assert tb.get_next_boarding(15) == ( "1", 15 )
-        assert tb.get_next_boarding(20) == ( "2", 25 )
-        assert tb.get_next_boarding(25) == ( "2", 25 )
+        assert tb.get_next_boarding(5) == ( "1", 15, 0 )
+        assert tb.get_next_boarding(15) == ( "1", 15, 0 )
+        assert tb.get_next_boarding(20) == ( "2", 25, 0 )
+        assert tb.get_next_boarding(25) == ( "2", 25, 0 )
         assert tb.get_next_boarding(30) == None
         
     def test_walk(self):
@@ -2262,9 +2262,9 @@ class TestTripBoard(unittest.TestCase):
         tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
         
         tb = TripBoard( "WKDY", sc, tz, 0 )
-        tb.add_boarding( "1", 50 )
-        tb.add_boarding( "2", 100 )
-        tb.add_boarding( "3", 200 )
+        tb.add_boarding( "1", 50, 0 )
+        tb.add_boarding( "2", 100, 0 )
+        tb.add_boarding( "3", 200, 0 )
         
         #wrong day
         s = State(1, 1*3600*24)
@@ -2318,9 +2318,9 @@ class TestTripBoard(unittest.TestCase):
         tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
         
         tb = TripBoard( "WKDY", sc, tz, 0 )
-        tb.add_boarding( "1", 50 )
-        tb.add_boarding( "2", 100 )
-        tb.add_boarding( "3", 200 )
+        tb.add_boarding( "1", 50, 0 )
+        tb.add_boarding( "2", 100, 0 )
+        tb.add_boarding( "3", 200, 0 )
         
         s = State(1,100)
         ret = tb.walk_back( s, WalkOptions() )

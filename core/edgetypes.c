@@ -525,6 +525,7 @@ tbNew( ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int 
   ret->n = 0;
   ret->departs = NULL;
   ret->trip_ids = NULL;
+  ret->stop_sequences = NULL;
     
   ret->calendar = calendar;
   ret->timezone = timezone;
@@ -550,6 +551,9 @@ tbDestroy(TripBoard* this) {
   }
   if(this->departs){
     free(this->departs);
+  }
+  if(this->stop_sequences){
+    free(this->stop_sequences);
   }
   free( this );
 }
@@ -580,7 +584,7 @@ tbGetNumBoardings(TripBoard* this) {
 }
 
 void
-tbAddBoarding(TripBoard* this, char* trip_id, int depart) {
+tbAddBoarding(TripBoard* this, char* trip_id, int depart, int stop_sequence) {
     if (depart > SECS_IN_DAY+this->overage)
         this->overage = depart-SECS_IN_DAY;
     
@@ -588,8 +592,10 @@ tbAddBoarding(TripBoard* this, char* trip_id, int depart) {
     if(this->n==0) {
         this->departs = (int*)malloc(sizeof(int));
         this->trip_ids = (char**)malloc(sizeof(char*));
+        this->stop_sequences = (int*)malloc(sizeof(int));
         
         this->departs[0] = depart;
+        this->stop_sequences[0] = stop_sequence;
         
         int n = strlen(trip_id)+1;
         this->trip_ids[0] = (char*)malloc(sizeof(char)*(n));
@@ -599,6 +605,7 @@ tbAddBoarding(TripBoard* this, char* trip_id, int depart) {
         //allocate new, expanded lists with size enough for the extra departure
         int* next_departs = (int*)malloc((this->n+1)*sizeof(int));
         char** next_trip_ids = (char**)malloc((this->n+1)*sizeof(char*));
+        int* next_stop_sequences = (int*)malloc((this->n+1)*sizeof(int));
         
         //find insertion point
         int m = tbSearchBoardingsList(this, depart);
@@ -608,6 +615,7 @@ tbAddBoarding(TripBoard* this, char* trip_id, int depart) {
         for(i=0; i<m; i++) {
             next_departs[i] = this->departs[i];
             next_trip_ids[i] = this->trip_ids[i];
+            next_stop_sequences[i] = this->stop_sequences[i];
         }
         
         //copy new departure into lists
@@ -615,18 +623,22 @@ tbAddBoarding(TripBoard* this, char* trip_id, int depart) {
         int strn = strlen(trip_id)+1;
         next_trip_ids[m] = (char*)malloc(sizeof(char)*(strn));
         memcpy(next_trip_ids[m], trip_id, strn);
+        next_stop_sequences[m] = stop_sequence;
         
         //copy old list to new list from insertion point on
         for(i=m; i<this->n; i++) {
             next_departs[i+1] = this->departs[i];
             next_trip_ids[i+1] = this->trip_ids[i];
+            next_stop_sequences[i+1] = this->stop_sequences[i];
         }
         
         //free and replace old lists
         free(this->departs);
         free(this->trip_ids);
+        free(this->stop_sequences);
         this->departs = next_departs;
         this->trip_ids = next_trip_ids;
+        this->stop_sequences = next_stop_sequences;
     }
     
     this->n += 1;
@@ -648,6 +660,15 @@ tbGetBoardingDepart(TripBoard* this, int i) {
     }
     
     return this->departs[i];
+}
+
+int
+tbGetBoardingStopSequence(TripBoard* this, int i) {
+    if(i<0 || i >= this->n) {
+        return -1;
+    }
+    
+    return this->stop_sequences[i];
 }
 
 int

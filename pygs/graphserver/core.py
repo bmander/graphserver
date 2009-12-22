@@ -975,17 +975,18 @@ class TripBoard(EdgePayload):
     def service_id(self):
         return self.calendar.get_service_id_string( self.int_service_id )
     
-    def add_boarding(self, trip_id, depart):
-        self._cadd_boarding( self.soul, trip_id, depart )
+    def add_boarding(self, trip_id, depart, stop_sequence):
+        self._cadd_boarding( self.soul, trip_id, depart, stop_sequence )
         
     def get_boarding(self, i):
         trip_id = lgs.tbGetBoardingTripId(self.soul, c_int(i))
         depart = lgs.tbGetBoardingDepart(self.soul, c_int(i))
+        stop_sequence = lgs.tbGetBoardingStopSequence(self.soul, c_int(i))
         
         if trip_id is None:
             raise IndexError("Index %d out of bounds"%i)
         
-        return (trip_id, depart)
+        return (trip_id, depart, stop_sequence)
     
     def search_boardings_list(self, time):
         return lgs.tbSearchBoardingsList( self.soul, c_int(time) )
@@ -1033,7 +1034,7 @@ class TripBoard(EdgePayload):
         ret = TripBoard(int_sid, calendar, timezone, agency)
         
         for trip_id, depart in state['boardings']:
-            ret.add_boarding( trip_id, depart )
+            ret.add_boarding( trip_id, depart, stop_sequence )
             
         return ret
         
@@ -1041,8 +1042,8 @@ class TripBoard(EdgePayload):
         boardingstrs = []
         
         for i in range(self.num_boardings):
-            trip_id, departure_secs = self.get_boarding(i)
-            boardingstrs.append( "on trip id='%s' at %s"%(trip_id, unparse_secs(departure_secs)) )
+            trip_id, departure_secs, stop_sequence = self.get_boarding(i)
+            boardingstrs.append( "on trip id='%s' at %s, stop sequence %s"%(trip_id, unparse_secs(departure_secs), stop_sequence) )
         
         ret = """TripBoard
    agency (internal id): %d
