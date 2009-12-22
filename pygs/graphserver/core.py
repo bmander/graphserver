@@ -1033,7 +1033,7 @@ class TripBoard(EdgePayload):
         
         ret = TripBoard(int_sid, calendar, timezone, agency)
         
-        for trip_id, depart in state['boardings']:
+        for trip_id, depart, stop_sequence in state['boardings']:
             ret.add_boarding( trip_id, depart, stop_sequence )
             
         return ret
@@ -1207,17 +1207,18 @@ class Alight(EdgePayload):
         
         self.soul = self._cnew(service_id, calendar.soul, timezone.soul, agency)
         
-    def add_alighting(self, trip_id, arrival):
-        lgs.alAddAlighting( self.soul, trip_id, arrival )
+    def add_alighting(self, trip_id, arrival, stop_sequence):
+        lgs.alAddAlighting( self.soul, trip_id, arrival, stop_sequence )
         
     def get_alighting(self, i):
         trip_id = lgs.alGetAlightingTripId(self.soul, c_int(i))
         arrival = lgs.alGetAlightingArrival(self.soul, c_int(i))
+        stop_sequence = lgs.alGetAlightingStopSequence(self.soul, c_int(i))
         
         if trip_id is None:
             raise IndexError("Index %d out of bounds"%i)
         
-        return (trip_id, arrival)
+        return (trip_id, arrival, stop_sequence)
         
     def search_alightings_list(self, time):
         return lgs.alSearchAlightingsList( self.soul, c_int(time) )
@@ -1264,8 +1265,8 @@ class Alight(EdgePayload):
         
         ret = Alight(int_sid, calendar, timezone, agency)
         
-        for trip_id, arrival in state['alightings']:
-            ret.add_alighting( trip_id, arrival )
+        for trip_id, arrival, stop_sequence in state['alightings']:
+            ret.add_alighting( trip_id, arrival, stop_sequence )
             
         return ret
         
@@ -1273,8 +1274,8 @@ class Alight(EdgePayload):
         alightingstrs = []
         
         for i in range(self.num_alightings):
-            trip_id, arrival_secs = self.get_alighting(i)
-            alightingstrs.append( "on trip id='%s' at %s"%(trip_id, unparse_secs(arrival_secs)) )
+            trip_id, arrival_secs, stop_sequence = self.get_alighting(i)
+            alightingstrs.append( "on trip id='%s' at %s, stop sequence %s"%(trip_id, unparse_secs(arrival_secs), stop_sequence) )
         
         ret = """Alight
    agency (internal id): %d

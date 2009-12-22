@@ -1196,6 +1196,7 @@ alNew( ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int 
   ret->n = 0;
   ret->arrivals = NULL;
   ret->trip_ids = NULL;
+  ret->stop_sequences = NULL;
     
   ret->calendar = calendar;
   ret->timezone = timezone;
@@ -1221,6 +1222,9 @@ alDestroy(Alight* this) {
   }
   if(this->arrivals){
     free(this->arrivals);
+  }
+  if(this->stop_sequences){
+    free(this->stop_sequences);
   }
   free( this );
 }
@@ -1251,7 +1255,7 @@ alGetNumAlightings( Alight* this) {
 }
 
 void
-alAddAlighting(Alight* this, char* trip_id, int arrival) {
+alAddAlighting(Alight* this, char* trip_id, int arrival, int stop_sequence) {
     if (arrival > SECS_IN_DAY+this->overage)
         this->overage = arrival-SECS_IN_DAY;
     
@@ -1259,8 +1263,10 @@ alAddAlighting(Alight* this, char* trip_id, int arrival) {
     if(this->n==0) {
         this->arrivals = (int*)malloc(sizeof(int));
         this->trip_ids = (char**)malloc(sizeof(char*));
+        this->stop_sequences = (int*)malloc(sizeof(int));
         
         this->arrivals[0] = arrival;
+        this->stop_sequences[0] = stop_sequence;
         
         int n = strlen(trip_id)+1;
         this->trip_ids[0] = (char*)malloc(sizeof(char)*(n));
@@ -1270,6 +1276,7 @@ alAddAlighting(Alight* this, char* trip_id, int arrival) {
         //allocate new, expanded lists with size enough for the extra departure
         int* next_arrivals = (int*)malloc((this->n+1)*sizeof(int));
         char** next_trip_ids = (char**)malloc((this->n+1)*sizeof(char*));
+        int* next_stop_sequences = (int*)malloc((this->n+1)*sizeof(int));
         
         //find insertion point
         int m = alSearchAlightingsList(this, arrival);
@@ -1279,6 +1286,7 @@ alAddAlighting(Alight* this, char* trip_id, int arrival) {
         for(i=0; i<m; i++) {
             next_arrivals[i] = this->arrivals[i];
             next_trip_ids[i] = this->trip_ids[i];
+            next_stop_sequences[i] = this->stop_sequences[i];
         }
         
         //copy new departure into lists
@@ -1286,18 +1294,22 @@ alAddAlighting(Alight* this, char* trip_id, int arrival) {
         int strn = strlen(trip_id)+1;
         next_trip_ids[m] = (char*)malloc(sizeof(char)*(strn));
         memcpy(next_trip_ids[m], trip_id, strn);
+        next_stop_sequences[m] = stop_sequence;
         
         //copy old list to new list from insertion point on
         for(i=m; i<this->n; i++) {
             next_arrivals[i+1] = this->arrivals[i];
             next_trip_ids[i+1] = this->trip_ids[i];
+            next_stop_sequences[i+1] = this->stop_sequences[i];
         }
         
         //free and replace old lists
         free(this->arrivals);
         free(this->trip_ids);
+        free(this->stop_sequences);
         this->arrivals = next_arrivals;
         this->trip_ids = next_trip_ids;
+        this->stop_sequences = next_stop_sequences;
     }
     
     this->n += 1;
@@ -1319,6 +1331,15 @@ alGetAlightingArrival(Alight* this, int i) {
     }
     
     return this->arrivals[i];
+}
+
+int
+alGetAlightingStopSequence(Alight* this, int i) {
+    if(i<0 || i >= this->n) {
+        return -1;
+    }
+    
+    return this->stop_sequences[i];
 }
 
 int

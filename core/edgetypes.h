@@ -596,6 +596,7 @@ typedef struct Alight {
     int n;
     int* arrivals;
     char** trip_ids;
+    int* stop_sequences;
     
     ServiceCalendar* calendar;
     Timezone* timezone;
@@ -627,13 +628,16 @@ int
 alGetNumAlightings(Alight* this);
 
 void
-alAddAlighting(Alight* this, char* trip_id, int arrival);
+alAddAlighting(Alight* this, char* trip_id, int arrival, int stop_sequence);
 
 char*
 alGetAlightingTripId(Alight* this, int i);
 
 int
 alGetAlightingArrival(Alight* this, int i);
+
+int
+alGetAlightingStopSequence(Alight* this, int i);
 
 int
 alSearchAlightingsList(Alight* this, int time);

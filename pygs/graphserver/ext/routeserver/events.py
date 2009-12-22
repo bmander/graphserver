@@ -47,7 +47,7 @@ class BoardEvent:
         where = stop_desc
         when = str(TimeHelpers.unix_to_localtime( event_time, self.timezone_name ))
         geom = (lon,lat)
-        return NarrativeEvent(what, where, when, geom)
+        return NarrativeEvent(edge.payload.__repr__(), where, when, geom)
 
 class AlightEvent:
     def __init__(self, gtfsdb_filename, timezone_name="America/Los_Angeles"):

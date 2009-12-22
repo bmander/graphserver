@@ -425,9 +425,9 @@ class TestGraph(unittest.TestCase):
         cr = Crossing(20)
         
         al = Alight("WKDY", sc, tz, 0)
-        al.add_alighting( "A", 10+20 )
-        al.add_alighting( "B", 15+20 )
-        al.add_alighting( "C", 400+20 )
+        al.add_alighting( "A", 10+20, 0 )
+        al.add_alighting( "B", 15+20, 0 )
+        al.add_alighting( "C", 400+20, 0 )
         
         g.add_edge( "Seattle-busstop", "Seattle-busstop-onbus", tb )
         g.add_edge( "Seattle-busstop-onbus", "Portland-busstop-onbus", cr )
@@ -593,9 +593,9 @@ class TestGraph(unittest.TestCase):
         tb.add_boarding( "3", 200, 0 )
         
         al = Alight( "WKDY", sc, tz, 0 )
-        al.add_alighting( "1", 50 )
-        al.add_alighting( "2", 100 )
-        al.add_alighting( "3", 200 )
+        al.add_alighting( "1", 50, 0 )
+        al.add_alighting( "2", 100, 0 )
+        al.add_alighting( "3", 200, 0 )
         
         g.add_edge( "A", "A-1", tb )
         g.add_edge( "A-1", "B-1", Crossing(10) )
@@ -2360,15 +2360,15 @@ class TestAlight(unittest.TestCase):
         
         assert al.overage == 0
         
-        al.add_alighting( "midnight", 24*3600 )
+        al.add_alighting( "midnight", 24*3600, 0 )
         
         assert al.overage == 0
         
-        al.add_alighting( "nightowl1", 24*3600+1 )
+        al.add_alighting( "nightowl1", 24*3600+1, 0 )
         
         assert al.overage == 1
         
-        al.add_alighting( "nightowl2", 24*3600+3600 )
+        al.add_alighting( "nightowl2", 24*3600+3600, 0 )
         
         assert al.overage == 3600
 
@@ -2381,10 +2381,10 @@ class TestAlight(unittest.TestCase):
         tz.add_period( TimezonePeriod(0,2*3600*24,0) )
         
         al = Alight( "WKDY", sc, tz, 0 )
-        al.add_alighting( "eleven", 23*3600 )
-        al.add_alighting( "midnight", 24*3600 )
-        al.add_alighting( "one", 25*3600 )
-        al.add_alighting( "two", 26*3600 )
+        al.add_alighting( "eleven", 23*3600, 0 )
+        al.add_alighting( "midnight", 24*3600, 0 )
+        al.add_alighting( "one", 25*3600, 0 )
+        al.add_alighting( "two", 26*3600, 0 )
         
         s0 = State(1, 0)
         s1 = al.walk_back(s0,WalkOptions())
@@ -2431,11 +2431,11 @@ class TestAlight(unittest.TestCase):
         except Exception, ex:
             assert str(ex) == "Index 0 out of bounds"
     
-        al.add_alighting( "morning", 0 )
+        al.add_alighting( "morning", 0, 0 )
         
         assert al.num_alightings == 1
         
-        assert al.get_alighting( 0 ) == ("morning", 0)
+        assert al.get_alighting( 0 ) == ("morning", 0, 0)
         
         try:
             al.get_alighting( -1 )
@@ -2461,16 +2461,16 @@ class TestAlight(unittest.TestCase):
         except Exception, ex:
             assert str(ex) == "Index 0 out of bounds"
     
-        al.add_alighting( "first", 0 )
+        al.add_alighting( "first", 0, 0 )
         
         assert al.num_alightings == 1
-        assert al.get_alighting( 0 ) == ('first', 0)
+        assert al.get_alighting( 0 ) == ('first', 0, 0)
         
-        al.add_alighting( "second", 50 )
+        al.add_alighting( "second", 50, 0 )
         assert al.num_alightings == 2
         
-        assert al.get_alighting( 0 ) == ('first', 0)
-        assert al.get_alighting( 1 ) == ('second', 50)
+        assert al.get_alighting( 0 ) == ('first', 0, 0)
+        assert al.get_alighting( 1 ) == ('second', 50, 0)
         
         try:
             al.get_alighting( -1 )
@@ -2484,12 +2484,12 @@ class TestAlight(unittest.TestCase):
         except Exception, ex:
             assert str(ex) == "Index 2 out of bounds"
 
-        al.add_alighting( "third", 150 )
+        al.add_alighting( "third", 150, 0 )
         assert al.num_alightings == 3
         
-        assert al.get_alighting( 0 ) == ('first', 0)
-        assert al.get_alighting( 1 ) == ('second', 50)
-        assert al.get_alighting( 2 ) == ('third', 150)
+        assert al.get_alighting( 0 ) == ('first', 0, 0)
+        assert al.get_alighting( 1 ) == ('second', 50, 0)
+        assert al.get_alighting( 2 ) == ('third', 150, 0)
         
         try:
             al.get_alighting( -1 )
@@ -2503,13 +2503,13 @@ class TestAlight(unittest.TestCase):
         except Exception, ex:
             assert str(ex) == "Index 3 out of bounds"
             
-        al.add_alighting( "fourth", 150 )
+        al.add_alighting( "fourth", 150, 0 )
         assert al.num_alightings == 4
         
-        assert al.get_alighting( 0 ) == ('first', 0)
-        assert al.get_alighting( 1 ) == ('second', 50)
-        assert al.get_alighting( 2 ) == ('third', 150) or al.get_alighting( 2 ) == ('fourth', 150)
-        assert al.get_alighting( 3 ) == ('third', 150) or al.get_alighting( 3 ) == ('fourth', 150)
+        assert al.get_alighting( 0 ) == ('first', 0, 0)
+        assert al.get_alighting( 1 ) == ('second', 50, 0)
+        assert al.get_alighting( 2 ) == ('third', 150, 0) or al.get_alighting( 2 ) == ('fourth', 150, 0)
+        assert al.get_alighting( 3 ) == ('third', 150, 0) or al.get_alighting( 3 ) == ('fourth', 150, 0)
 
     def test_add_several_out_of_order(self):
         sc = ServiceCalendar()
@@ -2525,16 +2525,16 @@ class TestAlight(unittest.TestCase):
         except Exception, ex:
             assert str(ex) == "Index 0 out of bounds"
     
-        al.add_alighting( "fourth", 150 )
+        al.add_alighting( "fourth", 150, 0 )
         
         assert al.num_alightings == 1
-        assert al.get_alighting( 0 ) == ('fourth', 150)
+        assert al.get_alighting( 0 ) == ('fourth', 150, 0)
         
-        al.add_alighting( "first", 0 )
+        al.add_alighting( "first", 0, 0 )
         assert al.num_alightings == 2
         
-        assert al.get_alighting( 0 ) == ('first', 0)
-        assert al.get_alighting( 1 ) == ('fourth', 150)
+        assert al.get_alighting( 0 ) == ('first', 0, 0)
+        assert al.get_alighting( 1 ) == ('fourth', 150, 0)
         
         try:
             al.get_alighting( -1 )
@@ -2548,12 +2548,12 @@ class TestAlight(unittest.TestCase):
         except Exception, ex:
             assert str(ex) == "Index 2 out of bounds"
 
-        al.add_alighting( "third", 150 )
+        al.add_alighting( "third", 150, 0 )
         assert al.num_alightings == 3
         
-        assert al.get_alighting( 0 ) == ('first', 0)
-        assert al.get_alighting( 1 ) == ('third', 150)
-        assert al.get_alighting( 2 ) == ('fourth', 150)
+        assert al.get_alighting( 0 ) == ('first', 0, 0)
+        assert al.get_alighting( 1 ) == ('third', 150, 0)
+        assert al.get_alighting( 2 ) == ('fourth', 150, 0)
         
         try:
             al.get_alighting( -1 )
@@ -2567,13 +2567,13 @@ class TestAlight(unittest.TestCase):
         except Exception, ex:
             assert str(ex) == "Index 3 out of bounds"
         
-        al.add_alighting( "second", 50 )
+        al.add_alighting( "second", 50, 0 )
         assert al.num_alightings == 4
         
-        assert al.get_alighting( 0 ) == ('first', 0)
-        assert al.get_alighting( 1 ) == ('second', 50)
-        assert al.get_alighting( 2 ) == ('third', 150) or al.get_alighting( 2 ) == ('fourth', 150)
-        assert al.get_alighting( 3 ) == ('third', 150) or al.get_alighting( 3 ) == ('fourth', 150)
+        assert al.get_alighting( 0 ) == ('first', 0, 0)
+        assert al.get_alighting( 1 ) == ('second', 50, 0)
+        assert al.get_alighting( 2 ) == ('third', 150, 0) or al.get_alighting( 2 ) == ('fourth', 150, 0)
+        assert al.get_alighting( 3 ) == ('third', 150, 0) or al.get_alighting( 3 ) == ('fourth', 150, 0)
 
     def test_add_several_random(self):
         sc = ServiceCalendar()
@@ -2584,11 +2584,11 @@ class TestAlight(unittest.TestCase):
         al = Alight("WKDY", sc, tz, 0)
         
         for i in range(1000):
-            al.add_alighting( str(i), randint(0,10000) )
+            al.add_alighting( str(i), randint(0,10000), 0 )
             
         last_arrival = -1
         for i in range(al.num_alightings):
-            trip_id, arrival = al.get_alighting(i)
+            trip_id, arrival, stop_sequence = al.get_alighting(i)
             assert last_arrival <= arrival
             last_arrival = arrival
             
@@ -2604,7 +2604,7 @@ class TestAlight(unittest.TestCase):
         
         assert al.search_alightings_list(0) == 0
         
-        al.add_alighting( "morning", 15 )
+        al.add_alighting( "morning", 15, 0 )
         
         assert al.search_alightings_list(5) == 0
         assert al.search_alightings_list(15) == 0
@@ -2622,7 +2622,7 @@ class TestAlight(unittest.TestCase):
         
         assert al.get_last_alighting_index(0) == -1
         
-        al.add_alighting( "morning", 15 )
+        al.add_alighting( "morning", 15, 0 )
         
         assert al.get_last_alighting_index(5) == -1
         assert al.get_last_alighting_index(15) == 0
@@ -2638,11 +2638,11 @@ class TestAlight(unittest.TestCase):
         
         assert al.get_last_alighting(0) == None
         
-        al.add_alighting( "morning", 15 )
+        al.add_alighting( "morning", 15, 0 )
         
         assert al.get_last_alighting(5) == None
-        assert al.get_last_alighting(15) == ( "morning", 15 )
-        assert al.get_last_alighting(20) == ( "morning", 15 )
+        assert al.get_last_alighting(15) == ( "morning", 15, 0 )
+        assert al.get_last_alighting(20) == ( "morning", 15, 0 )
 
     def test_get_last_alighting_several(self):
         sc = ServiceCalendar()
@@ -2654,19 +2654,19 @@ class TestAlight(unittest.TestCase):
         
         assert al.get_last_alighting(0) == None
         
-        al.add_alighting( "1", 15 )
+        al.add_alighting( "1", 15, 0 )
         
         assert al.get_last_alighting(5) == None
-        assert al.get_last_alighting(15) == ( "1", 15 )
-        assert al.get_last_alighting(20) == ( "1", 15 )
+        assert al.get_last_alighting(15) == ( "1", 15, 0 )
+        assert al.get_last_alighting(20) == ( "1", 15, 0 )
         
-        al.add_alighting( "2", 25 )
+        al.add_alighting( "2", 25, 0 )
         
         assert al.get_last_alighting(5) == None
-        assert al.get_last_alighting(15) == ( "1", 15 )
-        assert al.get_last_alighting(20) == ( "1", 15 )
-        assert al.get_last_alighting(25) == ( "2", 25 )
-        assert al.get_last_alighting(30) == ( "2", 25 )
+        assert al.get_last_alighting(15) == ( "1", 15, 0 )
+        assert al.get_last_alighting(20) == ( "1", 15, 0 )
+        assert al.get_last_alighting(25) == ( "2", 25, 0 )
+        assert al.get_last_alighting(30) == ( "2", 25, 0 )
     
 
     def test_walk_back(self):
@@ -2677,9 +2677,9 @@ class TestAlight(unittest.TestCase):
         tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
         
         al = Alight( "WKDY", sc, tz, 0 )
-        al.add_alighting( "1", 50 )
-        al.add_alighting( "2", 100 )
-        al.add_alighting( "3", 200 )
+        al.add_alighting( "1", 50, 0 )
+        al.add_alighting( "2", 100, 0 )
+        al.add_alighting( "3", 200, 0 )
         
         #wrong day
         s = State(1, 1*3600*24)
@@ -2733,9 +2733,9 @@ class TestAlight(unittest.TestCase):
         tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
         
         al = Alight( "WKDY", sc, tz, 0 )
-        al.add_alighting( "1", 50 )
-        al.add_alighting( "2", 100 )
-        al.add_alighting( "3", 200 )
+        al.add_alighting( "1", 50, 0 )
+        al.add_alighting( "2", 100, 0 )
+        al.add_alighting( "3", 200, 0 )
         
         s = State(1,100)
         ret = al.walk( s, WalkOptions() )

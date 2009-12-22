@@ -93,7 +93,7 @@ def load_bundle_to_boardalight_graph(g, agency_namespace, bundle, service_id, sc
         
         al = Alight(service_id, sc, tz, 0)
         for trip_id, departure_time, arrival_time, stop_id, stop_sequence, stop_dist_traveled in stop_time_bundle:
-            al.add_alighting( trip_id.encode('ascii'), arrival_time )
+            al.add_alighting( trip_id.encode('ascii'), arrival_time, stop_sequence )
             
         g.add_edge( patternstop_vx_name, "sta-%s"%stop_id, al )
     
