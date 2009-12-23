@@ -308,6 +308,7 @@ class State(CShadow):
     prev_edge      = cproperty(lgs.stateGetPrevEdge, c_void_p, EdgePayload, setter=lgs.stateSetPrevEdge )
     num_agencies     = cproperty(lgs.stateGetNumAgencies, c_int)
     trip_id          = cproperty(lgs.stateGetTripId, c_char_p)
+    stop_sequence    = cproperty(lgs.stateGetStopSequence, c_int)
     
 class WalkOptions(CShadow):
     

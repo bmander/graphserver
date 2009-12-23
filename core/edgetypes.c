@@ -123,6 +123,7 @@ stateNew(int n_agencies, long time) {
   ret->dist_walked = 0;
   ret->num_transfers = 0;
   ret->trip_id = NULL;
+  ret->stop_sequence = -1;
   ret->prev_edge = NULL;
   ret->n_agencies = n_agencies;
   ret->service_periods = (ServicePeriod**)malloc(n_agencies*sizeof(ServicePeriod*)); //hash of strings->calendardays
@@ -170,6 +171,9 @@ stateGetPrevEdge( State* this ) { return this->prev_edge; }
 
 char*
 stateGetTripId( State* this ) { return this->trip_id; }
+
+int
+stateGetStopSequence( State* this ) { return this->stop_sequence; }
 
 int
 stateGetNumAgencies( State* this ) { return this->n_agencies; }

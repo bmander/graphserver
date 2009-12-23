@@ -92,6 +92,7 @@ typedef struct State {
    int           num_transfers;
    EdgePayload*  prev_edge;
    char*         trip_id;
+   int           stop_sequence;
    int           n_agencies;
    ServicePeriod** service_periods;
 } State;
@@ -122,6 +123,9 @@ stateGetPrevEdge( State* this );
 
 char*
 stateGetTripId( State* this );
+
+int
+stateGetStopSequence( State* this );
 
 int
 stateGetNumAgencies( State* this );
