@@ -29,15 +29,11 @@ class BoardEvent:
     def applies_to(vertex1, edge, vertex2):
         return edge is not None and isinstance(edge.payload, graphserver.core.TripBoard)
     
-    def __call__(self, vertex1, edge, vertex2):
+    def __call__(self, vertex1, edge, vertex2, context):
         
         event_time = vertex2.payload.time
         trip_id = vertex2.payload.trip_id
         stop_id = vertex1.label.split("-")[-1]
-        
-        print vertex1.payload, edge, vertex2.payload
-        
-        print "trip_id", trip_id
         
         route_desc = "-".join([str(x) for x in list( self.gtfsdb.execute( "SELECT routes.route_short_name, routes.route_long_name FROM routes, trips WHERE routes.route_id=trips.route_id AND trip_id=?", (trip_id,) ) )[0]])
         stop_desc = list( self.gtfsdb.execute( "SELECT stop_name FROM stops WHERE stop_id = ?", (stop_id,) ) )[0][0]
@@ -47,7 +43,7 @@ class BoardEvent:
         where = stop_desc
         when = str(TimeHelpers.unix_to_localtime( event_time, self.timezone_name ))
         geom = (lon,lat)
-        return NarrativeEvent(edge.payload.__repr__(), where, when, geom)
+        return NarrativeEvent(what, where, when, geom)
 
 class AlightEvent:
     def __init__(self, gtfsdb_filename, timezone_name="America/Los_Angeles"):
@@ -58,7 +54,7 @@ class AlightEvent:
     def applies_to(vertex1, edge, vertex2):
         return edge is not None and isinstance(edge.payload, graphserver.core.Alight)
         
-    def __call__(self, vertex1, edge, vertex2):
+    def __call__(self, vertex1, edge, vertex2, context):
         event_time = vertex1.payload.time
         stop_id = vertex2.label.split("-")[-1]
         
@@ -80,7 +76,7 @@ class HeadwayBoardEvent:
     def applies_to(vertex1, edge, vertex2):
         return edge is not None and isinstance(edge.payload, graphserver.core.HeadwayBoard)
         
-    def __call__(self, vertex1, edge, vertex2):
+    def __call__(self, vertex1, edge, vertex2, context):
         event_time = vertex2.payload.time
         trip_id = vertex2.payload.trip_id
         stop_id = vertex1.label.split("-")[-1]
@@ -104,7 +100,7 @@ class HeadwayAlightEvent:
     def applies_to(vertex1, edge, vertex2):
         return edge is not None and isinstance(edge.payload, graphserver.core.HeadwayAlight)
         
-    def __call__(self, vertex1, edge, vertex2):
+    def __call__(self, vertex1, edge, vertex2, context):
         event_time = vertex1.payload.time
         stop_id = vertex2.label.split("-")[-1]
         
@@ -126,7 +122,7 @@ class StreetEvent:
     def applies_to(vertex1, edge, vertex2):
         return edge is not None and isinstance(edge.payload, graphserver.core.Street)
     
-    def __call__(self, vertex1, edge, vertex2):
+    def __call__(self, vertex1, edge, vertex2, context):
         what = "walk %s meters"%edge.payload.length
         geom = self.osmdb.edge( edge.payload.name )[5]
         return NarrativeEvent(what,None,None,geom)
@@ -140,7 +136,7 @@ class CrossingEvent:
     def applies_to(vertex1, edge, vertex2):
         return edge is not None and isinstance(edge.payload, graphserver.core.Crossing)
         
-    def __call__(self, v1, e, v2):
+    def __call__(self, v1, e, v2, context):
         trip_id = v1.payload.trip_id
         return (str(v1.payload), str(e), str(v2.payload))
 
@@ -238,7 +234,7 @@ class StreetStartEvent:
         return (edge1 is None or not isinstance(edge1.payload, graphserver.core.Street)) and \
                (edge2 and isinstance(edge2.payload, graphserver.core.Street))
     
-    def __call__(self, edge1, vertex, edge2):
+    def __call__(self, edge1, vertex, edge2, context):
         osm_way2 = edge2.payload.name.split("-")[0]
         street_name2 = self.osmdb.way( osm_way2 ).tags['name']
         
@@ -270,7 +266,7 @@ class StreetEndEvent:
         return (edge2 is None or not isinstance(edge2.payload, graphserver.core.Street)) and \
                (edge1 and isinstance(edge1.payload, graphserver.core.Street))
     
-    def __call__(self, edge1, vertex, edge2):
+    def __call__(self, edge1, vertex, edge2, context):
         osm_way1 = edge1.payload.name.split("-")[0]
         street_name1 = self.osmdb.way( osm_way1 ).tags['name']
         
@@ -293,7 +289,7 @@ class StreetTurnEvent:
         return edge1 and edge2 and isinstance(edge1.payload, graphserver.core.Street) and isinstance(edge2.payload, graphserver.core.Street) \
                and edge1.payload.way != edge2.payload.way
     
-    def __call__(self, edge1, vertex, edge2):
+    def __call__(self, edge1, vertex, edge2, context):
         osm_id = vertex.label.split("-")[1]
         
         # figure out which direction to turn
@@ -339,7 +335,7 @@ class AllVertexEvent:
     def applies_to(e1, v, e2):
         return True
         
-    def __call__(self, e1, v, e2):
+    def __call__(self, e1, v, e2, context):
         return NarrativeEvent("vertex", str(e1), str(v), str(e2))
         
 class AllEdgeEvent:
@@ -350,5 +346,5 @@ class AllEdgeEvent:
     def applies_to(v1, e, v2):
         return True
         
-    def __call__(self, v1, e, v2):
+    def __call__(self, v1, e, v2, context):
         return NarrativeEvent("edge", str(v1), str(e), str(v2))
