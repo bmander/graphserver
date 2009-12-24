@@ -718,6 +718,21 @@ tbGetOverage(TripBoard* this) {
     return this->overage;
 }
 
+int
+tbGetBoardingIndexByTripId(TripBoard* this, char* trip_id) {
+    /* returns the boarding index of the boarding with the given trip_id */
+    
+    int i;
+    for(i=0; i<this->n; i++) {
+        if( strcmp(this->trip_ids[i], trip_id)==0 ) {
+            return i;
+        }
+    }
+    
+    return -1;
+    
+}
+
 /*
 given TripBoard with service ID of friday, list of boardings going until 3 AM, and schedule, gets time corresponding to saturday at 2 AM.
 

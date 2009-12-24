@@ -428,6 +428,9 @@ tbWalk( EdgePayload* superthis, State* params, WalkOptions* options );
 inline State*
 tbWalkBack( EdgePayload* superthis, State* params, WalkOptions* options );
 
+int
+tbGetBoardingIndexByTripId(TripBoard* this, char* trip_id);
+
 //---------------DECLARATIONS FOR EGRESS CLASS---------------------
 
 typedef struct Egress {
