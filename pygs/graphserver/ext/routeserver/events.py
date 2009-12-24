@@ -45,6 +45,23 @@ class BoardEvent:
         geom = (lon,lat)
         return NarrativeEvent(what, where, when, geom)
 
+class DescribeCrossingAtAlightEvent:
+    def __init__(self, gtfsdb_filename, timezone_name="America/Los_Angeles"):
+        self.gtfsdb = GTFSDatabase( gtfsdb_filename )
+        self.timezone_name = timezone_name
+        
+    @staticmethod
+    def applies_to(vertex1, edge, vertex2):
+        return edge is not None and isinstance(edge.payload, graphserver.core.Alight)
+        
+    def __call__(self, vertex1, edge, vertex2, context):
+        
+        what = "stop_seq %s to stop_seq %s"%(vertex1.payload.stop_sequence, vertex2.payload.stop_sequence)
+        where = None
+        when = None
+        geom = None
+        return NarrativeEvent(what, where, when, geom)
+
 class AlightEvent:
     def __init__(self, gtfsdb_filename, timezone_name="America/Los_Angeles"):
         self.gtfsdb = GTFSDatabase( gtfsdb_filename )
