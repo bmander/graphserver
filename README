@@ -67,14 +67,3 @@ Install:
   $ cd core
   $ sudo make install
 
---== RUBY BINDINGS (DEPRECATED) ==--
-
-NOTE: These bindings are horribly out of date.  Ruby/C experts only. Patches welcome.
-
-Prerequisites:
-Ruby 1.8.5
-
-Build:
-$ cd rbgs
-Read the README
-
