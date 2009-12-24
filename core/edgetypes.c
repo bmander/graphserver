@@ -784,6 +784,7 @@ tbWalk( EdgePayload* superthis, State* params, WalkOptions* options ) {
     
     // Dupe state and advance time by the waiting time
     State* ret = stateDup( params );
+    ret->stop_sequence = this->stop_sequences[next_boarding_index];
     
     ret->num_transfers += 1;
     
@@ -1437,6 +1438,7 @@ alWalkBack( EdgePayload* superthis, State* params, WalkOptions* options ) {
     
     // Dupe state and advance time by the waiting time
     State* ret = stateDup( params );
+    ret->stop_sequence = this->stop_sequences[last_alighting_index];
     
     ret->num_transfers += 1;
     

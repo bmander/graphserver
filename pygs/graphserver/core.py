@@ -290,12 +290,13 @@ class State(CShadow):
         self.check_destroyed()  
         
         ret = "<state time='%d' weight='%s' dist_walked='%s' " \
-              "num_transfers='%s' trip_id='%s'>" % \
+              "num_transfers='%s' trip_id='%s' stop_sequence='%s'>" % \
                (self.time,
                self.weight,
                self.dist_walked,
               self.num_transfers,
-               self.trip_id)
+               self.trip_id,
+               self.stop_sequence)
         for i in range(self.num_agencies):
             if self.service_period(i) is not None:
                 ret += self.service_period(i).to_xml()
