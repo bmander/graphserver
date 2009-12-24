@@ -989,6 +989,14 @@ class TripBoard(EdgePayload):
             raise IndexError("Index %d out of bounds"%i)
         
         return (trip_id, depart, stop_sequence)
+        
+    def get_boarding_by_trip_id( self, trip_id ):
+        boarding_index = lgs.tbGetBoardingIndexByTripId( self.soul, trip_id )
+        
+        if boarding_index == -1:
+            return None
+        
+        return self.get_boarding( boarding_index )
     
     def search_boardings_list(self, time):
         return lgs.tbSearchBoardingsList( self.soul, c_int(time) )

@@ -214,6 +214,7 @@ pycapi(lgs.tbAddBoarding, c_void_p, [c_void_p, c_char_p, c_int, c_int])
 pycapi(lgs.tbGetBoardingTripId, c_char_p, [c_void_p, c_int])
 pycapi(lgs.tbGetBoardingDepart, c_int, [c_void_p, c_int])
 pycapi(lgs.tbGetBoardingStopSequence, c_int, [c_void_p, c_int])
+pycapi(lgs.tbGetBoardingIndexByTripId, c_int, [c_void_p, c_char_p])
 
 #ALIGHT API
 pycapi(lgs.alAddAlighting, c_void_p, [c_void_p, c_char_p, c_int, c_int])

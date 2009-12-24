@@ -1922,6 +1922,26 @@ class TestTripBoard(unittest.TestCase):
         except:
             pass
             
+    def test_get_boarding_by_trip_id(self):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        tb = TripBoard("WKDY", sc, tz, 0)
+        
+        tb.add_boarding( "trip1", 0, 0 )
+        
+        assert tb.get_boarding_by_trip_id( "trip1" ) == ("trip1", 0, 0)
+        assert tb.get_boarding_by_trip_id( "bogus" ) == None
+        
+        tb.add_boarding( "trip2", 1, 1 )
+        
+        assert tb.get_boarding_by_trip_id( "trip1" ) == ("trip1", 0, 0 )
+        assert tb.get_boarding_by_trip_id( "trip2" ) == ("trip2", 1, 1 )
+        assert tb.get_boarding_by_trip_id( "bogus" ) == None
+        
+            
     def test_overage(self):
         sc = ServiceCalendar()
         sc.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
@@ -3205,29 +3225,29 @@ if __name__ == '__main__':
     tl = unittest.TestLoader()
     
     testables = [\
-                 TestGraph,
-                 TestGraphPerformance,
-                 TestEdge,
-                 TestState,
-                 TestPyPayload,
-                 TestLink,
-                 TestWait,
-                 TestStreet,
-                 TestHeadway,
-                 TestListNode,
-                 TestVertex,
-                 TestServicePeriod,
-                 TestServiceCalendar,
-                 TestEngine,
-                 TestTimezone,
-                 TestTimezonePeriod,
+                 #TestGraph,
+                 #TestGraphPerformance,
+                 #TestEdge,
+                 #TestState,
+                 #TestPyPayload,
+                 #TestLink,
+                 #TestWait,
+                 #TestStreet,
+                 #TestHeadway,
+                 #TestListNode,
+                 #TestVertex,
+                 #TestServicePeriod,
+                 #TestServiceCalendar,
+                 #TestEngine,
+                 #TestTimezone,
+                 #TestTimezonePeriod,
                  TestTripBoard,
-                 TestCrossing,
-                 TestAlight,
-                 TestHeadwayBoard,
-                 TestHeadwayAlight,
-                 TestWalkOptions,
-                 TestElapseTime,
+                 #TestCrossing,
+                 #TestAlight,
+                 #TestHeadwayBoard,
+                 #TestHeadwayAlight,
+                 #TestWalkOptions,
+                 #TestElapseTime,
                  ]
 
     for testable in testables:
