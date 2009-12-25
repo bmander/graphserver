@@ -2371,6 +2371,24 @@ class TestAlight(unittest.TestCase):
         assert al.soul
         al.destroy()
         assert al.soul == None
+        
+    def test_get_alighting_by_trip_id( self ):
+        sc = ServiceCalendar()
+        sc.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        al = Alight( "WKDY", sc, tz, 0 )
+        
+        al.add_alighting( "trip1", 0, 0 )
+        al.get_alighting_by_trip_id( "trip1" ) == ("trip1", 0, 0)
+        assert al.get_alighting_by_trip_id( "bogus" ) == None
+        
+        al.add_alighting( "trip2", 1, 1 )
+        
+        assert al.get_alighting_by_trip_id( "trip1" ) == ("trip1", 0, 0 )
+        assert al.get_alighting_by_trip_id( "trip2" ) == ("trip2", 1, 1 )
+        assert al.get_alighting_by_trip_id( "bogus" ) == None
 
 
     def test_overage(self):
@@ -3225,29 +3243,29 @@ if __name__ == '__main__':
     tl = unittest.TestLoader()
     
     testables = [\
-                 #TestGraph,
-                 #TestGraphPerformance,
-                 #TestEdge,
-                 #TestState,
-                 #TestPyPayload,
-                 #TestLink,
-                 #TestWait,
-                 #TestStreet,
-                 #TestHeadway,
-                 #TestListNode,
-                 #TestVertex,
-                 #TestServicePeriod,
-                 #TestServiceCalendar,
-                 #TestEngine,
-                 #TestTimezone,
-                 #TestTimezonePeriod,
+                 TestGraph,
+                 TestGraphPerformance,
+                 TestEdge,
+                 TestState,
+                 TestPyPayload,
+                 TestLink,
+                 TestWait,
+                 TestStreet,
+                 TestHeadway,
+                 TestListNode,
+                 TestVertex,
+                 TestServicePeriod,
+                 TestServiceCalendar,
+                 TestEngine,
+                 TestTimezone,
+                 TestTimezonePeriod,
                  TestTripBoard,
-                 #TestCrossing,
-                 #TestAlight,
-                 #TestHeadwayBoard,
-                 #TestHeadwayAlight,
-                 #TestWalkOptions,
-                 #TestElapseTime,
+                 TestCrossing,
+                 TestAlight,
+                 TestHeadwayBoard,
+                 TestHeadwayAlight,
+                 TestWalkOptions,
+                 TestElapseTime,
                  ]
 
     for testable in testables:

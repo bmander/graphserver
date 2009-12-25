@@ -1243,6 +1243,15 @@ class Alight(EdgePayload):
             return None
         else:
             return self.get_alighting( i )
+            
+
+    def get_alighting_by_trip_id( self, trip_id ):
+        alighting_index = lgs.alGetAlightingIndexByTripId( self.soul, trip_id )
+        
+        if alighting_index == -1:
+            return None
+        
+        return self.get_alighting( alighting_index )
         
     def to_xml(self):
         return "<Alight/>"

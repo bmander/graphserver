@@ -1398,6 +1398,20 @@ alGetOverage(Alight* this) {
     return this->overage;
 }
 
+int
+alGetAlightingIndexByTripId(Alight* this, char* trip_id) {
+    /* returns the boarding index of the alighting with the given trip_id */
+    
+    int i;
+    for(i=0; i<this->n; i++) {
+        if( strcmp(this->trip_ids[i], trip_id)==0 ) {
+            return i;
+        }
+    }
+    
+    return -1; 
+}
+
 inline State*
 alWalk(EdgePayload* this, State* params, WalkOptions* options) {
     State* ret = stateDup( params );

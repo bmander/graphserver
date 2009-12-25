@@ -655,6 +655,9 @@ alGetLastAlightingIndex(Alight* this, int time);
 int
 alGetOverage(Alight* this);
 
+int
+alGetAlightingIndexByTripId(Alight* this, char* trip_id);
+
 inline State*
 alWalk(EdgePayload* this, State* params, WalkOptions* options);
 

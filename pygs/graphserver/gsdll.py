@@ -221,6 +221,7 @@ pycapi(lgs.alAddAlighting, c_void_p, [c_void_p, c_char_p, c_int, c_int])
 pycapi(lgs.alGetAlightingTripId, c_char_p, [c_void_p, c_int])
 pycapi(lgs.alGetAlightingArrival, c_int, [c_void_p, c_int])
 pycapi(lgs.alGetAlightingStopSequence, c_int, [c_void_p, c_int])
+pycapi(lgs.alGetAlightingIndexByTripId, c_int, [c_void_p, c_char_p])
 
 #ELAPSE TIME API
 pycapi(lgs.elapseTimeNew, c_void_p, [c_long])
