@@ -1229,6 +1229,11 @@ class Alight(EdgePayload):
             raise IndexError("Index %d out of bounds"%i)
         
         return (trip_id, arrival, stop_sequence)
+    
+    @property
+    def alightings(self):
+        for i in range(self.num_alightings):
+            yield self.get_alighting( i )
         
     def search_alightings_list(self, time):
         return lgs.alSearchAlightingsList( self.soul, c_int(time) )
