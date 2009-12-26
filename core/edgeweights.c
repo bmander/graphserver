@@ -6,8 +6,8 @@
 #define ELAPSE_TIME_AND_SERVICE_PERIOD(ret, delta_t) \
   int i; \
   ret->time           += delta_t; \
-  for(i=0; i<params->n_agencies; i++) { \
-      ServicePeriod* sp = params->service_periods[i]; \
+  for(i=0; i<state->n_agencies; i++) { \
+      ServicePeriod* sp = state->service_periods[i]; \
       if(sp && ret->time >= sp->end_time) { \
         ret->service_periods[i] = sp->next_period; \
       } \
@@ -16,8 +16,8 @@
 #define ELAPSE_TIME_AND_SERVICE_PERIOD(ret, delta_t) \
   int i; \
   ret->time           -= delta_t; \
-  for(i=0; i<params->n_agencies; i++) { \
-    ServicePeriod* sp = params->service_periods[i]; \
+  for(i=0; i<state->n_agencies; i++) { \
+    ServicePeriod* sp = state->service_periods[i]; \
     if(sp && ret->time < sp->begin_time) { \
       ret->service_periods[i] = sp->prev_period; \
     } \
@@ -27,12 +27,12 @@
 
 inline State*
 #ifndef ROUTE_REVERSE
-linkWalk(EdgePayload* this, State* params, WalkOptions* options) {
+linkWalk(EdgePayload* this, State* state, WalkOptions* options) {
 #else
-linkWalkBack(EdgePayload* this, State* params, WalkOptions* options) {
+linkWalkBack(EdgePayload* this, State* state, WalkOptions* options) {
 #endif
     
-  State* ret = stateDup( params );
+  State* ret = stateDup( state );
 
   ret->prev_edge = this;
 
@@ -41,12 +41,12 @@ linkWalkBack(EdgePayload* this, State* params, WalkOptions* options) {
 
 inline State*
 #ifndef ROUTE_REVERSE
-elapseTimeWalk(EdgePayload* this, State* params, WalkOptions* options) {
+elapseTimeWalk(EdgePayload* this, State* state, WalkOptions* options) {
 #else
-elapseTimeWalkBack(EdgePayload* this, State* params, WalkOptions* options) {
+elapseTimeWalkBack(EdgePayload* this, State* state, WalkOptions* options) {
 #endif
   
-  State* ret = stateDup( params );
+  State* ret = stateDup( state );
   
   int delta_t = ((ElapseTime*)this)->seconds;
   
@@ -62,14 +62,14 @@ elapseTimeWalkBack(EdgePayload* this, State* params, WalkOptions* options) {
 
 #ifndef ROUTE_REVERSE
 inline State*
-waitWalk(EdgePayload* superthis, State* params, WalkOptions* options) {
+waitWalk(EdgePayload* superthis, State* state, WalkOptions* options) {
     Wait* this = (Wait*)superthis;
     
-    State* ret = stateDup( params );
+    State* ret = stateDup( state );
     
     ret->prev_edge = superthis;
     
-    long secs_since_local_midnight = (params->time+tzUtcOffset(this->timezone, params->time))%SECS_IN_DAY;
+    long secs_since_local_midnight = (state->time+tzUtcOffset(this->timezone, state->time))%SECS_IN_DAY;
     long wait_time = this->end - secs_since_local_midnight;
     if(wait_time<0) {
         wait_time += SECS_IN_DAY;
@@ -82,14 +82,14 @@ waitWalk(EdgePayload* superthis, State* params, WalkOptions* options) {
 }
 #else
 inline State*
-waitWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
+waitWalkBack(EdgePayload* superthis, State* state, WalkOptions* options) {
     Wait* this = (Wait*)superthis;
     
-    State* ret = stateDup( params );
+    State* ret = stateDup( state );
     
     ret->prev_edge = superthis;
     
-    long secs_since_local_midnight = (params->time+tzUtcOffset(this->timezone, params->time))%SECS_IN_DAY;
+    long secs_since_local_midnight = (state->time+tzUtcOffset(this->timezone, state->time))%SECS_IN_DAY;
     long wait_time = secs_since_local_midnight - this->end;
     if(wait_time<0) {
         wait_time += SECS_IN_DAY;
@@ -104,12 +104,12 @@ waitWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
 
 inline State*
 #ifndef ROUTE_REVERSE
-streetWalk(EdgePayload* superthis, State* params, WalkOptions* options) {
+streetWalk(EdgePayload* superthis, State* state, WalkOptions* options) {
 #else
-streetWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
+streetWalkBack(EdgePayload* superthis, State* state, WalkOptions* options) {
 #endif
   Street* this = (Street*)superthis;
-  State* ret = stateDup( params );
+  State* ret = stateDup( state );
 
   // Elevation considerations
   long t_horiz = (long)(this->length/options->walking_speed);
@@ -132,14 +132,14 @@ streetWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
   }
 
   // max_walk overage considerations
-  double end_dist = params->dist_walked + this->length;
+  double end_dist = state->dist_walked + this->length;
   if(end_dist > options->max_walk)
     delta_w += (end_dist - options->max_walk)*options->walking_overage*delta_t;
   
   // turning considerations
-  if( params->prev_edge &&
-      params->prev_edge->type == PL_STREET &&
-      ((Street*)params->prev_edge)->way != this->way ) {
+  if( state->prev_edge &&
+      state->prev_edge->type == PL_STREET &&
+      ((Street*)state->prev_edge)->way != this->way ) {
     delta_w += options->turn_penalty;
   }
 
@@ -157,14 +157,14 @@ streetWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
 
 inline State*
 #ifndef ROUTE_REVERSE
-egressWalk(EdgePayload* superthis, State* params, WalkOptions* options) {
+egressWalk(EdgePayload* superthis, State* state, WalkOptions* options) {
 #else
-egressWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
+egressWalkBack(EdgePayload* superthis, State* state, WalkOptions* options) {
 #endif
   Egress* this = (Egress*)superthis;
-  State* ret = stateDup( params );
+  State* ret = stateDup( state );
 
-  double end_dist = params->dist_walked + this->length;
+  double end_dist = state->dist_walked + this->length;
   // no matter what the options say (e.g. you're on a bike), 
   // the walking speed should be 1.1 mps, because you can't ride in
   // a station
@@ -184,24 +184,24 @@ egressWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
 
 inline State*
 #ifndef ROUTE_REVERSE
-headwayWalk(EdgePayload* superthis, State* params, WalkOptions* options) {
+headwayWalk(EdgePayload* superthis, State* state, WalkOptions* options) {
 #else
-headwayWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
+headwayWalkBack(EdgePayload* superthis, State* state, WalkOptions* options) {
 #endif
     Headway* this = (Headway*)superthis;
     
-    // if the params->service_period is NULL, use the params->time to find the service_period
-    // the service_period is actually a denormalization of the params->time
+    // if the state->service_period is NULL, use the state->time to find the service_period
+    // the service_period is actually a denormalization of the state->time
     // this way, the user doesn't need to worry about it
     
-    ServicePeriod* service_period = params->service_periods[this->agency];
+    ServicePeriod* service_period = state->service_periods[this->agency];
     if( !service_period )
 #ifndef ROUTE_REVERSE
-        service_period = scPeriodOfOrAfter( this->calendar, params->time );
+        service_period = scPeriodOfOrAfter( this->calendar, state->time );
 #else
-        service_period = scPeriodOfOrBefore( this->calendar, params->time );
+        service_period = scPeriodOfOrBefore( this->calendar, state->time );
 #endif
-    params->service_periods[this->agency] = service_period;
+    state->service_periods[this->agency] = service_period;
     
     // if the schedule never runs
     // or if the schedule does not run on this day
@@ -211,16 +211,16 @@ headwayWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
       return NULL;
     }
     
-    State* ret = stateDup( params );
+    State* ret = stateDup( state );
     
-    long adjusted_time = spNormalizeTime( service_period, tzUtcOffset(this->timezone, params->time), params->time );
+    long adjusted_time = spNormalizeTime( service_period, tzUtcOffset(this->timezone, state->time), state->time );
   
     long transfer_penalty=0;
     //if this is a transfer
-    if( !params->prev_edge ||
-        params->prev_edge->type != PL_HEADWAY  ||    //the last edge wasn't a bus
-        !((Headway*)params->prev_edge)->trip_id               ||    //it was a bus, but the trip_id was NULL
-        strcmp( ((Headway*)params->prev_edge)->trip_id, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
+    if( !state->prev_edge ||
+        state->prev_edge->type != PL_HEADWAY  ||    //the last edge wasn't a bus
+        !((Headway*)state->prev_edge)->trip_id               ||    //it was a bus, but the trip_id was NULL
+        strcmp( ((Headway*)state->prev_edge)->trip_id, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
 
       transfer_penalty = options->transfer_penalty; //penalty of making a transfer; flat rate. "all things being equal, transferring costs a little"
 
@@ -237,17 +237,17 @@ headwayWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
     
     if( adjusted_time <= this->begin_time ) {
         wait = this->begin_time - adjusted_time;
-    } else if( !params->prev_edge ||
-        !params->prev_edge->type == PL_HEADWAY  ||    //the last edge wasn't a bus
-        !((Headway*)params->prev_edge)->trip_id               ||    //it was a bus, but the trip_id was NULL
-        strcmp( ((Headway*)params->prev_edge)->trip_id, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
+    } else if( !state->prev_edge ||
+        !state->prev_edge->type == PL_HEADWAY  ||    //the last edge wasn't a bus
+        !((Headway*)state->prev_edge)->trip_id               ||    //it was a bus, but the trip_id was NULL
+        strcmp( ((Headway*)state->prev_edge)->trip_id, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
         wait = this->wait_period;
     }
     
     ret->time   += wait + this->transit;
     ret->weight += wait + this->transit + transfer_penalty;
     
-    for(i=0; i<params->n_agencies; i++) {
+    for(i=0; i<state->n_agencies; i++) {
         if( ret->service_periods[i] && ret->time >= ret->service_periods[i]->end_time) {
           ret->service_periods[i] = ret->service_periods[i]->next_period;
         }
@@ -260,17 +260,17 @@ headwayWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
     
     if( adjusted_time >= this->end_time ) {
         wait = adjusted_time - this->begin_time;
-    } else if( !params->prev_edge ||
-        !params->prev_edge->type == PL_HEADWAY  ||    //the last edge wasn't a bus
-        !((Headway*)params->prev_edge)->trip_id               ||    //it was a bus, but the trip_id was NULL
-        strcmp( ((Headway*)params->prev_edge)->trip_id, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
+    } else if( !state->prev_edge ||
+        !state->prev_edge->type == PL_HEADWAY  ||    //the last edge wasn't a bus
+        !((Headway*)state->prev_edge)->trip_id               ||    //it was a bus, but the trip_id was NULL
+        strcmp( ((Headway*)state->prev_edge)->trip_id, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
         wait = this->wait_period;
     }
     
     ret->time   -= wait + this->transit;
     ret->weight += wait + this->transit + transfer_penalty;
     
-    for(i=0; i<params->n_agencies; i++) {
+    for(i=0; i<state->n_agencies; i++) {
         if( ret->service_periods[i] && ret->time < ret->service_periods[i]->begin_time) {
           ret->service_periods[i] = ret->service_periods[i]->prev_period;
         }

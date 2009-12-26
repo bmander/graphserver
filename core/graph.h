@@ -152,10 +152,10 @@ void
 eMark(Edge *this) ;
 
 State*
-eWalk(Edge *this, State* params, WalkOptions* options) ;
+eWalk(Edge *this, State* state, WalkOptions* options) ;
 
 State*
-eWalkBack(Edge *this, State *params, WalkOptions* options) ;
+eWalkBack(Edge *this, State *state, WalkOptions* options) ;
 
 Vertex*
 eGetFrom(Edge *this);

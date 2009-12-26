@@ -247,28 +247,28 @@ epGetType( EdgePayload* this ) {
 }
 
 State*
-epWalk( EdgePayload* this, State* params, WalkOptions* options ) {
+epWalk( EdgePayload* this, State* state, WalkOptions* options ) {
   if( !this )
     return NULL;
 
   if( this->type == PL_EXTERNVALUE ) {
-    return cpWalk( (CustomPayload*)this, params, options );
+    return cpWalk( (CustomPayload*)this, state, options );
   }
   
-  return this->walk( this, params, options );
+  return this->walk( this, state, options );
 
 }
 
 State*
-epWalkBack( EdgePayload* this, State* params, WalkOptions* options ) {
+epWalkBack( EdgePayload* this, State* state, WalkOptions* options ) {
   if(!this)
     return NULL;
 
   if( this->type == PL_EXTERNVALUE ){
-    return cpWalkBack( (CustomPayload*)this, params, options );
+    return cpWalkBack( (CustomPayload*)this, state, options );
   }
   
-  return this->walkBack( this, params, options );
+  return this->walkBack( this, state, options );
 }
 
 //LINK FUNCTIONS
@@ -752,20 +752,20 @@ number of days, and check again.
 */
 
 inline State*
-tbWalk( EdgePayload* superthis, State* params, WalkOptions* options ) {
+tbWalk( EdgePayload* superthis, State* state, WalkOptions* options ) {
     TripBoard* this = (TripBoard*)superthis;
     
     //Get service period cached in travel state. If it doesn't exist, figure it out and cache it
-    ServicePeriod* service_period = params->service_periods[this->agency];
+    ServicePeriod* service_period = state->service_periods[this->agency];
     if( !service_period )
-        service_period = scPeriodOfOrAfter( this->calendar, params->time );
-        params->service_periods[this->agency] = service_period;
+        service_period = scPeriodOfOrAfter( this->calendar, state->time );
+        state->service_periods[this->agency] = service_period;
     
-        //If still can't find service_period, params->time is beyond service calendar, so bail
+        //If still can't find service_period, state->time is beyond service calendar, so bail
         if( !service_period )
             return NULL;
     
-    long time_since_midnight = tzTimeSinceMidnight( this->timezone, params->time );
+    long time_since_midnight = tzTimeSinceMidnight( this->timezone, state->time );
         
     if( !spPeriodHasServiceId( service_period, this->service_id ) ) {
         
@@ -798,7 +798,7 @@ tbWalk( EdgePayload* superthis, State* params, WalkOptions* options ) {
     }
     
     // Dupe state and advance time by the waiting time
-    State* ret = stateDup( params );
+    State* ret = stateDup( state );
     ret->stop_sequence = this->stop_sequences[next_boarding_index];
     
     ret->num_transfers += 1;
@@ -814,7 +814,7 @@ tbWalk( EdgePayload* superthis, State* params, WalkOptions* options ) {
     
     // Make sure the service period caches are updated if we've traveled over a service period boundary
     int i;
-    for(i=0; i<params->n_agencies; i++) {
+    for(i=0; i<state->n_agencies; i++) {
         if( ret->service_periods[i] && ret->time >= ret->service_periods[i]->end_time) {
           ret->service_periods[i] = ret->service_periods[i]->next_period;
         }
@@ -825,8 +825,8 @@ tbWalk( EdgePayload* superthis, State* params, WalkOptions* options ) {
 }
 
 inline State*
-tbWalkBack(EdgePayload* this, State* params, WalkOptions* options) {
-    State* ret = stateDup( params );
+tbWalkBack(EdgePayload* this, State* state, WalkOptions* options) {
+    State* ret = stateDup( state );
     ret->trip_id = NULL;
     
     return ret;
@@ -904,20 +904,20 @@ hbGetHeadwaySecs( HeadwayBoard* this ) {
 }
 
 inline State*
-hbWalk( EdgePayload* superthis, State* params, WalkOptions* options ) {
+hbWalk( EdgePayload* superthis, State* state, WalkOptions* options ) {
     HeadwayBoard* this = (HeadwayBoard*)superthis;
     
     //Get service period cached in travel state. If it doesn't exist, figure it out and cache it
-    ServicePeriod* service_period = params->service_periods[this->agency];
+    ServicePeriod* service_period = state->service_periods[this->agency];
     if( !service_period )
-        service_period = scPeriodOfOrAfter( this->calendar, params->time );
-        params->service_periods[this->agency] = service_period;
+        service_period = scPeriodOfOrAfter( this->calendar, state->time );
+        state->service_periods[this->agency] = service_period;
     
-        //If still can't find service_period, params->time is beyond service calendar, so bail
+        //If still can't find service_period, state->time is beyond service calendar, so bail
         if( !service_period )
             return NULL;
     
-    long time_since_midnight = tzTimeSinceMidnight( this->timezone, params->time );
+    long time_since_midnight = tzTimeSinceMidnight( this->timezone, state->time );
         
     if( !spPeriodHasServiceId( service_period, this->service_id ) ) {
         
@@ -948,7 +948,7 @@ hbWalk( EdgePayload* superthis, State* params, WalkOptions* options ) {
     }
     
     // Dupe state and advance time by the waiting time
-    State* ret = stateDup( params );
+    State* ret = stateDup( state );
     
     ret->num_transfers += 1;
     
@@ -965,7 +965,7 @@ hbWalk( EdgePayload* superthis, State* params, WalkOptions* options ) {
     
     // Make sure the service period caches are updated if we've traveled over a service period boundary
     int i;
-    for(i=0; i<params->n_agencies; i++) {
+    for(i=0; i<state->n_agencies; i++) {
         if( ret->service_periods[i] && ret->time >= ret->service_periods[i]->end_time) {
           ret->service_periods[i] = ret->service_periods[i]->next_period;
         }
@@ -976,10 +976,10 @@ hbWalk( EdgePayload* superthis, State* params, WalkOptions* options ) {
 }
 
 inline State*
-hbWalkBack(EdgePayload* superthis, State* params, WalkOptions* options) {
+hbWalkBack(EdgePayload* superthis, State* state, WalkOptions* options) {
     HeadwayBoard* this = (HeadwayBoard*)superthis;
     
-    State* ret = stateDup( params );
+    State* ret = stateDup( state );
     
     int wait = this->headway_secs; 
     ret->time   -= wait;
@@ -1061,28 +1061,28 @@ haGetHeadwaySecs( HeadwayAlight* this ) {
 }
 
 inline State*
-haWalk(EdgePayload* this, State* params, WalkOptions* options) {
-    State* ret = stateDup( params );
+haWalk(EdgePayload* this, State* state, WalkOptions* options) {
+    State* ret = stateDup( state );
     ret->trip_id = NULL;
     
     return ret;
 }
 
 inline State*
-haWalkBack( EdgePayload* superthis, State* params, WalkOptions* options ) {
+haWalkBack( EdgePayload* superthis, State* state, WalkOptions* options ) {
     HeadwayAlight* this = (HeadwayAlight*)superthis;
     
     //Get service period cached in travel state. If it doesn't exist, figure it out and cache it
-    ServicePeriod* service_period = params->service_periods[this->agency];
+    ServicePeriod* service_period = state->service_periods[this->agency];
     if( !service_period )
-        service_period = scPeriodOfOrBefore( this->calendar, params->time );
-        params->service_periods[this->agency] = service_period;
+        service_period = scPeriodOfOrBefore( this->calendar, state->time );
+        state->service_periods[this->agency] = service_period;
     
-        //If still can't find service_period, params->time is beyond service calendar, so bail
+        //If still can't find service_period, state->time is beyond service calendar, so bail
         if( !service_period )
             return NULL;
     
-    long time_since_midnight = tzTimeSinceMidnight( this->timezone, params->time );
+    long time_since_midnight = tzTimeSinceMidnight( this->timezone, state->time );
         
     if( !spPeriodHasServiceId( service_period, this->service_id ) ) {
         
@@ -1112,7 +1112,7 @@ haWalkBack( EdgePayload* superthis, State* params, WalkOptions* options ) {
     }
     
     // Dupe state and advance time by the waiting time
-    State* ret = stateDup( params );
+    State* ret = stateDup( state );
     
     ret->num_transfers += 1;
     
@@ -1129,7 +1129,7 @@ haWalkBack( EdgePayload* superthis, State* params, WalkOptions* options ) {
     
     // Make sure the service period caches are updated if we've traveled over a service period boundary
     int i;
-    for(i=0; i<params->n_agencies; i++) {
+    for(i=0; i<state->n_agencies; i++) {
         if( ret->service_periods[i] && ret->time >= ret->service_periods[i]->end_time) {
           ret->service_periods[i] = ret->service_periods[i]->next_period;
         }
@@ -1164,18 +1164,18 @@ crGetCrossingTime(Crossing* this) {
 }
 
 inline State*
-crWalk( EdgePayload* superthis, State* params, WalkOptions* options ) {
+crWalk( EdgePayload* superthis, State* state, WalkOptions* options ) {
     Crossing* this = (Crossing*)superthis;
     
     // Dupe state and advance time by the waiting time
-    State* ret = stateDup( params );
+    State* ret = stateDup( state );
     
     ret->time   += this->crossing_time;
     ret->weight += this->crossing_time;
     
     // Make sure the service period caches are updated if we've traveled over a service period boundary
     int i;
-    for(i=0; i<params->n_agencies; i++) {
+    for(i=0; i<state->n_agencies; i++) {
         if( ret->service_periods[i] && ret->time >= ret->service_periods[i]->end_time) {
           ret->service_periods[i] = ret->service_periods[i]->next_period;
         }
@@ -1413,28 +1413,28 @@ alGetAlightingIndexByTripId(Alight* this, char* trip_id) {
 }
 
 inline State*
-alWalk(EdgePayload* this, State* params, WalkOptions* options) {
-    State* ret = stateDup( params );
+alWalk(EdgePayload* this, State* state, WalkOptions* options) {
+    State* ret = stateDup( state );
     ret->trip_id = NULL;
     
     return ret;
 }
 
 inline State*
-alWalkBack( EdgePayload* superthis, State* params, WalkOptions* options ) {
+alWalkBack( EdgePayload* superthis, State* state, WalkOptions* options ) {
     Alight* this = (Alight*)superthis;
     
     //Get service period cached in travel state. If it doesn't exist, figure it out and cache it
-    ServicePeriod* service_period = params->service_periods[this->agency];
+    ServicePeriod* service_period = state->service_periods[this->agency];
     if( !service_period )
-        service_period = scPeriodOfOrBefore( this->calendar, params->time );
-        params->service_periods[this->agency] = service_period;
+        service_period = scPeriodOfOrBefore( this->calendar, state->time );
+        state->service_periods[this->agency] = service_period;
     
-        //If still can't find service_period, params->time is beyond service calendar, so bail
+        //If still can't find service_period, state->time is beyond service calendar, so bail
         if( !service_period )
             return NULL;
     
-    long time_since_midnight = tzTimeSinceMidnight( this->timezone, params->time );
+    long time_since_midnight = tzTimeSinceMidnight( this->timezone, state->time );
         
     if( !spPeriodHasServiceId( service_period, this->service_id ) ) {
         
@@ -1466,7 +1466,7 @@ alWalkBack( EdgePayload* superthis, State* params, WalkOptions* options ) {
     }
     
     // Dupe state and advance time by the waiting time
-    State* ret = stateDup( params );
+    State* ret = stateDup( state );
     ret->stop_sequence = this->stop_sequences[last_alighting_index];
     
     ret->num_transfers += 1;
@@ -1482,7 +1482,7 @@ alWalkBack( EdgePayload* superthis, State* params, WalkOptions* options ) {
     
     // Make sure the service period caches are updated if we've traveled over a service period boundary
     int i;
-    for(i=0; i<params->n_agencies; i++) {
+    for(i=0; i<state->n_agencies; i++) {
         if( ret->service_periods[i] && ret->time < ret->service_periods[i]->begin_time) {
           ret->service_periods[i] = ret->service_periods[i]->prev_period;
         }
@@ -1536,14 +1536,14 @@ cpMethods( CustomPayload* this ) {
 }
 
 State*
-cpWalk(CustomPayload* this, State* params, WalkOptions* walkoptions) {
-	State* s = this->methods->walk(this->soul, params, walkoptions);
+cpWalk(CustomPayload* this, State* state, WalkOptions* walkoptions) {
+	State* s = this->methods->walk(this->soul, state, walkoptions);
 	s->prev_edge = (EdgePayload*)this;
 	return s;
 }
 State*
-cpWalkBack(CustomPayload* this, State* params, WalkOptions* walkoptions) {
-	State* s = this->methods->walkBack(this->soul, params, walkoptions);
+cpWalkBack(CustomPayload* this, State* state, WalkOptions* walkoptions) {
+	State* s = this->methods->walkBack(this->soul, state, walkoptions);
 	s->prev_edge = (EdgePayload*)this;
 	return s;
 }

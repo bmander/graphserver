@@ -426,18 +426,18 @@ eDestroy(Edge *this, int destroy_payload) {
 }
 
 State*
-eWalk(Edge *this, State* params, WalkOptions* options) {
+eWalk(Edge *this, State* state, WalkOptions* options) {
   if( this->enabled ) {
-    return epWalk( this->payload, params, options );
+    return epWalk( this->payload, state, options );
   } else {
     return NULL;
   }
 }
 
 State*
-eWalkBack(Edge *this, State* params, WalkOptions* options) {
+eWalkBack(Edge *this, State* state, WalkOptions* options) {
   if( this->enabled ) {
-    return epWalkBack( this->payload, params, options );
+    return epWalkBack( this->payload, state, options );
   } else {
     return NULL;
   }

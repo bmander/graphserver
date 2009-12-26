@@ -337,10 +337,10 @@ void
 streetDestroy(Street* tokill);
 
 inline State*
-streetWalk(EdgePayload* superthis, State* params, WalkOptions* options);
+streetWalk(EdgePayload* superthis, State* state, WalkOptions* options);
 
 inline State*
-streetWalkBack(EdgePayload* superthis, State* params, WalkOptions* options);
+streetWalkBack(EdgePayload* superthis, State* state, WalkOptions* options);
 
 char*
 streetGetName(Street* this);
@@ -423,10 +423,10 @@ int
 tbGetOverage(TripBoard* this);
 
 inline State*
-tbWalk( EdgePayload* superthis, State* params, WalkOptions* options );
+tbWalk( EdgePayload* superthis, State* state, WalkOptions* options );
 
 inline State*
-tbWalkBack( EdgePayload* superthis, State* params, WalkOptions* options );
+tbWalkBack( EdgePayload* superthis, State* state, WalkOptions* options );
 
 int
 tbGetBoardingIndexByTripId(TripBoard* this, char* trip_id);
@@ -449,10 +449,10 @@ void
 egressDestroy(Egress* tokill);
 
 inline State*
-egressWalk(EdgePayload* superthis, State* params, WalkOptions* options);
+egressWalk(EdgePayload* superthis, State* state, WalkOptions* options);
 
 inline State*
-egressWalkBack(EdgePayload* superthis, State* params, WalkOptions* options);
+egressWalkBack(EdgePayload* superthis, State* state, WalkOptions* options);
 
 char*
 egressGetName(Egress* this);
@@ -509,10 +509,10 @@ int
 hbGetHeadwaySecs( HeadwayBoard* this );
 
 inline State*
-hbWalk( EdgePayload* superthis, State* params, WalkOptions* options );
+hbWalk( EdgePayload* superthis, State* state, WalkOptions* options );
 
 inline State*
-hbWalkBack( EdgePayload* superthis, State* params, WalkOptions* options );
+hbWalkBack( EdgePayload* superthis, State* state, WalkOptions* options );
 
 //---------------DECLARATIONS FOR HEADWAYALIGHT CLASS---------------------------------------
 
@@ -563,10 +563,10 @@ int
 haGetHeadwaySecs( HeadwayAlight* this );
 
 inline State*
-haWalk( EdgePayload* superthis, State* params, WalkOptions* options );
+haWalk( EdgePayload* superthis, State* state, WalkOptions* options );
 
 inline State*
-haWalkBack( EdgePayload* superthis, State* params, WalkOptions* options );
+haWalkBack( EdgePayload* superthis, State* state, WalkOptions* options );
 
 //---------------DECLARATIONS FOR CROSSING CLASS-------------------------------------------
 
@@ -588,7 +588,7 @@ int
 crGetCrossingTime(Crossing* this);
 
 inline State*
-crWalk( EdgePayload* superthis, State* params, WalkOptions* options );
+crWalk( EdgePayload* superthis, State* state, WalkOptions* options );
 
 inline State*
 crWalkBack( EdgePayload* superthis, State* state, WalkOptions* options );
@@ -659,10 +659,10 @@ int
 alGetAlightingIndexByTripId(Alight* this, char* trip_id);
 
 inline State*
-alWalk(EdgePayload* this, State* params, WalkOptions* options);
+alWalk(EdgePayload* this, State* state, WalkOptions* options);
 
 inline State*
-alWalkBack(EdgePayload* this, State* params, WalkOptions* options);
+alWalkBack(EdgePayload* this, State* state, WalkOptions* options);
 
 typedef struct PayloadMethods {
 	void (*destroy)(void*);
@@ -699,9 +699,9 @@ PayloadMethods*
 cpMethods( CustomPayload* this );
 
 State*
-cpWalk(CustomPayload* this, State* params, struct WalkOptions* walkoptions);
+cpWalk(CustomPayload* this, State* state, struct WalkOptions* walkoptions);
 
 State*
-cpWalkBack(CustomPayload* this, State* params, struct WalkOptions* walkoptions);
+cpWalkBack(CustomPayload* this, State* state, struct WalkOptions* walkoptions);
 
 #endif
