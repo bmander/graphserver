@@ -1,0 +1,46 @@
+edge_handlers:
+#    - name: graphserver.ext.routeserver.events.AllEdgeEvent
+    - name: graphserver.ext.routeserver.events.BoardEvent
+      args:
+        gtfsdb_filename: CHANGEME.gtfsdb
+        timezone_name: America/Los_Angeles
+    - name: graphserver.ext.routeserver.events.DescribeCrossingAtAlightEvent
+      args:
+        gtfsdb_filename: CHANGEME.gtfsdb
+        timezone_name: America/Los_Angeles
+    - name: graphserver.ext.routeserver.events.AlightEvent
+      args:
+        gtfsdb_filename: CHANGEME.gtfsdb
+        timezone_name: America/Los_Angeles
+    - name: graphserver.ext.routeserver.events.StreetEvent
+      args:
+        osmdb_filename: CHANGEME.osmdb
+        timezone_name: America/Los_Angeles
+    - name: graphserver.ext.routeserver.events.HeadwayBoardEvent
+      args:
+        gtfsdb_filename: CHANGEME.gtfsdb
+        timezone_name: America/Los_Angeles
+    - name: graphserver.ext.routeserver.events.HeadwayAlightEvent
+      args:
+        gtfsdb_filename: CHANGEME.gtfsdb
+        timezone_name: America/Los_Angeles
+    
+vertex_handlers:
+#    - name: graphserver.ext.routeserver.events.AllVertexEvent
+    - name: graphserver.ext.routeserver.events.StreetTurnEvent
+      args:
+        osmdb_filename: CHANGEME.osmdb
+        timezone_name: America/Los_Angeles
+    - name: graphserver.ext.routeserver.events.StreetStartEvent
+      args:
+        osmdb_filename: CHANGEME.osmdb
+        timezone_name: America/Los_Angeles
+    - name: graphserver.ext.routeserver.events.StreetEndEvent
+      args:
+        osmdb_filename: CHANGEME.osmdb
+        timezone_name: America/Los_Angeles
+
+vertex_reverse_geocoders:
+  - name: graphserver.ext.routeserver.geocoders.OSMReverseGeocoder
+    args:
+      osmdb_filename: CHANGEME.osmdb
