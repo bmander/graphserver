@@ -419,23 +419,23 @@ class GTFSDatabase:
         
         return list(self.execute( query ))
     
-    def shape_between(self, trip_id, stop1, stop2):
+    def shape_between(self, trip_id, stop_sequence1, stop_sequence2):
         query = """SELECT t.shape_id, st.shape_dist_traveled, st.stop_id, st.stop_sequence
                      FROM trips t 
                      JOIN stop_times st ON st.trip_id = t.trip_id 
-                     WHERE t.trip_id = %s and (st.stop_id = '%s' or st.stop_id = '%s')
-                     ORDER BY stop_sequence""" % (trip_id, stop1, stop2)
+                     WHERE t.trip_id = ? and (st.stop_sequence = ? or st.stop_sequence = ?)
+                     ORDER BY stop_sequence"""
         
         distances = []
         shape_id = None
         started = None
-        for x in self.execute( query ):
-            if not started and x[2] == stop1:
+        for x in self.execute( query, (trip_id, stop_sequence1, stop_sequence2) ):
+            if not started and x[3] == stop_sequence1:
                 shape_id = x[0]
                 started = True            
                 distances.append(x[1])
             
-            if started and stop2 == x[2]:
+            if started and x[3] == stop_sequence2:
                 distances.append(x[1])
                 break
             
