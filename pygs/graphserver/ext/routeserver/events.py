@@ -52,14 +52,23 @@ class DescribeCrossingAtAlightEvent:
         
     @staticmethod
     def applies_to(vertex1, edge, vertex2):
-        return edge is not None and isinstance(edge.payload, graphserver.core.Alight)
+        # if the stop_sequence is the same before and after the Alight was crossed, it means the algorithm crossed in the forward
+        # direction - because the stop_sequence doesn't get set on a forward alight. If this is true then this is the appropriate time
+        # to describe the transit trip that led to this alighting
+        return edge is not None \
+               and isinstance(edge.payload, graphserver.core.Alight) \
+               and vertex1.payload.stop_sequence == vertex2.payload.stop_sequence
         
     def __call__(self, vertex1, edge, vertex2, context):
         
-        what = "stop_seq %s to stop_seq %s"%(vertex1.payload.stop_sequence, vertex2.payload.stop_sequence)
+        stop_sequence_of_boarding = vertex1.payload.stop_sequence
+        trip_id = vertex1.payload.trip_id
+        alighting_trip_id, alighting_time, alighting_stop_sequences = edge.payload.get_alighting_by_trip_id( trip_id )
+        
+        what = "Ride trip %s from stop_seq %s to stop_seq %s"%(trip_id, vertex1.payload.stop_sequence, alighting_stop_sequences)
         where = None
         when = None
-        geom = None
+        geom = self.gtfsdb.shape_between( trip_id, vertex1.payload.stop_sequence, alighting_stop_sequences )
         return NarrativeEvent(what, where, when, geom)
 
 class AlightEvent:
@@ -253,7 +262,7 @@ class StreetStartEvent:
     
     def __call__(self, edge1, vertex, edge2, context):
         osm_way2 = edge2.payload.name.split("-")[0]
-        street_name2 = self.osmdb.way( osm_way2 ).tags['name']
+        street_name2 = self.osmdb.way( osm_way2 ).tags.get('name', "unnamed")
         
         osm_id = vertex.label.split("-")[1]
         osm_node_id, osm_node_tags, osm_node_lat, osm_node_lon, osm_node_refcount = self.osmdb.node( osm_id )
@@ -285,7 +294,7 @@ class StreetEndEvent:
     
     def __call__(self, edge1, vertex, edge2, context):
         osm_way1 = edge1.payload.name.split("-")[0]
-        street_name1 = self.osmdb.way( osm_way1 ).tags['name']
+        street_name1 = self.osmdb.way( osm_way1 ).tags.get('name', "unnamed")
         
         osm_id = vertex.label.split("-")[1]
         osm_node_id, osm_node_tags, osm_node_lat, osm_node_lon, osm_node_refcount = self.osmdb.node( osm_id )
@@ -333,8 +342,8 @@ class StreetTurnEvent:
         
         direction = turn_narrative( endseg[0], endseg[1], startseg[0], startseg[1] )
                 
-        street_name1 = self.osmdb.way( osm_way_id1 ).tags['name']
-        street_name2 = self.osmdb.way( osm_way_id2 ).tags['name']
+        street_name1 = self.osmdb.way( osm_way_id1 ).tags.get("name", "unnamed")
+        street_name2 = self.osmdb.way( osm_way_id2 ).tags.get("name", "unnamed")
         
         osm_node_id, osm_node_tags, osm_node_lat, osm_node_lon, osm_node_refcount = self.osmdb.node( osm_id )
         

@@ -56,17 +56,37 @@ def postprocess_path(vertices, edges, vertex_events, edge_events):
                 yield handler( vertex1, edge2, vertex2, context=context )
 
 class RouteServer(Servable):
-    def __init__(self, graphdb_filename, vertex_events, edge_events):
+    def __init__(self, graphdb_filename, vertex_events, edge_events, vertex_reverse_geocoders):
         graphdb = GraphDatabase( graphdb_filename )
         self.graph = graphdb.incarnate()
         self.vertex_events = vertex_events
         self.edge_events = edge_events
+        self.vertex_reverse_geocoders = vertex_reverse_geocoders
     
     def vertices(self):
         return "\n".join( [vv.label for vv in self.graph.vertices] )
     vertices.mime = "text/plain"
+    
+    def get_vertex_id_raw( self, lat, lon ):
+        for reverse_geocoder in self.vertex_reverse_geocoders:
+            ret = reverse_geocoder( lat, lon )
+            if ret is not None:
+                return ret
+                
+        return None
+        
+    def get_vertex_id( self, lat, lon ):
+        return json.dumps( self.get_vertex_id_raw( lat, lon ) )
 
-    def path(self, origin, dest, currtime=None, time_offset=None, transfer_penalty=0, walking_speed=1.0):
+    def path(self, 
+             origin, 
+             dest,
+             currtime=None, 
+             time_offset=None, 
+             transfer_penalty=0, 
+             walking_speed=1.0,
+             jsoncallback=None):
+        
         if currtime is None:
             currtime = int(time.time())
             
@@ -85,7 +105,27 @@ class RouteServer(Servable):
         
         spt.destroy()
         
-        return json.dumps(ret, indent=2, cls=SelfEncoderHelper)
+        if jsoncallback is None:
+            return json.dumps(ret, indent=2, cls=SelfEncoderHelper)
+        else:
+            return "%s(%s)"%(jsoncallback,json.dumps(ret, indent=2, cls=SelfEncoderHelper))
+            
+    def geompath(self, lat1,lon1,lat2,lon2, currtime=None, time_offset=None, transfer_penalty=0, walking_speed=1.0, jsoncallback=None):
+        origin_vertex_label = self.get_vertex_id_raw( lat1, lon1 )
+        dest_vertex_label = self.get_vertex_id_raw( lat2, lon2 )
+        
+        if origin_vertex_label is None:
+            raise Exception( "could not find a vertex near (%s,%s)"%(lat1,lon1) )
+        if dest_vertex_label is None:
+            raise Exception( "could not find a vertex near (%s,%s)"%(lat2,lon2) )
+            
+        return self.path( origin_vertex_label,
+                     dest_vertex_label,
+                     currtime,
+                     time_offset,
+                     transfer_penalty,
+                     walking_speed,
+                     jsoncallback )
         
     def path_retro(self, origin, dest, currtime=None, time_offset=None, transfer_penalty=0, walking_speed=1.0):
         if currtime is None:
@@ -190,11 +230,19 @@ def main():
     
     edge_events = list(get_handler_instances( handler_definitions, 'edge_handlers' ) )
     vertex_events = list(get_handler_instances( handler_definitions, 'vertex_handlers' ) )
+    vertex_reverse_geocoders = list(get_handler_instances( handler_definitions, 'vertex_reverse_geocoders' ) )
     
-    print edge_events
-    print vertex_events
+    print "edge event handlers:"
+    for edge_event in edge_events:
+        print "   %s"%edge_event
+    print "vertex event handlers:"
+    for vertex_event in vertex_events:
+        print "   %s"%vertex_event
+    print "vertex reverse geocoders:"
+    for vertex_reverse_geocoder in vertex_reverse_geocoders:
+        print "   %s"%vertex_reverse_geocoder
     
-    gc = RouteServer(graphdb_filename, vertex_events, edge_events)
+    gc = RouteServer(graphdb_filename, vertex_events, edge_events, vertex_reverse_geocoders)
     gc.run_test_server(port=port)
 
 if __name__ == '__main__':
