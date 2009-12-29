@@ -33,10 +33,10 @@ def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, t
         trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_dist_traveled = stop_time_bundle[0]
         
         if arrival_time != departure_time:
-            patternstop_vx_name = "psv-%s-%03d-%03d-depart"%(agency_namespace,bundle.pattern.pattern_id,i)
+            patternstop_vx_name = "psv-%s-%03d-%03d-%s-depart"%(agency_namespace,bundle.pattern.pattern_id,i,service_id)
             
             # construct the board/alight/dwell triangle for this patternstop
-            patternstop_arrival_vx_name = "psv-%s-%03d-%03d-arrive"%(agency_namespace,bundle.pattern.pattern_id,i)
+            patternstop_arrival_vx_name = "psv-%s-%03d-%03d-%s-arrive"%(agency_namespace,bundle.pattern.pattern_id,i,service_id)
             gdb.add_vertex( patternstop_arrival_vx_name, cursor )
             gdb.add_edge( patternstop_arrival_vx_name, 
                           patternstop_vx_name,
@@ -44,7 +44,7 @@ def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, t
                           cursor )
             
         else:
-            patternstop_vx_name = "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,i)
+            patternstop_vx_name = "psv-%s-%03d-%03d-%s"%(agency_namespace,bundle.pattern.pattern_id,i,service_id)
         
         gdb.add_vertex( patternstop_vx_name, cursor )
         
@@ -60,9 +60,9 @@ def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, t
         trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_dist_traveled = stop_time_bundle[0]
         
         if arrival_time != departure_time:
-            patternstop_vx_name = "psv-%s-%03d-%03d-arrive"%(agency_namespace,bundle.pattern.pattern_id,i+1)
+            patternstop_vx_name = "psv-%s-%03d-%03d-%s-arrive"%(agency_namespace,bundle.pattern.pattern_id,i+1,service_id)
         else:
-            patternstop_vx_name = "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,i+1)
+            patternstop_vx_name = "psv-%s-%03d-%03d-%s"%(agency_namespace,bundle.pattern.pattern_id,i+1,service_id)
             
         gdb.add_vertex( patternstop_vx_name, cursor )
         
@@ -79,14 +79,14 @@ def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, t
         trip_id, to_arrival_time, to_departure_time, stop_id, stop_sequence, stop_dist_traveled = to_stop_time_bundle[0]
         
         if from_arrival_time!=from_departure_time:
-            from_patternstop_vx_name = "psv-%s-%03d-%03d-depart"%(agency_namespace,bundle.pattern.pattern_id,i)
+            from_patternstop_vx_name = "psv-%s-%03d-%03d-%s-depart"%(agency_namespace,bundle.pattern.pattern_id,i,service_id)
         else:
-            from_patternstop_vx_name = "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,i)
+            from_patternstop_vx_name = "psv-%s-%03d-%03d-%s"%(agency_namespace,bundle.pattern.pattern_id,i,service_id)
             
         if to_arrival_time!=to_departure_time:
-            to_patternstop_vx_name = "psv-%s-%03d-%03d-arrive"%(agency_namespace,bundle.pattern.pattern_id,i+1)
+            to_patternstop_vx_name = "psv-%s-%03d-%03d-%s-arrive"%(agency_namespace,bundle.pattern.pattern_id,i+1,service_id)
         else:
-            to_patternstop_vx_name = "psv-%s-%03d-%03d"%(agency_namespace,bundle.pattern.pattern_id,i+1)
+            to_patternstop_vx_name = "psv-%s-%03d-%03d-%s"%(agency_namespace,bundle.pattern.pattern_id,i+1,service_id)
             
         gdb.add_edge( from_patternstop_vx_name, 
                       to_patternstop_vx_name, 
