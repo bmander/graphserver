@@ -62,6 +62,23 @@ class RouteServer(Servable):
         self.vertex_events = vertex_events
         self.edge_events = edge_events
         self.vertex_reverse_geocoders = vertex_reverse_geocoders
+        
+    def bounds(self, jsoncallback=None):
+        """returns bounding box that encompases the bounding box from all member reverse geocoders"""
+        
+        l, b, r, t = None, None, None, None
+        
+        for reverse_geocoder in self.vertex_reverse_geocoders:
+            gl, gb, gr, gt = reverse_geocoder.bounds()
+            l = min(l,gl) if l else gl
+            b = min(b,gb) if b else gb
+            r = max(r,gr) if r else gr
+            t = max(t,gt) if t else gt
+        
+        if jsoncallback is None:
+            return json.dumps([l,b,r,t])
+        else:
+            return "%s(%s)"%(jsoncallback,json.dumps([l,b,r,t]))
     
     def vertices(self):
         return "\n".join( [vv.label for vv in self.graph.vertices] )
@@ -87,23 +104,35 @@ class RouteServer(Servable):
              walking_speed=1.0,
              jsoncallback=None):
         
+        performance = {}
+        
         if currtime is None:
             currtime = int(time.time())
             
         if time_offset is not None:
             currtime += time_offset
         
+        # time path query
+        t0 = time.time()
         wo = WalkOptions()
         wo.transfer_penalty=transfer_penalty
         wo.walking_speed=walking_speed
         spt = self.graph.shortest_path_tree( origin, dest, State(1,currtime), wo )
-        wo.destroy()
+        
         
         vertices, edges = spt.path( dest )
+        performance['path_query_time'] = time.time()-t0
         
-        ret = list(postprocess_path(vertices, edges, self.vertex_events, self.edge_events))
+        t0 = time.time()
+        narrative = list(postprocess_path(vertices, edges, self.vertex_events, self.edge_events))
+        performance['narrative_postprocess_time'] = time.time()-t0
         
+        t0 = time.time()
+        wo.destroy()
         spt.destroy()
+        performance['cleanup_time'] = time.time()-t0
+        
+        ret = {'narrative':narrative, 'performance':performance}
         
         if jsoncallback is None:
             return json.dumps(ret, indent=2, cls=SelfEncoderHelper)
