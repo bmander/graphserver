@@ -64,6 +64,15 @@ class GraphDatabase:
         if outside_c is None:
             self.conn.commit()
             c.close()
+            
+    def remove_edge( self, oid, outside_c=None ):
+        c = outside_c or self.conn.cursor()
+        
+        c.execute( "DELETE FROM edges WHERE oid=?", (oid,) )
+        
+        if outside_c is None:
+            self.conn.commit()
+            c.close()
         
     def add_edge(self, from_v_label, to_v_label, payload, outside_c=None):
         c = outside_c or self.conn.cursor()
@@ -95,15 +104,18 @@ class GraphDatabase:
         for vertex_label, in self.execute( "SELECT label FROM vertices" ):
             yield vertex_label
     
-    def all_edges(self):
-        for vertex1, vertex2, edgetype, edgestate in self.execute( "SELECT vertex1, vertex2, edgetype, edgestate FROM edges" ):
+    def all_edges(self, include_oid=False):
+        for oid, vertex1, vertex2, edgetype, edgestate in self.execute( "SELECT oid, vertex1, vertex2, edgetype, edgestate FROM edges" ):
             try:
                 edgetype = cPickle.loads( str(edgetype) )
             except ImportError:
                 print str(edgetype)
                 raise
             edgestate = cPickle.loads( str(edgestate) )
-            yield vertex1, vertex2, edgetype.reconstitute(edgestate, self)
+            if include_oid:
+                yield oid, vertex1, vertex2, edgetype.reconstitute(edgestate, self)
+            else:
+                yield vertex1, vertex2, edgetype.reconstitute(edgestate, self)
     
     def all_outgoing(self, vertex1_label):
         for vertex1, vertex2, edgetype, edgestate in self.execute( "SELECT vertex1, vertex2, edgetype, edgestate FROM edges WHERE vertex1=?", (vertex1_label,) ):
