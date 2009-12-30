@@ -829,8 +829,8 @@ class Link(EdgePayload):
 class Street(EdgePayload):
     length = cproperty(lgs.streetGetLength, c_double)
     name   = cproperty(lgs.streetGetName, c_char_p)
-    rise = cproperty(lgs.streetGetRise, c_float)
-    fall = cproperty(lgs.streetGetFall, c_float)
+    rise = cproperty(lgs.streetGetRise, c_float, setter=lgs.streetSetRise)
+    fall = cproperty(lgs.streetGetFall, c_float, setter=lgs.streetSetFall)
     slog = cproperty(lgs.streetGetSlog, c_float, setter=lgs.streetSetSlog)
     way = cproperty(lgs.streetGetWay, c_long, setter=lgs.streetSetWay)
     

@@ -351,9 +351,19 @@ streetGetRise(Street* this) {
     return this->rise;
 }
 
+void
+streetSetRise(Street* this, float rise) {
+    this->rise = rise;
+}
+
 float
 streetGetFall(Street* this) {
     return this->fall;
+}
+
+void
+streetSetFall(Street* this, float fall) {
+    this->fall = fall;
 }
 
 float

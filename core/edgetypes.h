@@ -354,6 +354,12 @@ streetGetRise(Street* this);
 float
 streetGetFall(Street* this);
 
+void
+streetSetRise(Street* this, float rise) ;
+
+void
+streetSetFall(Street* this, float fall) ;
+
 long
 streetGetWay(Street* this);
 
