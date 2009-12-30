@@ -103,6 +103,8 @@ class OSMDB:
         c.execute( "CREATE INDEX nodes_lon ON nodes (lon)" )
         c.execute( "CREATE INDEX nodes_lat ON nodes (lat)" )
         c.execute( "CREATE INDEX ways_id ON ways (id)" )
+        c.execute( "CREATE INDEX edges_parent_id ON edges (parent_id)" ) # for OSMDB.edge method
+        c.execute( "CREATE INDEX edges_id ON edges (id)" )               # for OSMDB.edge method
         self.conn.commit()
         c.close()
         
