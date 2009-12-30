@@ -81,8 +81,7 @@ def populate_profile_db( osmdb_name, profiledb_name, dem_basenames, resolution )
     pdb.conn.commit()
 
 from sys import argv
-if __name__ == '__main__':
-
+def main():
     usage = "python profile.py osmdb_name profiledb_name resolution dem_basename "
     if len(argv) < 5:
         print usage
@@ -99,3 +98,6 @@ if __name__ == '__main__':
     print "dem_basenames:", dem_basenames
     
     populate_profile_db(osmdb_name, profiledb_name, dem_basenames, resolution)
+
+if __name__ == '__main__':
+    main()
