@@ -33,12 +33,23 @@ class GraphCrawler(Servable):
         ret = []
         ret.append( "<h1>%s</h1>"%label )
         
+        wo = WalkOptions()
+        ret.append( "<h3>walk options</h3>" )
+        ret.append( "<li>transfer_penalty: %s</li>"%wo.transfer_penalty )
+        ret.append( "<li>turn_penalty: %s</li>"%wo.turn_penalty )
+        ret.append( "<li>walking_speed: %s</li>"%wo.walking_speed )
+        ret.append( "<li>walking_reluctance: %s</li>"%wo.walking_reluctance )
+        ret.append( "<li>uphill_slowness: %s</li>"%wo.uphill_slowness )
+        ret.append( "<li>downhill_fastness: %s</li>"%wo.downhill_fastness )
+        ret.append( "<li>hill_reluctance: %s</li>"%wo.hill_reluctance )
+        ret.append( "<li>max_walk: %s</li>"%wo.max_walk )
+        ret.append( "<li>walking_overage: %s</li>"%wo.walking_overage )
+        
+        
         ret.append( "<h3>incoming from:</h3>" )
         for i, (vertex1, vertex2, edgetype) in enumerate( self.graphdb.all_incoming( label ) ):
             s1 = State(1,int(currtime))
-            wo = WalkOptions()
             s0 = edgetype.walk_back( s1, wo )
-            wo.destroy()
             
             if s0:
                 toterm = "<a href=\"/vertex?label=&quot;%s&quot;&currtime=%d\">%s@%d</a>"%(vertex1, s0.time, vertex1, s1.time)
@@ -54,9 +65,7 @@ class GraphCrawler(Servable):
         ret.append( "<h3>outgoing to:</h3>" )
         for i, (vertex1, vertex2, edgetype) in enumerate( self.graphdb.all_outgoing( label ) ):
             s0 = State(1,int(currtime))
-            wo = WalkOptions()
             s1 = edgetype.walk( s0, wo )
-            wo.destroy()
             
             if s1:
                 toterm = "<a href=\"/vertex?label=&quot;%s&quot;&currtime=%d\">%s@%d</a>"%(vertex2, s1.time, vertex2, s1.time)
@@ -67,7 +76,9 @@ class GraphCrawler(Servable):
             
             if s1:
                 ret.append( "<pre>&nbsp;&nbsp;&nbsp;%s</pre>"%cgi.escape(str(s1)) )
-                
+        
+        wo.destroy()
+        
         return "".join(ret)
     vertex.mime = "text/html"
     
