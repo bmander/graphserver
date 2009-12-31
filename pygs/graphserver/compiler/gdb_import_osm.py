@@ -4,8 +4,10 @@ import os
 from graphserver.core import Street
 from graphserver.ext.osm.osmdb import OSMDB
 import sys
+from graphserver.ext.osm.profiledb import ProfileDB
+from gdb_import_ned import get_rise_and_fall
 
-def gdb_import_osm(gdb, osmdb, vertex_namespace, slogs):
+def gdb_import_osm(gdb, osmdb, vertex_namespace, slogs, profiledb=None):
     cursor = gdb.get_cursor()
 	
     n_edges = osmdb.count_edges()
@@ -15,6 +17,14 @@ def gdb_import_osm(gdb, osmdb, vertex_namespace, slogs):
     for i, (id, parent_id, node1, node2, distance, geom, tags) in enumerate( osmdb.edges() ):
         
         if i%(n_edges//100+1)==0: sys.stdout.write( "%d/%d edges loaded\r\n"%(i, n_edges))
+            
+        # Find rise/fall of edge, if profiledb is given
+        rise=0
+        fall=0
+        if profiledb:
+            profile = profiledb.get( id )
+            if profile:
+                rise, fall = get_rise_and_fall( profile )
         
         # insert end vertices of edge to graph
         vertex1_label = "%s-%s"%(vertex_namespace,node1)
@@ -34,8 +44,8 @@ def gdb_import_osm(gdb, osmdb, vertex_namespace, slogs):
             street_id = street_names[street_name]
         
         # Create edges to be inserted into graph
-        s1 = Street( id, distance )
-        s2 = Street( id, distance )
+        s1 = Street( id, distance, rise, fall )
+        s2 = Street( id, distance, fall, rise )
         s1.way = street_id
         s2.way = street_id
         
@@ -63,6 +73,8 @@ def main():
     parser.add_option("-s", "--slog",
                       action="append", dest="slog_strings", default=[],
                       help="specify slog for highway type, in highway_type:slog form. For example, 'motorway:10.5'")
+    parser.add_option("-p", "--profiledb", dest="profiledb_filename", default=None,
+                      help="specify profiledb to annotate streets with rise/fall data")
     
     (options, args) = parser.parse_args()
     
@@ -81,10 +93,11 @@ def main():
     
     print "importing osmdb '%s' into graphdb '%s'"%(osmdb_filename, graphdb_filename)
     
+    profiledb = ProfileDB( options.profiledb_filename ) if options.profiledb_filename else None
     osmdb = OSMDB( osmdb_filename )
     gdb = GraphDatabase( graphdb_filename, overwrite=False )
     
-    gdb_import_osm(gdb, osmdb, options.namespace, slogs);
+    gdb_import_osm(gdb, osmdb, options.namespace, slogs, profiledb);
     
     print "done"
 
