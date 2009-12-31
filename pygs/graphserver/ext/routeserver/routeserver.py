@@ -102,6 +102,7 @@ class RouteServer(Servable):
              time_offset=None, 
              transfer_penalty=0, 
              walking_speed=1.0,
+             hill_reluctance=1.5
              jsoncallback=None):
         
         performance = {}
@@ -117,6 +118,7 @@ class RouteServer(Servable):
         wo = WalkOptions()
         wo.transfer_penalty=transfer_penalty
         wo.walking_speed=walking_speed
+        wo.hill_reluctance=hill_reluctance
         spt = self.graph.shortest_path_tree( origin, dest, State(1,currtime), wo )
         
         
