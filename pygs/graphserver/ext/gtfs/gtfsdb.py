@@ -415,9 +415,9 @@ class GTFSDatabase:
         return [x[0] for x in self.execute( query )]
     
     def shape(self, shape_id):
-        query = "SELECT shape_pt_lon, shape_pt_lat, shape_dist_traveled from shapes where shape_id = %s order by shape_pt_sequence" % shape_id
+        query = "SELECT shape_pt_lon, shape_pt_lat, shape_dist_traveled from shapes where shape_id = ? order by shape_pt_sequence"
         
-        return list(self.execute( query ))
+        return list(self.execute( query, (shape_id,) ))
     
     def shape_between(self, trip_id, stop_sequence1, stop_sequence2):
         query = """SELECT t.shape_id, st.shape_dist_traveled, st.stop_id, st.stop_sequence
