@@ -581,17 +581,22 @@ typedef struct Crossing {
     State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
     State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
     
-    int crossing_time;
+    int* crossing_times;
+    char** crossing_time_trip_ids;
+    int n;
 } Crossing;
 
 Crossing*
-crNew( int crossing_time );
+crNew( );
 
 void
 crDestroy(Crossing* this);
 
+void
+crAddCrossingtime(Crossing* this, char* trip_id, int crossing_time);
+
 int
-crGetCrossingTime(Crossing* this);
+crGetCrossingTime(Crossing* this, char* trip_id);
 
 inline State*
 crWalk( EdgePayload* superthis, State* state, WalkOptions* options );
