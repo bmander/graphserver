@@ -196,6 +196,11 @@ stateSetNumTransfers( State* this, int n) { this->num_transfers = n; }
 void
 stateSetServicePeriod( State* this,  int agency, ServicePeriod* cal ) { this->service_periods[agency] = cal; }
 
+// the state does not keep ownership of the trip_id, so the state
+// may not live longer than whatever object set its trip_id
+void
+stateDangerousSetTripId( State* this, char* trip_id ) { this->trip_id = trip_id; }
+
 void
 stateSetPrevEdge( State* this, EdgePayload* edge ) { this->prev_edge = edge; }
 
@@ -1230,7 +1235,7 @@ crGetCrossingTime(Crossing* this, char* trip_id) {
 
 char*
 crGetCrossingTimeTripIdByIndex(Crossing* this, int i) {
-    if(i>0 || i>=this->n) {
+    if(i<0 || i>=this->n) {
         return NULL;
     }
     return this->crossing_time_trip_ids[i];

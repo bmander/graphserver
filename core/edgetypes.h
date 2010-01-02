@@ -148,6 +148,11 @@ stateSetDistWalked( State* this, double dist );
 void
 stateSetNumTransfers( State* this, int n);
 
+// the state does not keep ownership of the trip_id, so the state
+// may not live longer than whatever object set its trip_id
+void
+stateDangerousSetTripId( State* this, char* trip_id );
+
 void
 stateSetPrevEdge( State* this, EdgePayload* edge );
 
