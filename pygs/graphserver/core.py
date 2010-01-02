@@ -1239,6 +1239,16 @@ class Crossing(EdgePayload):
         
         return ret
         
+    def expound(self):
+        ret = []
+        
+        ret.append( "Crossing" )
+        
+        for trip_id, crossing_time in self.get_all_crossings():
+            ret.append( "%s: %s"%(trip_id, crossing_time) )
+            
+        return "\n".join( ret )
+        
 class Alight(EdgePayload):
     calendar = cproperty( lgs.alGetCalendar, c_void_p, ServiceCalendar )
     timezone = cproperty( lgs.alGetTimezone, c_void_p, Timezone )
