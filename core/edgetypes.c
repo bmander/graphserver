@@ -1228,6 +1228,28 @@ crGetCrossingTime(Crossing* this, char* trip_id) {
     return -1;
 }
 
+char*
+crGetCrossingTimeTripIdByIndex(Crossing* this, int i) {
+    if(i>0 || i>=this->n) {
+        return NULL;
+    }
+    return this->crossing_time_trip_ids[i];
+}
+    
+
+int
+crGetCrossingTimeByIndex(Crossing* this, int i) {
+    if(i<0 || i>=this->n) {
+        return -1;
+    }
+    return this->crossing_times[i];
+}
+
+int
+crGetSize(Crossing* this) {
+    return this->n;
+}
+
 inline State*
 crWalk( EdgePayload* superthis, State* state, WalkOptions* options ) {
     Crossing* this = (Crossing*)superthis;

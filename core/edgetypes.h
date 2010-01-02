@@ -598,6 +598,15 @@ crAddCrossingTime(Crossing* this, char* trip_id, int crossing_time);
 int
 crGetCrossingTime(Crossing* this, char* trip_id);
 
+char*
+crGetCrossingTimeTripIdByIndex(Crossing* this, int i);
+
+int
+crGetCrossingTimeByIndex(Crossing* this, int i);
+
+int
+crGetSize(Crossing* this);
+
 inline State*
 crWalk( EdgePayload* superthis, State* state, WalkOptions* options );
 
