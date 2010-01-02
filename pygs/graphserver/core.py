@@ -301,6 +301,11 @@ class State(CShadow):
             if self.service_period(i) is not None:
                 ret += self.service_period(i).to_xml()
         return ret + "</state>"
+    
+    # the state does not keep ownership of the trip_id, so the state
+    # may not live longer than whatever object set its trip_id
+    def dangerous_set_trip_id( self, trip_id ):
+        lgs.stateDangerousSetTripId( self.soul, trip_id )
         
     time           = cproperty(lgs.stateGetTime, c_long, setter=lgs.stateSetTime)
     weight         = cproperty(lgs.stateGetWeight, c_long, setter=lgs.stateSetWeight)
@@ -1189,20 +1194,50 @@ class HeadwayAlight(EdgePayload):
         return ret
     
 class Crossing(EdgePayload):
-    crossing_time = cproperty( lgs.crGetCrossingTime, c_int )
     
-    def __init__(self, crossing_time):
-        self.soul = self._cnew(c_int(crossing_time))
+    def __init__(self):
+        self.soul = self._cnew()
+        
+    def add_crossing_time(self, trip_id, crossing_time):
+        lgs.crAddCrossingTime( self.soul, trip_id, crossing_time )
+        
+    def get_crossing_time(self, trip_id):
+        ret = lgs.crGetCrossingTime( self.soul, trip_id )
+        if ret==-1:
+            return None
+        return ret
+        
+    def get_crossing(self, i):
+        trip_id = lgs.crGetCrossingTimeTripIdByIndex( self.soul, i )
+        crossing_time = lgs.crGetCrossingTimeByIndex( self.soul, i )
+        
+        if crossing_time==-1:
+            return None
+        
+        return (trip_id, crossing_time)
+    
+    @property
+    def size(self):
+        return lgs.crGetSize( self.soul )
+    
+    def get_all_crossings(self):
+        for i in range(self.size):
+            yield self.get_crossing( i )
         
     def to_xml(self):
-        return "<Crossing crossing_time=\"%d\"/>"%self.crossing_time
+        return "<Crossing size=\"%d\"/>"%self.size
         
     def __getstate__(self):
-        return self.crossing_time
+        return list(self.get_all_crossings())
         
     @classmethod
     def reconstitute(cls, state, resolver):
-        return Crossing(state)
+        ret = Crossing()
+        
+        for trip_id, crossing_time in state:
+            ret.add_crossing_time( trip_id, crossing_time )
+        
+        return ret
         
 class Alight(EdgePayload):
     calendar = cproperty( lgs.alGetCalendar, c_void_p, ServiceCalendar )

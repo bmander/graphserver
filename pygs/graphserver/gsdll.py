@@ -230,6 +230,15 @@ pycapi(lgs.elapseTimeWalk, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.elapseTimeWalkBack, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.elapseTimeGetSeconds, c_long, [c_void_p])
 
+#CROSSING API
+pycapi(lgs.crNew, c_void_p, [])
+pycapi(lgs.crDestroy, c_void_p, [c_void_p])
+pycapi(lgs.crAddCrossingTime, c_void_p, [c_void_p, c_char_p, c_int])
+pycapi(lgs.crGetCrossingTime, c_int, [c_void_p, c_char_p])
+pycapi(lgs.crGetCrossingTimeByIndex, c_int, [c_void_p, c_int])
+pycapi(lgs.crGetCrossingTimeTripIdByIndex, c_char_p, [c_void_p, c_int])
+pycapi(lgs.crGetSize, c_int, [c_void_p])
+
 #CUSTOM TYPE API
 class PayloadMethodTypes:
     """ Enumerates the ctypes of the function pointers."""
