@@ -593,7 +593,7 @@ void
 crDestroy(Crossing* this);
 
 void
-crAddCrossingtime(Crossing* this, char* trip_id, int crossing_time);
+crAddCrossingTime(Crossing* this, char* trip_id, int crossing_time);
 
 int
 crGetCrossingTime(Crossing* this, char* trip_id);
