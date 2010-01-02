@@ -71,15 +71,14 @@ def load_gtfs_table_to_sqlite(fp, gtfs_basename, cc, header=None):
         cc.execute(insert_template, _line)
         
 class Pattern:
-    def __init__(self, pattern_id, stop_ids, layovers, crossings):
+    def __init__(self, pattern_id, stop_ids, dwells):
         self.pattern_id = pattern_id
         self.stop_ids = stop_ids
-        self.layovers = layovers
-        self.crossings = crossings
+        self.dwells = dwells
     
     @property
     def signature(self):
-        return (tuple(self.stops), tuple(self.crossings), tuple(self.layovers))
+        return (tuple(self.stops), tuple(self.dwells))
 
 class TripBundle:
     def __init__(self, gtfsdb, pattern):
@@ -292,13 +291,11 @@ class GTFSDatabase:
             stop_times = list(d)
             
             stop_ids = [stop_id for trip_id, arrival_time, departure_time, stop_id in stop_times]
-            layovers = [departure_time-arrival_time for trip_id, arrival_time, departure_time, stop_id in stop_times]
-            crossings = [arrival_time2 - departure_time1 for (trip_id1, arrival_time1, departure_time1, stop_id1),
-                                                             (trip_id2, arrival_time2, departure_time2, stop_id2) in cons(stop_times)]
-            pattern_signature = (tuple(stop_ids), tuple(layovers), tuple(crossings))
+            dwells = [departure_time-arrival_time for trip_id, arrival_time, departure_time, stop_id in stop_times]
+            pattern_signature = (tuple(stop_ids), tuple(dwells))
             
             if pattern_signature not in patterns:
-                pattern = Pattern( len(patterns), stop_ids, layovers, crossings )
+                pattern = Pattern( len(patterns), stop_ids, dwells )
                 patterns[pattern_signature] = pattern
             else:
                 pattern = patterns[pattern_signature]

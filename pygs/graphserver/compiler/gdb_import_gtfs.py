@@ -14,8 +14,8 @@ def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, t
     
     stop_time_bundles = bundle.stop_time_bundles(service_id)
     
-    n_trips = len(bundle.trip_ids)    
-    
+    n_trips = len(bundle.trip_ids)
+        
     # If there's less than two stations on this trip bundle, the trip bundle doesn't actually span two places
     if len(stop_time_bundles)<2:
         return
@@ -38,9 +38,14 @@ def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, t
             # construct the board/alight/dwell triangle for this patternstop
             patternstop_arrival_vx_name = "psv-%s-%03d-%03d-%s-arrive"%(agency_namespace,bundle.pattern.pattern_id,i,service_id)
             gdb.add_vertex( patternstop_arrival_vx_name, cursor )
+            
+            dwell_crossing = Crossing()
+            for trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_dist_traveled in stop_time_bundle:
+                dwell_crossing.add_crossing_time( trip_id, departure_time-arrival_time )
+            
             gdb.add_edge( patternstop_arrival_vx_name, 
                           patternstop_vx_name,
-                          Crossing( (departure_time-arrival_time) ), 
+                          dwell_crossing, 
                           cursor )
             
         else:
@@ -87,10 +92,16 @@ def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, t
             to_patternstop_vx_name = "psv-%s-%03d-%03d-%s-arrive"%(agency_namespace,bundle.pattern.pattern_id,i+1,service_id)
         else:
             to_patternstop_vx_name = "psv-%s-%03d-%03d-%s"%(agency_namespace,bundle.pattern.pattern_id,i+1,service_id)
-            
+        
+        crossing = Crossing()
+        for i in range( len( from_stop_time_bundle ) ):
+            trip_id, from_arrival_time, from_departure_time, stop_id, stop_sequence, stop_dist_traveled = from_stop_time_bundle[i]
+            trip_id, to_arrival_time, to_departure_time, stop_id, stop_sequence, stop_dist_traveled = to_stop_time_bundle[i]
+            crossing.add_crossing_time( trip_id, (to_arrival_time-from_departure_time) )
+        
         gdb.add_edge( from_patternstop_vx_name, 
                       to_patternstop_vx_name, 
-                      Crossing( (to_arrival_time-from_departure_time) ), 
+                      crossing, 
                       cursor )
                       
     gdb.commit()
@@ -117,7 +128,7 @@ def gdb_load_gtfsdb_to_boardalight(gdb, agency_namespace, gtfsdb, cursor, agency
     if reporter: reporter.write( "Loading trip bundles into graph...\n" )
     n_bundles = len(bundles)
     for i, bundle in enumerate(bundles):
-        if reporter: reporter.write( "%d/%d loading %s\n"%(i, n_bundles, bundle) )
+        if reporter: reporter.write( "%d/%d loading %s\n"%(i+1, n_bundles, bundle) )
         
         for service_id in [x.encode("ascii") for x in gtfsdb.service_ids()]:
             gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, gs_tz, cursor)
