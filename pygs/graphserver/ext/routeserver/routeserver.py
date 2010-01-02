@@ -103,6 +103,8 @@ class RouteServer(Servable):
              transfer_penalty=0, 
              walking_speed=1.0,
              hill_reluctance=1.5,
+             turn_penalty=None,
+             walking_reluctance=None,
              jsoncallback=None):
         
         performance = {}
@@ -119,6 +121,10 @@ class RouteServer(Servable):
         wo.transfer_penalty=transfer_penalty
         wo.walking_speed=walking_speed
         wo.hill_reluctance=hill_reluctance
+        if turn_penalty is not None:
+            wo.turn_penalty = turn_penalty
+        if walking_reluctance is not None:
+            wo.walking_reluctance = walking_reluctance
         spt = self.graph.shortest_path_tree( origin, dest, State(1,currtime), wo )
         
         
@@ -141,7 +147,15 @@ class RouteServer(Servable):
         else:
             return "%s(%s)"%(jsoncallback,json.dumps(ret, indent=2, cls=SelfEncoderHelper))
             
-    def geompath(self, lat1,lon1,lat2,lon2, currtime=None, time_offset=None, transfer_penalty=0, walking_speed=1.0, hill_reluctance=1.5, jsoncallback=None):
+    def geompath(self, lat1,lon1,lat2,lon2, 
+                 currtime=None, 
+                 time_offset=None, 
+                 transfer_penalty=0, 
+                 walking_speed=1.0, 
+                 hill_reluctance=1.5,
+                 turn_penalty=None,
+                 walking_reluctance=None,
+                 jsoncallback=None):
         origin_vertex_label = self.get_vertex_id_raw( lat1, lon1 )
         dest_vertex_label = self.get_vertex_id_raw( lat2, lon2 )
         
@@ -157,6 +171,8 @@ class RouteServer(Servable):
                      transfer_penalty,
                      walking_speed,
                      hill_reluctance,
+                     turn_penalty,
+                     walking_reluctance,
                      jsoncallback )
         
     def path_retro(self, origin, dest, currtime=None, time_offset=None, transfer_penalty=0, walking_speed=1.0):
