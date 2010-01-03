@@ -105,6 +105,7 @@ class RouteServer(Servable):
              hill_reluctance=1.5,
              turn_penalty=None,
              walking_reluctance=None,
+             max_walk=None,
              jsoncallback=None):
         
         performance = {}
@@ -125,6 +126,8 @@ class RouteServer(Servable):
             wo.turn_penalty = turn_penalty
         if walking_reluctance is not None:
             wo.walking_reluctance = walking_reluctance
+        if max_walk is not None:
+            wo.max_walk = max_walk
         spt = self.graph.shortest_path_tree( origin, dest, State(1,currtime), wo )
         
         
@@ -155,6 +158,7 @@ class RouteServer(Servable):
                  hill_reluctance=1.5,
                  turn_penalty=None,
                  walking_reluctance=None,
+                 max_walk=None,
                  jsoncallback=None):
         origin_vertex_label = self.get_vertex_id_raw( lat1, lon1 )
         dest_vertex_label = self.get_vertex_id_raw( lat2, lon2 )
@@ -173,6 +177,7 @@ class RouteServer(Servable):
                      hill_reluctance,
                      turn_penalty,
                      walking_reluctance,
+                     max_walk,
                      jsoncallback )
         
     def path_retro(self, origin, dest, currtime=None, time_offset=None, transfer_penalty=0, walking_speed=1.0):
