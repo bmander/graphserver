@@ -13,6 +13,7 @@ except ImportError:
     import simplejson as json
 import yaml
 import os
+from fcgi import WSGIServer
     
 from events import BoardEvent, AlightEvent, HeadwayBoardEvent, HeadwayAlightEvent, StreetEvent, StreetTurnEvent
 
@@ -304,7 +305,8 @@ def main():
     
     # serve as either an HTTP server or an fastCGI backend
     if options.socket:
-        pass
+        print "Starting fastCGI backend serving at %s"%options.socket
+        WSGIServer(gc.wsgi_app(), bindAddress = options.socket).run()
     else:
         gc.run_test_server(port=int(options.port))
 
