@@ -74,6 +74,8 @@ class WayRecord:
 
 class OSMDB:
     def __init__(self, dbname,overwrite=False,rtree_index=True):
+        self.dbname = dbname
+        
         if overwrite:
             try:
                 os.remove( dbname )
@@ -89,16 +91,28 @@ class OSMDB:
         
         if overwrite:
             self.setup()
+            
+    def get_cursor(self):
+        # Attempts to get a cursor using the current connection to the db. If we've found ourselves in a different thread
+        # than that which the connection was made in, re-make the connection.
+        
+        try:
+            ret = self.conn.cursor()
+        except sqlite3.ProgrammingError:
+            self.conn = sqlite3.connect(self.dbname)
+            ret = self.conn.cursor()
+            
+        return ret
         
     def setup(self):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         c.execute( "CREATE TABLE nodes (id TEXT, tags TEXT, lat FLOAT, lon FLOAT, endnode_refs INTEGER DEFAULT 1)" )
         c.execute( "CREATE TABLE ways (id TEXT, tags TEXT, nds TEXT)" )
         self.conn.commit()
         c.close()
         
     def create_indexes(self):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         c.execute( "CREATE INDEX nodes_id ON nodes (id)" )
         c.execute( "CREATE INDEX nodes_lon ON nodes (lon)" )
         c.execute( "CREATE INDEX nodes_lat ON nodes (lat)" )
@@ -109,7 +123,7 @@ class OSMDB:
     def populate(self, osm_filename, accept=lambda tags: True, reporter=None):
         print "importing osm from XML to sqlite database"
         
-        c = self.conn.cursor()
+        c = self.get_cursor()
         
         self.n_nodes = 0
         self.n_ways = 0
@@ -171,7 +185,7 @@ class OSMDB:
         
         print "counting end-node references to find way split-points"
         
-        c = self.conn.cursor()
+        c = self.get_cursor()
         
         endnode_ref_counts = {}
         
@@ -200,7 +214,7 @@ class OSMDB:
     def index_endnodes( self ):
         print "indexing endpoint nodes into rtree"
         
-        c = self.conn.cursor()
+        c = self.get_cursor()
         
         #TODO index endnodes if they're at the end of oneways - which only have one way ref, but are still endnodes
         c.execute( "SELECT id, lat, lon FROM nodes WHERE endnode_refs > 1" )
@@ -216,7 +230,7 @@ class OSMDB:
         
         print "splitting ways and inserting into edge table"
         
-        c = self.conn.cursor()
+        c = self.get_cursor()
         
         c.execute( "CREATE TABLE edges (id TEXT, parent_id TEXT, start_nd TEXT, end_nd TEXT, dist FLOAT, geom TEXT)" )
         
@@ -261,7 +275,7 @@ class OSMDB:
         c.close()
         
     def edge(self, id):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         
         c.execute( "SELECT edges.*, ways.tags FROM edges, ways WHERE ways.id = edges.parent_id AND edges.id = ?", (id,) )
         
@@ -277,7 +291,7 @@ class OSMDB:
         return ret
         
     def edges(self):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         
         c.execute( "SELECT edges.*, ways.tags FROM edges, ways WHERE ways.id = edges.parent_id" )
         
@@ -289,7 +303,7 @@ class OSMDB:
         
     def add_way( self, way, curs=None ):
         if curs is None:
-            curs = self.conn.cursor()
+            curs = self.get_cursor()
             close_cursor = True
         else:
             close_cursor = False
@@ -302,7 +316,7 @@ class OSMDB:
             
     def add_node( self, node, curs=None ):
         if curs is None:
-            curs = self.conn.cursor()
+            curs = self.get_cursor()
             close_cursor = True
         else:
             close_cursor = False
@@ -314,7 +328,7 @@ class OSMDB:
             curs.close()
         
     def nodes(self):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         
         c.execute( "SELECT * FROM nodes" )
         
@@ -324,7 +338,7 @@ class OSMDB:
         c.close()
         
     def node(self, id):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         
         c.execute( "SELECT * FROM nodes WHERE id = ?", (id,) )
         
@@ -338,7 +352,7 @@ class OSMDB:
         return ret
     
     def nearest_node(self, lat, lon, range=0.005):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         
         if self.index:
             #print "YOUR'RE USING THE INDEX"
@@ -356,7 +370,7 @@ class OSMDB:
         return min( dists, key = lambda x:x[3] )
 
     def nearest_of( self, lat, lon, nodes ):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         
         c.execute( "SELECT id, lat, lon FROM nodes WHERE id IN (%s)"%",".join([str(x) for x in nodes]) )
         
@@ -368,7 +382,7 @@ class OSMDB:
         return min( dists, key = lambda x:x[3] )
         
     def way(self, id):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         
         c.execute( "SELECT id, tags, nds FROM ways WHERE id = ?", (id,) )
        
@@ -383,7 +397,7 @@ class OSMDB:
         return ret
         
     def way_nds(self, id):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         c.execute( "SELECT nds FROM ways WHERE id = ?", (id,) )
         
         (nds_str,) = c.next()
@@ -392,7 +406,7 @@ class OSMDB:
         return json.loads( nds_str )
         
     def ways(self):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         
         c.execute( "SELECT id, tags, nds FROM ways" )
         
@@ -402,7 +416,7 @@ class OSMDB:
         c.close()
         
     def count_ways(self):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         
         c.execute( "SELECT count(*) FROM ways" )
         ret = c.next()[0]
@@ -412,7 +426,7 @@ class OSMDB:
         return ret
         
     def count_edges(self):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         
         c.execute( "SELECT count(*) FROM edges" )
         ret = c.next()[0]
@@ -422,14 +436,14 @@ class OSMDB:
         return ret
         
     def delete_way(self, id):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         
         c.execute("DELETE FROM ways WHERE id = ?", (id,))
         
         c.close()
         
     def bounds(self):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         c.execute( "SELECT min(lon), min(lat), max(lon), max(lat) FROM nodes" )
         
         ret = c.next()
@@ -437,7 +451,7 @@ class OSMDB:
         return ret
     
     def execute(self,sql,args=None):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         if args:
             for row in c.execute(sql,args):
                 yield row
@@ -447,7 +461,7 @@ class OSMDB:
         c.close()
     
     def cursor(self):
-        return self.conn.cursor()    
+        return self.get_cursor()    
 
 def test_wayrecord():
     wr = WayRecord( "1", {'highway':'bumpkis'}, ['1','2','3'] )

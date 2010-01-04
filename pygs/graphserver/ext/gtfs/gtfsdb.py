@@ -202,6 +202,8 @@ class GTFSDatabase:
                 SHAPES_DEF)
     
     def __init__(self, sqlite_filename, overwrite=False):
+        self.dbname = sqlite_filename
+        
         if overwrite:
             try:
                 os.remove(sqlite_filename)
@@ -209,9 +211,21 @@ class GTFSDatabase:
                 pass
         
         self.conn = sqlite3.connect( sqlite_filename )
+        
+    def get_cursor(self):
+        # Attempts to get a cursor using the current connection to the db. If we've found ourselves in a different thread
+        # than that which the connection was made in, re-make the connection.
+        
+        try:
+            ret = self.conn.cursor()
+        except sqlite3.ProgrammingError:
+            self.conn = sqlite3.connect(self.dbname)
+            ret = self.conn.cursor()
+            
+        return ret
 
     def load_gtfs(self, gtfs_filename, reporter=None):
-        c = self.conn.cursor()
+        c = self.get_cursor()
 
         zf = ZipFile( gtfs_filename )
 
@@ -241,7 +255,7 @@ class GTFSDatabase:
         c.execute( "CREATE INDEX trips_route_id ON trips (route_id)" )
 
     def stops(self):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         
         c.execute( "SELECT * FROM stops" )
         ret = list(c)
@@ -250,14 +264,14 @@ class GTFSDatabase:
         return ret
         
     def stop(self, stop_id):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         c.execute( "SELECT * FROM stops WHERE stop_id = ?", (stop_id,) )
         ret = c.next()
         c.close()
         return ret
         
     def count_stops(self):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         c.execute( "SELECT count(*) FROM stops" )
         
         ret = c.next()[0]
@@ -266,7 +280,7 @@ class GTFSDatabase:
 
     def compile_trip_bundles(self, maxtrips=None, reporter=None):
         
-        c = self.conn.cursor()
+        c = self.get_cursor()
 
         patterns = {}
         bundles = {}
@@ -285,7 +299,7 @@ class GTFSDatabase:
         for i, (trip_id,) in enumerate(c):
             if reporter and i%(n_trips//50+1)==0: reporter.write( "%d/%d trips grouped by %d patterns\n"%(i,n_trips,len(bundles)))
             
-            d = self.conn.cursor()
+            d = self.get_cursor()
             d.execute( "SELECT trip_id, arrival_time, departure_time, stop_id FROM stop_times WHERE trip_id=? AND arrival_time NOT NULL AND departure_time NOT NULL ORDER BY stop_sequence", (trip_id,) )
             
             stop_times = list(d)
@@ -313,7 +327,7 @@ class GTFSDatabase:
         return bundles.values()
         
     def nearby_stops(self, lat, lng, range):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         
         c.execute( "SELECT * FROM stops WHERE stop_lat BETWEEN ? AND ? AND stop_lon BETWEEN ? And ?", (lat-range, lat+range, lng-range, lng+range) )
         
@@ -321,7 +335,7 @@ class GTFSDatabase:
             yield row
 
     def extent(self):
-        c = self.conn.cursor()
+        c = self.get_cursor()
         
         c.execute( "SELECT min(stop_lon), min(stop_lat), max(stop_lon), max(stop_lat) FROM stops" )
         
@@ -331,7 +345,7 @@ class GTFSDatabase:
         
     def execute(self, query, args=None):
         
-        c = self.conn.cursor()
+        c = self.get_cursor()
         
         if args:
             c.execute( query, args )
