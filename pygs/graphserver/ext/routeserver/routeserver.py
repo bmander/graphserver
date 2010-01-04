@@ -262,29 +262,33 @@ def get_handler_instances( handler_definitions, handler_type ):
         yield handler_instance
         
 
-
+from optparse import OptionParser
 def main():
     
-    usage = "python routeserver.py graphdb_filename config_filename [port]"
+    # get command line input
+    usage = """python routeserver.py graphdb_filename config_filename"""
+    parser = OptionParser(usage=usage)
+    parser.add_option("-p", "--port", dest="port", default="8080",
+                      help="Port to serve HTTP, if serving as a standalone server")
+    parser.add_option("-s", "--socket", dest="socket", default=None, 
+                      help="Socket on which serve fastCGI. If both port and socket are specified, serves as an fastCGI backend.")
     
-    if len(sys.argv) < 2:
-        print usage
-        exit()
+    (options, args) = parser.parse_args()
+    
+    if len(args) != 2:
+        parser.print_help()
+        exit(-1)
         
-    graphdb_filename = sys.argv[1]
-    config_filename = sys.argv[2]
+    graphdb_filename, config_filename = args
     
-    if len(sys.argv)==4:
-        port = int(sys.argv[3])
-    else:
-        port = 8080
-    
+    # get narrative handler classes
     handler_definitions = yaml.load( open(config_filename).read() )
     
     edge_events = list(get_handler_instances( handler_definitions, 'edge_handlers' ) )
     vertex_events = list(get_handler_instances( handler_definitions, 'vertex_handlers' ) )
     vertex_reverse_geocoders = list(get_handler_instances( handler_definitions, 'vertex_reverse_geocoders' ) )
     
+    # explain to the nice people which handlers were loaded
     print "edge event handlers:"
     for edge_event in edge_events:
         print "   %s"%edge_event
@@ -295,8 +299,14 @@ def main():
     for vertex_reverse_geocoder in vertex_reverse_geocoders:
         print "   %s"%vertex_reverse_geocoder
     
+    # start up the routeserver
     gc = RouteServer(graphdb_filename, vertex_events, edge_events, vertex_reverse_geocoders)
-    gc.run_test_server(port=port)
+    
+    # serve as either an HTTP server or an fastCGI backend
+    if options.socket:
+        pass
+    else:
+        gc.run_test_server(port=int(options.port))
 
 if __name__ == '__main__':
     main()
