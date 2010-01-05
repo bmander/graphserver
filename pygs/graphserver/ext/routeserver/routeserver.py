@@ -49,12 +49,12 @@ def postprocess_path(vertices, edges, vertex_events, edge_events):
         #fire vertex events
         for handler in vertex_events:
             if handler.applies_to( edge1, vertex1, edge2 ):
-                yield handler( edge1, vertex1, edge2, context=context )
+                yield handler.__class__.__name__, handler( edge1, vertex1, edge2, context=context )
         
         #fire edge events
         for handler in edge_events:
             if handler.applies_to( vertex1, edge2, vertex2 ):
-                yield handler( vertex1, edge2, vertex2, context=context )
+                yield handler.__class__.__name__, handler( vertex1, edge2, vertex2, context=context )
 
 class RouteServer(Servable):
     def __init__(self, graphdb_filename, vertex_events, edge_events, vertex_reverse_geocoders):
