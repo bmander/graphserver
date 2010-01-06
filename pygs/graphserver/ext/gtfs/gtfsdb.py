@@ -16,6 +16,9 @@ class UTF8TextFile(object):
     def __iter__(self):
         return self
 
+def between(n, a, b):
+    return n >= a and n<=b
+
 def cons(ary):
     for i in range(len(ary)-1):
         yield (ary[i], ary[i+1])
@@ -430,57 +433,45 @@ class GTFSDatabase:
         
         return list(self.execute( query, (shape_id,) ))
     
+    def shape_from_stops(self, trip_id, stop_sequence1, stop_sequence2):
+        query = """SELECT stops.stop_lon, stop_lat 
+                   FROM stop_times as st, stops 
+                   WHERE trip_id=? and st.stop_id=stops.stop_id and stop_sequence between ? and ? 
+                   ORDER by stop_sequence"""
+                   
+        return list(self.execute( query, (trip_id, stop_sequence1, stop_sequence2) ))
+    
     def shape_between(self, trip_id, stop_sequence1, stop_sequence2):
-        query = """SELECT t.shape_id, st.shape_dist_traveled, st.stop_id, st.stop_sequence
-                     FROM trips t 
-                     JOIN stop_times st ON st.trip_id = t.trip_id 
-                     WHERE t.trip_id = ? and (st.stop_sequence = ? or st.stop_sequence = ?)
-                     ORDER BY stop_sequence"""
+        # get shape_id of trip
+        shape_id = list(self.execute( "SELECT shape_id FROM trips WHERE trip_id=?", (trip_id,) ))[0][0]
         
-        distances = []
-        shape_id = None
-        started = None
-        for x in self.execute( query, (trip_id, stop_sequence1, stop_sequence2) ):
-            if not started and x[3] == stop_sequence1:
-                shape_id = x[0]
-                started = True            
-                distances.append(x[1])
-            
-            if started and x[3] == stop_sequence2:
-                distances.append(x[1])
-                break
-            
-        if not shape_id:
-            return None
+        if shape_id is None:
+            return self.shape_from_stops( trip_id, stop_sequence1, stop_sequence2 )
         
-        t_min = min(distances)
-        t_max = max(distances)
-        
-        shape = []
-        last = None
-        total_traveled = 0
-        for pt in self.shape(shape_id):
-            dist_traveled = pt[2]
-            if dist_traveled > t_min and dist_traveled < t_max: 
-                if len(shape) == 0 and total_traveled != 0 and t_min != 0 and dist_traveled - total_traveled != 0:
-                    # interpolate first node:
-                    percent_along = (dist_traveled - t_min) / (dist_traveled - total_traveled)
-                    shape.append((last[0] + (pt[0] - last[0])*percent_along,
-                                  last[1] + (pt[1] - last[1])*percent_along))
-                else:                    
-                    shape.append(last)
-                    last = (pt[0],pt[1])
-            elif dist_traveled > t_max:
-                # calculate the differnce and interpolate
-                percent_along = (dist_traveled - t_max) / (dist_traveled - total_traveled)
-                shape.append((last[0] + (pt[0] - last[0])*percent_along,
-                              last[1] + (pt[1] - last[1])*percent_along))
-                return shape
-            else:
-                last = (pt[0],pt[1])
-            total_traveled = dist_traveled
-        
-        return shape
+        query = """SELECT min(shape_dist_traveled), max(shape_dist_traveled)
+                     FROM stop_times
+                     WHERE trip_id=? and (stop_sequence = ? or stop_sequence = ?)"""
+        t_min, t_max = list(self.execute( query, (trip_id, stop_sequence1, stop_sequence2) ))[0]
+                
+        ret = []
+        for (lon1, lat1, dist1), (lon2, lat2, dist2) in cons(self.shape(shape_id)):
+            if between( t_min, dist1, dist2 ):
+                percent_along = (t_min-dist1)/float((dist2-dist1)) if dist2!=dist1 else 0
+                lat = lat1+percent_along*(lat2-lat1)
+                lon = lon1+percent_along*(lon2-lon1)
+                ret.append( (lon, lat) )
+
+            if between( dist2, t_min, t_max ):
+                ret.append( (lon2, lat2) )
+                
+            if between( t_max, dist1, dist2):
+                percent_along = (t_max-dist1)/float((dist2-dist1)) if dist2!=dist1 else 0
+                lat = lat1+percent_along*(lat2-lat1)
+                lon = lon1+percent_along*(lon2-lon1)
+                ret.append( (lon, lat) )
+                
+        return ret
+                
 
 def main_inspect_gtfsdb():
     from sys import argv
