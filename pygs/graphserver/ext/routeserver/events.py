@@ -149,9 +149,15 @@ class StreetEvent:
         return edge is not None and isinstance(edge.payload, graphserver.core.Street)
     
     def __call__(self, vertex1, edge, vertex2, context):
-        what = "walk %s meters"%edge.payload.length
-        geom = self.osmdb.edge( edge.payload.name )[5]
-        return NarrativeEvent(what,None,None,geom)
+        # adds to the variable set up by the StreetStartEvent
+        geometry_chunk = self.osmdb.edge( edge.payload.name )[5]
+        
+        if len(context['streetgeom'])==0 or len(geometry_chunk)==0 or context['streetgeom'][-1] == geometry_chunk[0]:
+            context['streetgeom'].extend( geometry_chunk )
+        else:
+            context['streetgeom'].extend( reversed( geometry_chunk ) )
+        
+        return None
         
 class CrossingEvent:
     def __init__(self, gtfsdb_filename, timezone_name="America/Los_Angeles"):
@@ -261,6 +267,8 @@ class StreetStartEvent:
                (edge2 and isinstance(edge2.payload, graphserver.core.Street))
     
     def __call__(self, edge1, vertex, edge2, context):
+        context['streetgeom'] = []
+        
         osm_way2 = edge2.payload.name.split("-")[0]
         street_name2 = self.osmdb.way( osm_way2 ).tags.get('name', "unnamed")
         
@@ -303,6 +311,23 @@ class StreetEndEvent:
         where = "on %s"%(street_name1)
         when = "about %s"%str(TimeHelpers.unix_to_localtime( vertex.payload.time, self.timezone_name ))
         geom = [osm_node_lon, osm_node_lat]
+        return NarrativeEvent(what,where,when,geom)
+        
+class GeomAtStreetEndEvent:
+    def __init__(self, timezone_name = "America/Los_Angeles"):
+        self.timezone_name = timezone_name
+        
+    @staticmethod
+    def applies_to(edge1, vertex, edge2):
+        # if edge1 is not a street and edge2 is
+        return (edge2 is None or not isinstance(edge2.payload, graphserver.core.Street)) and \
+               (edge1 and isinstance(edge1.payload, graphserver.core.Street))
+    
+    def __call__(self, edge1, vertex, edge2, context):        
+        what = "walk a bunch"
+        where = None
+        when = None
+        geom = context['streetgeom']
         return NarrativeEvent(what,where,when,geom)
         
 class StreetTurnEvent:
