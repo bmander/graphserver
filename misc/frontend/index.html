@@ -1,0 +1,261 @@
+<!DOCTYPE html "-//W3C//DTD XHTML 1.0 Strict//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+  <script type="text/javascript" src="data.js"></script>
+  <script type="text/javascript" src="jquery.js"></script>
+  <script type="text/javascript" src="json.js"></script>
+  <script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=ABQIAAAAIwTUwRn1Wh3A1FTvumsP6xSKP_-v8tMN_oD_UHydl5IHtM8_fhQGIdbBnyURGqck22iYk90fhYAfIQ&sensor=false"
+            type="text/javascript"></script>
+<script>
+var map;
+var data=null;
+var feature_overlay=null;
+
+    var origin = null;
+    var dest = null;
+    
+    var originmarker = null;
+    var destmarker = null;
+
+function describe_event(event) {
+  var event_details = event[1];
+
+  var ret = event_details.what
+  if( event_details.where ) {
+    ret += " at "+event_details.where
+  }
+  if( event_details.when ) {
+    ret += " at "+event_details.when
+  }
+  return ret
+}
+
+function geometry_is_linestring(geom) {
+  if(!geom){
+    return false;
+  }
+  
+  if(geom.length==0) {
+    return false;
+  }
+
+  if(geom[0].length==2) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+function geometry_to_polyline(geom, color) {
+    var polyline_contents = [];
+    for(i=0; i<geom.length;i++) {
+      polyline_contents.push( new GLatLng(geom[i][1],geom[i][0]) );
+    }
+    return new GPolyline( polyline_contents, color, 10 );
+}
+
+function show_geom(index) {
+  geom = data.narrative[index][1].geom;
+  if(!geom) {
+    return;
+  }
+  
+  if( feature_overlay ) { map.removeOverlay( feature_overlay ); }
+  
+  if( geometry_is_linestring( geom ) ) {
+    feature_overlay = geometry_to_polyline( geom, "#0000ff" )
+    map.addOverlay( feature_overlay );
+  
+    first_point = geom[0];
+    map.setCenter( new GLatLng(first_point[1], first_point[0]) );
+  } else {
+    var event_location = new GLatLng(geom[1], geom[0]);
+
+    feature_overlay = new GMarker( event_location );
+    map.addOverlay( feature_overlay );
+    map.setCenter( event_location );
+  }
+}
+
+function clear_markers() {
+  map.clearOverlays();
+  origin = null;
+  dest = null;
+
+  originmarker = null;
+  destmarker = null;
+
+}
+
+function draw_entire_path( narrative ){
+  map.clearOverlays();
+  map.addOverlay( originmarker );
+  map.addOverlay( destmarker );
+  
+
+
+  for(var i=0; i<narrative.length; i++) {
+    var color="#ff0000"
+    if( narrative[i][0]=="DescribeCrossingAtAlightEvent" ) {
+      color="#0000ff"
+    }
+  
+    geom = narrative[i][1].geom;
+    
+    if(geom!=null && geom!=undefined && geometry_is_linestring(geom)) {
+      map.addOverlay( geometry_to_polyline( geom, color ) );
+    }
+    //if(i==20){ break; }
+  }
+}
+
+function react_to_event_click(index) {
+  show_geom( index );
+  
+  $("#rawevent"+index).css("font-family", "monospace").css("padding", "10px").css("left", "10px").css("background-color", "#F0F0F0").html( JSON.stringify( data.narrative[index] ) );
+  $("#rawevent"+index).slideToggle();
+}
+
+function react_to_form_button() {
+  var apiurl = $("#apiuriinput")[0].value+"&jsoncallback=?";
+  $.getJSON( apiurl, react_to_data );
+}
+
+function react_to_data( apiresponse_data ) {
+  data = apiresponse_data;
+  
+  $("#apiresponse").html("");
+
+  for( i=0; i<data.narrative.length; i++) {
+    $("#apiresponse").append("<div id=\"event"+i+"\" style=\"margin-bottom:5px;background-color:#FAFAD2\" onclick=\"react_to_event_click("+i+");\">"+describe_event(data.narrative[i])+"<div id=\"rawevent"+i+"\"></div></div>");
+    $("#rawevent"+i).hide();
+  }
+  
+  draw_entire_path( data.narrative );
+  
+  $("#performance").html( JSON.stringify( data.performance ) );
+  
+}
+
+function react_to_bounding_box_data(bounding_box){
+  var sw = new GLatLng(  bounding_box[1], bounding_box[0] );
+  var ne = new GLatLng( bounding_box[3], bounding_box[2] );
+  var gmap_bounds = new GLatLngBounds( sw, ne );
+  var center = gmap_bounds.getCenter();
+  var zoom = map.getZoom( gmap_bounds );
+    
+  map.setCenter( center, 10 );
+}
+
+function get_and_display_route(origin, dest) {
+  var hostname = $("#host")[0].value;
+  var timeinput = $("#time")[0].value;
+  var walkingspeed = $("#walkingspeed")[0].value;
+  var transferpenalty = $("#transferpenalty")[0].value;
+  var hillreluctance = $("#hillreluctance")[0].value;
+  var turnpenalty = $("#turnpenalty")[0].value;
+  var walkingreluctance = $("#walkingreluctance")[0].value;
+  var maxwalk = $("#maxwalk")[0].value;
+
+  var apiurl = hostname+"geompath?lat1="+origin.lat()+"&lon1="+origin.lng()+"&lat2="+dest.lat()+"&lon2="+dest.lng()+"&currtime="+timeinput+"&walking_speed="+walkingspeed+"&transfer_penalty="+transferpenalty+"&hill_reluctance="+hillreluctance+"&turn_penalty="+turnpenalty+"&walking_reluctance="+walkingreluctance+"&max_walk="+maxwalk+"&jsoncallback=?";
+  $("#apiurl").html("api url: <a href='"+apiurl+"'>"+apiurl+"</a>");
+  $.getJSON( apiurl, react_to_data );
+}
+
+function set_map_to_host_bounding_box() {
+  var hostname = $("#host")[0].value;
+  var apiurl = hostname+"bounds?jsoncallback=?"
+  $.getJSON( apiurl, react_to_bounding_box_data );
+}
+
+$(document).ready(function(){
+      if (GBrowserIsCompatible()) {
+        map = new GMap2(document.getElementById("map_canvas"));
+        map.setCenter(new GLatLng(37.4419, -122.1419));
+        map.setUIToDefault();
+      }
+
+        GEvent.addListener(map, "click", function(overlay, latlng) {
+          if( origin == null ) {
+            origin = latlng;
+            originmarker = new GMarker(latlng, {draggable: true});
+            //GEvent.addListener(originmarker, "drag", function() {
+            //  get_and_display_route( originmarker.getLatLng(), destmarker.getLatLng() );
+            //});
+            GEvent.addListener(originmarker, "dragend", function() {
+              get_and_display_route( originmarker.getLatLng(), destmarker.getLatLng() );
+            });
+            map.addOverlay(originmarker);
+          } else {
+            dest = latlng;
+            if( destmarker == null ) {
+              destmarker = new GMarker(latlng, {draggable: true});
+              //GEvent.addListener(destmarker, "drag", function() {
+              //  get_and_display_route( originmarker.getLatLng(), destmarker.getLatLng() );
+              //});
+              GEvent.addListener(destmarker, "dragend", function() {
+                get_and_display_route( originmarker.getLatLng(), destmarker.getLatLng() );
+              });
+              map.addOverlay( destmarker );
+            } else {
+              destmarker.setLatLng( latlng );
+            }
+ 
+            get_and_display_route( origin, dest );
+ 
+          }
+        });
+        
+    set_map_to_host_bounding_box();
+ });
+
+</script>
+</head>
+<body>
+<h1>graphserver api explorer</h1>
+<table style="width:100%">
+  <tbody style="">
+    <tr>
+      <td colspan=2>
+        <div style="background-color:#FFFF11">
+          click once for origin. click again for destination. drag markers to re-route. click on the events on the left to see the raw api json.
+        </div>
+        <div>
+          <form onsubmit="get_and_display_route( originmarker.getLatLng(), destmarker.getLatLng() );return false;">
+            host<select id="host" name="host" onchange="clear_markers();set_map_to_host_bounding_box();">
+              <option value="http://localhost:8080/island/" selected>island</option>
+              <option value="http://localhost:8080/redding/">redding</option>
+            </select>
+            timestamp<input id="time" type="text" value="1262653200"></input>
+            walking speed<input id="walkingspeed" type="text" value="5.0"></input>
+            transfer penalty<input id="transferpenalty" type="text" value="300"></input><br>
+            hill reluctance<input id="hillreluctance" type="text" value="5"</input>
+            turn penalty<input id="turnpenalty" type="text" value="5"</input>
+            walking reluctance<input id="walkingreluctance" type="text" value="1.2"></input>
+            max walk<input id="maxwalk" type="text" value="40000"></input>
+            <input type="submit"></input>
+          </form>
+        </div>
+        <div id="apiurl">
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td style="width:500px">
+        <div id="apiresponse" style="height:700px;overflow:scroll"></div>
+      </td>
+      <td>
+        <div id="map_canvas" style="height:700px"></div>
+      </td>
+    </tr>
+    <tr>
+      <td colspan=2>
+        <div id="performance">performance goes here</div>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</body>
+</html>
