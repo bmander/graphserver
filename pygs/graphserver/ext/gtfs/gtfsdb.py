@@ -454,9 +454,9 @@ class GTFSDatabase:
         t_min, t_max = list(self.execute( query, (trip_id, stop_sequence1, stop_sequence2) ))[0]
         
         if t_min is None or \
-           ( hasattr(t_min,strip) and t_min.strip()=="" ) or \
+           ( hasattr(t_min,"strip") and t_min.strip()=="" ) or \
            t_max is None or \
-           ( hasattr(t_max,strip) and t_max.strip()=="" ) :
+           ( hasattr(t_max,"strip") and t_max.strip()=="" ) :
             return self.shape_from_stops( trip_id, stop_sequence1, stop_sequence2 )
                 
         ret = []
