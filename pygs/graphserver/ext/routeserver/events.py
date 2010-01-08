@@ -315,7 +315,7 @@ class StreetEndEvent:
         osm_id = vertex.label.split("-")[1]
         osm_node_id, osm_node_tags, osm_node_lat, osm_node_lon, osm_node_refcount = self.osmdb.node( osm_id )
         
-        average_speed = context['sumlength']/(vertex.payload.time-context['lastturntime'])
+        average_speed = context['sumlength']/(vertex.payload.time-context['lastturntime']) if vertex.payload.time-context['lastturntime']>0 else None
         what = "arrive walking after %dm, %0.1f rise, %0.1f fall (%0.1fm/s)"%(context['sumlength'], context['sumrise'], context['sumfall'], average_speed)
         where = "on %s"%(street_name1)
         when = "about %s"%str(TimeHelpers.unix_to_localtime( vertex.payload.time, self.timezone_name ))
@@ -382,7 +382,7 @@ class StreetTurnEvent:
         
         osm_node_id, osm_node_tags, osm_node_lat, osm_node_lon, osm_node_refcount = self.osmdb.node( osm_id )
         
-        average_speed = context['sumlength']/(vertex.payload.time-context['lastturntime'])
+        average_speed = context['sumlength']/(vertex.payload.time-context['lastturntime']) if vertex.payload.time-context['lastturntime']>0 else None
         what = "%s onto %s after %dm, %0.1fm rise, %0.1fm fall (%0.1fm/s)"%(direction, street_name2, context['sumlength'], context['sumrise'], context['sumfall'], average_speed)
         where = "%s & %s"%(street_name1, street_name2)
         when = "about %s"%str(TimeHelpers.unix_to_localtime( vertex.payload.time, self.timezone_name ))
