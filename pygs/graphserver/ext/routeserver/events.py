@@ -156,6 +156,10 @@ class StreetEvent:
             context['streetgeom'].extend( geometry_chunk )
         else:
             context['streetgeom'].extend( reversed( geometry_chunk ) )
+            
+        context['sumlength'] += edge.payload.length
+        context['sumrise'] += edge.payload.rise
+        context['sumfall'] += edge.payload.fall
         
         return None
         
@@ -268,6 +272,9 @@ class StreetStartEvent:
     
     def __call__(self, edge1, vertex, edge2, context):
         context['streetgeom'] = []
+        context['sumlength'] = 0
+        context['sumrise'] = 0
+        context['sumfall'] = 0
         
         osm_way2 = edge2.payload.name.split("-")[0]
         street_name2 = self.osmdb.way( osm_way2 ).tags.get('name', "unnamed")
@@ -307,7 +314,7 @@ class StreetEndEvent:
         osm_id = vertex.label.split("-")[1]
         osm_node_id, osm_node_tags, osm_node_lat, osm_node_lon, osm_node_refcount = self.osmdb.node( osm_id )
         
-        what = "arrive walking"
+        what = "arrive walking after %dm, %0.1f rise, %0.1f fall"%(context['sumlength'], context['sumrise'], context['sumfall'])
         where = "on %s"%(street_name1)
         when = "about %s"%str(TimeHelpers.unix_to_localtime( vertex.payload.time, self.timezone_name ))
         geom = [osm_node_lon, osm_node_lat]
@@ -341,6 +348,9 @@ class StreetTurnEvent:
                and edge1.payload.way != edge2.payload.way
     
     def __call__(self, edge1, vertex, edge2, context):
+        
+
+        
         osm_id = vertex.label.split("-")[1]
         
         # figure out which direction to turn
@@ -372,10 +382,14 @@ class StreetTurnEvent:
         
         osm_node_id, osm_node_tags, osm_node_lat, osm_node_lon, osm_node_refcount = self.osmdb.node( osm_id )
         
-        what = "%s onto %s"%(direction, street_name2)
+        what = "%s onto %s after %dm, %0.1fm rise, %0.1fm fall"%(direction, street_name2, context['sumlength'], context['sumrise'], context['sumfall'])
         where = "%s & %s"%(street_name1, street_name2)
         when = "about %s"%str(TimeHelpers.unix_to_localtime( vertex.payload.time, self.timezone_name ))
         geom = (osm_node_lon, osm_node_lat)
+        
+        context['sumlength'] = 0
+        context['sumrise'] = 0
+        context['sumfall'] = 0
         return NarrativeEvent(what,where,when,geom)
     
 class AllVertexEvent:
