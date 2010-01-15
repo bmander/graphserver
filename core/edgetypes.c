@@ -9,13 +9,19 @@ woNew() {
     WalkOptions* ret = (WalkOptions*)malloc( sizeof(WalkOptions) );
     ret->transfer_penalty = 0;
     ret->turn_penalty = 0;
-    ret->walking_speed = 0.85; //meters per second
+    ret->walking_speed = 6.07; //meters per second
     ret->walking_reluctance = 1;
-    ret->uphill_slowness = 0.08; //Factor by which someone's speed is slowed going uphill. A 15 mph rider on a flat will climb at 1.2 mph, for example.
-    ret->downhill_fastness = 1.96; // s/m. Number of seconds regained for every foot dropped. 10 feet dropped will gain you six seconds.
-    ret->hill_reluctance = 1.5; //Factor by which an uphill stretch is penalized, in addition to whatever time is lost by simply gaining.
+    ret->uphill_slowness = 0.05; //Factor by which someone's speed is slowed going uphill.
+    ret->downhill_fastness = -12.1; // meters per second per grade percentage
+    ret->phase_change_grade = 0.045; // Grade. An interesting thing happens at a particular grade, when they settle in for a long slog.
+    ret->hill_reluctance = 0; //Factor by which an uphill stretch is penalized, in addition to whatever time is lost by simply gaining.
     ret->max_walk = 10000; //meters
     ret->walking_overage = 0.1;
+    
+    // velocity between 0 grade and the phase change grade is Ax^2+Bx+C, where A is the phase_change_velocity_factor, B is the downhill fastness, and C is the average speed
+    float phase_change_speed = (ret->uphill_slowness*ret->walking_speed)/(ret->uphill_slowness+ret->phase_change_grade);
+    ret->phase_change_velocity_factor = (phase_change_speed - ret->downhill_fastness*ret->phase_change_grade - ret->walking_speed)/(ret->phase_change_grade*ret->phase_change_grade);
+        
     return ret;
 }
 

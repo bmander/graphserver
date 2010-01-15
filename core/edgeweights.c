@@ -102,6 +102,19 @@ waitWalkBack(EdgePayload* superthis, State* state, WalkOptions* options) {
 }
 #endif
 
+#ifndef EDGEWEIGHTS_FIRSTTHROUGH
+#define EDGEWEIGHTS_FIRSTTHROUGH 1
+float speed_from_grade(WalkOptions* options, float grade) {
+  if( grade <= 0 ) {
+      return options->downhill_fastness*grade + options->walking_speed;
+  } else if( grade <= options->phase_change_grade ) {
+      return options->phase_change_velocity_factor*grade*grade + options->downhill_fastness*grade + options->walking_speed;
+  } else {
+      return (options->uphill_slowness*options->walking_speed)/(options->uphill_slowness+grade);
+  }
+}
+#endif
+
 inline State*
 #ifndef ROUTE_REVERSE
 streetWalk(EdgePayload* superthis, State* state, WalkOptions* options) {
@@ -110,23 +123,13 @@ streetWalkBack(EdgePayload* superthis, State* state, WalkOptions* options) {
 #endif
   Street* this = (Street*)superthis;
   State* ret = stateDup( state );
-
-  // Elevation considerations
-  long t_horiz = (long)(this->length/options->walking_speed);
-#ifndef ROUTE_REVERSE
-  long t_up = (long)(this->rise/(options->walking_speed*options->uphill_slowness));
-  long t_down = (long)(this->fall*options->downhill_fastness);
-#else
-  long t_up = (long)(this->fall/(options->walking_speed*options->uphill_slowness));
-  long t_down = (long)(this->rise*options->downhill_fastness);
-#endif
-    
-  long delta_t = t_horiz + t_up - t_down;
-  if( delta_t < 0 ) {
-      delta_t = 0;
-  }
-    
-  long delta_w = t_horiz*options->walking_reluctance + t_up*options->hill_reluctance - t_down;
+  
+  float average_grade = (this->rise-this->fall)/this->length;
+  float average_speed = speed_from_grade(options, average_grade);
+  
+  long delta_t = this->length / average_speed;
+  
+  long delta_w = delta_t*options->walking_reluctance + this->rise*options->hill_reluctance;
   if( delta_w < 0 ) {
       delta_w = 0;
   }

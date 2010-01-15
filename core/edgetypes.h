@@ -35,10 +35,13 @@ typedef struct WalkOptions {
     float walking_reluctance;
     float uphill_slowness;
     float downhill_fastness;
+    float phase_change_grade;
     float hill_reluctance;    
     int max_walk;
     float walking_overage;
     int turn_penalty;
+    
+    float phase_change_velocity_factor;
 } WalkOptions;
 
 WalkOptions*
