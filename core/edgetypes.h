@@ -95,6 +95,10 @@ typedef struct State {
    int           stop_sequence;
    int           n_agencies;
    ServicePeriod** service_periods;
+   struct State*   next;
+   struct Vertex*  owner;
+   struct Edge*    back_edge;
+   struct State*   back_state;
 } State;
 
 State*

@@ -11,28 +11,32 @@ dirfibheap_new(long initSize)
 }
 
 fibnode_t
-dirfibheap_insert_or_dec_key( dirfibheap_t self, Vertex* vtx, fibheapkey_t priority )
+dirfibheap_insert_or_dec_key( dirfibheap_t self, State* s, fibheapkey_t priority )
 {
-  char* key = vtx->label;
+  // concatenating vertex label and time gives unique key
+  char key[255];
+  sprintf(key, "%s__%ld", s->owner->label, s->time);  
   
   fibnode_t fibnode = hashtable_search( self->dir, key );
 
   if( fibnode ) {
     fibheap_replace_key( self->heap, fibnode, priority );
   } else {
-    fibnode = fibheap_insert( self->heap, priority, (void*)vtx );
+    fibnode = fibheap_insert( self->heap, priority, (void*)s );
     hashtable_insert_string(self->dir, key, fibnode);
-
   }
   return fibnode;
 }
 
-Vertex*
+State*
 dirfibheap_extract_min( dirfibheap_t self )
 {
-  Vertex* best = (Vertex*)fibheap_extract_min( self->heap );
-  if(best) 
-    hashtable_remove(self->dir, best->label);
+  State* best = (State*)fibheap_extract_min( self->heap );
+  if(best) {
+      char key[255];
+      sprintf(key, "%s__%ld", best->owner->label, best->time);  
+      hashtable_remove(self->dir, key);
+  }
   return best;
 }
 
@@ -52,4 +56,21 @@ dirfibheap_delete( dirfibheap_t self )
   hashtable_destroy( self->dir, 0 ); //do not delete values in queue
   fibheap_delete( self->heap );
   free( self );
+}
+
+void
+dirfibheap_delete_node( dirfibheap_t self, State* s )
+{
+    char key[255];
+    sprintf(key, "%s__%ld", s->owner->label, s->time);
+    // DEBUG 
+    // printf("key: %s\n", key);
+    fibnode_t fibnode = hashtable_search( self->dir, key );
+    if (fibnode) {
+        fibheap_delete_node(self->heap, fibnode);
+        hashtable_remove(self->dir, key);
+    } else {
+        // DEBUG 
+        // printf("No fibnode found. State is not in queue directory.\n");
+    }
 }

@@ -127,7 +127,11 @@ stateNew(int n_agencies, long time) {
   ret->prev_edge = NULL;
   ret->n_agencies = n_agencies;
   ret->service_periods = (ServicePeriod**)malloc(n_agencies*sizeof(ServicePeriod*)); //hash of strings->calendardays
-
+  ret->next = NULL;
+  ret->owner = NULL; 
+  ret->back_edge = NULL;
+  ret->back_state = NULL;
+    
   int i;
   for(i=0; i<n_agencies; i++) {
       ret->service_periods[i] = NULL;
@@ -821,7 +825,7 @@ tbWalk( EdgePayload* superthis, State* state, WalkOptions* options ) {
     int next_boarding_time = this->departs[next_boarding_index];
     int wait = (next_boarding_time - time_since_midnight);
     
-    ret->time   += wait;
+    ret->time   += wait + 1; //to correctly order the priority queue = KLUDGE
     ret->weight += wait + 1; //base transfer penalty
     ret->weight += options->transfer_penalty;
     
@@ -972,7 +976,7 @@ hbWalk( EdgePayload* superthis, State* state, WalkOptions* options ) {
     if (time_since_midnight < this->start_time )
         wait += (this->start_time - time_since_midnight);
     
-    ret->time   += wait;
+    ret->time   += wait + 1; //to correctly order the priority queue = KLUDGE
     ret->weight += wait + 1; //transfer penalty
     ret->weight += options->transfer_penalty;
     
