@@ -270,6 +270,29 @@ class State(CShadow):
         
         self._cdel(self.soul)
         self.soul = None
+             
+    @property
+    def owner(self):
+        return self._cowner(self.soul)
+
+    @property
+    def back_edge(self):
+        return self._cback_edge(self.soul)
+        
+    @property
+    def back_state(self):
+        return self._cback_state(self.soul)  
+        
+    @property
+    def path(self):
+        s = self
+        ret = []
+        while s:
+            ret.append( (s.back_edge, s.owner, s) )
+            s = s.back_state
+        
+        ret.reverse
+        return ret
     
     def __copy__(self):
         self.check_destroyed()
@@ -1434,6 +1457,10 @@ State._cnew = lgs.stateNew
 State._cdel = lgs.stateDestroy
 State._ccopy = ccast(lgs.stateDup, State)
 State._cnext = ccast(lgs.stateNext, State)
+State._cowner = ccast(lgs.stateOwner, Vertex)
+
+State._cback_edge  = ccast(lgs.stateBackEdge,  Edge)
+State._cback_state = ccast(lgs.stateBackState, State)
 
 ListNode._cdata = ccast(lgs.liGetData, Edge)
 ListNode._cnext = ccast(lgs.liGetNext, ListNode)

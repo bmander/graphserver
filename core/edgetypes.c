@@ -161,6 +161,15 @@ stateDestroy(State* this) {
 State*
 stateNext( State* this ) { return this->next; }
 
+struct Vertex*
+stateOwner( State* this ) { return this->owner; }
+
+struct Edge*
+stateBackEdge( State* this ) { return this->back_edge; }
+
+State*
+stateBackState( State* this ) { return this->back_state; }
+
 long
 stateGetTime( State* this ) { return this->time; }
 

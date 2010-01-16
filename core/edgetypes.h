@@ -113,6 +113,15 @@ stateDup( State* this );
 State*
 stateNext( State* this );
 
+struct Vertex*
+stateOwner( State* this );
+
+struct Edge*
+stateBackEdge( State* this );
+
+State*
+stateBackState( State* this );
+
 long
 stateGetTime( State* this );
 
