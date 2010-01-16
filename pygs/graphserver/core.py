@@ -291,9 +291,20 @@ class State(CShadow):
             ret.append( (s.back_edge, s.owner, s) )
             s = s.back_state
         
-        ret.reverse
+        ret.reverse()
         return ret
-    
+        
+    def narrate(self):
+        import time
+        p = self.path
+        for e, v, s in p:
+            if e:
+                #print e.payload
+                pass
+            else:
+                print "PATH ORIGIN"
+            print "%25s %s Weight: %5d Walk: %4dm Vehicles: %d" % (v.label, time.ctime(s.time), s.weight, s.dist_walked, s.num_transfers)
+            
     def __copy__(self):
         self.check_destroyed()
         
@@ -1458,7 +1469,6 @@ State._cdel = lgs.stateDestroy
 State._ccopy = ccast(lgs.stateDup, State)
 State._cnext = ccast(lgs.stateNext, State)
 State._cowner = ccast(lgs.stateOwner, Vertex)
-
 State._cback_edge  = ccast(lgs.stateBackEdge,  Edge)
 State._cback_state = ccast(lgs.stateBackState, State)
 
