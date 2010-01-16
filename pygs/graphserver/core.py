@@ -280,7 +280,11 @@ class State(CShadow):
         self.check_destroyed()
         
         return self.__copy__()
-    
+       
+    def _next(self):
+        self.check_destroyed()
+        return self._cnext(self.soul)
+
     def __str__(self):
         self.check_destroyed()
         
@@ -386,6 +390,26 @@ class Vertex(CShadow):
         self.check_destroyed()
         return self._cpayload(self.soul)
 
+    @property
+    def states(self):
+        self.check_destroyed()
+        ret = []
+        s = self.payload
+        while s :
+            ret.append(s)
+            s = s._next()
+        return ret
+
+    @property
+    def best_state(self):
+        self.check_destroyed()
+        state_list = self.states
+        if len(state_list) > 0:
+            state_list.sort(key=lambda x:x.weight)
+            return state_list[0]
+        else:
+            return None
+            
     def _edges(self, method, index = -1):
         self.check_destroyed()
         e = []
@@ -1409,6 +1433,7 @@ Timezone._cdel = lgs.tzDestroy
 State._cnew = lgs.stateNew
 State._cdel = lgs.stateDestroy
 State._ccopy = ccast(lgs.stateDup, State)
+State._cnext = ccast(lgs.stateNext, State)
 
 ListNode._cdata = ccast(lgs.liGetData, Edge)
 ListNode._cnext = ccast(lgs.liGetNext, ListNode)

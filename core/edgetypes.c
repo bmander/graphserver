@@ -158,6 +158,9 @@ stateDestroy(State* this) {
   free( this );
 }
 
+State*
+stateNext( State* this ) { return this->next; }
+
 long
 stateGetTime( State* this ) { return this->time; }
 

@@ -110,6 +110,9 @@ stateDestroy( State* this);
 State*
 stateDup( State* this );
 
+State*
+stateNext( State* this );
+
 long
 stateGetTime( State* this );
 
