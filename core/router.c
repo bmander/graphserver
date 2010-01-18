@@ -114,7 +114,8 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
                 // DEBUG
                 // printf("Comp State: %ld %ld\n", dv->time, dv->weight);
                 
-                if (new_dv->weight >= dv->weight && new_dv->time >= dv->time) { // old is better in all respects
+                //if (new_dv->weight >= dv->weight && new_dv->time >= dv->time) { // old is better in all respects
+                if (new_dv->weight >= dv->weight && new_dv->time >= dv->time && new_dv->num_transfers >= dv->num_transfers && new_dv->dist_walked >= dv->dist_walked) { // new is better in all respects
                     // DEBUG
                     // printf("New state is worse. Abandoning.\n");
                     stateDestroy(new_dv); // new_dv will never be used; merge it with the infinite.
@@ -123,7 +124,8 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
                 }
                 // new state has already been discarded if it is equal in all respects to old.
                 // equality here ensures uniqueness of times and weights in a state list.
-                if (new_dv->weight <= dv->weight && new_dv->time <= dv->time) { // new is better in all respects
+                // if (new_dv->weight <= dv->weight && new_dv->time <= dv->time) { // new is better in all respects
+                if (new_dv->weight <= dv->weight && new_dv->time <= dv->time && new_dv->num_transfers <= dv->num_transfers && new_dv->dist_walked <= dv->dist_walked) { // new is better in all respects
                     // DEBUG
                     // printf("New state is better. Deleting old.\n");
                     // remove the old state from the linked list
