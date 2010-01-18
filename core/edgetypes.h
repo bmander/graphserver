@@ -99,6 +99,7 @@ typedef struct State {
    struct Vertex*  owner;
    struct Edge*    back_edge;
    struct State*   back_state;
+   struct fibnode* queue_node;
 } State;
 
 State*

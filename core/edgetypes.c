@@ -131,6 +131,7 @@ stateNew(int n_agencies, long time) {
   ret->owner = NULL; 
   ret->back_edge = NULL;
   ret->back_state = NULL;
+  ret->queue_node = NULL;
     
   int i;
   for(i=0; i<n_agencies; i++) {

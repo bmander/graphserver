@@ -1,5 +1,6 @@
 #include "graph.h"
-#include "dirfibheap.h"
+#include "fibheap.h"
+//#include "dirfibheap.h"
 
 //GRAPH FUNCTIONS
 

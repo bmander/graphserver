@@ -35,16 +35,17 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
     init_state->owner = origin_v;
     origin_v->payload = init_state;
     //Priority Queue
-    dirfibheap_t q = dirfibheap_new( gSize( this ) );
-    dirfibheap_insert_or_dec_key( q, init_state, 0 );
+    fibheap_t q = fibheap_new();
+    fibheap_insert( q, 0, init_state );
         
     /*
      *  CENTRAL ITERATION
      *
      */
         
-    while( !dirfibheap_empty( q ) ) {              //Until the priority queue is empty:
-        du = dirfibheap_extract_min( q );
+    while( !fibheap_empty( q ) ) {              //Until the priority queue is empty:
+        du = fibheap_extract_min( q );
+        du->queue_node = NULL;
         //    if( !strcmp( u->label, target ) )    //(end search if reached destination vertex)
         //      break;
         spt_u = du->owner; 
@@ -140,7 +141,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
                     }
                     // DEBUG
                     // printf("Dequeueing.\n");
-                    dirfibheap_delete_node(q, dv); // dequeue the old state. func must handle case where state is not in queue.
+                    if (dv->queue_node) fibheap_delete_node(q, dv->queue_node); // dequeue the old state.
                     State* temp = dv;
                     // prev_dv = prev_dv; // because current dv has been deleted
                     dv = dv->next;
@@ -161,7 +162,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
                 new_dv->owner = spt_v;
                 new_dv->back_edge = edge;
                 new_dv->back_state = du;
-                dirfibheap_insert_or_dec_key( q, new_dv, new_dv->time );    // rekey v in the priority queue
+                new_dv->queue_node = fibheap_insert( q, new_dv->time, new_dv );    // put dv in the priority queue
             }
             /* DEBUG
             State* dv_disp = spt_v->payload;
@@ -178,7 +179,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
         }
     }
     
-    dirfibheap_delete( q );
+    fibheap_delete( q );
     
     /* DEBUG
     fprintf(stdout, "Final shortest path tree size: %d\n",count);
