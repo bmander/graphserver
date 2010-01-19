@@ -444,6 +444,11 @@ class Vertex(CShadow):
         else:
             return None
             
+    @property
+    def bounding_state(self):
+        self.check_destroyed()
+        return self._cbounding_state(self.soul)
+
     def _edges(self, method, index = -1):
         self.check_destroyed()
         e = []
@@ -1436,6 +1441,7 @@ Vertex._cdel = lgs.vDestroy
 Vertex._coutgoing_edges = ccast(lgs.vGetOutgoingEdgeList, ListNode)
 Vertex._cincoming_edges = ccast(lgs.vGetIncomingEdgeList, ListNode)
 Vertex._cpayload = ccast(lgs.vPayload, State)
+Vertex._cbounding_state = ccast(lgs.vBoundingState, State)
 
 Edge._cnew = lgs.eNew
 Edge._cfrom_v = ccast(lgs.eGetFrom, Vertex)

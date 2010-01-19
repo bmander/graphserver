@@ -49,6 +49,11 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
         //    if( !strcmp( u->label, target ) )    //(end search if reached destination vertex)
         //      break;
         spt_u = du->owner; 
+        /*
+        if (strcmp(spt_u->label, target) == 0 && spt_u->bounding_state == NULL) {
+            gDijkstraBounds( this, spt, to, du, options );
+        }
+         */
         u = gGetVertex( this, spt_u->label );
         // DEBUG
         // printf("got state. %s %ld\n", spt_u->label, du->time);
@@ -111,16 +116,24 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
                 continue;
             }
             
-            
             if (spt_v) {
+                // Abandon paths that arrive after time upper bounds
+                /*
+                if ( spt_v->bounding_state && spt_v->bounding_state->time < new_dv->time ) {
+                    // DEBUG
+                    // printf("pruning based on bounding state.\n");
+                    edges = edges->next;
+                    continue;
+                }
+                 */
                 dv = spt_v->payload;
                 State* prev_dv = NULL;
                 while ( dv ) {
                     // DEBUG
                     // printf("Comp State: %ld %ld\n", dv->time, dv->weight);
                     
-                    //if (new_dv->weight >= dv->weight && new_dv->time >= dv->time) { // old is better in all respects
-                    if (new_dv->weight >= dv->weight && new_dv->time >= dv->time && new_dv->num_transfers >= dv->num_transfers && new_dv->dist_walked >= dv->dist_walked) { // new is better in all respects
+                    if (new_dv->weight >= dv->weight && new_dv->time >= dv->time) { // old is better in all respects
+                    //if (new_dv->weight >= dv->weight && new_dv->time >= dv->time && new_dv->num_transfers >= dv->num_transfers && new_dv->dist_walked >= dv->dist_walked) { // new is better in all respects
                         // DEBUG
                         // printf("New state is worse. Abandoning.\n");
                         stateDestroy(new_dv); // new_dv will never be used; merge it with the infinite.
@@ -129,8 +142,8 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
                     }
                     // new state has already been discarded if it is equal in all respects to old.
                     // equality here ensures uniqueness of times and weights in a state list.
-                    // if (new_dv->weight <= dv->weight && new_dv->time <= dv->time) { // new is better in all respects
-                    if (new_dv->weight <= dv->weight && new_dv->time <= dv->time && new_dv->num_transfers <= dv->num_transfers && new_dv->dist_walked <= dv->dist_walked) { // new is better in all respects
+                    if (new_dv->weight <= dv->weight && new_dv->time <= dv->time) { // new is better in all respects
+                    //if (new_dv->weight <= dv->weight && new_dv->time <= dv->time && new_dv->num_transfers <= dv->num_transfers && new_dv->dist_walked <= dv->dist_walked) { // new is better in all respects
                         // DEBUG
                         // printf("New state is better. Deleting old.\n");
                         // remove the old state from the linked list
@@ -208,3 +221,116 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
     */ 
     return spt;
 }
+    
+
+#ifndef RETRO    
+void
+gDijkstraBounds( Graph* this, Graph* spt, char* to, State* init_state, WalkOptions* options ) { 
+// it's not called retro, but it does a retro sub-search!     
+// operate on an spt, not original graph. that way you don't have to init all the bounding state pointers.
+// absence of a node could also indicate it's uselessness (i.e. visit time earlier than outer search's departure time.
+#else    
+void
+gDijkstraBoundsRetro( Graph* this, Graph* spt, char* to, State* init_state, WalkOptions* options ) { // placeholder            
+#endif
+    
+    printf("Dijkstra bounding.\n");
+    
+    /*
+     *  VARIABLE SETUP
+     */
+    //Iteration Variables
+    Vertex *u, *v, *origin_v;
+    Vertex *spt_u, *spt_v;
+    State *du, *dv;
+    
+    //Goal Variables
+    //change for retro
+    char* origin = to;
+        
+    //Return Tree
+    origin_v = gGetVertex( spt, origin );
+    origin_v->bounding_state = stateNew(init_state->n_agencies, init_state->weight); // yes, that's supposed to say weight
+    origin_v->bounding_state->owner = origin_v; 
+    
+    //Priority Queue
+    fibheap_t q = fibheap_new();
+    fibheap_insert( q, 0, origin_v->bounding_state );
+    
+    /*
+     *  CENTRAL ITERATION
+     *
+     */
+    
+    while( !fibheap_empty( q ) ) {                  //Until the priority queue is empty:
+        du = fibheap_extract_min( q );
+        du->queue_node = NULL;
+        spt_u = du->owner;             
+        u = gGetVertex( this, spt_u->label );
+        //printf("at vertex %s time %ld.\n", spt_u->label, du->time); 
+        
+        //change for retro
+        //if( du->time < mintime )
+        //    break;
+        
+        //change for retro
+        ListNode* edges = vGetIncomingEdgeList( u );
+
+        while( edges ) {                                 //For each Edge 'edge' connecting u
+            Edge* edge = edges->data;
+
+            // change for retro
+            v = edge->from;
+            //printf("edge from %s.\n", v->label);
+            long old_w;
+            spt_v = gGetVertex( spt, v->label );
+            if( spt_v ) {
+                dv = (State*)spt_v->bounding_state; 
+                if (dv) old_w = init_state->weight - dv->time;   // yes, that's supposed to say weight
+                else old_w = INFINITY;
+            } else {
+                dv = NULL;                                       //which may not exist yet
+                old_w = INFINITY;
+            }
+            
+            // change for retro
+            State *new_dv = eWalkBack( edge, du, options );
+            
+            // When an edge leads nowhere (as indicated by returning NULL), the iteration is over.
+            if( !new_dv ) {
+                edges = edges->next;
+                continue;
+            }
+            
+            long new_w = init_state->weight - new_dv->time; // yes, that's supposed to say weight
+            // If the new way of getting there is better,
+            //printf("new_w = %ld, old_w = %ld.\n", new_w, old_w);
+            if( new_w < old_w ) {
+                // If this is the first time v has been reached
+                if( !spt_v ) {
+                    spt_v = gAddVertex( spt, v->label );
+                }
+                if( dv ) {
+                    if (dv->queue_node) {
+                        new_dv->queue_node = dv->queue_node;
+                        fibheap_replace_key_data ( q, dv->queue_node, new_w, new_dv);
+                    } else {
+                        new_dv->queue_node = fibheap_insert( q, new_w, new_dv );                
+                    }
+                    stateDestroy(dv);
+                } else {
+                    new_dv->queue_node = fibheap_insert( q, new_w, new_dv );                
+                }
+                spt_v->bounding_state = new_dv;                      //Set the State of v in the SPT to the current winner
+                new_dv->owner=spt_v;
+            } else {
+                stateDestroy(new_dv); //new_dv will never be used; merge it with the infinite.
+            }
+            
+            edges = edges->next;
+        }
+    }
+    
+    fibheap_delete( q );
+}
+

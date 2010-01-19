@@ -38,6 +38,7 @@ struct Vertex {
    ListNode* incoming;
    char* label;
    State* payload;
+   State* bounding_state;
 } ;
 
 struct Edge {
@@ -98,6 +99,11 @@ gSetThicknesses( Graph* this, char *root_label );
 void
 gSetVertexEnabled( Graph *this, char *label, int enabled );
 
+void
+gDijkstraBounds( Graph* this, Graph* spt, char* to, State* init_state, WalkOptions* options );
+
+void
+gDijkstraBoundsRetro( Graph* this, Graph* spt, char* to, State* init_state, WalkOptions* options ); // placeholder            
 
 //VERTEX FUNCTIONS
 
@@ -139,6 +145,9 @@ vDegreeIn( Vertex* this );
 
 State*
 vPayload( Vertex* this );
+
+State*
+vBoundingState( Vertex* this );
 
 //EDGE FUNCTIONS
 

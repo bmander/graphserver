@@ -290,7 +290,7 @@ vNew( char* label ) {
     this->outgoing = liNew( NULL ) ;
     this->incoming = liNew( NULL ) ;
     this->payload = NULL;
-
+    this->bounding_state = NULL;
     size_t labelsize = strlen(label)+1;
     this->label = (char*)malloc(labelsize*sizeof(char));
     strcpy(this->label, label);
@@ -390,6 +390,11 @@ vDegreeIn( Vertex* this ) {
 State*
 vPayload( Vertex* this ) {
 	return this->payload;
+}
+
+State*
+vBoundingState( Vertex* this ) {
+	return this->bounding_state;
 }
 
 long
