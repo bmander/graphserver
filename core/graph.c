@@ -300,9 +300,15 @@ vNew( char* label ) {
 
 void
 vDestroy(Vertex *this, int free_vertex_payload, int free_edge_payloads) {
-    if( free_vertex_payload && this->payload )
-      stateDestroy( this->payload );
-
+    if( free_vertex_payload ) {
+        State *s = this->payload;
+        while (s) {
+            State *tmp = s;
+            s = s->next;
+            stateDestroy( tmp );
+        }
+    }
+    
     //delete incoming edges
     while(this->incoming->next != NULL) {
       eDestroy( this->incoming->next->data, free_edge_payloads );
