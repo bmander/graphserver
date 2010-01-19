@@ -98,7 +98,7 @@ gVertices( Graph* this, long* num_vertices ) {
   *num_vertices = nn;
   return ret;
 }
-
+             
 long
 set_spt_edge_thickness( Edge* edge ) {
     long thickness = edge->to->payload->weight - edge->from->payload->weight;
@@ -298,16 +298,21 @@ vNew( char* label ) {
     return this ;
 }
 
+// Frees the entire list of payload states
+// For use in both vertex destruction and in-place spt preparation
+void
+vFreePayload(Vertex *this) {
+    State *s = this->payload;
+    while (s) {
+        State *tmp = s;
+        s = s->next;
+        stateDestroy( tmp );
+    }
+}
+
 void
 vDestroy(Vertex *this, int free_vertex_payload, int free_edge_payloads) {
-    if( free_vertex_payload ) {
-        State *s = this->payload;
-        while (s) {
-            State *tmp = s;
-            s = s->next;
-            stateDestroy( tmp );
-        }
-    }
+    if( free_vertex_payload ) vFreePayload(this);
     
     //delete incoming edges
     while(this->incoming->next != NULL) {
