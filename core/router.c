@@ -38,6 +38,11 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
     fibheap_t q = fibheap_new();
     fibheap_insert( q, 0, init_state );
         
+    // see if this adds much to execution time
+    // this approach makes it faster 0.58 -> 0.48
+    // as low as 0.05 difference, so not that important
+    // gFreeStates( this );
+    
     /*
      *  CENTRAL ITERATION
      *
@@ -108,7 +113,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
 
             // Abandon paths that exceed some limits (optimization)
             // here we want to continue, not break, because it is possible to have later states with lower distance, etc.
-            if( new_dv->dist_walked > options->max_walk || new_dv->num_transfers > 3 ) {
+            if( new_dv->dist_walked > options->max_walk || new_dv->num_transfers > options->max_transfers + 1 ) { // note difference between transfers and boardings
                 // DEBUG
                 // printf("excessive path length. abandoning.\n");
                 stateDestroy(new_dv);

@@ -383,6 +383,8 @@ class WalkOptions(CShadow):
     hill_reluctance = cproperty(lgs.woGetHillReluctance, c_float, setter=lgs.woSetHillReluctance)
     max_walk = cproperty(lgs.woGetMaxWalk, c_int, setter=lgs.woSetMaxWalk)
     walking_overage = cproperty(lgs.woGetWalkingOverage, c_float, setter=lgs.woSetWalkingOverage)
+    transfer_slack = cproperty(lgs.woGetTransferSlack, c_int, setter=lgs.woSetTransferSlack)
+    max_transfers = cproperty(lgs.woGetMaxTransfers, c_int, setter=lgs.woSetMaxTransfers)
 
 class Vertex(CShadow):
     

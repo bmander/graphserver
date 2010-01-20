@@ -39,6 +39,8 @@ typedef struct WalkOptions {
     int max_walk;
     float walking_overage;
     int turn_penalty;
+    int transfer_slack;
+    int max_transfers;
 } WalkOptions;
 
 WalkOptions*
@@ -82,6 +84,18 @@ woGetTurnPenalty( WalkOptions* this );
 
 void
 woSetTurnPenalty( WalkOptions* this, int turn_penalty );
+
+int
+woGetTransferSlack( WalkOptions* this );
+
+void
+woSetTransferSlack( WalkOptions* this, int turn_penalty );
+
+int
+woGetMaxTransfers( WalkOptions* this );
+
+void
+woSetMaxTransfers( WalkOptions* this, int turn_penalty );
 
 //---------------DECLARATIONS FOR STATE CLASS---------------------
 

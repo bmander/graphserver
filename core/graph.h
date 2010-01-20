@@ -62,6 +62,9 @@ gNew();
 void
 gDestroy( Graph* this, int free_vertex_payloads, int free_edge_payloads );
 
+void
+gFreeStates( Graph *this);
+    
 Vertex*
 gAddVertex( Graph* this, char *label );
 
@@ -112,6 +115,9 @@ vNew( char* label ) ;
 
 void
 vDestroy(Vertex* this, int free_vertex_payload, int free_edge_payloads) ;
+
+void
+vFreeStates(Vertex *this);
 
 void
 vMark(Vertex* this) ;

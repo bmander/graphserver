@@ -98,7 +98,19 @@ gVertices( Graph* this, long* num_vertices ) {
   *num_vertices = nn;
   return ret;
 }
-             
+
+// call me before doing in-place path searches
+void
+gFreeStates( Graph *this) {
+    struct hashtable_itr *itr = hashtable_iterator(this->vertices);
+    int next_exists = hashtable_count(this->vertices); //next_exists is false when number of vertices is 0    
+    while(itr && next_exists) {
+        Vertex* vtx = hashtable_iterator_value( itr );
+        vFreeStates( vtx );
+        next_exists = hashtable_iterator_advance( itr );
+    }    
+}
+
 long
 set_spt_edge_thickness( Edge* edge ) {
     long thickness = edge->to->payload->weight - edge->from->payload->weight;
@@ -301,7 +313,7 @@ vNew( char* label ) {
 // Frees the entire list of payload states
 // For use in both vertex destruction and in-place spt preparation
 void
-vFreePayload(Vertex *this) {
+vFreeStates(Vertex *this) {
     State *s = this->payload;
     while (s) {
         State *tmp = s;
@@ -312,7 +324,7 @@ vFreePayload(Vertex *this) {
 
 void
 vDestroy(Vertex *this, int free_vertex_payload, int free_edge_payloads) {
-    if( free_vertex_payload ) vFreePayload(this);
+    if( free_vertex_payload ) vFreeStates(this);
     
     //delete incoming edges
     while(this->incoming->next != NULL) {

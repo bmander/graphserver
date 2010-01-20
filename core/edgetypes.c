@@ -16,6 +16,8 @@ woNew() {
     ret->hill_reluctance = 1.5; //Factor by which an uphill stretch is penalized, in addition to whatever time is lost by simply gaining.
     ret->max_walk = 10000; //meters
     ret->walking_overage = 0.1;
+    ret->transfer_slack = 240; // seconds. a boarding less than this far in the future is considered too close to depend on.
+    ret->max_transfers = 3;    // paths with more than this number of transfers (not vehicles) will not be explored.
     return ret;
 }
 
@@ -113,6 +115,27 @@ void
 woSetTurnPenalty( WalkOptions* this, int turn_penalty ) {
     this->turn_penalty = turn_penalty;
 }
+
+int
+woGetTransferSlack( WalkOptions* this ) {
+    return this->transfer_slack;
+}
+
+void
+woSetTransferSlack( WalkOptions* this, int transfer_slack ) {
+    this->transfer_slack = transfer_slack;
+}
+
+int
+woGetMaxTransfers( WalkOptions* this ) {
+    return this->max_transfers;
+}
+
+void
+woSetMaxTransfers( WalkOptions* this, int max_transfers ) {
+    this->max_transfers = max_transfers;
+}
+
 
 //STATE FUNCTIONS
 State*
@@ -823,7 +846,10 @@ tbWalk( EdgePayload* superthis, State* state, WalkOptions* options ) {
         
     }
     
-    int next_boarding_index = tbGetNextBoardingIndex( this, time_since_midnight );
+    int slack = 0;
+    // if (state->num_transfers > 0) slack = 60 * 4; // boarding slack should be configurable in walkoptions
+    if (state->num_transfers > 0) slack = options->transfer_slack;
+    int next_boarding_index = tbGetNextBoardingIndex( this, time_since_midnight + slack );
     
     if( next_boarding_index == -1 ) {
         return NULL;
