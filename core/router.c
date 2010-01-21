@@ -7,11 +7,9 @@
 Graph*
 #ifndef RETRO
 gShortestPathTree( Graph* this, char *from, char *to, State* init_state, WalkOptions* options, long maxtime ) {
-    maxtime = init_state->time + 60 * 60 * 2;  // TESTING
 #else
 gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, WalkOptions* options, long mintime ) {
-    mintime = init_state->time - 60 * 60 * 2;  // TESTING
-    // Retro routing does not work at all for the moment!
+// Retro routing does not work at all for the moment!
 #endif
         
     /*
