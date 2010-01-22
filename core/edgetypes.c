@@ -155,7 +155,7 @@ stateNew(int n_agencies, long time) {
   ret->back_edge = NULL;
   ret->back_state = NULL;
   ret->queue_node = NULL;
-    
+  ret->initial_wait = 0;
   int i;
   for(i=0; i<n_agencies; i++) {
       ret->service_periods[i] = NULL;
@@ -193,6 +193,9 @@ stateBackEdge( State* this ) { return this->back_edge; }
 
 State*
 stateBackState( State* this ) { return this->back_state; }
+
+int
+stateInitialWait( State* this) { return this->initial_wait; }
 
 long
 stateGetTime( State* this ) { return this->time; }
@@ -864,10 +867,10 @@ tbWalk( EdgePayload* superthis, State* state, WalkOptions* options ) {
     int next_boarding_time = this->departs[next_boarding_index];
     int wait = (next_boarding_time - time_since_midnight);
     
-    ret->time   += wait + 1; //to correctly order the priority queue = KLUDGE
+    ret->time   += wait + 1; // to correctly order the priority queue = KLUDGE, why is this necessary? does not work without.
     ret->weight += wait + 1; //base transfer penalty
     ret->weight += options->transfer_penalty;
-    
+    if (!(ret->initial_wait)) ret->initial_wait = wait; // track how long waited for first boarding
     ret->trip_id = this->trip_ids[next_boarding_index];
     
     // Make sure the service period caches are updated if we've traveled over a service period boundary

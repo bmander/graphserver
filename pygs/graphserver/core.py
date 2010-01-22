@@ -353,6 +353,7 @@ class State(CShadow):
     num_agencies     = cproperty(lgs.stateGetNumAgencies, c_int)
     trip_id          = cproperty(lgs.stateGetTripId, c_char_p)
     stop_sequence    = cproperty(lgs.stateGetStopSequence, c_int)
+    initial_wait     = cproperty(lgs.stateInitialWait, c_int)
     
 class WalkOptions(CShadow):
     

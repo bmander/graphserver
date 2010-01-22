@@ -114,6 +114,7 @@ typedef struct State {
    struct Edge*    back_edge;
    struct State*   back_state;
    struct fibnode* queue_node;
+   int             initial_wait;
 } State;
 
 State*
@@ -136,6 +137,9 @@ stateBackEdge( State* this );
 
 State*
 stateBackState( State* this );
+
+int
+stateInitialWait( State* this);
 
 long
 stateGetTime( State* this );

@@ -134,7 +134,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
                 new_dv->owner = spt_v;          // Tell the new state which SPT vertex it belongs to.
                 new_dv->back_edge = edge;       // Record how we got here for reporting paths later.
                 new_dv->back_state = du;        // Ditto.
-                new_dv->queue_node = fibheap_insert( q, new_dv->weight, new_dv );  // Put new state in the priority queue
+                new_dv->queue_node = fibheap_insert( q, new_dv->time, new_dv );  // Put new state in the priority queue
             }
 #ifdef DEBUG
             // Print out a list of states at each visit to a vertex.
