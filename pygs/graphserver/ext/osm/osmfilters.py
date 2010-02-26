@@ -127,35 +127,40 @@ class PurgeDisjunctGraphsFilter(OSMDBFilter):
         
         f.run(db,*[])
         
-        node_ids = {}
+        purge_list = []
 
         if not threshold:
             largest = next(db.execute("SELECT graph_num, count(*) as cnt FROM graph_nodes GROUP BY graph_num ORDER BY cnt desc"))[0]
                     
             for x in db.execute("SELECT node_id FROM graph_nodes where graph_num != ?", (largest,)):
-                node_ids[x[0]] = 1
+                purge_list.append(x[0])
         else: 
             for x in db.execute("""SELECT node_id FROM graph_nodes where graph_num in
                                 (SELECT a.graph_num FROM 
                                   (SELECT graph_num, count(*) as cnt FROM graph_nodes GROUP BY graph_num HAVING cnt < %s) as a)""" % threshold):
-                node_ids[x[0]] = 1
+                purge_list.append(x[0])
 
         c = db.cursor()
 
-        purge_list = []
-        for way in db.ways():
-            if way.nds[0] in node_ids or way.nds[-1] in node_ids:
-                purge_list.append(way.id)
-
-        for i in range(0,len(purge_list),100):
-            query = "DELETE from ways WHERE id in ('%s')" % "','".join(purge_list[i:i+100])
+        # when slicing, end index can be larger than list size! very useful for blocking.
+        for i in range(0, len(purge_list), 100):
+            query = "DELETE from edges WHERE start_nd in ('%s')" % "','".join(purge_list[i:i+100])
+            c.execute(query)
+            # this should not be necessary since the graphs are by definition disjunct
+            query = "DELETE from edges WHERE end_nd   in ('%s')" % "','".join(purge_list[i:i+100])
             c.execute(query)
         db.conn.commit()
         c.close()
-        print "Deleted %s ways" % (len(purge_list))
-        DeleteOrphanNodesFilter().run(db,*[])
-                
-        f.teardown(db)
+        print "Deleted %s edges" % (len(purge_list))
+        
+        # Don't need to delete the nodes from the OSM, only those used by edges will be imported.
+        # But unused nodes should be removed from the index so they are not used in linking.
+        for node_id in purge_list :
+            id, tags, lat, lon, endnode_refs = db.node(node_id)
+            db.index.delete(node_id, (lon, lat))
+            
+        # Leave the tables to visualize results in GIS.
+        #f.teardown(db)
         
 class StripOtherTagsFilter(OSMDBFilter):
     def filter(self, db, feature_type, *keep_tags):
@@ -186,13 +191,21 @@ class StripOtherTagsFilter(OSMDBFilter):
 class FindDisjunctGraphsFilter(OSMDBFilter):
     def setup(self, db, *args):
         c = db.cursor()
-        c.execute("CREATE table graph_nodes (graph_num INTEGER, node_id TEXT)")
-        c.execute("CREATE index graph_nodes_node_indx ON graph_nodes(node_id)")
+        c.execute("DROP table if exists graph_nodes")
+        c.execute("DROP table if exists graph_edges")
+        c.execute("CREATE table graph_nodes (graph_num INTEGER, node_id TEXT, WKT_GEOMETRY TEXT)")
+        c.execute("CREATE table graph_edges (graph_num INTEGER, edge_id TEXT, WKT_GEOMETRY TEXT)")
+        c.execute("CREATE index graph_nodes_id_indx ON graph_nodes(node_id)")
+        c.execute("CREATE index graph_edges_id_indx ON graph_edges(edge_id)")
+        db.conn.commit()
         c.close()
 
     def teardown(self, db):
         c = db.cursor()
-        c.execute("DROP table graph_nodes")
+        # commented out because purge disjunct filter calls teardown at the end
+        #c.execute("DROP table if exists graph_nodes")
+        #c.execute("DROP table if exists graph_edges")
+        db.conn.commit()
         c.close()
         
     def filter(self, osmdb, *args):
@@ -201,40 +214,56 @@ class FindDisjunctGraphsFilter(OSMDBFilter):
         
         vertices = {}
         print "load vertices into memory"
-        for row in osmdb.execute("SELECT id from nodes"):
+        for row in osmdb.execute("SELECT DISTINCT start_nd from edges"):
             g.add_vertex(str(row[0]))
             vertices[str(row[0])] = 0
 
-        print "load ways into memory"
-        for way in osmdb.ways():
-            g.add_edge(way.nds[0], way.nds[-1], Link())
-            g.add_edge(way.nds[-1], way.nds[0], Link())
+        for row in osmdb.execute("SELECT DISTINCT end_nd from edges"):
+            g.add_vertex(str(row[0]))
+            vertices[str(row[0])] = 0
 
+        print "load edges into memory"
+        for start_nd, end_nd in osmdb.execute("SELECT start_nd, end_nd from edges"):
+            g.add_edge(start_nd, end_nd, Link())
+            g.add_edge(end_nd, start_nd, Link())
+               
         t1 = time.time()
         print "populating graph took: %f"%(t1-t0)
         t0 = t1
         
+        print "Total number of vertices: ", len(vertices)
         iteration = 1
         c = osmdb.cursor()
         while True:
-            #c.execute("SELECT id from nodes where id not in (SELECT node_id from graph_nodes) LIMIT 1")
             try:
                 vertex, dummy = vertices.popitem()
             except:
                 break
             spt = g.shortest_path_tree(vertex, None, State(1,0))
+            print "Found shortest path tree with %d vertices." % spt.size
             for v in spt.vertices:
+                lat, lon = c.execute("SELECT lat, lon from nodes where id=?", (v.label, )).next()
+                c.execute("INSERT into graph_nodes VALUES (?, ?, ?)", (iteration, v.label, "POINT(%f %f)" % (lon, lat)))
+                #print v.label
                 vertices.pop(v.label, None)
-                c.execute("INSERT into graph_nodes VALUES (?, ?)", (iteration, v.label))
+                # should not be necessary, must be a relic from when i forgot to put in double edges
+                # g.remove_vertex(v.label, True, True)
+                #print v.label
             spt.destroy()
             
             t1 = time.time()
-            print "pass %s took: %f"%(iteration, t1-t0)
+            print "pass %s took: %f vertices remaining: %d"%(iteration, t1-t0, len(vertices))
             t0 = t1
             iteration += 1
-        c.close()
-        
+        osmdb.conn.commit()       
+        print 'Building edge geometry table...'
+        for way_id, parent_id, from_nd, to_nd, dist, coords, tags in osmdb.edges() :  
+            text_coords = [ "%f %f" % (lon, lat) for lon, lat in coords]
+            wkt_coords = "LINESTRING(%s)" % (','.join(text_coords))
+            graph_num = next(c.execute("SELECT graph_num from graph_nodes where node_id = ?", (from_nd,)))[0]
+            c.execute("INSERT into graph_edges VALUES (?, ?, ?)", (graph_num, from_nd + '->' + to_nd, wkt_coords))
         osmdb.conn.commit()
+        c.close()
         g.destroy()
         # audit
         for gnum, count in osmdb.execute("SELECT graph_num, count(*) FROM graph_nodes GROUP BY graph_num"):
@@ -305,14 +334,16 @@ class StitchDisjunctGraphs(OSMDBFilter):
         alias = {}
         
         # for each location that appears more than once
-        for nds, ct, lat, lon in osmdb.execute("SELECT group_concat(id), count(*) as cnt, lat, lon from nodes GROUP BY lat, lon HAVING cnt > 1"):
+        #for nds, ct, lat, lon in osmdb.execute("SELECT group_concat(id), count(*) as cnt, lat, lon from nodes GROUP BY lat, lon HAVING cnt > 1"):
+        # rounding degrees to 5 decimal places gives about 1 meter accuracy
+        for nds, ct, lat, lon in osmdb.execute("SELECT group_concat(id), count(*) as cnt, round(lat, 5) as rlat, round(lon, 5) as rlon from nodes GROUP BY rlat, rlon HAVING cnt > 1"):
             
             # get all the nodes that appear at that location
             #ids = map(lambda x:x[0], osmdb.execute("SELECT id FROM nodes WHERE lat=? AND lon=?", (lat,lon)))
             #print nds
             nds = nds.split(",")
             first = nds.pop(0)
-            alias[nds] = nds
+            alias.update( [(n, first) for n in nds] )
             # alias the duplicate node to an identical node
             #for id in ids:
             # if id != ids[0]:
@@ -335,13 +366,10 @@ class StitchDisjunctGraphs(OSMDBFilter):
             if i%1000==0: print "way %d"%i
             
             nds = json.loads(nds_str)
-            if nds[0] in alias:
-                nds[0] = alias[nds[0]]
-                print "replace header"
-            if nds[-1] in alias:
-                nds[-1] = alias[nds[-1]]
-                print "replace footer"
-            
+            for j in range( len(nds) ):
+                if nds[j] in alias:
+                    nds[j] = alias[nds[j]]
+                    print "replaced node %d of way %d" % (j, i)
             
             c.execute( "UPDATE ways SET nds=? WHERE id=?", (json.dumps(nds), id) )
         osmdb.conn.commit()

@@ -235,22 +235,30 @@ class OSMDB:
         c.execute( "CREATE TABLE edges (id TEXT, parent_id TEXT, start_nd TEXT, end_nd TEXT, dist FLOAT, geom TEXT)" )
         
         for i, way in enumerate(self.ways()):
-            try:
-                if i%5000==0:
-                    print i
-                
-                subways = []
-                curr_subway = [ way.nds[0] ] # add first node to the current subway
-                for nd in way.nds[1:-1]:     # for every internal node of the way
-                    curr_subway.append( nd )
+            if i%5000==0:
+                print i
+            
+            subways = []
+            curr_subway = [ way.nds[0] ] # add first node to the current subway
+            for nd in way.nds[1:-1]:     # for every internal node of the way
+                curr_subway.append( nd )
+                try :
                     if self.node(nd)[4] > 1: # node reference count is greater than one, node is shared by two ways
                         subways.append( curr_subway )
                         curr_subway = [ nd ]
-                curr_subway.append( way.nds[-1] ) # add the last node to the current subway, and store the subway
-                subways.append( curr_subway );
+                except IndexError:
+                    if tolerant:
+                        # print "Missing node, ignoring."
+                        continue
+                    else:
+                        raise
                 
-                #insert into edge table
-                for i, subway in enumerate(subways):
+            curr_subway.append( way.nds[-1] ) # add the last node to the current subway, and store the subway
+            subways.append( curr_subway );
+            
+            #insert into edge table
+            for i, subway in enumerate(subways):
+                try:
                     coords = [(lambda x:(x[3],x[2]))(self.node(nd)) for nd in subway]
                     packt = pack_coords( coords )
                     dist = sum([vincenty(lat1, lng1, lat2, lng2) for (lng1, lat1), (lng2, lat2) in cons(coords)])
@@ -260,11 +268,12 @@ class OSMDB:
                                                                                subway[-1],
                                                                                dist,
                                                                                packt) )
-            except IndexError:
-                if tolerant:
-                    continue
-                else:
-                    raise
+                except IndexError:
+                    if tolerant:
+                        print "Missing node, ignoring edge."
+                        continue
+                    else:
+                        raise
         
         print "indexing edges...",
         c.execute( "CREATE INDEX edges_id ON edges (id)" )
