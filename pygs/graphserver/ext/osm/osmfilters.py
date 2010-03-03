@@ -157,7 +157,7 @@ class PurgeDisjunctGraphsFilter(OSMDBFilter):
         # But unused nodes should be removed from the index so they are not used in linking.
         for node_id in purge_list :
             id, tags, lat, lon, endnode_refs = db.node(node_id)
-            db.index.delete(node_id, (lon, lat))
+            db.index.delete(long(node_id), (lon, lat))
             
         # Leave the tables to visualize results in GIS.
         #f.teardown(db)
