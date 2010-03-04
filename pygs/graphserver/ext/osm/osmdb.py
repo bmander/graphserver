@@ -479,20 +479,22 @@ def osm_to_osmdb(osm_filename, osmdb_filename, tolerant=False):
     osmdb.populate( osm_filename, accept=lambda tags: 'highway' in tags, reporter=sys.stdout )
     osmdb.create_and_populate_edges_table(tolerant)
 
+from optparse import OptionParser
 def main():
     from sys import argv
     
-    usage = "python osmdb.py osm_filename osmdb_filename"
-    if len(argv) < 3:
-        print usage
-        exit()
-
-    osm_filename = argv[1]
-    osmdb_filename = argv[2]
+    parser = OptionParser(usage="%prog [options] osm_filename osmdb_filename")
+    parser.add_option( "-t", "--tolerant", dest="tolerant",
+                       action="store_true" )
     
-    tolerant = 'tolerant' in argv
+    (options, args) = parser.parse_args()
     
-    osm_to_osmdb(osm_filename, osmdb_filename, tolerant)
+    if len(args) != 2:
+        parser.error("incorrect number of arguments")
+        
+    osm_filename, osmdb_filename = args
+        
+    osm_to_osmdb(osm_filename, osmdb_filename, options.tolerant)
 
 if __name__=='__main__':
     main()
