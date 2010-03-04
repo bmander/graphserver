@@ -184,6 +184,8 @@ sta-3622 -> psv-0-000-004
 <pre style="background-color:#F5F5F5">http://localhost:80/</pre>
  
 <h3>Getting routes with gs_routeserver</h3>
+<p>First, you'll need PyYAML</p>
+<pre style="background-color:#F5F5F5"> $ sudo easy_install pyyaml</pre>
 <p>Fire up a routeserver on the compiled graph</p>
 <pre style="background-color:#F5F5F5"> $ gs_routeserver redding.gdb redding.gtfsdb -p 80</pre>
 <p>Get a list of all vertices in the system</p>
