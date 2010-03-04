@@ -146,7 +146,8 @@ class GTFSDatabase:
     TRIPS_DEF = ("trips", (("route_id",   None, None),
                            ("trip_id",    None, None),
                            ("service_id", None, None),
-                           ("shape_id", None, None)))
+                           ("block_id",   None, None),
+                           ("shape_id",   None, None)))
     ROUTES_DEF = ("routes", (("route_id", None, None),
                              ("route_short_name", None, None),
                              ("route_long_name", None, None),
