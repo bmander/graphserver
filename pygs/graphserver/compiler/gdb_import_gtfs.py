@@ -10,7 +10,7 @@ def cons(ary):
     for i in range(len(ary)-1):
         yield (ary[i], ary[i+1])
 
-def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, tz, cursor):
+def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, tz, cursor, trip_first_pvertex, trip_last_pvertex):
     
     stop_time_bundles = bundle.stop_time_bundles(service_id)
     
@@ -52,7 +52,7 @@ def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, t
             patternstop_vx_name = "psv-%s-%03d-%03d-%s"%(agency_namespace,bundle.pattern.pattern_id,i,service_id)
         
         gdb.add_vertex( patternstop_vx_name, cursor )
-        
+
         b = TripBoard(service_id, sc, tz, 0)
         for trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_dist_traveled in stop_time_bundle:
             b.add_boarding( trip_id, departure_time, stop_sequence )
@@ -93,6 +93,12 @@ def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, t
         else:
             to_patternstop_vx_name = "psv-%s-%03d-%03d-%s"%(agency_namespace,bundle.pattern.pattern_id,i+1,service_id)
         
+        # inefficient but effective way to keep track of the name of the first pattern vertex
+        # note, cannot record last vertex here because we only loop up to the second to last vertex
+        if i == 0: first_pvertex = from_patternstop_vx_name
+        # inefficient but effective way to keep track of the name of the last pattern vertex
+        last_pvertex = to_patternstop_vx_name
+
         crossing = Crossing()
         for i in range( len( from_stop_time_bundle ) ):
             trip_id, from_arrival_time, from_departure_time, stop_id, stop_sequence, stop_dist_traveled = from_stop_time_bundle[i]
@@ -106,6 +112,15 @@ def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, t
                       
     gdb.commit()
 
+    # record each trip's first and last pattern vertex in dictionaries
+    for e in stop_time_bundles[0]:
+        tid, arrival_time, departure_time, stop_id, stop_sequence, stop_dist_traveled = e
+        # we only really use the trip_ids here (service period specific)
+        if tid in trip_first_pvertex:
+            print 'ERROR: Trip ID referenced in multiple patterns (overwrite).'
+        trip_first_pvertex[tid] = first_pvertex 
+        trip_last_pvertex[tid]  = last_pvertex 
+
 def gdb_load_gtfsdb_to_boardalight(gdb, agency_namespace, gtfsdb, cursor, agency_id=None, maxtrips=None, reporter=sys.stdout):
 
     # get graphserver.core.Timezone and graphserver.core.ServiceCalendars from gtfsdb for agency with given agency_id
@@ -115,10 +130,14 @@ def gdb_load_gtfsdb_to_boardalight(gdb, agency_namespace, gtfsdb, cursor, agency
     sc = service_calendar_from_timezone(gtfsdb, timezone_name )
 
     # enter station vertices
+    # this was very slow, do it in one transaction using cursor.
+    c = gdb.get_cursor()
     for stop_id, stop_name, stop_lat, stop_lon in gtfsdb.stops():
         station_vertex_label = "sta-%s"%stop_id
         reporter.write("adding station vertex '%s'\n"%station_vertex_label)
-        gdb.add_vertex( station_vertex_label )
+        # DEBUG comment out below to speed up testing        
+        gdb.add_vertex( station_vertex_label, c )
+    gdb.commit()
     
     # compile trip bundles from gtfsdb
     if reporter: reporter.write( "Compiling trip bundles...\n" )
@@ -127,12 +146,43 @@ def gdb_load_gtfsdb_to_boardalight(gdb, agency_namespace, gtfsdb, cursor, agency
     # load bundles to graph
     if reporter: reporter.write( "Loading trip bundles into graph...\n" )
     n_bundles = len(bundles)
+    # dictionaries to store the first and last pattern vertex for each trip
+    # to be used later in connecting trips of the same vehicle block
+    trip_first_pvertex = {}
+    trip_last_pvertex  = {}
     for i, bundle in enumerate(bundles):
         if reporter: reporter.write( "%d/%d loading %s\n"%(i+1, n_bundles, bundle) )
         
         for service_id in [x.encode("ascii") for x in gtfsdb.service_ids()]:
-            gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, gs_tz, cursor)
-            
+            gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, gs_tz, cursor, trip_first_pvertex, trip_last_pvertex)
+
+    # connect sequential trips that use that same vehicle
+    if reporter: reporter.write( "Analyzing trip blocks...\n" )
+    continuing_trips = gtfsdb.continuing_trips()
+    if reporter: reporter.write( "Adding crossing edges for blocks...\n" )
+    crossings = {}
+    # compile lists of trips for each vertex pair (fairly quick)
+    for o, (d, t) in continuing_trips.items():
+        sig = (trip_last_pvertex[o], trip_first_pvertex[d])
+        e   = (o, t)        
+        if sig not in crossings:
+            crossings[sig] = [e]
+        else:
+            crossings[sig].append(e)               
+    n_crossings = len(crossings)
+    i = 0
+    c = gdb.get_cursor()
+    for (from_v, to_v), e in crossings.items():
+        i += 1        
+        print '%d/%d crossing %s -> %s' % (i, n_crossings, from_v, to_v)
+        cr = Crossing()
+        for tid, time in e:
+            print '    trip %s time %d' % (tid, time)
+            cr.add_crossing_time( tid, time )
+        gdb.add_edge( from_v, to_v, cr, c )
+        print
+    gdb.commit()
+
     # load headways
     if reporter: reporter.write( "Loading headways trips to graph...\n" )
     for trip_id, start_time, end_time, headway_secs in gtfsdb.execute( "SELECT * FROM frequencies" ):
