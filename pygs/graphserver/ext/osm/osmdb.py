@@ -120,7 +120,7 @@ class OSMDB:
         self.conn.commit()
         c.close()
         
-    def populate(self, osm_filename, accept=lambda tags: True, reporter=None):
+    def populate(self, osm_filename, dryrun=False, accept=lambda tags: True, reporter=None):
         print "importing osm from XML to sqlite database"
         
         c = self.get_cursor()
@@ -160,12 +160,12 @@ class OSMDB:
                     if superself.n_nodes%5000==0:
                         print "node %d"%superself.n_nodes
                     superself.n_nodes += 1
-                    superself.add_node( self.currElem, c )
+                    if not dryrun: superself.add_node( self.currElem, c )
                 elif name=='way':
                     if superself.n_ways%5000==0:
                         print "way %d"%superself.n_ways
                     superself.n_ways += 1
-                    superself.add_way( self.currElem, c )
+                    if not dryrun: superself.add_way( self.currElem, c )
 
             @classmethod
             def characters(self, chars):
@@ -176,8 +176,10 @@ class OSMDB:
         self.conn.commit()
         c.close()
         
-        print "indexing primary tables...",
-        self.create_indexes()
+        if not dryrun:
+            print "indexing primary tables...",
+            self.create_indexes()
+        
         print "done"
         
     def set_endnode_ref_counts( self ):
@@ -474,9 +476,9 @@ def test_wayrecord():
     assert wr.tags == {'highway':'bumpkis'}
     assert wr.nds == ['1','2','3']
 
-def osm_to_osmdb(osm_filename, osmdb_filename, tolerant=False):
+def osm_to_osmdb(osm_filename, osmdb_filename, tolerant=False, dryrun=False):
     osmdb = OSMDB( osmdb_filename, overwrite=True )
-    osmdb.populate( osm_filename, accept=lambda tags: 'highway' in tags, reporter=sys.stdout )
+    osmdb.populate( osm_filename, dryrun, accept=lambda tags: 'highway' in tags, reporter=sys.stdout )
     osmdb.create_and_populate_edges_table(tolerant)
 
 from optparse import OptionParser
@@ -486,6 +488,7 @@ def main():
     parser = OptionParser(usage="%prog [options] osm_filename osmdb_filename")
     parser.add_option( "-t", "--tolerant", dest="tolerant",
                        action="store_true" )
+    parser.add_option( "-d", "--dryrun", dest="dryrun", help="Just read the OSM file; don't copy anything to a database", action="store_true" )
     
     (options, args) = parser.parse_args()
     
@@ -494,7 +497,7 @@ def main():
         
     osm_filename, osmdb_filename = args
         
-    osm_to_osmdb(osm_filename, osmdb_filename, options.tolerant)
+    osm_to_osmdb(osm_filename, osmdb_filename, options.tolerant, options.dryrun)
 
 if __name__=='__main__':
     main()
