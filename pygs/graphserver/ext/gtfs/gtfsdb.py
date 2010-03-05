@@ -333,22 +333,14 @@ class GTFSDatabase:
     def continuing_trips(self) :
         c = self.get_cursor()
         try :
-            # here the stop sequence is negated and included last in the sort
-            # this avoids problems with inverting first and last stops at a 
-            # trip boundary (when they have the same times) but is imprecise.       
-            c.execute( "SELECT t.service_id, t.block_id, t.trip_id, s.stop_id, s.arrival_time, s.departure_time, s.stop_sequence FROM trips AS t, stop_times AS s WHERE s.trip_id = t.trip_id ORDER BY t.service_id, t.block_id, s.arrival_time, - s.stop_sequence;" )
+            c.execute( "SELECT t.service_id, t.block_id, t.trip_id, min(s.arrival_time) AS arv, max(s.departure_time) AS dep FROM trips AS t, stop_times AS s WHERE s.trip_id = t.trip_id GROUP BY t.trip_id ORDER BY t.service_id, t.block_id, arv" )
             result = {}
             old_row = c.next()
             for row in c :
-                if old_row[2] != row[2] :           # when trip_id changes            
-                    print '----------------- NEW TRIP ID -----------------'                    
-                    if row[:2] == old_row[:2] :     # if we are still on the same vehicle
-                        print '----------------- SAME VEHICLE -----------------' 
-                        result[old_row[2]] = (row[2], row[4] - old_row[5]) # record going from one trip to the other, and time
-                        print 'added ', old_row[2], result[old_row[2]]
-                    else :
-                        print '----------------- NEW VEHICLE -----------------'
-                print row
+                if row[:2] == old_row[:2] : # if we are still on the same vehicle
+                    wait_time = row[3] - old_row[4]
+                    if wait_time < 0 : print 'ERROR IN GTFS FEED: Wait time between two trips for one vehicle is negative.'
+                    result[old_row[2]] = (row[2], wait_time) # record trip transition
                 old_row = row
             return result
         except :
