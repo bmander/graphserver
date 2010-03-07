@@ -5,7 +5,6 @@ import os
 from zipfile import ZipFile
 from codecs import iterdecode
 import datetime
-import file_logger as log
 
 class UTF8TextFile(object):
     def __init__(self, fp):
@@ -46,7 +45,7 @@ def load_gtfs_table_to_sqlite(fp, gtfs_basename, cc, header=None, verbose=False)
     # create map of field locations in gtfs header to field locations as specified by the table definition
     gtfs_header = [x.strip() for x in rd.next()]
 
-    log.debug(gtfs_header)
+    print(gtfs_header)
     
     gtfs_field_indices = dict(zip(gtfs_header, range(len(gtfs_header))))
     
@@ -56,11 +55,11 @@ def load_gtfs_table_to_sqlite(fp, gtfs_basename, cc, header=None, verbose=False)
 
     # populate stoptimes table
     insert_template = 'insert into %s (%s) values (%s)'%(gtfs_basename,",".join([x[0] for x in header]), ",".join(["?"]*len(header)))
-    log.debug( insert_template )
+    print( insert_template )
     for i, line in enumerate(rd):
         
-        #log.debug( i%50, line )
-        if i%5000==0: log.debug(i)
+        #print( i%50, line )
+        if i%5000==0: print(i)
                
         # carry on quietly if there's a blank line in the csv
         if line == []:
@@ -216,7 +215,6 @@ class GTFSDatabase:
                 SHAPES_DEF)
     
     def __init__(self, sqlite_filename, overwrite=False):
-        log.init("gtfsdb")
         self.dbname = sqlite_filename
         
         if overwrite:
@@ -247,12 +245,12 @@ class GTFSDatabase:
 
         for tablename, table_def in self.GTFS_DEF:
             if tables is not None and tablename not in tables:
-                log.debug( "skipping table %s - not included in 'tables' list"%tablename )
+                print( "skipping table %s - not included in 'tables' list"%tablename )
                 continue
 
-            log.debug( "creating table %s\n"%tablename )
+            print( "creating table %s\n"%tablename )
             create_table( c, tablename, table_def )
-            log.debug( "loading table %s\n"%tablename )
+            print( "loading table %s\n"%tablename )
             
             try:
                 if not os.path.isdir( gtfs_filename ):
@@ -261,7 +259,7 @@ class GTFSDatabase:
                     trips_file = iterdecode( open( os.path.join( gtfs_filename, tablename+".txt" ) ), "utf-8" )
                 load_gtfs_table_to_sqlite(trips_file, tablename, c, table_def, verbose=verbose)
             except (KeyError, IOError):
-                log.debug( "NOTICE: GTFS feed has no file %s.txt, cannot load\n"%tablename )
+                print( "NOTICE: GTFS feed has no file %s.txt, cannot load\n"%tablename )
     
         self._create_indices(c)
         self.conn.commit()
@@ -503,7 +501,7 @@ def main_inspect_gtfsdb():
     from sys import argv
     
     if len(argv) < 2:
-        log.debug("usage: python gtfsdb.py gtfsdb_filename [query]")
+        print("usage: python gtfsdb.py gtfsdb_filename [query]")
         exit()
     
     gtfsdb_filename = argv[1]
@@ -511,26 +509,26 @@ def main_inspect_gtfsdb():
     
     if len(argv) == 2:
         for table_name, fields in gtfsdb.GTFS_DEF:
-            log.debug("Table: %s"%table_name)
+            print("Table: %s"%table_name)
             for field_name, field_type, field_converter in fields:
-                log.debug("\t%s %s"%(field_type, field_name))
+                print("\t%s %s"%(field_type, field_name))
         exit()
     
     query = argv[2]
     for record in gtfsdb.execute( query ):
-        log.debug(record)
+        print(record)
     
     #for stop_id, stop_name, stop_lat, stop_lon in gtfsdb.stops():
-    #    log.debug( stop_lat, stop_lon )
+    #    print( stop_lat, stop_lon )
     #    gtfsdb.nearby_stops( stop_lat, stop_lon, 0.05 )
     #    break
     
     #bundles = gtfsdb.compile_trip_bundles()
     #for bundle in bundles:
     #    for departure_set in bundle.iter_departures("WKDY"):
-    #        log.debug( departure_set )
+    #        print( departure_set )
     #    
-    #    #log.debug( len(bundle.trip_ids) )
+    #    #print( len(bundle.trip_ids) )
     #    sys.stdout.flush()
 
     pass
@@ -547,7 +545,7 @@ def main_build_gtfsdb():
         options.tables=None
 
     if len(args) < 2:
-        log.debug("Converts GTFS file to GTFS-DB, which is super handy\nusage: python process_gtfs.py gtfs_filename gtfsdb_filename")
+        print("Converts GTFS file to GTFS-DB, which is super handy\nusage: python process_gtfs.py gtfs_filename gtfsdb_filename")
         exit()
     
     gtfsdb_filename = args[1]
