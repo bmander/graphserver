@@ -333,7 +333,7 @@ class GTFSDatabase:
     def continuing_trips(self) :
         c = self.get_cursor()
         try :
-            c.execute( "SELECT t.service_id, t.block_id, t.trip_id, min(s.arrival_time) AS arv, max(s.departure_time) AS dep FROM trips AS t, stop_times AS s WHERE s.trip_id = t.trip_id GROUP BY t.trip_id ORDER BY t.service_id, t.block_id, arv" )
+            c.execute( "SELECT t.service_id, t.block_id, t.trip_id, min(s.arrival_time) AS arv, max(s.departure_time) AS dep FROM trips AS t, stop_times AS s WHERE s.trip_id = t.trip_id and t.block_id is not null GROUP BY t.trip_id ORDER BY t.service_id, t.block_id, arv" )
             result = {}
             old_row = c.next()
             for row in c :

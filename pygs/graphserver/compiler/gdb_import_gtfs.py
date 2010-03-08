@@ -159,29 +159,32 @@ def gdb_load_gtfsdb_to_boardalight(gdb, agency_namespace, gtfsdb, cursor, agency
     # connect sequential trips that use that same vehicle
     if reporter: reporter.write( "Analyzing trip blocks...\n" )
     continuing_trips = gtfsdb.continuing_trips()
-    if reporter: reporter.write( "Adding crossing edges for blocks...\n" )
-    crossings = {}
-    # compile lists of trips for each vertex pair (fairly quick)
-    for o, (d, t) in continuing_trips.items():
-        sig = (trip_last_pvertex[o], trip_first_pvertex[d])
-        e   = (o, t, d)        
-        if sig not in crossings:
-            crossings[sig] = [e]
-        else:
-            crossings[sig].append(e)               
-    n_crossings = len(crossings)
-    i = 0
-    c = gdb.get_cursor()
-    for (from_v, to_v), e in crossings.items():
-        i += 1        
-        print '%d/%d crossing %s -> %s' % (i, n_crossings, from_v, to_v)
-        cr = Crossing()
-        for tid, time, new_tid in e:
-            print '    trip %s time %d new_trip %s' % (tid, time, new_tid)
-            cr.add_crossing_time( tid, time, new_tid )
-        gdb.add_edge( from_v, to_v, cr, c )
-        print
-    gdb.commit()
+    if len(continuing_trips) > 0:
+        if reporter: reporter.write( "Adding crossing edges for blocks...\n" )
+        crossings = {}
+        # compile lists of trips for each vertex pair (fairly quick)
+        for o, (d, t) in continuing_trips.items():
+            sig = (trip_last_pvertex[o], trip_first_pvertex[d])
+            e   = (o, t, d)        
+            if sig not in crossings:
+                crossings[sig] = [e]
+            else:
+                crossings[sig].append(e)               
+        n_crossings = len(crossings)
+        i = 0
+        c = gdb.get_cursor()
+        for (from_v, to_v), e in crossings.items():
+            i += 1        
+            print '%d/%d crossing %s -> %s' % (i, n_crossings, from_v, to_v)
+            cr = Crossing()
+            for tid, time, new_tid in e:
+                print '    trip %s time %d new_trip %s' % (tid, time, new_tid)
+                cr.add_crossing_time( tid, time, new_tid )
+            gdb.add_edge( from_v, to_v, cr, c )
+            print
+        gdb.commit()
+    else:
+        if reporter: reporter.write( "No trip blocks found.\n" )
 
     # load headways
     if reporter: reporter.write( "Loading headways trips to graph...\n" )
