@@ -303,7 +303,7 @@ class State(CShadow):
                 pass
             else:
                 print "PATH ORIGIN"
-            print "%25s %s Weight: %5d Walk: %4dm Vehicles: %d" % (v.label, time.ctime(s.time), s.weight, s.dist_walked, s.num_transfers)
+            print "%25s %s Trip: %9s Weight: %5d Walk: %4dm Vehicles: %d" % (v.label, time.ctime(s.time), s.trip_id, s.weight, s.dist_walked, s.num_transfers)
             
     def __copy__(self):
         self.check_destroyed()
@@ -1264,8 +1264,8 @@ class Crossing(EdgePayload):
     def __init__(self):
         self.soul = self._cnew()
         
-    def add_crossing_time(self, trip_id, crossing_time):
-        lgs.crAddCrossingTime( self.soul, trip_id, crossing_time )
+    def add_crossing_time(self, trip_id, crossing_time, new_trip_id = None):
+        lgs.crAddCrossingTime( self.soul, trip_id, crossing_time, new_trip_id )
         
     def get_crossing_time(self, trip_id):
         ret = lgs.crGetCrossingTime( self.soul, trip_id )
@@ -1273,14 +1273,18 @@ class Crossing(EdgePayload):
             return None
         return ret
         
+    def get_new_trip_id(self, trip_id):
+        return lgs.crGetNewTripId( self.soul, trip_id )
+
     def get_crossing(self, i):
         trip_id = lgs.crGetCrossingTimeTripIdByIndex( self.soul, i )
         crossing_time = lgs.crGetCrossingTimeByIndex( self.soul, i )
+        new_trip_id   = lgs.crGetNewTripIdByIndex( self.soul, i )
         
         if crossing_time==-1:
             return None
         
-        return (trip_id, crossing_time)
+        return (trip_id, crossing_time, new_trip_id)
     
     @property
     def size(self):
@@ -1300,8 +1304,8 @@ class Crossing(EdgePayload):
     def reconstitute(cls, state, resolver):
         ret = Crossing()
         
-        for trip_id, crossing_time in state:
-            ret.add_crossing_time( trip_id, crossing_time )
+        for trip_id, crossing_time, new_trip_id in state:
+            ret.add_crossing_time( trip_id, crossing_time, new_trip_id )
         
         return ret
         
@@ -1310,8 +1314,8 @@ class Crossing(EdgePayload):
         
         ret.append( "Crossing" )
         
-        for trip_id, crossing_time in self.get_all_crossings():
-            ret.append( "%s: %s"%(trip_id, crossing_time) )
+        for trip_id, crossing_time, new_trip_id in self.get_all_crossings():
+            ret.append( "%s: %s %s"%(trip_id, crossing_time, new_trip_id) )
             
         return "\n".join( ret )
         

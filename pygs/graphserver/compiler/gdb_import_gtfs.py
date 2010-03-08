@@ -164,7 +164,7 @@ def gdb_load_gtfsdb_to_boardalight(gdb, agency_namespace, gtfsdb, cursor, agency
     # compile lists of trips for each vertex pair (fairly quick)
     for o, (d, t) in continuing_trips.items():
         sig = (trip_last_pvertex[o], trip_first_pvertex[d])
-        e   = (o, t)        
+        e   = (o, t, d)        
         if sig not in crossings:
             crossings[sig] = [e]
         else:
@@ -176,9 +176,9 @@ def gdb_load_gtfsdb_to_boardalight(gdb, agency_namespace, gtfsdb, cursor, agency
         i += 1        
         print '%d/%d crossing %s -> %s' % (i, n_crossings, from_v, to_v)
         cr = Crossing()
-        for tid, time in e:
-            print '    trip %s time %d' % (tid, time)
-            cr.add_crossing_time( tid, time )
+        for tid, time, new_tid in e:
+            print '    trip %s time %d new_trip %s' % (tid, time, new_tid)
+            cr.add_crossing_time( tid, time, new_tid )
         gdb.add_edge( from_v, to_v, cr, c )
         print
     gdb.commit()

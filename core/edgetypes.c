@@ -1209,6 +1209,7 @@ crNew( ) {
   ret->n = 0;
   ret->crossing_times = NULL;
   ret->crossing_time_trip_ids = NULL;
+  ret->crossing_time_new_trip_ids = NULL;
     
   ret->walk = &crWalk;
   ret->walkBack = &crWalkBack;
@@ -1228,11 +1229,12 @@ crDestroy(Crossing* this) {
 }
 
 void
-crAddCrossingTime(Crossing* this, char* trip_id, int crossing_time) {
+crAddCrossingTime(Crossing* this, char* trip_id, int crossing_time, char* new_trip_id) {
     // init the trip_id, depart list
     if(this->n==0) {
         this->crossing_times = (int*)malloc(sizeof(int));
-        this->crossing_time_trip_ids = (char**)malloc(sizeof(char*));
+        this->crossing_time_trip_ids     = (char**)malloc(sizeof(char*));
+        this->crossing_time_new_trip_ids = (char**)malloc(sizeof(char*));
         
         this->crossing_times[0] = crossing_time;
         
@@ -1240,16 +1242,27 @@ crAddCrossingTime(Crossing* this, char* trip_id, int crossing_time) {
         this->crossing_time_trip_ids[0] = (char*)malloc(sizeof(char)*(n));
         memcpy(this->crossing_time_trip_ids[0], trip_id, n);
         
+        //either copy the new post-crossing trip ID, or NULL to indicate no change. 
+        if (new_trip_id == NULL) {
+            this->crossing_time_new_trip_ids[0] = NULL;
+        } else {
+            n = strlen(new_trip_id)+1;
+            this->crossing_time_new_trip_ids[0] = (char*)malloc(sizeof(char)*(n));
+            memcpy(this->crossing_time_new_trip_ids[0], new_trip_id, n);
+        }
+
     } else {
         //allocate new, expanded lists with size enough for the extra departure
         int* next_crossing_times = (int*)malloc((this->n+1)*sizeof(int));
-        char** next_crossing_time_trip_ids = (char**)malloc((this->n+1)*sizeof(char*));
+        char** next_crossing_time_trip_ids     = (char**)malloc((this->n+1)*sizeof(char*));
+        char** next_crossing_time_new_trip_ids = (char**)malloc((this->n+1)*sizeof(char*));
         
         //copy old list to new list up to insertion point
         int i;
         for(i=0; i<this->n; i++) {
             next_crossing_times[i] = this->crossing_times[i];
             next_crossing_time_trip_ids[i] = this->crossing_time_trip_ids[i];
+            next_crossing_time_new_trip_ids[i] = this->crossing_time_new_trip_ids[i];
         }
         
         //copy new departure into lists
@@ -1258,11 +1271,22 @@ crAddCrossingTime(Crossing* this, char* trip_id, int crossing_time) {
         next_crossing_time_trip_ids[this->n] = (char*)malloc(sizeof(char)*(strn));
         memcpy(next_crossing_time_trip_ids[this->n], trip_id, strn);
         
+        //either copy the new post-crossing trip ID, or NULL to indicate no change. 
+        if (new_trip_id == NULL) {
+            next_crossing_time_new_trip_ids[this->n] = NULL;
+        } else {
+            strn = strlen(new_trip_id)+1;
+            next_crossing_time_new_trip_ids[this->n] = (char*)malloc(sizeof(char)*(strn));
+            memcpy(next_crossing_time_new_trip_ids[this->n], new_trip_id, strn);
+        }
+
         //free and replace old lists
         free(this->crossing_times);
         free(this->crossing_time_trip_ids);
+        free(this->crossing_time_new_trip_ids);
         this->crossing_times = next_crossing_times;
         this->crossing_time_trip_ids = next_crossing_time_trip_ids;
+        this->crossing_time_new_trip_ids = next_crossing_time_new_trip_ids;
     }
     
     this->n += 1;
@@ -1280,6 +1304,17 @@ crGetCrossingTime(Crossing* this, char* trip_id) {
 }
 
 char*
+crGetNewTripId(Crossing* this, char* trip_id) {
+    int i;
+    for(i=0; i<this->n; i++) {
+        if( strcmp(this->crossing_time_trip_ids[i], trip_id)==0 ) {
+            return this->crossing_time_new_trip_ids[i];
+        }
+    }
+    return NULL;
+}
+
+char*
 crGetCrossingTimeTripIdByIndex(Crossing* this, int i) {
     if(i<0 || i>=this->n) {
         return NULL;
@@ -1287,13 +1322,20 @@ crGetCrossingTimeTripIdByIndex(Crossing* this, int i) {
     return this->crossing_time_trip_ids[i];
 }
     
-
 int
 crGetCrossingTimeByIndex(Crossing* this, int i) {
     if(i<0 || i>=this->n) {
         return -1;
     }
     return this->crossing_times[i];
+}
+
+char*
+crGetNewTripIdByIndex(Crossing* this, int i) {
+    if(i<0 || i>=this->n) {
+        return NULL;
+    }
+    return this->crossing_time_new_trip_ids[i];
 }
 
 int
@@ -1324,6 +1366,11 @@ crWalk( EdgePayload* superthis, State* state, WalkOptions* options ) {
     ret->time   += crossing_time;
     ret->weight += crossing_time;
     
+    // Check if trip id should change
+    // TODO: this only works for foreward walks, how to adapt to walkback?
+    char* new_trip_id = crGetNewTripId( this, state->trip_id );
+    if (new_trip_id != NULL) ret->trip_id = new_trip_id;
+
     // Make sure the service period caches are updated if we've traveled over a service period boundary
     int i;
     for(i=0; i<state->n_agencies; i++) {
