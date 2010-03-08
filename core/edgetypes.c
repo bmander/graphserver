@@ -849,10 +849,8 @@ tbWalk( EdgePayload* superthis, State* state, WalkOptions* options ) {
         
     }
     
-    int slack = 0;
-    // if (state->num_transfers > 0) slack = 60 * 4; // boarding slack should be configurable in walkoptions
-    if (state->num_transfers > 0) slack = options->transfer_slack;
-    int next_boarding_index = tbGetNextBoardingIndex( this, time_since_midnight + slack );
+    // slack is applied to all boardings, even the first
+    int next_boarding_index = tbGetNextBoardingIndex( this, time_since_midnight + options->transfer_slack );
     
     if( next_boarding_index == -1 ) {
         return NULL;
@@ -889,7 +887,8 @@ inline State*
 tbWalkBack(EdgePayload* this, State* state, WalkOptions* options) {
     State* ret = stateDup( state );
     ret->trip_id = NULL;
-    
+    // slack should be subtracted from state time here and added to weight
+   
     return ret;
 }
 
