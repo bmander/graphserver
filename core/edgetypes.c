@@ -1,4 +1,5 @@
 #include "edgetypes.h"
+#include "edgetypes/link.h"
 #include "math.h"
 #include <stdio.h>
 
