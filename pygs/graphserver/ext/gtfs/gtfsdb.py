@@ -11,7 +11,8 @@ class UTF8TextFile(object):
         self.fp = fp
         
     def next(self):
-        return self.fp.next().encode( "ascii", "backslashreplace" )
+        nextline = self.fp.next()
+        return nextline.encode( "ascii", "ignore" )
         
     def __iter__(self):
         return self
@@ -34,7 +35,7 @@ def create_table(cc, gtfs_basename, header):
     sqlite_field_definitions = ["%s %s"%(field_name, field_type if field_type else "TEXT") for field_name, field_type, field_converter in header]
     cc.execute("create table %s (%s)"%(gtfs_basename,",".join(sqlite_field_definitions)))
 
-def load_gtfs_table_to_sqlite(fp, gtfs_basename, cc, header=None):
+def load_gtfs_table_to_sqlite(fp, gtfs_basename, cc, header=None, verbose=False):
     """header is iterable of (fieldname, fieldtype, processing_function). For example, (("stop_sequence", "INTEGER", int),). 
     "TEXT" is default fieldtype. Default processing_function is lambda x:x"""
     
@@ -42,7 +43,9 @@ def load_gtfs_table_to_sqlite(fp, gtfs_basename, cc, header=None):
     rd = csv.reader( ur )
 
     # create map of field locations in gtfs header to field locations as specified by the table definition
-    gtfs_header = rd.next()
+    gtfs_header = [x.strip() for x in rd.next()]
+
+    print(gtfs_header)
     
     gtfs_field_indices = dict(zip(gtfs_header, range(len(gtfs_header))))
     
@@ -54,6 +57,7 @@ def load_gtfs_table_to_sqlite(fp, gtfs_basename, cc, header=None):
     insert_template = 'insert into %s (%s) values (%s)'%(gtfs_basename,",".join([x[0] for x in header]), ",".join(["?"]*len(header)))
     print( insert_template )
     for i, line in enumerate(rd):
+        
         #print( i%50, line )
         if i%5000==0: print(i)
                
@@ -63,11 +67,11 @@ def load_gtfs_table_to_sqlite(fp, gtfs_basename, cc, header=None):
         
         _line = []
         for i, converter in field_operator:
-            if i is not None and line[i] != "":
+            if i is not None and line[i].strip() != "":
                 if converter:
-                    _line.append( converter(line[i]) )
+                    _line.append( converter(line[i].strip()) )
                 else:
-                    _line.append( line[i] )
+                    _line.append( line[i].strip() )
             else:
                 _line.append( None )
                 
@@ -143,12 +147,19 @@ SELECT stop_times.* FROM stop_times, trips
         return "<TripBundle n_trips: %d n_stops: %d>"%(len(self.trip_ids), len(self.pattern.stop_ids))
 
 class GTFSDatabase:
+    AGENCIES_DEF = ("agencies", (("agency_id",   None, None),
+                                 ("agency_name",    None, None),
+                                 ("agency_url", None, None),
+                                 ("agency_timezone", None, None)))
     TRIPS_DEF = ("trips", (("route_id",   None, None),
                            ("trip_id",    None, None),
                            ("service_id", None, None),
                            ("block_id",   None, None),
                            ("shape_id",   None, None)))
-    ROUTES_DEF = ("routes", (("route_id", None, None),
+    ROUTES_DEF = ("routes", (("agency_id", None, None),
+                             ("shape_id", None, None),
+                             ("trip_headsign", None, None),
+                             ("route_id", None, None),
                              ("route_short_name", None, None),
                              ("route_long_name", None, None),
                              ("route_type", "INTEGER", None)))
@@ -228,21 +239,29 @@ class GTFSDatabase:
             
         return ret
 
-    def load_gtfs(self, gtfs_filename, reporter=None):
+    def load_gtfs(self, gtfs_filename, tables=None, reporter=None, verbose=False):
         c = self.get_cursor()
 
-        zf = ZipFile( gtfs_filename )
+        if not os.path.isdir( gtfs_filename ):
+            zf = ZipFile( gtfs_filename )
 
         for tablename, table_def in self.GTFS_DEF:
-            if reporter: reporter.write( "creating table %s\n"%tablename )
+            if tables is not None and tablename not in tables:
+                print( "skipping table %s - not included in 'tables' list"%tablename )
+                continue
+
+            print( "creating table %s\n"%tablename )
             create_table( c, tablename, table_def )
-            if reporter: reporter.write( "loading table %s\n"%tablename )
+            print( "loading table %s\n"%tablename )
             
             try:
-                trips_file = iterdecode( zf.read(tablename+".txt").split("\n"), "utf-8" )
-                load_gtfs_table_to_sqlite(trips_file, tablename, c, table_def)
-            except KeyError:
-                if reporter: reporter.write( "NOTICE: GTFS feed has no file %s.txt, cannot load\n"%tablename )
+                if not os.path.isdir( gtfs_filename ):
+                    trips_file = iterdecode( zf.read(tablename+".txt").split("\n"), "utf-8" )
+                else:
+                    trips_file = iterdecode( open( os.path.join( gtfs_filename, tablename+".txt" ) ), "utf-8" )
+                load_gtfs_table_to_sqlite(trips_file, tablename, c, table_def, verbose=verbose)
+            except (KeyError, IOError):
+                print( "NOTICE: GTFS feed has no file %s.txt, cannot load\n"%tablename )
     
         self._create_indices(c)
         self.conn.commit()
@@ -500,7 +519,7 @@ def main_inspect_gtfsdb():
     from sys import argv
     
     if len(argv) < 2:
-        print "usage: python gtfsdb.py gtfsdb_filename [query]"
+        print("usage: python gtfsdb.py gtfsdb_filename [query]")
         exit()
     
     gtfsdb_filename = argv[1]
@@ -508,14 +527,14 @@ def main_inspect_gtfsdb():
     
     if len(argv) == 2:
         for table_name, fields in gtfsdb.GTFS_DEF:
-            print "Table: %s"%table_name
+            print("Table: %s"%table_name)
             for field_name, field_type, field_converter in fields:
-                print "\t%s %s"%(field_type, field_name)
+                print("\t%s %s"%(field_type, field_name))
         exit()
     
     query = argv[2]
     for record in gtfsdb.execute( query ):
-        print record
+        print(record)
     
     #for stop_id, stop_name, stop_lat, stop_lon in gtfsdb.stops():
     #    print( stop_lat, stop_lon )
@@ -532,16 +551,27 @@ def main_inspect_gtfsdb():
 
     pass
 
+from optparse import OptionParser
+
 def main_build_gtfsdb():
-    if len(sys.argv) < 3:
-        print "Converts GTFS file to GTFS-DB, which is super handy\nusage: python process_gtfs.py gtfs_filename, gtfsdb_filename"
+    parser = OptionParser()
+    parser.add_option("-t", "--table", dest="tables", action="append", default=[], help="copy over only the given tables")
+    parser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False, help="make a bunch of noise" )
+
+    (options, args) = parser.parse_args()
+    if len(options.tables)==0:
+        options.tables=None
+
+    if len(args) < 2:
+        print("Converts GTFS file to GTFS-DB, which is super handy\nusage: python process_gtfs.py gtfs_filename gtfsdb_filename")
         exit()
     
-    gtfsdb_filename = sys.argv[2]
-    gtfs_filename = sys.argv[1]
+    gtfsdb_filename = args[1]
+    gtfs_filename = args[0]
  
     gtfsdb = GTFSDatabase( gtfsdb_filename, overwrite=True )
-    gtfsdb.load_gtfs( gtfs_filename, reporter=sys.stdout )
+    gtfsdb.load_gtfs( gtfs_filename, options.tables, reporter=sys.stdout, verbose=options.verbose )
 
 
-if __name__=='__main__': main_inspect_gtfsdb()
+if __name__=='__main__': 
+    main_build_gtfsdb()

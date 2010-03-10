@@ -14,6 +14,8 @@ def gdb_import_osm(gdb, osmdb, vertex_namespace, slogs, profiledb=None):
     
     street_id_counter = 0
     street_names = {}
+    
+    # for each edge in the osmdb
     for i, (id, parent_id, node1, node2, distance, geom, tags) in enumerate( osmdb.edges() ):
         
         if i%(n_edges//100+1)==0: sys.stdout.write( "%d/%d edges loaded\r\n"%(i, n_edges))
