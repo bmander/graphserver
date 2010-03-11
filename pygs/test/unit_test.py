@@ -3309,7 +3309,7 @@ if __name__ == '__main__':
                  #TestTimezone,
                  #TestTimezonePeriod,
                  #TestTripBoard,
-                 TestCrossing,
+                 #TestCrossing,
                  #TestAlight,
                  #TestHeadwayBoard,
                  #TestHeadwayAlight,
