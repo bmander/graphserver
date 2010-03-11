@@ -1,15 +1,20 @@
 #ifndef _GRAPHSERVER_H_
 #define _GRAPHSERVER_H_
 
+typedef int ServiceId;
+
+// generally useful classes
 typedef struct EdgePayload EdgePayload;
 typedef struct State State;
+typedef struct WalkOptions WalkOptions;
+
+// classes that support edgetypes
 typedef struct ServicePeriod ServicePeriod;
-typedef int ServiceId;
 typedef struct ServiceCalendar ServiceCalendar;
 typedef struct Timezone Timezone;
 typedef struct TimezonePeriod TimezonePeriod;
-typedef struct WalkOptions WalkOptions;
 
+// edgetypes
 typedef struct Link Link;
 
 typedef enum {    
