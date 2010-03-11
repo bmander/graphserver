@@ -9,24 +9,6 @@
 #include "graphserver.h"
 #include "statetypes.h"
 
-typedef enum {    
-  PL_STREET,
-  PL_TRIPHOPSCHED_DEPRIC,
-  PL_TRIPHOP_DEPRIC,
-  PL_LINK,
-  PL_EXTERNVALUE,
-  PL_NONE, // 5
-  PL_WAIT,
-  PL_HEADWAY,
-  PL_TRIPBOARD,
-  PL_CROSSING,
-  PL_ALIGHT, // 10
-  PL_HEADWAYBOARD,
-  PL_EGRESS,
-  PL_HEADWAYALIGHT,
-  PL_ELAPSE_TIME
-} edgepayload_t;
-
 //---------------DECLARATIONS FOR EDGEPAYLOAD CLASS---------------------
 
 struct EdgePayload {
