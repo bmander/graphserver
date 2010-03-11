@@ -8,8 +8,10 @@ typedef int ServiceId;
 typedef struct ServiceCalendar ServiceCalendar;
 typedef struct Timezone Timezone;
 typedef struct TimezonePeriod TimezonePeriod;
+typedef struct WalkOptions WalkOptions;
 
 #include "state.h"
 #include "edgetypes.h"
+#include "walkoptions.h"
 
 #endif
