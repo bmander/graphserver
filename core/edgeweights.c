@@ -24,21 +24,6 @@
   }
 #endif
 
-
-inline State*
-#ifndef ROUTE_REVERSE
-linkWalk(EdgePayload* this, State* state, WalkOptions* options) {
-#else
-linkWalkBack(EdgePayload* this, State* state, WalkOptions* options) {
-#endif
-    
-  State* ret = stateDup( state );
-
-  ret->prev_edge = this;
-
-  return ret;
-}
-
 inline State*
 #ifndef ROUTE_REVERSE
 elapseTimeWalk(EdgePayload* this, State* state, WalkOptions* options) {

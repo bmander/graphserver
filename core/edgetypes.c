@@ -74,37 +74,6 @@ epWalkBack( EdgePayload* this, State* state, WalkOptions* options ) {
   return this->walkBack( this, state, options );
 }
 
-//LINK FUNCTIONS
-Link*
-linkNew() {
-  Link* ret = (Link*)malloc(sizeof(Link));
-  ret->type = PL_LINK;
-  ret->name = (char*)malloc(5*sizeof(char));
-  strcpy(ret->name, "LINK");
-    
-  //bind functions to methods
-  ret->walk = &linkWalk;
-  ret->walkBack = &linkWalkBack;
-
-  return ret;
-}
-
-void
-linkDestroy(Link* tokill) {
-  free( tokill->name );
-  free( tokill );
-}
-
-char*
-linkGetName(Link* this) {
-    return this->name;
-}
-
-int
-linkReturnOne(Link* this) {
-    return 1;
-}
-
 //STREET FUNCTIONS
 Street*
 streetNew(const char *name, double length) {
