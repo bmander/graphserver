@@ -6,11 +6,7 @@
 #include "hashtable_gs.h"
 #define SECS_IN_DAY 86400
 
-typedef int ServiceId;
-typedef struct ServicePeriod ServicePeriod;
-typedef struct ServiceCalendar ServiceCalendar;
-typedef struct Timezone Timezone;
-typedef struct TimezonePeriod TimezonePeriod;
+#include "graphserver.h"
 
 struct ServiceCalendar {
     /* TripHops have service types, and the ServiceCalendar provides the correspondance between points in time and lists of service_ids.

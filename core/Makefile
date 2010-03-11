@@ -12,7 +12,8 @@ OBJECTS= dirfibheap.o \
 	hashtable_gs.o \
 	hashtable_itr.o \
 	hashtable_utility.o \
-	statetypes.o 
+	statetypes.o \
+    state.o
 
 # You know what? Honestly? I don't know what most of these switches do.
 CFLAGS=-g -fno-strict-aliasing -O2 -fPIC -Wall
