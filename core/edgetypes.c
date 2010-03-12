@@ -1204,9 +1204,3 @@ cpWalkBack(CustomPayload* this, State* state, WalkOptions* walkoptions) {
 	s->prev_edge = (EdgePayload*)this;
 	return s;
 }
-
-#undef ROUTE_REVERSE
-#include "edgeweights.c"
-#define ROUTE_REVERSE
-#include "edgeweights.c"
-#undef ROUTE_REVERSE
