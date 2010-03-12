@@ -24,7 +24,8 @@ OBJECTS= dirfibheap.o \
     headway.o \
     tripboard.o \
     headwayboard.o \
-    headwayalight.o
+    headwayalight.o \
+    crossing.o
 
 # You know what? Honestly? I don't know what most of these switches do.
 CFLAGS=-g -fno-strict-aliasing -O2 -fPIC -Wall

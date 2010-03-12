@@ -30,6 +30,7 @@ typedef struct Headway Headway;
 typedef struct TripBoard TripBoard;
 typedef struct HeadwayBoard HeadwayBoard;
 typedef struct HeadwayAlight HeadwayAlight;
+typedef struct Crossing Crossing;
 
 typedef enum {    
   PL_STREET,
@@ -63,5 +64,6 @@ typedef enum {
 #include "tripboard.h"
 #include "headwayboard.h"
 #include "headwayalight.h"
+#include "crossing.h"
 
 #endif
