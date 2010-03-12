@@ -26,26 +26,6 @@
 
 inline State*
 #ifndef ROUTE_REVERSE
-elapseTimeWalk(EdgePayload* this, State* state, WalkOptions* options) {
-#else
-elapseTimeWalkBack(EdgePayload* this, State* state, WalkOptions* options) {
-#endif
-  
-  State* ret = stateDup( state );
-  
-  int delta_t = ((ElapseTime*)this)->seconds;
-  
-  ELAPSE_TIME_AND_SERVICE_PERIOD(ret, delta_t);
-
-  // this could have a multiplier via WalkOptions, but this is currently not necessary
-  ret->weight += delta_t;
-  ret->prev_edge = this;
-
-  return ret;
-}
-
-inline State*
-#ifndef ROUTE_REVERSE
 headwayWalk(EdgePayload* superthis, State* state, WalkOptions* options) {
 #else
 headwayWalkBack(EdgePayload* superthis, State* state, WalkOptions* options) {
