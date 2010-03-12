@@ -1,4 +1,5 @@
-#include "graphserver.h"
+#ifndef _HEADWAY_H_
+#define _HEADWAY_H_
 
 //---------------DECLARATIONS FOR HEADWAY  CLASS---------------------
 
@@ -56,3 +57,5 @@ headwayAgency(Headway* this);
 
 ServiceId
 headwayServiceId(Headway* this);
+
+#endif
