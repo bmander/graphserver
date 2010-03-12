@@ -15,7 +15,8 @@ OBJECTS= dirfibheap.o \
 	statetypes.o \
     state.o \
     walkoptions.o \
-    link.o
+    link.o \
+    street.o
 
 # You know what? Honestly? I don't know what most of these switches do.
 CFLAGS=-g -fno-strict-aliasing -O2 -fPIC -Wall

@@ -16,6 +16,7 @@ typedef struct TimezonePeriod TimezonePeriod;
 
 // edgetypes
 typedef struct Link Link;
+typedef struct Street Street;
 
 typedef enum {    
   PL_STREET,
@@ -40,5 +41,6 @@ typedef enum {
 #include "walkoptions.h"
 
 #include "link.h"
+#include "street.h"
 
 #endif
