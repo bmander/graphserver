@@ -1,7 +1,8 @@
 #ifndef _STATE_H_
 #define _STATE_H_
 
-#include "edgetypes.h"
+#include "graphserver.h"
+#include "statetypes.h"
 
 //---------------DECLARATIONS FOR STATE CLASS---------------------
 

@@ -5,7 +5,6 @@ all: libgraphserver.so
 PREFIX=/usr
 
 OBJECTS= dirfibheap.o \
-	edgetypes.o \
 	fibheap.o \
 	graph.o \
 	hashtable.o \
@@ -67,7 +66,6 @@ install:
 	cp graph.h $(PREFIX)/include/graphserver
 	cp hashtable_gs.h $(PREFIX)/include/graphserver
 	cp hashtable_itr.h $(PREFIX)/include/graphserver
-	cp edgetypes.h $(PREFIX)/include/graphserver
 	cp hashtable.h $(PREFIX)/include/graphserver
 	cp hashtable_utility.h $(PREFIX)/include/graphserver
 	cp hashtable_private.h $(PREFIX)/include/graphserver

@@ -5,7 +5,9 @@
 #include <string.h>
 #include "hashtable_gs.h"
 #include "hashtable_itr.h"
-#include "edgetypes.h"
+
+#include "graphserver.h"
+#include "statetypes.h"
 
 #ifndef INFINITY
   #define INFINITY 1000000000

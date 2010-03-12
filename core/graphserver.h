@@ -52,7 +52,6 @@ typedef enum {
 } edgepayload_t;
 
 #include "state.h"
-#include "edgetypes.h"
 #include "walkoptions.h"
 #include "elapsehelpers.h"
 
