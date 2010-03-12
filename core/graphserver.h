@@ -26,6 +26,7 @@ typedef struct Street Street;
 typedef struct Egress Egress;
 typedef struct Wait Wait;
 typedef struct ElapseTime ElapseTime;
+typedef struct Headway Headway;
 
 typedef enum {    
   PL_STREET,
@@ -55,5 +56,6 @@ typedef enum {
 #include "egress.h"
 #include "wait.h"
 #include "elapsetime.h"
+#include "headway.h"
 
 #endif
