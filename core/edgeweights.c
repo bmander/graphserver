@@ -44,50 +44,6 @@ elapseTimeWalkBack(EdgePayload* this, State* state, WalkOptions* options) {
   return ret;
 }
 
-
-#ifndef ROUTE_REVERSE
-inline State*
-waitWalk(EdgePayload* superthis, State* state, WalkOptions* options) {
-    Wait* this = (Wait*)superthis;
-    
-    State* ret = stateDup( state );
-    
-    ret->prev_edge = superthis;
-    
-    long secs_since_local_midnight = (state->time+tzUtcOffset(this->timezone, state->time))%SECS_IN_DAY;
-    long wait_time = this->end - secs_since_local_midnight;
-    if(wait_time<0) {
-        wait_time += SECS_IN_DAY;
-    }
-    
-    ret->time += wait_time;
-    ret->weight += wait_time;
-    
-    return ret;
-}
-#else
-inline State*
-waitWalkBack(EdgePayload* superthis, State* state, WalkOptions* options) {
-    Wait* this = (Wait*)superthis;
-    
-    State* ret = stateDup( state );
-    
-    ret->prev_edge = superthis;
-    
-    long secs_since_local_midnight = (state->time+tzUtcOffset(this->timezone, state->time))%SECS_IN_DAY;
-    long wait_time = secs_since_local_midnight - this->end;
-    if(wait_time<0) {
-        wait_time += SECS_IN_DAY;
-    }
-    
-    ret->time -= wait_time;
-    ret->weight += wait_time;
-    
-    return ret;
-}
-#endif
-
-
 inline State*
 #ifndef ROUTE_REVERSE
 headwayWalk(EdgePayload* superthis, State* state, WalkOptions* options) {

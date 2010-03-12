@@ -18,7 +18,8 @@ OBJECTS= dirfibheap.o \
     elapsehelpers.o \
     link.o \
     street.o \
-    egress.o
+    egress.o \
+    wait.o
 
 # You know what? Honestly? I don't know what most of these switches do.
 CFLAGS=-g -fno-strict-aliasing -O2 -fPIC -Wall
