@@ -1,3 +1,4 @@
+#include "graphserver.h"
 
 void elapse_time_and_service_period_forward(State *ret, State *state, long delta_t) {
   int i; 

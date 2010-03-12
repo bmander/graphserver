@@ -1,5 +1,4 @@
 #include "graphserver.h"
-#include "elapsehelpers.c"
 
 //STREET FUNCTIONS
 Street*

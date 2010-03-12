@@ -90,33 +90,6 @@ waitWalkBack(EdgePayload* superthis, State* state, WalkOptions* options) {
 
 inline State*
 #ifndef ROUTE_REVERSE
-egressWalk(EdgePayload* superthis, State* state, WalkOptions* options) {
-#else
-egressWalkBack(EdgePayload* superthis, State* state, WalkOptions* options) {
-#endif
-  Egress* this = (Egress*)superthis;
-  State* ret = stateDup( state );
-
-  double end_dist = state->dist_walked + this->length;
-  // no matter what the options say (e.g. you're on a bike), 
-  // the walking speed should be 1.1 mps, because you can't ride in
-  // a station
-  long delta_t = (long)(this->length/1.1);
-  long delta_w = delta_t*options->walking_reluctance;
-  if(end_dist > options->max_walk)
-    delta_w += (end_dist - options->max_walk)*options->walking_overage*delta_t;
-
-  ELAPSE_TIME_AND_SERVICE_PERIOD(ret, delta_t);
-
-  ret->weight        += delta_w;
-  ret->dist_walked    = end_dist;
-  ret->prev_edge = superthis;
-
-  return ret;
-}
-
-inline State*
-#ifndef ROUTE_REVERSE
 headwayWalk(EdgePayload* superthis, State* state, WalkOptions* options) {
 #else
 headwayWalkBack(EdgePayload* superthis, State* state, WalkOptions* options) {
