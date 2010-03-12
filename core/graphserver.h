@@ -67,5 +67,6 @@ typedef enum {
 #include "headwayalight.h"
 #include "crossing.h"
 #include "alight.h"
+#include "custompayload.h"
 
 #endif
