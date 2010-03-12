@@ -23,7 +23,8 @@ OBJECTS= dirfibheap.o \
     elapsetime.o \
     headway.o \
     tripboard.o \
-    headwayboard.o
+    headwayboard.o \
+    headwayalight.o
 
 # You know what? Honestly? I don't know what most of these switches do.
 CFLAGS=-g -fno-strict-aliasing -O2 -fPIC -Wall
