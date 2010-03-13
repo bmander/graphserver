@@ -3312,7 +3312,7 @@ if __name__ == '__main__':
                  #TestCrossing,
                  #TestAlight,
                  #TestHeadwayBoard,
-                 #TestHeadwayAlight,
+                 TestHeadwayAlight,
                  #TestWalkOptions,
                  #TestElapseTime,
                  ]
