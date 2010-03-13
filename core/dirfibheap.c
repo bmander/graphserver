@@ -5,6 +5,7 @@
 #include "dirfibheap.h"
 #include <stdlib.h>
 #include "hashtable_gs.h"
+#include "hashtable.h"
 
 dirfibheap_t 
 dirfibheap_new(long initSize)

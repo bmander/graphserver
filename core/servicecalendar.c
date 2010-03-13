@@ -1,5 +1,7 @@
 #include "graphserver.h"
 #include "hashtable_gs.h"
+#include "hashtable.h"
+#include <stdio.h>
 
 //SERVICE CALENDAR METHODS
 

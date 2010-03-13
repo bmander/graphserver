@@ -1,4 +1,9 @@
 #include "hashtable_gs.h"
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "hashtable.h"
+#include "hashtable_utility.h"
 
 static unsigned int
 quickhash(void *str)

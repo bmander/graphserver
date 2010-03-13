@@ -1,12 +1,6 @@
 #ifndef HASHTABLE_GS_H
 #define HASHTABLE_GS_H
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include "hashtable.h"
-#include "hashtable_utility.h"
-
 struct hashtable *
 create_hashtable_string(unsigned int minsize);
 
