@@ -11,7 +11,6 @@ OBJECTS= dirfibheap.o \
 	hashtable_gs.o \
 	hashtable_itr.o \
 	hashtable_utility.o \
-	statetypes.o \
     state.o \
     walkoptions.o \
     elapsehelpers.o \

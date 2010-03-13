@@ -2,7 +2,6 @@
 #define _STATE_H_
 
 #include "graphserver.h"
-#include "statetypes.h"
 
 //---------------DECLARATIONS FOR STATE CLASS---------------------
 
