@@ -74,6 +74,7 @@ typedef enum {
 #include "edgepayload.h"
 #include "list.h"
 #include "servicecalendar.h"
+#include "timezone.h"
 
 // things that everyone needs
 #include <stdlib.h>
