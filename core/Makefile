@@ -15,17 +15,17 @@ OBJECTS= dirfibheap.o \
     state.o \
     walkoptions.o \
     elapsehelpers.o \
-    link.o \
-    street.o \
-    egress.o \
-    wait.o \
-    elapsetime.o \
-    headway.o \
-    tripboard.o \
-    headwayboard.o \
+    edgetypes/link.o \
+    edgetypes/street.o \
+    edgetypes/egress.o \
+    edgetypes/wait.o \
+    edgetypes/elapsetime.o \
+    edgetypes/headway.o \
+    edgetypes/tripboard.o \
+    edgetypes/headwayboard.o \
     edgetypes/headwayalight.o \
-    crossing.o \
-    alight.o \
+    edgetypes/crossing.o \
+    edgetypes/alight.o \
     custompayload.o \
     edgepayload.o \
     list.o

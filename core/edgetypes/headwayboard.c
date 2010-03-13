@@ -1,4 +1,4 @@
-#include "graphserver.h"
+#include "../graphserver.h"
 
 // HEADWAYBOARD FUNCTIONS
 

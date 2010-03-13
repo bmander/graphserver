@@ -1,4 +1,4 @@
-#include "graphserver.h"
+#include "../graphserver.h"
 
 //ElapseTime FUNCTIONS
 ElapseTime*

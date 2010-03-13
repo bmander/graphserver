@@ -1,5 +1,5 @@
 
-#include "graphserver.h"
+#include "../graphserver.h"
 
 //LINK FUNCTIONS
 Link*
