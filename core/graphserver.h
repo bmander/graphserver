@@ -57,7 +57,7 @@ typedef enum {
 
 #include "state.h"
 #include "walkoptions.h"
-#include "elapsehelpers.h"
+#include "edgetypes/elapsehelpers.h"
 
 #include "edgetypes/link.h"
 #include "edgetypes/street.h"

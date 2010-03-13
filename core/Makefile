@@ -13,7 +13,7 @@ OBJECTS= fibheap/dirfibheap.o \
 	hashtable/hashtable_utility.o \
     state.o \
     walkoptions.o \
-    elapsehelpers.o \
+    edgetypes/elapsehelpers.o \
     edgetypes/link.o \
     edgetypes/street.o \
     edgetypes/egress.o \
