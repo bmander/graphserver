@@ -1,4 +1,6 @@
 
+#include "fibheap.h"
+#include "graph.h"
 #include "dirfibheap.h"
 
 dirfibheap_t 

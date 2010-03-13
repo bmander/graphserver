@@ -1,10 +1,6 @@
 #ifndef DIRFIBHEAP_H
 #define DIRFIBHEAP_H
 
-//#include "ruby.h"
-#include "fibheap.h"
-#include "graph.h"
-
 struct dirfibheap {
   struct hashtable *dir;
   struct fibheap *heap;
