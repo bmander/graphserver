@@ -1,11 +1,6 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
-typedef struct Vertex Vertex;
-typedef struct Edge Edge;
-typedef struct ListNode ListNode;
-typedef struct Graph Graph;
-
 struct Graph {
    struct hashtable* vertices;
 };

@@ -13,6 +13,10 @@ typedef int ServiceId;
 typedef struct EdgePayload EdgePayload;
 typedef struct State State;
 typedef struct WalkOptions WalkOptions;
+typedef struct Vertex Vertex;
+typedef struct Edge Edge;
+typedef struct ListNode ListNode;
+typedef struct Graph Graph;
 
 // classes that support edgetypes
 typedef struct ServicePeriod ServicePeriod;
