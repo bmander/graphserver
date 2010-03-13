@@ -856,7 +856,10 @@ class TestStreet(unittest.TestCase):
     def test_walk(self):
         s = Street("longstreet", 2)
         
-        after = s.walk(State(0,0),WalkOptions())
+        wo = WalkOptions()
+        wo.walking_speed = 1
+        
+        after = s.walk(State(0,0),wo)
         assert after.time == 2
         assert after.weight == 2
         assert after.dist_walked == 2
@@ -868,7 +871,10 @@ class TestStreet(unittest.TestCase):
         s = Street("longstreet", 2)
         s.slog = 10
         
-        after = s.walk(State(0,0),WalkOptions())
+        wo = WalkOptions()
+        wo.walking_speed = 1
+        
+        after = s.walk(State(0,0),wo)
         assert after.time == 2
         assert after.weight == 20
         assert after.dist_walked == 2
@@ -879,7 +885,10 @@ class TestStreet(unittest.TestCase):
     def test_walk_back(self):
         s = Street("longstreet", 2)
         
-        before = s.walk_back(State(0,100),WalkOptions())
+        wo = WalkOptions()
+        wo.walking_speed = 1
+        
+        before = s.walk_back(State(0,100),wo)
         
         assert before.time == 98
         assert before.weight == 2
@@ -888,57 +897,10 @@ class TestStreet(unittest.TestCase):
         assert before.prev_edge.name == "longstreet"
         assert before.num_agencies == 0
         
-    def test_walk_elev(self):
-        s = Street("uwhillclimb", 488.8992, 38.7096, 0)
-        
-        wo = WalkOptions()
-        wo.walking_speed = 4
-        after = s.walk(State(0,0),wo)
-        assert after.time == 242
-        assert after.weight == 302
-        
-        s = Street("uwhillclimb", 488.8992, 0, 38.7096)
-        after = s.walk(State(0,0),wo)
-        assert after.time == 47
-        assert after.weight == 47
-        
-        s = Street("bgfall", 612.9528, 7.62, 0)
-        after = s.walk(State(0,0),wo)
-        assert after.time == 176
-        assert after.weight == 187
-        
-        s = Street("bgfall", 612.9528, 0, 7.62)
-        after = s.walk(State(0,0), wo)
-        assert after.time == 139
-        assert after.weight == 139
-        
-    def test_walk_back_elev(self):
-        wo = WalkOptions()
-        wo.walking_speed = 4
-        
-        s = Street("uwhillclimb", 488.8992, 0, 38.7096)
-        after = s.walk_back(State(0,0),wo)
-        assert after.time == -242
-        assert after.weight == 302
-        
-        s = Street("uwhillclimb", 488.8992, 38.7096, 0)
-        after = s.walk_back(State(0,0),wo)
-        assert after.time == -47
-        assert after.weight == 47
-        
-        s = Street("bgfall", 612.9528, 0, 7.62)
-        after = s.walk_back(State(0,0),wo)
-        assert after.time == -176
-        assert after.weight == 187
-        
-        s = Street("bgfall", 612.9528, 7.62, 0)
-        after = s.walk_back(State(0,0), wo)
-        assert after.time == -139
-        assert after.weight == 139
-        
     def test_street_turn(self):
         wo = WalkOptions()
         wo.turn_penalty = 20
+        wo.walking_speed = 1
 
         e0 = Street("a1", 10)
         e0.way = 42
@@ -948,7 +910,7 @@ class TestStreet(unittest.TestCase):
         s0.prev_edge = e0
         
         s1 = e1.walk(s0, wo)
-        assert s1.weight == 31
+        assert s1.weight == 30
         
         
     def test_getstate(self):
@@ -3115,13 +3077,10 @@ class TestWalkOptions(unittest.TestCase):
         
         assert wo.transfer_penalty == 0
         assert wo.turn_penalty == 0
-        assert wo.walking_speed*100//1 == 85.0
+        assert wo.walking_speed*100//1 == 607.0
         assert wo.walking_reluctance == 1.0
         assert wo.max_walk == 10000
         assert round(wo.walking_overage,3) == 0.1
-        assert round(wo.uphill_slowness,3) == 0.08
-        assert round(wo.downhill_fastness,3) == 1.96
-        assert round(wo.hill_reluctance,3) == 1.5
         
         wo.transfer_penalty = 50
         assert wo.transfer_penalty == 50
@@ -3178,16 +3137,22 @@ class TestEdge(unittest.TestCase):
         v2 = Vertex( "B" )
         e1 = Edge( v1, v2, Street( "atob", 10.0 ) )
         
-        assert e1.walk( State(0,0), WalkOptions() ) is not None
-        assert e1.walk( State(0,0), WalkOptions() ).weight == 11
+        wo = WalkOptions()
+        wo.walking_speed = 1
+        
+        assert e1.walk( State(0,0), wo ) is not None
+        assert e1.walk( State(0,0), wo ).weight == 10
         
     def test_disable(self):
         v1 = Vertex( "A" )
         v2 = Vertex( "B" )
         e1 = Edge( v1, v2, Street( "atob", 10.0 ) )
         
-        assert e1.walk( State(0,0), WalkOptions() ) is not None
-        assert e1.walk( State(0,0), WalkOptions() ).weight == 11
+        wo = WalkOptions()
+        wo.walking_speed = 1
+    
+        assert e1.walk( State(0,0), wo ) is not None
+        assert e1.walk( State(0,0), wo ).weight == 10
         
         e1.enabled = False
         
@@ -3312,7 +3277,7 @@ if __name__ == '__main__':
                  #TestCrossing,
                  #TestAlight,
                  #TestHeadwayBoard,
-                 TestHeadwayAlight,
+                 #TestHeadwayAlight,
                  #TestWalkOptions,
                  #TestElapseTime,
                  ]
