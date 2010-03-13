@@ -70,7 +70,7 @@ typedef enum {
 #include "edgetypes/headwayalight.h"
 #include "edgetypes/crossing.h"
 #include "edgetypes/alight.h"
-#include "custompayload.h"
+#include "edgetypes/custompayload.h"
 #include "edgepayload.h"
 #include "list.h"
 

@@ -26,7 +26,7 @@ OBJECTS= dirfibheap.o \
     edgetypes/headwayalight.o \
     edgetypes/crossing.o \
     edgetypes/alight.o \
-    custompayload.o \
+    edgetypes/custompayload.o \
     edgepayload.o \
     list.o
 
