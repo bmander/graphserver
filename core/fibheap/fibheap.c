@@ -33,8 +33,8 @@ Boston, MA 02110-1301, USA.  */
 //#endif
 #include "fibheap.h"
 
-#include "graphserver.h"
-#include "graph.h"
+#include "../graphserver.h"
+#include "../graph.h"
 
 #define FIBHEAPKEY_MIN	LONG_MIN
 

@@ -4,8 +4,8 @@ all: libgraphserver.so
 # PREFIX=... make install
 PREFIX=/usr
 
-OBJECTS= dirfibheap.o \
-	fibheap.o \
+OBJECTS= fibheap/dirfibheap.o \
+	fibheap/fibheap.o \
 	graph.o \
 	hashtable/hashtable.o \
 	hashtable/hashtable_gs.o \

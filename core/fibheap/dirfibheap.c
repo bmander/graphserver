@@ -1,11 +1,11 @@
 
-#include "graphserver.h"
+#include "../graphserver.h"
 #include "fibheap.h"
-#include "graph.h"
+#include "../graph.h"
 #include "dirfibheap.h"
 #include <stdlib.h>
-#include "hashtable/hashtable_gs.h"
-#include "hashtable/hashtable.h"
+#include "../hashtable/hashtable_gs.h"
+#include "../hashtable/hashtable.h"
 
 dirfibheap_t 
 dirfibheap_new(long initSize)
