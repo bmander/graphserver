@@ -6,8 +6,8 @@
 
 #include <stddef.h>
 #include <string.h>
-#include "hashtable_gs.h"
-#include "hashtable_itr.h"
+#include "hashtable/hashtable_gs.h"
+#include "hashtable/hashtable_itr.h"
 
 #ifndef INFINITY
   #define INFINITY 1000000000

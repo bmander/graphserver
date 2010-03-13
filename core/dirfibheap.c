@@ -4,8 +4,8 @@
 #include "graph.h"
 #include "dirfibheap.h"
 #include <stdlib.h>
-#include "hashtable_gs.h"
-#include "hashtable.h"
+#include "hashtable/hashtable_gs.h"
+#include "hashtable/hashtable.h"
 
 dirfibheap_t 
 dirfibheap_new(long initSize)

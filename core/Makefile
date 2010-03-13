@@ -7,10 +7,10 @@ PREFIX=/usr
 OBJECTS= dirfibheap.o \
 	fibheap.o \
 	graph.o \
-	hashtable.o \
-	hashtable_gs.o \
-	hashtable_itr.o \
-	hashtable_utility.o \
+	hashtable/hashtable.o \
+	hashtable/hashtable_gs.o \
+	hashtable/hashtable_itr.o \
+	hashtable/hashtable_utility.o \
     state.o \
     walkoptions.o \
     elapsehelpers.o \
