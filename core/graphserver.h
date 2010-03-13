@@ -73,6 +73,7 @@ typedef enum {
 #include "edgetypes/custompayload.h"
 #include "edgepayload.h"
 #include "list.h"
+#include "servicecalendar.h"
 
 // things that everyone needs
 #include <stdlib.h>
