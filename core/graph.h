@@ -1,18 +1,6 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
-#include <stddef.h>
-#include <string.h>
-#include "hashtable_gs.h"
-#include "hashtable_itr.h"
-
-#include "graphserver.h"
-#include "statetypes.h"
-
-#ifndef INFINITY
-  #define INFINITY 1000000000
-#endif
-
 typedef struct Vertex Vertex;
 typedef struct Edge Edge;
 typedef struct ListNode ListNode;

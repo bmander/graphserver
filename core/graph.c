@@ -1,6 +1,20 @@
+#include "graphserver.h"
+
 #include "graph.h"
 #include "fibheap.h"
 #include "dirfibheap.h"
+
+#include <stddef.h>
+#include <string.h>
+#include "hashtable_gs.h"
+#include "hashtable_itr.h"
+
+
+#include "statetypes.h"
+
+#ifndef INFINITY
+  #define INFINITY 1000000000
+#endif
 
 //GRAPH FUNCTIONS
 

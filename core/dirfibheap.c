@@ -1,4 +1,5 @@
 
+#include "graphserver.h"
 #include "fibheap.h"
 #include "graph.h"
 #include "dirfibheap.h"
