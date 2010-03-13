@@ -1,5 +1,5 @@
 
-#include "state.h"
+#include "graphserver.h"
 
 //STATE FUNCTIONS
 State*
