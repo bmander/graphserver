@@ -3,6 +3,8 @@
 #include "fibheap.h"
 #include "graph.h"
 #include "dirfibheap.h"
+#include <stdlib.h>
+#include "hashtable_gs.h"
 
 dirfibheap_t 
 dirfibheap_new(long initSize)

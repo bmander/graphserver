@@ -73,4 +73,8 @@ typedef enum {
 #include "custompayload.h"
 #include "edgepayload.h"
 
+// things that everyone needs
+#include <stdlib.h>
+#include <string.h>
+
 #endif

@@ -9,7 +9,6 @@
 #include "hashtable_gs.h"
 #include "hashtable_itr.h"
 
-
 #include "statetypes.h"
 
 #ifndef INFINITY

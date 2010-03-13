@@ -1,13 +1,6 @@
 #ifndef _STATETYPES_H_
 #define _STATETYPES_H_
 
-#include <stdlib.h>
-#include <string.h>
-#include "hashtable_gs.h"
-#define SECS_IN_DAY 86400
-
-#include "graphserver.h"
-
 struct ServiceCalendar {
     /* TripHops have service types, and the ServiceCalendar provides the correspondance between points in time and lists of service_ids.
     *  For example, A triphop that has a service_id attribute with the value "WKDY" will only run during service periods
