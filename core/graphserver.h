@@ -67,7 +67,7 @@ typedef enum {
 #include "headway.h"
 #include "tripboard.h"
 #include "headwayboard.h"
-#include "headwayalight.h"
+#include "edgetypes/headwayalight.h"
 #include "crossing.h"
 #include "alight.h"
 #include "custompayload.h"

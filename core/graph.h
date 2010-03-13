@@ -33,11 +33,6 @@ struct Edge {
   int enabled;
 } ;
 
-struct ListNode {
-   Edge* data;
-   ListNode* next;
-} ;
-
 //GRAPH FUNCTIONS
 
 Graph*
