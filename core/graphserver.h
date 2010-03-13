@@ -72,6 +72,7 @@ typedef enum {
 #include "alight.h"
 #include "custompayload.h"
 #include "edgepayload.h"
+#include "list.h"
 
 // things that everyone needs
 #include <stdlib.h>
