@@ -63,15 +63,14 @@ libgraphserver.so: $(OBJECTS)
 install:
 	cp libgraphserver.so $(PREFIX)/lib
 	mkdir -p $(PREFIX)/include/graphserver
-	cp fibheap.h $(PREFIX)/include/graphserver
-	cp dirfibheap.h $(PREFIX)/include/graphserver
+	cp fibheap/fibheap.h $(PREFIX)/include/graphserver
+	cp fibheap/dirfibheap.h $(PREFIX)/include/graphserver
 	cp graph.h $(PREFIX)/include/graphserver
-	cp hashtable_gs.h $(PREFIX)/include/graphserver
-	cp hashtable_itr.h $(PREFIX)/include/graphserver
-	cp hashtable.h $(PREFIX)/include/graphserver
-	cp hashtable_utility.h $(PREFIX)/include/graphserver
-	cp hashtable_private.h $(PREFIX)/include/graphserver
-	cp statetypes.h $(PREFIX)/include/graphserver
+	cp hashtable/hashtable_gs.h $(PREFIX)/include/graphserver
+	cp hashtable/hashtable_itr.h $(PREFIX)/include/graphserver
+	cp hashtable/hashtable.h $(PREFIX)/include/graphserver
+	cp hashtable/hashtable_utility.h $(PREFIX)/include/graphserver
+	cp hashtable/hashtable_private.h $(PREFIX)/include/graphserver
 
 clean:
 	rm -f *.o *.so *~ *.d
