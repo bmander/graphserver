@@ -8,9 +8,15 @@ struct ListNode {
 
 //LIST FUNCTIONS
 
+/*
+ * create a new list
+ */
 ListNode*
 liNew(Edge *data);
 
+/*
+ * append an existing list node after the given list node
+ */
 void
 liInsertAfter( ListNode *this, ListNode *add) ;
 
