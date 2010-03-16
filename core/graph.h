@@ -78,6 +78,9 @@ gSetThicknesses( Graph* this, char *root_label );
 void
 gSetVertexEnabled( Graph *this, char *label, int enabled );
 
+void**
+sptPathRetro(Graph* g, char* origin_label, int* vertex_cnt);
+
 
 //VERTEX FUNCTIONS
 
