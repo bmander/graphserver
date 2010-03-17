@@ -17,6 +17,7 @@ typedef struct Vertex Vertex;
 typedef struct Edge Edge;
 typedef struct ListNode ListNode;
 typedef struct Graph Graph;
+typedef struct Path Path;
 
 // classes that support edgetypes
 typedef struct ServicePeriod ServicePeriod;
@@ -75,6 +76,7 @@ typedef enum {
 #include "list.h"
 #include "servicecalendar.h"
 #include "timezone.h"
+#include "path.h"
 
 // things that everyone needs
 #include <stdlib.h>

@@ -29,7 +29,8 @@ OBJECTS= fibheap/dirfibheap.o \
     edgepayload.o \
     list.o \
     servicecalendar.o \
-    timezone.o
+    timezone.o \
+    path.o
 
 # You know what? Honestly? I don't know what most of these switches do.
 CFLAGS=-g -fno-strict-aliasing -O2 -fPIC -Wall
