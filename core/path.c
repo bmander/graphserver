@@ -57,10 +57,10 @@ pathGetEdge( Path *this, int i ) {
 void
 pathAddSegment( Path *this, Vertex *vertex, Edge *edge ) {
     // expand the arrays, if they're full
-    if (this->num_elements >= this->num_alloc-1) {
+    if (this->num_elements == this->num_alloc) {
         printf( "EXPAND\n" );
         this->vertices = (Vertex**)realloc(this->vertices, 
-                                           ((this->num_alloc+50) * sizeof(Vertex*)));
+                                           ((this->num_alloc+50+1) * sizeof(Vertex*)));
         this->edges = (Edge**)realloc(this->vertices, 
                                       ((this->num_alloc+50) * sizeof(Edge*)));
         this->num_alloc += 50;

@@ -131,6 +131,44 @@ class TestAddAndGetSegments(unittest.TestCase):
     def test_expand(self):
         """vertices gettable after resizing"""
         
+        # the path length right before a vector expansion
+        pathlen = 50
+        
+        # make a bunch of fake segments
+        segments = []
+        for i in range(pathlen):
+            vv = Vertex(str(i))
+            ee = Edge( vv, vv, Link() )
+            segments.append( (vv, ee) )
+        
+        # add those segments to the path
+        for vv, ee in segments:
+            self.path.addSegment( vv, ee ) 
+            
+        # check that they're alright
+        # check the odd-duck vertex
+        self.assertEqual( self.path.getVertex(0).label, "A" )
+        
+        # check the bunch of fake segments added
+        for i in range(1, pathlen+1):
+            print self.path.getVertex(i)
+            self.assertEqual( i-1, int(self.path.getVertex(i).label) )
+            
+        #
+        # getting towards the real test - add a segment after the vectors have
+        # been expanded
+        #
+        
+        # add it
+        vv = Vertex("B")
+        ee = Edge(vv, vv, Link())
+        self.path.addSegment( vv, ee )
+        
+        # get it
+        
+        print self.path.getVertex(pathlen+1)
+        
+        """
         vector_length = 51
         
         # add a bunch of segments to the path
@@ -169,6 +207,7 @@ class TestAddAndGetSegments(unittest.TestCase):
         
         # out of bounds again
         self.assertRaises( IndexError, self.path.getVertex, 101 )
+        """
         
         
 if __name__ == '__main__':
