@@ -1,6 +1,8 @@
 from graphserver.path import Path
 from graphserver.core import Vertex, Edge, Link, Street
 import unittest
+from graphserver.gsdll import lgs
+from ctypes import addressof
 
 class TestPathCreate(unittest.TestCase):
     def test_path_new(self):
@@ -8,23 +10,12 @@ class TestPathCreate(unittest.TestCase):
         path = Path( Vertex("A") )
         
         self.assertTrue( path )
-        self.assertTrue( path.soul )
         
     def test_path_empty(self):
         """Path is empty right after first created"""
         pp = Path( Vertex("A") )
         
-        self.assertEqual( pp.getSize(), 0 )
-        
-class TestPathDestroy(unittest.TestCase):
-    def setUp(self):
-        self.path = Path( Vertex("A") )
-        
-    def test_path_destroy(self):
-        self.path.destroy()
-        
-        # nothing should be callable 
-        self.assertRaises( Exception, self.path.getSize() )
+        self.assertEqual( pp.num_elements, 0 )
         
 class TestPathSize(unittest.TestCase):
     def setUp(self):
@@ -33,7 +24,7 @@ class TestPathSize(unittest.TestCase):
         
     def test_zero(self):
         """getSize returns zero on an empty path"""
-        self.assertEquals( self.path.getSize(), 0 )
+        self.assertEquals( self.path.num_elements, 0 )
     
     def test_one(self):
         """getSize returns one after one entry"""
@@ -43,7 +34,7 @@ class TestPathSize(unittest.TestCase):
         
         self.path.addSegment( bb, ee )
         
-        self.assertEqual( self.path.getSize(), 1 )
+        self.assertEqual( self.path.num_elements, 1 )
         
     def test_ten(self):
         """getSize returns ten after ten entries"""
@@ -54,10 +45,7 @@ class TestPathSize(unittest.TestCase):
             payload = Link()
             self.path.addSegment( bb, Edge(aa, bb, payload) )
             
-        self.assertEquals( self.path.getSize(), 10 )
-        
-    def tearDown(self):
-        self.path.destroy()
+        self.assertEquals( self.path.num_elements, 10 )
         
 class TestAddAndGetSegments(unittest.TestCase):
     def setUp(self):
@@ -104,7 +92,7 @@ class TestAddAndGetSegments(unittest.TestCase):
         self.assertRaises( IndexError, self.path.getEdge, 1 )
         
     def test_two(self):
-        """get a vertex, edge after adding a two segments"""
+        """get a vertex, edge after adding two segments"""
         
         ee1 = Edge(self.aa, self.bb, Link())
         ee2 = Edge(self.bb, self.aa, Link())
@@ -151,7 +139,6 @@ class TestAddAndGetSegments(unittest.TestCase):
         
         # check the bunch of fake segments added
         for i in range(1, pathlen+1):
-            print self.path.getVertex(i)
             self.assertEqual( i-1, int(self.path.getVertex(i).label) )
             
         #
@@ -165,49 +152,7 @@ class TestAddAndGetSegments(unittest.TestCase):
         self.path.addSegment( vv, ee )
         
         # get it
-        
-        print self.path.getVertex(pathlen+1)
-        
-        """
-        vector_length = 51
-        
-        # add a bunch of segments to the path
-        ee = Edge(self.aa, self.bb, Link())
-        for i in range(vector_length):
-            self.path.addSegment( self.aa, ee )
-            print self.path.getVertex(i+1)
-            
-        # the last segment is different
-        ee1 = Edge(self.bb, self.aa, Link())
-        self.path.addSegment( self.bb, ee1 )
-        print self.path.getVertex(i+2)
-        
-        for i in range(vector_length+2):
-            
-            
-        #out of bounds
-        self.assertRaises( IndexError, self.path.getVertex, -1 )
-        
-        # vertices in bounds
-        self.assertEqual( self.path.getVertex(0).soul, self.aa.soul )
-        self.assertEqual( self.path.getVertex(1).soul, self.aa.soul )
-        self.assertEqual( self.path.getVertex(2).soul, self.aa.soul )
-        #print self.path.getVertex(vector_length).soul
-        self.assertEqual( self.path.getVertex(vector_length+1).soul, self.bb.soul )
-        
-        # edges in bounds
-        for i in range(vector_length+1):
-            print hex(self.path.getVertex(i).soul)
-            #print hex(self.path.getEdge(i).soul)
-        
-        print( self.path.getEdge(0).soul, ee.soul )
-        print( self.path.getEdge(1).soul, ee.soul )
-        
-        print self.path.getEdge(0).payload
-        
-        # out of bounds again
-        self.assertRaises( IndexError, self.path.getVertex, 101 )
-        """
+        self.assertEqual( self.path.getVertex( 51 ).label, "B" )
         
         
 if __name__ == '__main__':

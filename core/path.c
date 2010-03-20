@@ -4,70 +4,52 @@
 // PATH FUNCTIONS
 
 Path *
-pathNew( Vertex* origin ) {
+pathNew( Vertex* origin, int init_size, int expand_delta ) {
     Path *this = (Path*)malloc(sizeof(Path));
     
-    this->num_elements = 0;
-    this->num_alloc = 50;
-    
-    this->vertices = (Vertex**)malloc((this->num_alloc+1)*sizeof(Vertex*));
-    this->edges = (Edge**)malloc(this->num_alloc*sizeof(Edge*));
+    this->vertices = vecNew( init_size, expand_delta );
+    this->edges = vecNew( init_size, expand_delta );
     
     /*
-     * A path is an alternative series of (vertex, edge, vertex, edge, vertex) 
+     * A path is an alternating series of (vertex, edge, vertex, edge, vertex) 
      * elements. As such a complete path always has one more vertices than 
      * edges. One way to deal with this inconveniently dangling Vertex is to
      * specify it at path initialization.
      */
-    this->vertices[0] = origin;
+    vecAdd( this->vertices, origin );
     
     return this;
 }
 
 void
 pathDestroy(Path *this) {
-    free(this->vertices);
-    free(this->edges);
+    vecDestroy( this->vertices );
+    vecDestroy( this->edges );
     free(this);
-}
-
-int
-pathGetSize(Path *this) {
-    return this->num_elements;
 }
 
 Vertex *
 pathGetVertex( Path *this, int i ) {
-    if( i < 0 || i >= this->num_elements+1 ) {
-        return NULL;
-    }
-    
-    return this->vertices[i];
+    return (Vertex*)vecGet( this->vertices, i );
 }
 
 Edge *
 pathGetEdge( Path *this, int i ) {
-    if( i < 0 || i >= this->num_elements ) {
-        return NULL;
-    }
-    
-    return this->edges[i];
+    return (Edge*)vecGet( this->edges, i );
 }
 
 void
 pathAddSegment( Path *this, Vertex *vertex, Edge *edge ) {
-    // expand the arrays, if they're full
-    if (this->num_elements == this->num_alloc) {
-        printf( "EXPAND\n" );
-        this->vertices = (Vertex**)realloc(this->vertices, 
-                                           ((this->num_alloc+50+1) * sizeof(Vertex*)));
-        this->edges = (Edge**)realloc(this->vertices, 
-                                      ((this->num_alloc+50) * sizeof(Edge*)));
-        this->num_alloc += 50;
-    }
-    
-    this->vertices[this->num_elements+1] = vertex;
-    this->edges[this->num_elements] = edge;
-    
-    this->num_elements++;
+    vecAdd( this->vertices, vertex );
+    vecAdd( this->edges, edge );
+}
+
+void*
+pathGetVertexPointer( Path *this ) {
+    return this->vertices;
+}
+
+void*
+pathGetEdgePointer( Path *this ) {
+    return this->edges;
 }

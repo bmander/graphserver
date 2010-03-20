@@ -1,21 +1,15 @@
 struct Path {
-  int num_elements;
-  int num_alloc;
-    
-  Vertex **vertices;
-  Edge **edges;
+  Vector *vertices;
+  Vector *edges;
 } ;
 
 // PATH FUNCTIONS
 
 Path *
-pathNew( Vertex* origin );
+pathNew( Vertex* origin, int init_size, int expand_delta );
 
 void
 pathDestroy(Path *this);
-
-int
-pathGetSize(Path *this);
 
 Vertex *
 pathGetVertex( Path *this, int i );

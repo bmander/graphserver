@@ -21,23 +21,19 @@ class Vector(Structure):
         # __new__ is called, but we've already constructed the struct, so
         # do nothing
         
-        # keep a reference to lgs in the instance so it doesn't get GCd prematurely
-        self.lgs = lgs
-        
-        # addressof also tends to get GCd prematurely, so keep our own reference to our address
-        self.address = addressof(self)
-        
-    def __del__(self):
-        self.lgs.vecDestroy( self.address )
+        pass
         
     def expand(self, amount):
-        self.lgs.vecExpand( self.address, amount )
+        lgs.vecExpand( addressof(address), amount )
         
     def add(self, element):
-        self.lgs.vecAdd( self.address, element )
+        lgs.vecAdd( addressof(address), element )
         
     def get(self, index):
-        return self.lgs.vecGet( self.address, index )
+        return lgs.vecGet( addressof(self), index )
+        
+    def __repr__(self):
+        return "<Vector shadow of %s (%d/%d)>"%(hex(addressof(self)),self.num_elements, self.num_alloc)
 
     
     
