@@ -226,52 +226,24 @@ gShortestPath( Graph* this, char *from, char *to, State* init_state, int directi
   return ret;
 }
 
-void**
-sptPathRetro(Graph* g, char* origin_label, int* vertex_cnt) {
+Path *
+sptPathRetro(Graph* g, char* origin_label) {
 	Vertex* curr = gGetVertex(g, origin_label);
 	ListNode* incoming = NULL;
 	Edge* edge = NULL;
-	
-    // vev_array is basically a vector containing the edge path of alternating edge and vertex elements
-	int num_alloc = 50;
-	void** vev_array = NULL;
-	
-	int num_elements = 0;
     
-    // if curr is NULL, there is no path
-	if (curr == NULL) {
-		*vertex_cnt = 0;
-		return NULL;
-	}
-    
-    // initialize the vector and stick the origin vertex at the beginning
-	vev_array = (void**)malloc(num_alloc * sizeof(Vertex*));
-	vev_array[num_elements] = (void*)curr;
-	num_elements++;
+    Path *path = pathNew(curr, 50, 50);
 	
     // trace backwards up the tree until the current vertex has no parents
 	while ((incoming = vGetIncomingEdgeList(curr))) {
-        // if the return vector is full, enlarge it
-		if (2*num_elements >= num_alloc-1) {
-            // enlarge it
-			vev_array = (void**)realloc(vev_array, ((num_alloc+50) * sizeof(void*)));
-			num_alloc += 50;
-		}
         
-        // add the edge to the return vector
 		edge = liGetData(incoming);
-		vev_array[2*num_elements-1] = (void*)edge;
-        
-        // add the vertex to the return vector
 		curr = eGetFrom(edge);
-		vev_array[2*num_elements] = (void*)curr;
         
-        // increment the element count
-		num_elements++;
+        pathAddSegment( path, curr, edge );
 	}
-	*vertex_cnt = num_elements;
 
-	return vev_array;	
+	return path;	
 }
 
 long
