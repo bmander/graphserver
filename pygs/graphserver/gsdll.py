@@ -26,9 +26,6 @@ for _dlldir in _dlldirs:
 if not lgs:
     raise ImportError("unable to find libgraphserver shared library in the usual locations: %s" % "\n".join(_dlldirs))
 
-libc = cdll.LoadLibrary(find_library('c'))
-
-
 class _EmptyClass(object):
     pass
 
