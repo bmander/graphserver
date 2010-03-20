@@ -1,5 +1,4 @@
-from graphserver.path import Path
-from graphserver.core import Vertex, Edge, Link, Street
+from graphserver.core import Vertex, Edge, Link, Street, Path
 import unittest
 from graphserver.gsdll import lgs
 from ctypes import addressof

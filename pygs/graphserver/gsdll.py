@@ -121,7 +121,7 @@ pycapi(lgs.gVertices, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.gShortestPathTree,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p, c_int, c_long])
 pycapi(lgs.gShortestPathTreeRetro,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p, c_int, c_long])
 pycapi(lgs.gSize,c_void_p, [c_long])
-pycapi(lgs.sptPathRetro,c_void_p, [c_void_p, c_char_p, c_void_p])
+pycapi(lgs.sptPathRetro,c_void_p, [c_void_p, c_char_p])
 pycapi(lgs.gShortestPathTreeRetro,c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p, c_int, c_long])
 pycapi(lgs.gSetVertexEnabled,c_void_p, [c_void_p, c_char_p, c_int])
 

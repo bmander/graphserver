@@ -1,5 +1,4 @@
 from gsdll import CShadow, lgs
-from core import Vertex, Edge
 
 from ctypes import Structure, c_int, c_void_p, pointer, addressof, byref
 

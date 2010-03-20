@@ -11,6 +11,7 @@ from time import time as now
 import pytz
 import calendar
 from util import TimeHelpers
+from vector import Vector
 
 def indent( a, n ):
     return "\n".join( [" "*n+x for x in a.split("\n")] )
@@ -47,6 +48,52 @@ ServiceIdType = c_int
 Class Definitions
 
 """
+
+class Path(Structure):
+    _fields_ = [("vertices", POINTER(Vector)),
+                ("edges", POINTER(Vector))]
+                
+    def __new__(cls, origin, init_size=50, expand_delta=50):
+        # initiate the Path Struct with a C constructor
+        soul = lgs.pathNew( origin.soul, init_size, expand_delta )
+        
+        # wrap an instance of this class around that pointer
+        return cls.from_address( soul )
+        
+    def __init__(self, origin, init_size=50, expand_delta=50):
+        # this gets called with the same arguments as __new__ right after
+        # __new__ is called, but we've already constructed the struct, so
+        # do nothing
+        pass
+        
+    def addSegment(self, vertex, edge):
+        lgs.pathAddSegment( addressof(self), vertex.soul, edge.soul )
+        
+    def getVertex( self, i ):
+        vertex_soul = lgs.pathGetVertex( addressof(self), i )
+        
+        if vertex_soul==0:
+            raise IndexError("%d is out of bounds"%i)
+        
+        return Vertex.from_pointer( vertex_soul )
+        
+    def getEdge( self, i ):
+        edge_soul = lgs.pathGetEdge( addressof(self), i )
+        
+        if edge_soul == 0:
+            raise IndexError("%d is out of bounds"%i)
+            
+        return Edge.from_pointer( edge_soul )
+        
+    def destroy( self ):
+        lgs.pathDestroy( addressof(self) )
+        
+    @property
+    def num_elements(self):
+        return self.edges.contents.num_elements
+        
+    def __repr__(self):
+        return "<Path shadowing %s with %d segments>"%(hex(addressof(self)), self.num_elements)
 
 #=============================================================================#
 # Core Graph Classes                                                          #
@@ -184,26 +231,16 @@ class ShortestPathTree(Graph):
     def path_retro(self,origin):
         self.check_destroyed()
         
-        t = now()
-        vcnt = c_long(0)
-        ptr = lgs.sptPathRetro(self.soul, origin, 
-                               byref(vcnt))
+        path_pointer = lgs.sptPathRetro( self.soul, origin )
         
-        vcnt = vcnt.value
-        if vcnt <= 0:
-            return (None, None) 
-
-        pv = []
-        pe = []
-        vev_arr = cast(ptr, POINTER(c_void_p)) # a bit of necessary voodoo
-        pv.append(Vertex.from_pointer(vev_arr[0]))
-        for i in range(1,vcnt):
-            pv.append(Vertex.from_pointer(vev_arr[2*i]))
-            pe.append(Edge.from_pointer(vev_arr[2*i-1]))
-        # free the vev_arr
-        libc.free(ptr)
+        path = Path.from_address( path_pointer )
         
-        return (pv, pe)
+        vertices = [path.getVertex( i ) for i in range(path.num_elements+1)]
+        edges = [path.getEdge( i ) for i in range(path.num_elements)]
+            
+        path.destroy()
+        
+        return (vertices, edges)
         
     def set_thicknesses(self, root_label):
         lgs.gSetThicknesses( c_void_p(self.soul), c_char_p(root_label) )
