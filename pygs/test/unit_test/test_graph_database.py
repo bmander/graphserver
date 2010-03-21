@@ -46,6 +46,8 @@ class TestGraphDatabase(unittest.TestCase):
         assert gdb.num_vertices() == 2
         assert gdb.num_edges() == 2
         
+        os.remove( gdb_file )
+        
 if __name__ == '__main__':
     tl = unittest.TestLoader()
 
