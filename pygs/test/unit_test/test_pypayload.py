@@ -1,5 +1,7 @@
 from graphserver.core import *
 import unittest
+import StringIO
+import sys
 
 class TestPyPayload(unittest.TestCase):
     def _minimal_graph(self):
@@ -17,7 +19,6 @@ class TestPyPayload(unittest.TestCase):
         e = NoOpPyPayload(1.2)
         
         ed = g.add_edge( "Seattle", "Portland", e )
-        print ed.payload
         assert e == ed.payload
         ep = ed.payload # uses EdgePayload.from_pointer internally.
         assert e == ep
@@ -63,11 +64,36 @@ class TestPyPayload(unittest.TestCase):
 
         g = self._minimal_graph()
         ed = g.add_edge( "Seattle", "Portland", ExceptionRaiser())
+                
+        # save stdout so we can set it back the way we found it
+        stderrsave = sys.stderr
         
+        # get a string-file to catch things placed into stdout
+        stderr_catcher = StringIO.StringIO()
         
-        ed.walk(State(1,0), WalkOptions()) 
+        sys.stderr = stderr_catcher
+                
+        # this will barf into stdout
+        ed.walk(State(1,0), WalkOptions())
+        
+        # the last line of the exception traceback just blurted out should be ...
+        stderr_catcher.seek(0)
+        self.assertEqual( stderr_catcher.read().split("\n")[-2] , "Exception: I am designed to fail." )
+
+        # set up a new buffer to catch a traceback
+        stderr_catcher = StringIO.StringIO()
+        sys.stderr = stderr_catcher
+        
+        # blurt into it
         ed.walk_back(State(1,0), WalkOptions())
+        
+        # check that the last line of the traceback looks like we expect
+        stderr_catcher.seek(0)
+        self.assertEqual( stderr_catcher.read().split("\n")[-2] , "Exception: I am designed to fail." )
+        
         g.destroy()
+        
+        sys.stderr = stderrsave
         
     def test_basic_graph(self):
         class MovingWalkway(GenericPyPayload):
