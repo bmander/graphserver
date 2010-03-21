@@ -13,13 +13,16 @@ import calendar
 from util import TimeHelpers
 from vector import Vector
 
+# define a c-style NULL
+NULL = 0
+
 def indent( a, n ):
     return "\n".join( [" "*n+x for x in a.split("\n")] )
         
 #TODO this is probably defined somewhere else, too
 def unparse_secs(secs):
     return "%02d:%02d:%02d"%(secs/3600, (secs%3600)/60, secs%60)
-
+    
 """
 
 These classes map C structs to Python Ctypes Structures.
@@ -74,7 +77,8 @@ class Path(Structure):
     def getVertex( self, i ):
         vertex_soul = lgs.pathGetVertex( addressof(self), i )
         
-        if vertex_soul==0:
+        # reinterpret the error code as an exception
+        if vertex_soul == NULL:
             raise IndexError("%d is out of bounds"%i)
         
         return Vertex.from_pointer( vertex_soul )
@@ -82,7 +86,8 @@ class Path(Structure):
     def getEdge( self, i ):
         edge_soul = lgs.pathGetEdge( addressof(self), i )
         
-        if edge_soul == 0:
+        # reinterpret the error code as an exception
+        if edge_soul == NULL:
             raise IndexError("%d is out of bounds"%i)
             
         return Edge.from_pointer( edge_soul )
