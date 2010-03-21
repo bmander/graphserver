@@ -23,10 +23,10 @@ class Vector(Structure):
         pass
         
     def expand(self, amount):
-        lgs.vecExpand( addressof(address), amount )
+        lgs.vecExpand( addressof(self), amount )
         
     def add(self, element):
-        lgs.vecAdd( addressof(address), element )
+        lgs.vecAdd( addressof(self), element )
         
     def get(self, index):
         return lgs.vecGet( addressof(self), index )
