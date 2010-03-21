@@ -101,6 +101,19 @@ class TestGraphPerformance(unittest.TestCase):
         
         assert sum(changes) >= -1 #memory usage only increases in one iteration out of all
         
+    def test_add_vertices(self):
+        g = Graph()
+        verts = range(0,100000)
+        t0 = time.time()
+        g.add_vertices(verts)
+        print "add vertices elapsed ", (time.time() - t0)
+        vlist = g.vertices
+        assert len(vlist) == len(verts)
+        vlist.sort(lambda x, y: int(x.label) - int(y.label))
+        assert vlist[0].label == "0"
+        assert vlist[-1].label == str(verts[-1])
+        g.destroy()
+        
 if __name__ == '__main__':
     tl = unittest.TestLoader()
 
