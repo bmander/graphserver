@@ -27,25 +27,23 @@ class TestEgress(unittest.TestCase):
         wo.walking_reluctance = 1
         after = s.walk(State(0,0),wo)
         wo.destroy()
-        print after
-        assert after.time == 9
-        assert after.weight == 9
-        assert after.dist_walked == 10
-        assert after.prev_edge_type == 12
-        assert after.prev_edge_name == "longstreet"
-        assert after.num_agencies == 0
+        self.assertEqual( after.time , 9 )
+        self.assertEqual( after.weight , 9 )
+        self.assertEqual( after.dist_walked , 10 )
+        self.assertEqual( after.prev_edge.__class__ , Egress )
+        self.assertEqual( after.prev_edge.name , "longstreet" )
+        self.assertEqual( after.num_agencies , 0 )
         
     def test_walk_back(self):
         s = Egress("longstreet", 10)
         
         before = s.walk_back(State(0,100),WalkOptions())
-        print before
-        assert before.time == 100 - (9)
-        assert before.weight == 9
-        assert before.dist_walked == 10.0
-        assert before.prev_edge_type == 12
-        assert before.prev_edge_name == "longstreet"
-        assert before.num_agencies == 0
+        self.assertEqual( before.time , 100 - (9) )
+        self.assertEqual( before.weight , 9 )
+        self.assertEqual( before.dist_walked , 10.0 )
+        self.assertEqual( before.prev_edge.type , 12 )
+        self.assertEqual( before.prev_edge.name , "longstreet" )
+        self.assertEqual( before.num_agencies , 0 )
         
     def test_getstate(self):
         s = Egress("longstreet", 2)
