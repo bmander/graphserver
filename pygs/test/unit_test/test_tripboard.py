@@ -484,6 +484,34 @@ class TestTripBoard(unittest.TestCase):
         s1 = tb.walk( s0, WalkOptions() )
         self.assertEquals( s1.time, 86401 )
         
+    def test_check_today(self):
+        """given a schedule that runs two consecutive days, find a departure
+           given a state on midnight between the two days"""
+        
+        # the service calendar has two weekdays, back to back
+        sc = ServiceCalendar()
+        sc.add_period( 0, 3600*24, ["WKDY"] )
+        sc.add_period( 3600*24, 2*3600*24, ["WKDY"] )
+        
+        # the timezone lasts for two days and has no offset
+        # this is just boilerplate
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        
+        # tripboard runs on weekdays for agency 0
+        tb = TripBoard( "WKDY", sc, tz, 0 )
+        
+        # one boarding - pretty early in the morning
+        tb.add_boarding( "21SFO1", 26340, 1 )
+        
+        # our starting state is midnight between the two days
+        s0 = State(1, 86400)
+        
+        # it should be early morning on the second day
+        s1 = tb.walk( s0, WalkOptions() )
+        
+        self.assertEquals( s1.time, 26340+86400 )
+        
 if __name__ == '__main__':
     tl = unittest.TestLoader()
 
