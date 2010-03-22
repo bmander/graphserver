@@ -248,28 +248,27 @@ tbWalk( EdgePayload* superthis, State* state, WalkOptions* options ) {
     
     long time_since_midnight = tzTimeSinceMidnight( this->timezone, state->time );
         
-    if( !spPeriodHasServiceId( service_period, this->service_id ) ) {
-        
-        /* If the boarding schedule extends past midnight - for example, you can board a train on the Friday schedule until
-         * 2 AM Saturday morning - and the travel_state.time_since_midnight is less than this overage - for example, 1 AM, but
-         * the travel_state.service_period will show Saturday and not Friday, then:
-         * 
-         * Check if the boarding schedule service_id is running in the travel_state's yesterday period. If it is, simply advance the 
-         * time_since_midnight by a day and continue. If not, this boarding schedule was not running today or yesterday, so as far
-         * as we're concerned, it's not running at all
-         *
-         * TODO - figure out an algorithm for the general cse
-         */
-        
-        if( this->overage >= time_since_midnight &&
-            service_period->prev_period &&
-            spPeriodHasServiceId( service_period->prev_period, this->service_id )) {
-                
-            time_since_midnight += SECS_IN_DAY;
-        } else {
-            return NULL;
-        }
-        
+    
+    /* if the schedules's service ID (say, WKDY) runs yesterday with respect to
+     * the state's current service period (say, the state is currently on a
+     * wednesday, the WKDY schedule does run yesterday) and the state's current 
+     * time since midnight (say, 1 AM, 60 minutes since midnight) is less than 
+     * the amount by which the schedule pokes out over midnight (say that the
+     * schedule runs into 2 AM), then increment the time_since_midnight by a day
+     * and proceed, such that we will discover that the next arrival comes some
+     * time in the next 60 minutes
+     */
+    if( this->overage >= time_since_midnight &&
+        service_period->prev_period &&
+        spPeriodHasServiceId( service_period->prev_period, this->service_id )) {
+            
+        time_since_midnight += SECS_IN_DAY;
+            
+    /* if none of that is true *and* the schedule doesn't run on the current
+     * day, then this schedule contains no departures that leave any time soon
+     */
+    } else if( !spPeriodHasServiceId( service_period, this->service_id ) ) {
+        return NULL;
     }
     
     int next_boarding_index = tbGetNextBoardingIndex( this, time_since_midnight );
