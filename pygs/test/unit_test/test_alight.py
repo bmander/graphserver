@@ -435,6 +435,32 @@ class TestAlight(unittest.TestCase):
         assert ret.time == 100
         assert ret.weight == 0
         
+    def test_check_yesterday(self):
+        """check the previous day for viable departures"""
+        
+        # the service calendar has two weekdays, back to back
+        sc = ServiceCalendar()
+        sc.add_period( 0, 3600*24, ["WKDY"] )
+        sc.add_period( 3600*24, 2*3600*24, ["WKDY"] )
+        
+        # the timezone lasts for two days and has no offset
+        # this is just boilerplate
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 2*3600*24, 0) )
+        
+        # tripboard runs on weekdays for agency 0
+        al = Alight( "WKDY", sc, tz, 0 )
+        
+        # one alighting - one second before midnight
+        al.add_alighting( "1", 86400-1, 0 )
+        
+        # our starting state is midnight between the two days
+        s0 = State(1, 86400)
+        
+        # it should be one second until the next boarding
+        s1 = al.walk_back( s0, WalkOptions() )
+        self.assertEquals( s1.time, 86399 )
+        
 if __name__ == '__main__':
     tl = unittest.TestLoader()
 
