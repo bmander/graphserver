@@ -86,7 +86,7 @@ class TestTripBoard(unittest.TestCase):
         
         s0 = State(1, 0)
         s1 = tb.walk(s0,WalkOptions())
-        assert s1.weight == 82801
+        self.assertEqual( s1.weight , 82801 )
         assert s1.service_period(0).service_ids == [0]
         
         s0 = State(1, 23*3600 )
@@ -113,7 +113,9 @@ class TestTripBoard(unittest.TestCase):
         
         s0 = State(1, 26*3600+1)
         s1 = tb.walk(s0,WalkOptions())
-        assert s1 == None
+        print s1
+        self.assertEqual( s1 , None )
+        
         
     def test_tripboard_over_midnight_without_hope(self):
         
@@ -402,10 +404,10 @@ class TestTripBoard(unittest.TestCase):
         
         s = State(1, 0)
         ret = tb.walk(s,WalkOptions())
-        assert ret.time == 50
-        assert ret.weight == 51
-        assert ret.num_transfers == 1
-        assert ret.dist_walked == 0.0
+        self.assertEqual( ret.time , 50 )
+        self.assertEqual( ret.weight , 51 )
+        self.assertEqual( ret.num_transfers , 1 )
+        self.assertEqual( ret.dist_walked , 0.0 )
         
         s = State(1, 2)
         ret = tb.walk(s,WalkOptions())
@@ -455,6 +457,32 @@ class TestTripBoard(unittest.TestCase):
         ret = tb.walk_back( s, WalkOptions() )
         assert ret.time == 100
         assert ret.weight == 0
+        
+    def test_check_yesterday(self):
+        """check the previous day for viable departures"""
+        
+        # the service calendar has two weekdays, back to back
+        sc = ServiceCalendar()
+        sc.add_period( 0, 3600*24, ["WKDY"] )
+        sc.add_period( 3600*24, 2*3600*24, ["WKDY"] )
+        
+        # the timezone lasts for two days and has no offset
+        # this is just boilerplate
+        tz = Timezone()
+        tz.add_period( TimezonePeriod(0, 2*3600*24, 0) )
+        
+        # tripboard runs on weekdays for agency 0
+        tb = TripBoard( "WKDY", sc, tz, 0 )
+        
+        # one boarding - one second after midnight
+        tb.add_boarding( "1", 86400+1, 0 )
+        
+        # our starting state is midnight between the two days
+        s0 = State(1, 86400)
+        
+        # it should be one second until the next boarding
+        s1 = tb.walk( s0, WalkOptions() )
+        self.assertEquals( s1.time, 86401 )
         
 if __name__ == '__main__':
     tl = unittest.TestLoader()
