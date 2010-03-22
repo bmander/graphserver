@@ -20,7 +20,7 @@ tbNew( ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int 
   ret->walk = &tbWalk;
   ret->walkBack = &tbWalkBack;
     
-  ret->overage = 0;
+  ret->overage = NO_OVERAGE_VALUE;
     
   return ret;
 }
@@ -258,7 +258,8 @@ tbWalk( EdgePayload* superthis, State* state, WalkOptions* options ) {
      * and proceed, such that we will discover that the next arrival comes some
      * time in the next 60 minutes
      */
-    if( this->overage >= time_since_midnight &&
+    if( this->overage != NO_OVERAGE_VALUE &&
+        this->overage >= time_since_midnight &&
         service_period->prev_period &&
         spPeriodHasServiceId( service_period->prev_period, this->service_id )) {
             

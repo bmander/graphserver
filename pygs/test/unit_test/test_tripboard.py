@@ -15,7 +15,7 @@ class TestTripBoard(unittest.TestCase):
         assert tb.timezone.soul == tz.soul
         assert tb.calendar.soul == sc.soul
         assert tb.agency == 0
-        assert tb.overage == 0
+        assert tb.overage == -1
         
         assert tb.num_boardings == 0
         
@@ -56,7 +56,7 @@ class TestTripBoard(unittest.TestCase):
         
         tb = TripBoard("WKDY", sc, tz, 0)
         
-        assert tb.overage == 0
+        assert tb.overage == -1
         
         tb.add_boarding( "midnight", 24*3600, 0 )
         

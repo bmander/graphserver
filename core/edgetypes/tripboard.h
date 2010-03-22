@@ -1,6 +1,8 @@
 #ifndef _TRIPBOARD_H_
 #define _TRIPBOARD_H_
 
+#define NO_OVERAGE_VALUE -1
+
 //---------------DECLARATIONS FOR TRIPBOARD CLASS------------------------------------------
 
 struct TripBoard {
