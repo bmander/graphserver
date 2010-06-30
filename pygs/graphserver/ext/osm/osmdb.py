@@ -358,7 +358,7 @@ class OSMDB:
         
         if self.index:
             #print "YOUR'RE USING THE INDEX"
-            id = self.index.nearest( (lon, lat), 1 )[0]
+            id = list(self.index.nearest( (lon, lat), 1 ))[0]
             #print "THE ID IS %d"%id
             c.execute( "SELECT id, lat, lon FROM nodes WHERE id = ?", (id,) )
         else:
