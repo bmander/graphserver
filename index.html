@@ -186,7 +186,7 @@ sta-3622 -> psv-0-000-004
 <h3 id="routeserver">Getting routes with gs_routeserver</h3>
 <p>First, you'll need PyYAML</p>
 <pre style="background-color:#F5F5F5"> $ sudo easy_install pyyaml</pre>
-<p>The routeserver finds a path, and then uses a series of "handlers" to convert that path into a human-readable format. Those handlers are enumearted and set up by a configuration file called handlers.yaml. Graphserver comes with an example handlers.yaml which you can use to get started</p>
+<p>The routeserver finds a path, and then uses a series of handlers to convert that path into a human-readable format. Those handlers are enumerated and set up by a configuration file called handlers.yaml. Graphserver comes with an example handlers.yaml which you can use to get started</p>
 <pre style="background-color:#F5F5F5"> $ cp /path/to/graphserver/pygs/graphserver/ext/routeserver/handlers.yaml .</pre>
 <p>This handlers.yaml file is filled with "CHANGEME" stubs. Replace every "CHANGEME.gtfsdb" with "redding.gtfsdb" and every "CHANGEME.osmdb" with "redding.osmdb"</p>
 <p>Fire up a routeserver on the compiled graph</p>
