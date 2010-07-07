@@ -34,3 +34,5 @@ test/northseattle.csv
 test/wallingford.csv
 
 pygs/test/unit_testunit_test.db
+*.swp
+pygs/test/integration_test/map.osm
