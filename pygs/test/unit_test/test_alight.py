@@ -471,7 +471,7 @@ class TestAlight(unittest.TestCase):
         # the timezone lasts for two days and has no offset
         # this is just boilerplate
         tz = Timezone()
-        tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
+        tz.add_period( TimezonePeriod(0, 2*3600*24, 0) )
         
         # tripboard runs on weekdays for agency 0
         al = Alight( "WKDY", sc, tz, 0 )
