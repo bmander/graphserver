@@ -1,4 +1,5 @@
 #include "../graphserver.h"
+#include <stdio.h>
 
 // ALIGHT FUNCTIONS
 
@@ -229,7 +230,7 @@ alWalkBack( EdgePayload* superthis, State* state, WalkOptions* options ) {
     }
     
     long time_since_midnight = tzTimeSinceMidnight( this->timezone, state->time );
-        
+
     if( !spPeriodHasServiceId( service_period, this->service_id ) ) {
         
         /* If the boarding schedule extends past midnight - for example, you can board a train on the Friday schedule until
@@ -255,9 +256,18 @@ alWalkBack( EdgePayload* superthis, State* state, WalkOptions* options ) {
     
     int last_alighting_index = alGetLastAlightingIndex( this, time_since_midnight );
     
+    // if no alighting was found for the present day, but the alighting ran yesterday, check yesterday
+    if( last_alighting_index == -1 && 
+        service_period->prev_period &&
+        spPeriodHasServiceId( service_period->prev_period, this->service_id ) ) {
+        time_since_midnight += SECS_IN_DAY;
+	last_alighting_index = alGetLastAlightingIndex( this, time_since_midnight );
+    }
+
     if( last_alighting_index == -1 ) {
         return NULL;
     }
+
     
     // Dupe state and advance time by the waiting time
     State* ret = stateDup( state );
