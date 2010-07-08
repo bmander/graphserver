@@ -457,7 +457,7 @@ class TestAlight(unittest.TestCase):
         # our starting state is midnight between the two days
         s0 = State(1, 86400)
         
-        # it should be one second until the next boarding
+        # it should be one second after the last alighting 
         s1 = al.walk_back( s0, WalkOptions() )
         self.assertEquals( s1.time, 86399 )
         
