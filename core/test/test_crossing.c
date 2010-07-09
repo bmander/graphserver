@@ -104,12 +104,52 @@ void test_add_several_crossing_times() {
 
 }
 
+void test_trip_doesnt_exist() {
+  // create a crossing
+  Crossing *cr = crNew();
+
+  // try to get a trip that doesn't exist
+  assert( crGetCrossingTime( cr, "A" ) == -1 );
+
+  // destroy the crossing
+  crDestroy( cr );
+}
+
+void test_index_out_of_bounds() {
+  // create a crossing
+  Crossing *cr = crNew();
+
+  // get indexes out of bounds
+  assert( crGetCrossingTimeTripIdByIndex( cr, -1 ) == NULL );
+  assert( crGetCrossingTimeTripIdByIndex( cr, 0 ) == NULL );
+  assert( crGetCrossingTimeTripIdByIndex( cr, 1 ) == NULL );
+  assert( crGetCrossingTimeByIndex( cr, -1 ) == -1 );
+  assert( crGetCrossingTimeByIndex( cr, 0 ) == -1 );
+  assert( crGetCrossingTimeByIndex( cr, 1 ) == -1 );
+
+  // add a single crossing
+  crAddCrossingTime( cr, "A", 10 );
+
+  // get indexes out of bounds
+  assert( crGetCrossingTimeTripIdByIndex( cr, -1 ) == NULL );
+  assert( crGetCrossingTimeTripIdByIndex( cr, 0 ) != NULL );
+  assert( crGetCrossingTimeTripIdByIndex( cr, 1 ) == NULL );
+  assert( crGetCrossingTimeByIndex( cr, -1 ) == -1 );
+  assert( crGetCrossingTimeByIndex( cr, 0 ) != -1 );
+  assert( crGetCrossingTimeByIndex( cr, 1 ) == -1 );
+
+  // destroy crossing
+  crDestroy( cr );
+}
+
 int main() {
 
   test_create_destroy();
   test_add_single_crossing_time();
   test_add_two_crossing_times();
   test_add_several_crossing_times();
+  test_trip_doesnt_exist();
+  test_index_out_of_bounds();
 
   return 1;
 }
