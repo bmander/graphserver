@@ -20,7 +20,7 @@ void
 crDestroy(Crossing* this) {
     int i;
     for(i=0; i<this->n; i++) {
-        free(this->crossing_time_trip_ids[0]);
+        free(this->crossing_time_trip_ids[i]);
     }
     free(this->crossing_time_trip_ids);
     free(this->crossing_times);
