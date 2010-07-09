@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../core/graph.h"
+#include "../graphserver.h"
+#include "../graph.h"
 #include <valgrind/callgrind.h>
 
 int main() {
@@ -18,12 +19,17 @@ int main() {
     sids[0] = 1;
     ServicePeriod* sp = spNew( 0, 1*3600*24, 1, sids );
     scAddPeriod( cal, sp );
-    TripHop* th = triphopNew( 10, 20, "A1", cal, tz, 0, 1);
+
+    ServiceId sid = 0;
+    int agency = 0;
+    TripBoard *tb = tbNew( sid, cal, tz, agency );
+    tbAddBoarding( tb, "A1", 10, 0 );
     
-    gAddEdge( gg, "A", "B", (EdgePayload*)th);
+    gAddEdge( gg, "A", "B", (EdgePayload*)tb);
     
     State* initstate = stateNew(1, 20);
-    Graph* spt = gShortestPathTree( gg, "A", "B", initstate, 1 );
+    WalkOptions* wo = woNew();
+    Graph* spt = gShortestPathTree( gg, "A", "B", initstate, wo, 1000000  );
     
     gDestroy(spt, 1, 0);
     gDestroy(gg, 1, 1);

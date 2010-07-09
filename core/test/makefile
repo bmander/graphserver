@@ -1,5 +1,5 @@
 
-SRCS = testsetparent.c streetprofile.c testdestroystates.c thsprofile.c test_batch_create.c deadend.c
+SRCS = testsetparent.c deadend.c hops.c streetprofile.c testdestroystates.c
 TESTS = $(SRCS:.c=)
 
 all: $(TESTS)
@@ -7,5 +7,5 @@ all: $(TESTS)
 clean:
 	rm $(TESTS)	
 
-%: %.c ../core/libgraphserver.so
-	cc -g $< ../core/libgraphserver.so -o $@ -lm -liberty
+%: %.c ../libgraphserver.so
+	cc -g $< ../libgraphserver.so -o $@ -lm 
