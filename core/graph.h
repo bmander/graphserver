@@ -5,6 +5,10 @@ struct Graph {
    struct hashtable* vertices;
 };
 
+struct ShortestPathTree {
+   struct hashtable* vertices;
+};
+
 //for shortest path trees
 struct prev_entry {
   char* from;
