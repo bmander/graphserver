@@ -87,6 +87,35 @@ gSize( Graph* this );
 void
 gSetVertexEnabled( Graph *this, char *label, int enabled );
 
+//SPT METHODS
+
+ShortestPathTree*
+sptNew();
+
+void
+sptDestroy( ShortestPathTree *this );
+
+SPTVertex*
+sptAddVertex( ShortestPathTree *this, char *label );
+
+void
+sptRemoveVertex( ShortestPathTree *this, char *label );
+
+SPTVertex*
+sptGetVertex( ShortestPathTree *this, char *label );
+
+void
+sptAddVertices( ShortestPathTree *this, char **labels, int n );
+
+Edge*
+sptAddEdge( ShortestPathTree *this, char *from, char *to, EdgePayload *payload );
+
+SPTVertex**
+sptVertices( ShortestPathTree *this, long* num_vertices );
+
+long
+sptSize( ShortestPathTree* this );
+
 Path *
 sptPathRetro(Graph* g, char* origin_label);
 
