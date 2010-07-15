@@ -119,10 +119,10 @@ class TestGraph(unittest.TestCase):
         assert spt.__class__ == ShortestPathTree
         assert spt.get_vertex("home").degree_out==1
         assert spt.get_vertex("home").degree_in==0
-        assert spt.get_vertex("home").payload.weight==0
+        assert spt.get_vertex("home").state.weight==0
         assert spt.get_vertex("work").degree_in==1
         assert spt.get_vertex("work").degree_out==0
-        self.assertTrue( spt.get_vertex("work").payload.weight > 0 )
+        self.assertTrue( spt.get_vertex("work").state.weight > 0 )
         
         spt.destroy()
         g.destroy()
@@ -164,10 +164,10 @@ class TestGraph(unittest.TestCase):
         assert spt.__class__ == ShortestPathTree
         self.assertEqual( spt.get_vertex("home").degree_out , 0 )
         self.assertEqual( spt.get_vertex("home").degree_in , 1 )
-        self.assertTrue( spt.get_vertex("home").payload.weight > 0 )
+        self.assertTrue( spt.get_vertex("home").state.weight > 0 )
         self.assertEqual( spt.get_vertex("work").degree_in , 0 )
         self.assertEqual( spt.get_vertex("work").degree_out , 1 )
-        self.assertEqual( spt.get_vertex("work").payload.weight , 0 )
+        self.assertEqual( spt.get_vertex("work").state.weight , 0 )
         
         spt.destroy()
         g.destroy()
@@ -186,7 +186,7 @@ class TestGraph(unittest.TestCase):
         
         spt = g.shortest_path_tree_retro( "A", "D", State(g.numagencies,1000), WalkOptions() )
         
-        assert spt.get_vertex( "A" ).payload.time
+        assert spt.get_vertex( "A" ).state.time
         
         spt.destroy()
         

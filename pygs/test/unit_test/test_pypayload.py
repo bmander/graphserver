@@ -112,8 +112,8 @@ class TestPyPayload(unittest.TestCase):
         spt = g.shortest_path_tree("Seattle", "Portland", State(0,0), WalkOptions())
         assert spt
         assert spt.__class__ == ShortestPathTree
-        assert spt.get_vertex("Portland").payload.weight==5
-        assert spt.get_vertex("Portland").payload.time==10
+        assert spt.get_vertex("Portland").state.weight==5
+        assert spt.get_vertex("Portland").state.time==10
 
         spt.destroy()
         g.destroy()

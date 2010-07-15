@@ -59,7 +59,7 @@ class TestEgress(unittest.TestCase):
         spt = g.shortest_path_tree("E", "S", State(0,0), WalkOptions())
         assert spt
         assert spt.__class__ == ShortestPathTree
-        assert spt.get_vertex("S").payload.dist_walked==10
+        assert spt.get_vertex("S").state.dist_walked==10
 
         spt.destroy()
         g.destroy()

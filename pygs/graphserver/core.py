@@ -223,7 +223,88 @@ class Graph(CShadow):
             ret += "    %s -> %s;\n" % (e.from_v.label, e.to_v.label)
         return ret + "}"
 
-class ShortestPathTree(Graph):
+class ShortestPathTree(CShadow):
+    
+    size = cproperty(lgs.sptSize, c_long)
+    
+    def __init__(self, numagencies=1):
+        self.soul = self._cnew()
+        self.numagencies = numagencies #a central point that keeps track of how large the list of calendards need ot be in the state variables.
+        
+    def destroy(self):
+        self.check_destroyed()
+        
+        self._cdel(self.soul)
+        self.soul = None
+            
+    def add_vertex(self, label):
+        #Vertex* sptAddVertex( ShortestPathTree* this, char *label );
+        self.check_destroyed()
+        
+        return self._cadd_vertex(self.soul, label)
+        
+    def remove_vertex(self, label):
+        #void sptRemoveVertex( ShortestPathTree* this, char *label, int free_vertex_payload, int free_edge_payloads );
+        
+        return self._cremove_vertex(self.soul, label)
+        
+    def get_vertex(self, label):
+        #Vertex* sptGetVertex( ShortestPathTree* this, char *label );
+        self.check_destroyed()
+        
+        return self._cget_vertex(self.soul, label)
+        
+    def add_edge( self, fromv, tov, payload ):
+        #Edge* sptAddEdge( ShortestPathTree* this, char *from, char *to, EdgePayload *payload );
+        self.check_destroyed()
+        
+        e = self._cadd_edge( self.soul, fromv, tov, payload.soul )
+        
+        if e != None: return e
+
+        if not self.get_vertex(fromv):
+            raise VertexNotFoundError(fromv)
+        raise VertexNotFoundError(tov)
+        
+    @property
+    def vertices(self):
+        self.check_destroyed()
+        
+        count = c_int()
+        p_va = lgs.sptVertices(self.soul, byref(count))
+        verts = []
+        arr = cast(p_va, POINTER(c_void_p)) # a bit of necessary voodoo
+        for i in range(count.value):
+            v = Vertex.from_pointer(arr[i])
+            verts.append(v)
+        return verts
+    
+    def add_vertices(self, vs):
+        a = (c_char_p * len(vs))()
+        for i, v in enumerate(vs):
+            a[i] = str(v)
+        lgs.sptAddVertices(self.soul, a, len(vs))
+    
+    @property
+    def edges(self):
+        self.check_destroyed()
+        
+        edges = []
+        for vertex in self.vertices:
+            o = vertex.outgoing
+            if not o: continue
+            for e in o:
+                edges.append(e)
+        return edges    
+
+    def to_dot(self):
+        self.check_destroyed()
+        
+        ret = "digraph G {"
+        for e in self.edges:
+            ret += "    %s -> %s;\n" % (e.from_v.label, e.to_v.label)
+        return ret + "}"
+    
     def path(self, destination):
         path_vertices, path_edges = self.path_retro(destination)
         
@@ -248,10 +329,6 @@ class ShortestPathTree(Graph):
         path.destroy()
         
         return (vertices, edges)
-
-    def destroy(self):
-        #destroy the vertex State instances, but not the edge EdgePayload instances, as they're owned by the parent graph
-        super(ShortestPathTree, self).destroy(1, 0)
 
 class EdgePayload(CShadow, Walkable):
     def __init__(self):
@@ -543,8 +620,8 @@ class SPTVertex(CShadow):
         i = 0
         while node:
             if index != -1 and i == index:
-                return node.data(edgeclass=self.edgeclass)
-            e.append(node.data(edgeclass=self.edgeclass))
+                return node.data
+            e.append(node.data)
             node = node.next
             i = i+1
         if index == -1:
@@ -1485,6 +1562,13 @@ Graph._cget_vertex = ccast(lgs.gGetVertex, Vertex)
 Graph._cadd_edge = ccast(lgs.gAddEdge, Edge)
 Graph._cshortest_path_tree = ccast(lgs.gShortestPathTree, ShortestPathTree)
 Graph._cshortest_path_tree_retro = ccast(lgs.gShortestPathTreeRetro, ShortestPathTree)
+
+ShortestPathTree._cnew = lgs.sptNew
+ShortestPathTree._cdel = lgs.sptDestroy
+ShortestPathTree._cadd_vertex = ccast(lgs.sptAddVertex, SPTVertex)
+ShortestPathTree._cremove_vertex = lgs.sptRemoveVertex
+ShortestPathTree._cget_vertex = ccast(lgs.sptGetVertex, SPTVertex)
+ShortestPathTree._cadd_edge = ccast(lgs.sptAddEdge, Edge)
 
 Vertex._cnew = lgs.vNew
 Vertex._cdel = lgs.vDestroy
