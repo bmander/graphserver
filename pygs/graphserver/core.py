@@ -248,9 +248,6 @@ class ShortestPathTree(Graph):
         path.destroy()
         
         return (vertices, edges)
-        
-    def set_thicknesses(self, root_label):
-        lgs.gSetThicknesses( c_void_p(self.soul), c_char_p(root_label) )
 
     def destroy(self):
         #destroy the vertex State instances, but not the edge EdgePayload instances, as they're owned by the parent graph
@@ -487,7 +484,6 @@ class Edge(CShadow, Walkable):
     def walk(self, state, walk_options):
         return self._cwalk(self.soul, state.soul, walk_options.soul)
         
-    thickness = cproperty(lgs.eGetThickness, c_long, setter=lgs.eSetThickness)
     enabled = cproperty(lgs.eGetEnabled, c_int, setter=lgs.eSetEnabled)
 
 

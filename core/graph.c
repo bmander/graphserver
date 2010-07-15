@@ -110,33 +110,6 @@ gVertices( Graph* this, long* num_vertices ) {
   return ret;
 }
 
-long
-set_spt_edge_thickness( Edge* edge ) {
-    long thickness = edge->to->payload->weight - edge->from->payload->weight;
-    
-    ListNode* outgoing_edge_node = vGetOutgoingEdgeList( edge->to );
-    while(outgoing_edge_node) {
-        thickness += set_spt_edge_thickness( outgoing_edge_node->data );
-        outgoing_edge_node = outgoing_edge_node->next;
-    }
-    
-    edge->thickness = thickness;
-    
-    return thickness;
-}
-
-void
-gSetThicknesses( Graph* this, char *root_label ) {
-    Vertex* root = gGetVertex( this, root_label );
-
-    ListNode* outgoing_edge_node = vGetOutgoingEdgeList( root );
-
-    while(outgoing_edge_node) {
-        set_spt_edge_thickness( outgoing_edge_node->data );
-        outgoing_edge_node = outgoing_edge_node->next;
-    }
-}
-
 #undef RETRO
 #include "router.c"
 #define RETRO
@@ -385,16 +358,6 @@ vPayload( Vertex* this ) {
 	return this->payload;
 }
 
-long
-eGetThickness(Edge *this) {
-    return this->thickness;
-}
-
-void
-eSetThickness(Edge *this, long thickness) {
-    this->thickness = thickness;
-}
-
 // EDGE FUNCTIONS
 
 Edge*
@@ -403,7 +366,6 @@ eNew(Vertex* from, Vertex* to, EdgePayload* payload) {
     this->from = from;
     this->to = to;
     this->payload = payload;
-    this->thickness = -1;
     this->enabled = 1;
     return this;
 }

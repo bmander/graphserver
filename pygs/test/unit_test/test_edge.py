@@ -7,7 +7,6 @@ class TestEdge(unittest.TestCase):
         v2 = Vertex( "B" )
         e1 = Edge( v1, v2, Street( "atob", 10.0 ) )
         
-        assert e1.thickness == -1
         assert e1.enabled == True
         
         e1.enabled = False

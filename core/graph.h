@@ -33,7 +33,6 @@ struct Edge {
   Vertex* from;
   Vertex* to;
   EdgePayload* payload;
-  long thickness;
   int enabled;
 } ;
 
@@ -157,11 +156,5 @@ eGetEnabled(Edge *this);
 
 void
 eSetEnabled(Edge *this, int enabled);
-
-long
-eGetThickness(Edge *this);
-
-void
-eSetThickness(Edge *this, long thickness);
 
 #endif
