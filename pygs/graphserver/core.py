@@ -387,6 +387,38 @@ class WalkOptions(CShadow):
     max_walk = cproperty(lgs.woGetMaxWalk, c_int, setter=lgs.woSetMaxWalk)
     walking_overage = cproperty(lgs.woGetWalkingOverage, c_float, setter=lgs.woSetWalkingOverage)
 
+class Edge(CShadow, Walkable):
+    def __init__(self, from_v, to_v, payload):
+        #Edge* eNew(Vertex* from, Vertex* to, EdgePayload* payload);
+        self.soul = self._cnew(from_v.soul, to_v.soul, payload.soul)
+    
+    def __str__(self):
+        return self.to_xml()
+        
+    def to_xml(self):
+        return "<Edge>%s</Edge>" % (self.payload)
+        
+    @property
+    def from_v(self):
+        return self._cfrom_v(self.soul)
+        
+    @property
+    def to_v(self):
+        return self._cto_v(self.soul)
+        
+    @property
+    def payload(self):
+        return self._cpayload(self.soul)
+        
+    def walk(self, state, walk_options):
+        return self._cwalk(self.soul, state.soul, walk_options.soul)
+        
+    enabled = cproperty(lgs.eGetEnabled, c_int, setter=lgs.eSetEnabled)
+    
+class SPTEdge(Edge):
+    def to_xml(self):
+        return "<SPTEdge>%s</SPTEdge>" % (self.payload)
+
 class Vertex(CShadow):
     
     label = cproperty(lgs.vGetLabel, c_char_p)
@@ -457,34 +489,79 @@ class Vertex(CShadow):
         
     def __hash__(self):
         return int(self.soul)
-
-class Edge(CShadow, Walkable):
-    def __init__(self, from_v, to_v, payload):
-        #Edge* eNew(Vertex* from, Vertex* to, EdgePayload* payload);
-        self.soul = self._cnew(from_v.soul, to_v.soul, payload.soul)
+        
+class SPTVertex(CShadow):
+    
+    label = cproperty(lgs.sptvGetLabel, c_char_p)
+    degree_in = cproperty(lgs.sptvDegreeIn, c_int)
+    degree_out = cproperty(lgs.sptvDegreeOut, c_int)
+    edgeclass = SPTEdge
+    
+    def __init__(self,label):
+        self.soul = self._cnew(label)
+        
+    def destroy(self):
+        #void vDestroy(Vertex* this, int free_vertex_payload, int free_edge_payloads) ;
+        # TODO - support parameterization?
+        
+        self.check_destroyed()
+        self._cdel(self.soul, 1, 1)
+        self.soul = None
+    
+    def to_xml(self):
+        self.check_destroyed()
+        return "<SPTVertex degree_out='%s' degree_in='%s' label='%s'/>" % (self.degree_out, self.degree_in, self.label)
     
     def __str__(self):
+        self.check_destroyed()
         return self.to_xml()
-        
-    def to_xml(self):
-        return "<Edge>%s</Edge>" % (self.payload)
+
+    @property
+    def outgoing(self):
+        self.check_destroyed()
+        return self._edges(self._coutgoing_edges)
         
     @property
-    def from_v(self):
-        return self._cfrom_v(self.soul)
-        
+    def incoming(self):
+        self.check_destroyed()
+        return self._edges(self._cincoming_edges)
+    
     @property
-    def to_v(self):
-        return self._cto_v(self.soul)
+    def state(self):
+        self.check_destroyed()
+        return self._cstate(self.soul)
+
+    def _edges(self, method, index = -1):
+        self.check_destroyed()
+        e = []
+        node = method(self.soul)
+        if not node: 
+            if index == -1:
+                return e
+            else: 
+                return None
+        i = 0
+        while node:
+            if index != -1 and i == index:
+                return node.data(edgeclass=self.edgeclass)
+            e.append(node.data(edgeclass=self.edgeclass))
+            node = node.next
+            i = i+1
+        if index == -1:
+            return e
+        return None
+
+    def get_outgoing_edge(self,i):
+        self.check_destroyed()
+        return self._edges(self._coutgoing_edges, i)
         
-    @property
-    def payload(self):
-        return self._cpayload(self.soul)
+    def get_incoming_edge(self,i):
+        self.check_destroyed()
+        return self._edges(self._cincoming_edges, i)
         
-    def walk(self, state, walk_options):
-        return self._cwalk(self.soul, state.soul, walk_options.soul)
-        
-    enabled = cproperty(lgs.eGetEnabled, c_int, setter=lgs.eSetEnabled)
+    def __hash__(self):
+        return int(self.soul)
+
 
 
 class ListNode(CShadow):
@@ -495,10 +572,6 @@ class ListNode(CShadow):
     @property
     def next(self):
         return self._cnext(self.soul)
-
-            
-
-
 
 def failsafe(return_arg_num_on_failure):
     """ Decorator to prevent segfaults during failed callbacks."""
@@ -1419,12 +1492,25 @@ Vertex._coutgoing_edges = ccast(lgs.vGetOutgoingEdgeList, ListNode)
 Vertex._cincoming_edges = ccast(lgs.vGetIncomingEdgeList, ListNode)
 Vertex._cpayload = ccast(lgs.vPayload, State)
 
+SPTVertex._cnew = lgs.sptvNew
+SPTVertex._cdel = lgs.sptvDestroy
+SPTVertex._coutgoing_edges = ccast(lgs.sptvGetOutgoingEdgeList, ListNode)
+SPTVertex._cincoming_edges = ccast(lgs.sptvGetIncomingEdgeList, ListNode)
+SPTVertex._cstate = ccast(lgs.sptvState, State)
+
 Edge._cnew = lgs.eNew
 Edge._cfrom_v = ccast(lgs.eGetFrom, Vertex)
 Edge._cto_v = ccast(lgs.eGetTo, Vertex)
 Edge._cpayload = ccast(lgs.eGetPayload, EdgePayload)
 Edge._cwalk = ccast(lgs.eWalk, State)
 Edge._cwalk_back = lgs.eWalkBack
+
+SPTEdge._cnew = lgs.eNew
+SPTEdge._cfrom_v = ccast(lgs.eGetFrom, SPTVertex)
+SPTEdge._cto_v = ccast(lgs.eGetTo, SPTVertex)
+SPTEdge._cpayload = ccast(lgs.eGetPayload, EdgePayload)
+SPTEdge._cwalk = ccast(lgs.eWalk, State)
+SPTEdge._cwalk_back = lgs.eWalkBack
 
 EdgePayload._subtypes = {0:Street,1:None,2:None,3:Link,4:GenericPyPayload,5:None,
                          6:Wait,7:Headway,8:TripBoard,9:Crossing,10:Alight,
