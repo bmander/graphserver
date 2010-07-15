@@ -29,6 +29,15 @@ struct Vertex {
    State* payload;
 } ;
 
+struct SPTVertex {
+   int degree_out;
+   int degree_in;
+   ListNode* outgoing;
+   ListNode* incoming;
+   char* label;
+   State* state;
+} ;
+
 struct Edge {
   Vertex* from;
   Vertex* to;
