@@ -84,6 +84,8 @@ gShortestPath( Graph* this, char *from, char *to, State* init_state, int directi
 long
 gSize( Graph* this );
 
+void
+gSetVertexEnabled( Graph *this, char *label, int enabled );
 
 Path *
 sptPathRetro(Graph* g, char* origin_label);
