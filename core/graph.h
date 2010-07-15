@@ -84,11 +84,6 @@ gShortestPath( Graph* this, char *from, char *to, State* init_state, int directi
 long
 gSize( Graph* this );
 
-void
-gSetThicknesses( Graph* this, char *root_label );
-
-void
-gSetVertexEnabled( Graph *this, char *label, int enabled );
 
 Path *
 sptPathRetro(Graph* g, char* origin_label);
@@ -133,6 +128,44 @@ vDegreeIn( Vertex* this );
 
 State*
 vPayload( Vertex* this );
+
+//SPTVERTEX FUNCTIONS
+
+SPTVertex *
+sptvNew( char* label ) ;
+
+void
+sptvDestroy(SPTVertex* this) ;
+
+Edge*
+sptvLink(SPTVertex* this, SPTVertex* to, EdgePayload* payload) ;
+
+Edge*
+sptvSetParent( SPTVertex* this, SPTVertex* parent, EdgePayload* payload );
+
+inline ListNode*
+sptvGetOutgoingEdgeList( SPTVertex* this );
+
+inline ListNode*
+sptvGetIncomingEdgeList( SPTVertex* this );
+
+void
+sptvRemoveOutEdgeRef( SPTVertex* this, Edge* todie );
+
+void
+sptvRemoveInEdgeRef( SPTVertex* this, Edge* todie );
+
+char*
+sptvGetLabel( SPTVertex* this );
+
+int
+sptvDegreeOut( SPTVertex* this );
+
+int
+sptvDegreeIn( SPTVertex* this );
+
+State*
+sptvState( SPTVertex* this );
 
 //EDGE FUNCTIONS
 

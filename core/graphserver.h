@@ -19,6 +19,7 @@ typedef struct ListNode ListNode;
 typedef struct Graph Graph;
 typedef struct Path Path;
 typedef struct Vector Vector;
+typedef struct SPTVertex SPTVertex;
 
 // classes that support edgetypes
 typedef struct ServicePeriod ServicePeriod;
