@@ -245,21 +245,109 @@ gSetVertexEnabled( Graph *this, char *label, int enabled ) {
     
 }
 
+// SPT METHODS
+
+ShortestPathTree*
+sptNew() {
+    return (ShortestPathTree*)gNew();
+}
+
+void
+sptDestroy( ShortestPathTree *this ) {
+  //destroy each vertex contained within
+  struct hashtable_itr *itr = hashtable_iterator(this->vertices);
+  int next_exists = hashtable_count(this->vertices);
+
+  while(itr && next_exists) {
+    SPTVertex* vtx = hashtable_iterator_value( itr );
+    sptvDestroy( vtx );
+    next_exists = hashtable_iterator_advance( itr );
+  }
+
+  free(itr);
+  //destroy the table
+  hashtable_destroy( this->vertices, 0 );
+  //destroy the graph object itself
+  free( this );
+}
+
+SPTVertex*
+sptAddVertex( ShortestPathTree *this, char *label ) {
+  SPTVertex* exists = sptGetVertex( this, label );
+  if( !exists ) {
+    exists = sptvNew( label );
+    hashtable_insert_string( this->vertices, label, exists );
+  }
+
+  return exists;
+}
+
+void
+sptRemoveVertex( ShortestPathTree *this, char *label ) {
+    SPTVertex *exists = sptGetVertex( this, label );
+    if(!exists) {
+        return;
+    }
+    
+    hashtable_remove( this->vertices, label );
+    sptvDestroy( exists );
+}
+
+SPTVertex*
+sptGetVertex( ShortestPathTree *this, char *label ) {
+    return (SPTVertex*)gGetVertex( (Graph*)this, label );
+}
+
+void
+sptAddVertices( ShortestPathTree *this, char **labels, int n ) {
+  int i;
+  for (i = 0; i < n; i++) {
+  	sptAddVertex(this, labels[i]);
+  }
+}
+
+Edge*
+sptAddEdge( ShortestPathTree *this, char *from, char *to, EdgePayload *payload ) {
+  SPTVertex* vtx_from = sptGetVertex( this, from );
+  SPTVertex* vtx_to   = sptGetVertex( this, to );
+
+  if(!(vtx_from && vtx_to))
+    return NULL;
+
+  return sptvLink( vtx_from, vtx_to, payload );
+}
+
+SPTVertex**
+sptVertices( ShortestPathTree *this, long* num_vertices ) {
+    return (SPTVertex**)gVertices( (Graph*)this, num_vertices );
+}
+
+long
+sptSize( ShortestPathTree* this ) {
+    return gSize( (Graph*)this );
+}
+
 
 // VERTEX FUNCTIONS
 
-Vertex *
-vNew( char* label ) {
-    Vertex *this = (Vertex *)malloc(sizeof(Vertex)) ;
+void vInit( Vertex *this, char *label ) {
     this->degree_in = 0;
     this->degree_out = 0;
     this->outgoing = liNew( NULL ) ;
     this->incoming = liNew( NULL ) ;
-    this->payload = NULL;
 
     size_t labelsize = strlen(label)+1;
     this->label = (char*)malloc(labelsize*sizeof(char));
     strcpy(this->label, label);
+}
+
+Vertex *
+vNew( char* label ) {
+    Vertex *this = (Vertex *)malloc(sizeof(Vertex)) ;
+
+    vInit( this, label );
+
+    this->payload = NULL;
 
     return this ;
 }
@@ -356,6 +444,76 @@ vDegreeIn( Vertex* this ) {
 State*
 vPayload( Vertex* this ) {
 	return this->payload;
+}
+
+//SPTVERTEX METHODS
+
+SPTVertex *
+sptvNew( char* label ) {
+    SPTVertex *this = (SPTVertex *)malloc(sizeof(SPTVertex));
+    
+    vInit( (Vertex*)this, label );
+    this->state = NULL;
+    
+    return this;
+}
+
+void
+sptvDestroy(SPTVertex* this) {
+    if( this->state ) {
+        stateDestroy( this->state );
+    }
+    vDestroy( (Vertex*)this, 0, 0 );
+}
+
+Edge*
+sptvLink(SPTVertex* this, SPTVertex* to, EdgePayload* payload) {
+    return vLink( (Vertex*)this, (Vertex*)to, payload );
+}
+
+Edge*
+sptvSetParent( SPTVertex* this, SPTVertex* parent, EdgePayload* payload ) {
+    return vSetParent( (Vertex*)this, (Vertex*)parent, payload );
+}
+
+inline ListNode*
+sptvGetOutgoingEdgeList( SPTVertex* this ) {
+    return vGetOutgoingEdgeList( (Vertex*)this );
+}
+
+inline ListNode*
+sptvGetIncomingEdgeList( SPTVertex* this ) {
+    return vGetIncomingEdgeList( (Vertex*)this );
+}
+
+void
+sptvRemoveOutEdgeRef( SPTVertex* this, Edge* todie ) {
+    vRemoveOutEdgeRef( (Vertex*)this, todie );
+}
+
+void
+sptvRemoveInEdgeRef( SPTVertex* this, Edge* todie ) {
+    vRemoveInEdgeRef( (Vertex*)this, todie );
+}
+    
+char*
+sptvGetLabel( SPTVertex* this ) {
+    return vGetLabel( (Vertex*)this );
+}
+
+int
+sptvDegreeOut( SPTVertex* this ) {
+    return vDegreeOut( (Vertex*)this );
+}
+
+int
+sptvDegreeIn( SPTVertex* this ) {
+    return vDegreeIn( (Vertex*)this );
+}
+
+State*
+sptvState( SPTVertex* this ) {
+    return this->state;
 }
 
 // EDGE FUNCTIONS
