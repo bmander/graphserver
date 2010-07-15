@@ -71,10 +71,10 @@ gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload );
 Vertex**
 gVertices( Graph* this, long* num_vertices );
 
-Graph*
+ShortestPathTree*
 gShortestPathTree( Graph* this, char *from, char *to, State* init_state, WalkOptions* options, long maxtime );
 
-Graph*
+ShortestPathTree*
 gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, WalkOptions* options, long mintime );
 
 //direction specifies forward or retro routing

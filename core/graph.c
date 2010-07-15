@@ -131,18 +131,18 @@ gShortestPath( Graph* this, char *from, char *to, State* init_state, int directi
   }
 
   //find minimum spanning tree
-  Graph *raw_tree;
-  Vertex *curr;
+  ShortestPathTree *raw_tree;
+  SPTVertex *curr;
   if(direction) {
     raw_tree = gShortestPathTree( this, from, to, init_state, options, timelimit );
-    curr = gGetVertex( raw_tree, to );
+    curr = sptGetVertex( raw_tree, to );
   } else {
     raw_tree = gShortestPathTreeRetro( this, from, to, init_state, options, timelimit );
-    curr = gGetVertex( raw_tree, from );
+    curr = sptGetVertex( raw_tree, from );
   }
 
   if( !curr ) {
-    gDestroy(raw_tree, 1, 0); //destroy raw_table and contents, as they won't be used
+    sptDestroy(raw_tree); //destroy raw_table and contents, as they won't be used
     fprintf( stderr, "Destination vertex never reached\n" );
     return NULL;
   }
@@ -154,19 +154,19 @@ gShortestPath( Graph* this, char *from, char *to, State* init_state, int directi
   int i=0;
   while( curr ) {
     if( i > LARGEST_ROUTE_SIZE ) {         //Bail if our crude memory management techniques fail
-      gDestroy( raw_tree, 1, 0 );
+      sptDestroy( raw_tree );
       free(temppath);
       fprintf( stderr, "Route %d hops long, larger than preallocated %d hops\n", i, LARGEST_ROUTE_SIZE );
       return NULL;
     }
 
-    temppath[i] = *((State*)(curr->payload));
+    temppath[i] = *((State*)(curr->state));
     i++;
 
     if( curr->degree_in == 0 )
       break;
     else
-      curr = vGetIncomingEdgeList( curr )->data->from;
+      curr = (SPTVertex*)sptvGetIncomingEdgeList( curr )->data->from;
   }
 
   int n = i;

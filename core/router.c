@@ -1,4 +1,4 @@
-Graph*
+ShortestPathTree*
 #ifndef RETRO
 gShortestPathTree( Graph* this, char *from, char *to, State* init_state, WalkOptions* options, long maxtime ) {
 #else
@@ -10,7 +10,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
  */
   //Iteration Variables
   Vertex *u, *v;
-  Vertex *spt_u, *spt_v;
+  SPTVertex *spt_u, *spt_v;
   State *du, *dv;
   int count = 1;
 
@@ -30,8 +30,8 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
   }
     
   //Return Tree
-  Graph* spt = gNew();
-  gAddVertex( spt, origin )->payload = init_state;
+  ShortestPathTree* spt = sptNew();
+  sptAddVertex( spt, origin )->state = init_state;
   //Priority Queue
   dirfibheap_t q = dirfibheap_new( gSize( this ) );
   dirfibheap_insert_or_dec_key( q, gGetVertex( this, origin ), 0 );
@@ -47,9 +47,9 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
     if( !strcmp( u->label, target ) )                //(end search if reached destination vertex)
       break;
 
-    spt_u = gGetVertex( spt, u->label );             //get corresponding SPT Vertex,
+    spt_u = sptGetVertex( spt, u->label );             //get corresponding SPT Vertex,
     
-    du = (State*)spt_u->payload;                     //and get State of u 'du'.
+    du = (State*)spt_u->state;                     //and get State of u 'du'.
     
 #ifndef RETRO
     if( du->time > maxtime )
@@ -73,8 +73,8 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
 #endif
 
       long old_w;
-      if( (spt_v = gGetVertex( spt, v->label )) ) {        //get the SPT Vertex corresponding to 'v'
-        dv = (State*)spt_v->payload;                     //and its State 'dv'
+      if( (spt_v = sptGetVertex( spt, v->label )) ) {        //get the SPT Vertex corresponding to 'v'
+        dv = (State*)spt_v->state;                     //and its State 'dv'
         old_w = dv->weight;
       } else {
         dv = NULL;                                       //which may not exist yet
@@ -107,18 +107,18 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
 
         // If this is the first time v has been reached
         if( !spt_v ) {
-          spt_v = gAddVertex( spt, v->label );        //Copy v over to the SPT
+          spt_v = sptAddVertex( spt, v->label );        //Copy v over to the SPT
           count++;
           }
 
         //if((count%10000) == 0)
         //  fprintf(stdout, "Shortest path tree size: %d\n",count);
 
-        if(spt_v->payload)
-            stateDestroy(spt_v->payload);
-        spt_v->payload = new_dv;                      //Set the State of v in the SPT to the current winner
+        if(spt_v->state)
+            stateDestroy(spt_v->state);
+        spt_v->state = new_dv;                      //Set the State of v in the SPT to the current winner
 
-        vSetParent( spt_v, spt_u, edge->payload );      //Make u the parent of v in the SPT
+        sptvSetParent( spt_v, spt_u, edge->payload );      //Make u the parent of v in the SPT
       } else {
         stateDestroy(new_dv); //new_dv will never be used; merge it with the infinite.
       }
