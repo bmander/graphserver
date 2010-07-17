@@ -347,7 +347,6 @@ vNew( char* label ) {
 
     vInit( this, label );
 
-    this->payload = NULL;
 
     return this ;
 }
@@ -437,11 +436,6 @@ vDegreeOut( Vertex* this ) {
 int
 vDegreeIn( Vertex* this ) {
     return this->degree_in;
-}
-
-State*
-vPayload( Vertex* this ) {
-	return this->payload;
 }
 
 //SPTVERTEX METHODS

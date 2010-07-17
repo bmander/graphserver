@@ -26,7 +26,6 @@ struct Vertex {
    ListNode* outgoing;
    ListNode* incoming;
    char* label;
-   State* payload;
 } ;
 
 struct SPTVertex {
@@ -156,9 +155,6 @@ vDegreeOut( Vertex* this );
 
 int
 vDegreeIn( Vertex* this );
-
-State*
-vPayload( Vertex* this );
 
 //SPTVERTEX FUNCTIONS
 

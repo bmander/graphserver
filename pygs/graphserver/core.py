@@ -531,11 +531,6 @@ class Vertex(CShadow):
     def incoming(self):
         self.check_destroyed()
         return self._edges(self._cincoming_edges)
-    
-    @property
-    def payload(self):
-        self.check_destroyed()
-        return self._cpayload(self.soul)
 
     def _edges(self, method, index = -1):
         self.check_destroyed()
@@ -1575,7 +1570,6 @@ Vertex._cnew = lgs.vNew
 Vertex._cdel = lgs.vDestroy
 Vertex._coutgoing_edges = ccast(lgs.vGetOutgoingEdgeList, ListNode)
 Vertex._cincoming_edges = ccast(lgs.vGetIncomingEdgeList, ListNode)
-Vertex._cpayload = ccast(lgs.vPayload, State)
 
 SPTVertex._cnew = lgs.sptvNew
 SPTVertex._cdel = lgs.sptvDestroy
