@@ -105,6 +105,8 @@ gVertices( Graph* this, long* num_vertices ) {
     next_exists = hashtable_iterator_advance( itr );
     i++;
   }
+  
+  free(itr);
 
   *num_vertices = nn;
   return ret;
