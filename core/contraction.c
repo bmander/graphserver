@@ -13,6 +13,15 @@ CHPath* chpNew( int n, long length ) {
   return this;
 }
 
+CHPath* chpNewHollow( long length ) {
+    CHPath *this = (CHPath*)malloc(sizeof(CHPath));
+    this->n = 0;
+    this->payloads = NULL;
+    this->length = length;
+    
+    return this;
+}
+
 int chpLength( CHPath* this ) {
     if(!this) {
         return INFINITY;
@@ -74,7 +83,7 @@ CHPath* dist( Graph *gg, char* from_v_label, char* to_v_label, WalkOptions *wo, 
             curs = (SPTVertex*)parent->from;
         }
     } else {
-        ret = pathNewHollow( curs->state->weight );
+        ret = chpNewHollow( curs->state->weight );
     }
     
     sptDestroy( spt );
