@@ -103,9 +103,6 @@ sptRemoveVertex( ShortestPathTree *this, char *label );
 SPTVertex*
 sptGetVertex( ShortestPathTree *this, char *label );
 
-void
-sptAddVertices( ShortestPathTree *this, char **labels, int n );
-
 Edge*
 sptAddEdge( ShortestPathTree *this, char *from, char *to, EdgePayload *payload );
 

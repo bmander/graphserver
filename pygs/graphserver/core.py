@@ -279,12 +279,6 @@ class ShortestPathTree(CShadow):
             verts.append(v)
         return verts
     
-    def add_vertices(self, vs):
-        a = (c_char_p * len(vs))()
-        for i, v in enumerate(vs):
-            a[i] = str(v)
-        lgs.sptAddVertices(self.soul, a, len(vs))
-    
     @property
     def edges(self):
         self.check_destroyed()

@@ -298,14 +298,6 @@ sptGetVertex( ShortestPathTree *this, char *label ) {
     return (SPTVertex*)gGetVertex( (Graph*)this, label );
 }
 
-void
-sptAddVertices( ShortestPathTree *this, char **labels, int n ) {
-  int i;
-  for (i = 0; i < n; i++) {
-  	sptAddVertex(this, labels[i]);
-  }
-}
-
 Edge*
 sptAddEdge( ShortestPathTree *this, char *from, char *to, EdgePayload *payload ) {
   SPTVertex* vtx_from = sptGetVertex( this, from );

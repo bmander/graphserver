@@ -55,20 +55,6 @@ class TestShortestPathTree(unittest.TestCase):
         assert spt.get_vertex( "A" ) == None
         assert spt.get_vertex( "B" ).label == "B"
         
-    def test_add_vertices(self):
-        spt = ShortestPathTree()
-        verts = range(0,1000)
-        t0 = time.time()
-        spt.add_vertices(verts)
-        print "add vertices elapsed ", (time.time() - t0)
-        vlist = spt.vertices
-        assert len(vlist) == len(verts)
-        vlist.sort(lambda x, y: int(x.label) - int(y.label))
-        assert vlist[0].label == "0"
-        assert vlist[-1].label == str(verts[-1])
-        spt.destroy()
-        
-        
     def test_double_add_vertex(self):
         spt = ShortestPathTree()
         v = spt.add_vertex("double")
