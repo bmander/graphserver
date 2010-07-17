@@ -1,5 +1,6 @@
 #include "graphserver.h"
 #include "graph.h"
+#include "fibheap/fibheap.h"
 #include "contraction.h"
 #include <stdio.h>
 
@@ -152,4 +153,40 @@ CHPath** get_shortcuts( Graph *gg, Vertex* vv, WalkOptions* wo, int search_limit
     
     *n = count;
     return ret;
+}
+
+void pqPush( fibheap_t pq, Vertex* item, int priority ) {
+    fibheap_insert( pq, priority, (void*)item );
+}
+
+Vertex* pqPop( fibheap_t pq ) {
+    return (Vertex*)fibheap_extract_min( pq );
+}
+
+int get_importance(int degree_in, int degree_out, int n_shortcuts) {
+    int edge_difference = n_shortcuts - (degree_in+degree_out);
+    return edge_difference;
+}
+
+fibheap_t init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit ) {
+    fibheap_t pq = fibheap_new();
+
+    long n;
+    int i;
+    Vertex** vertices = gVertices( gg, &n );
+    for(i=0; i<n; i++) {
+        Vertex* vv = vertices[i];
+        printf( "%s %d/%ld\n", vv->label, i+1, n );
+        int n_shortcuts;
+        CHPath** shortcuts = get_shortcuts( gg, vv, wo, search_limit, &n_shortcuts );
+        int imp = get_importance( vv->degree_in, vv->degree_out, n_shortcuts );
+        pqPush( pq, vv, imp );
+        int j;
+        for(j=0; j<n_shortcuts; j++){
+            chpDestroy( shortcuts[j] );
+        }
+        free( shortcuts );
+    }
+    free(vertices);
+    return pq;
 }

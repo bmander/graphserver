@@ -18,3 +18,9 @@ void chpDestroy( CHPath* this ) ;
 CHPath* dist( Graph *gg, char* from_v_label, char* to_v_label, WalkOptions *wo ) ;
 
 CHPath** get_shortcuts( Graph *gg, Vertex* vv, WalkOptions* wo, int search_limit, int* n ) ;
+
+fibheap_t init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit );
+
+void pqPush( fibheap_t pq, Vertex* item, int priority );
+
+Vertex* pqPop( fibheap_t pq );
