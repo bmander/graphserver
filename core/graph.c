@@ -506,6 +506,15 @@ sptvHop( SPTVertex* this ) {
     return this->hop;
 }
 
+Edge*
+sptvGetParent( SPTVertex* this ) {
+    ListNode* first_node = vGetIncomingEdgeList( (Vertex*)this );
+    if( first_node )
+        return first_node->data;
+    else
+        return NULL;
+}
+
 // EDGE FUNCTIONS
 
 Edge*

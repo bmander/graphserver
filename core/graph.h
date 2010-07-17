@@ -195,6 +195,9 @@ sptvState( SPTVertex* this );
 int
 sptvHop( SPTVertex* this );
 
+Edge*
+sptvGetParent( SPTVertex* this );
+
 //EDGE FUNCTIONS
 
 Edge*
