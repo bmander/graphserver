@@ -501,6 +501,7 @@ class Vertex(CShadow):
     label = cproperty(lgs.vGetLabel, c_char_p)
     degree_in = cproperty(lgs.vDegreeIn, c_int)
     degree_out = cproperty(lgs.vDegreeOut, c_int)
+    edgeclass = Edge
     
     def __init__(self,label):
         self.soul = self._cnew(label)
@@ -548,8 +549,8 @@ class Vertex(CShadow):
         i = 0
         while node:
             if index != -1 and i == index:
-                return node.data
-            e.append(node.data)
+                return node.data(edgeclass=self.edgeclass)
+            e.append(node.data(edgeclass=self.edgeclass))
             node = node.next
             i = i+1
         if index == -1:
@@ -620,8 +621,8 @@ class SPTVertex(CShadow):
         i = 0
         while node:
             if index != -1 and i == index:
-                return node.data
-            e.append(node.data)
+                return node.data(edgeclass=self.edgeclass)
+            e.append(node.data(edgeclass=self.edgeclass))
             node = node.next
             i = i+1
         if index == -1:
@@ -642,9 +643,9 @@ class SPTVertex(CShadow):
 
 
 class ListNode(CShadow):
-    @property
-    def data(self):
-        return self._cdata(self.soul)
+    
+    def data(self, edgeclass=Edge):
+        return edgeclass.from_pointer( lgs.liGetData(self.soul) )
     
     @property
     def next(self):
