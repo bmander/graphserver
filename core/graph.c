@@ -119,7 +119,7 @@ gVertices( Graph* this, long* num_vertices ) {
 #define LARGEST_ROUTE_SIZE 10000
 
 State*
-gShortestPath( Graph* this, char *from, char *to, State* init_state, int direction, long *size, WalkOptions* options, long timelimit ) {
+gShortestPath( Graph* this, char *from, char *to, State* init_state, int direction, long *size, WalkOptions* options, long timelimit, int hoplimit ) {
   //make sure from/to vertices exist
   if( !gGetVertex( this, from ) ) {
     fprintf( stderr, "Origin vertex \"%s\" does not exist\n", from );
@@ -134,10 +134,10 @@ gShortestPath( Graph* this, char *from, char *to, State* init_state, int directi
   ShortestPathTree *raw_tree;
   SPTVertex *curr;
   if(direction) {
-    raw_tree = gShortestPathTree( this, from, to, init_state, options, timelimit );
+    raw_tree = gShortestPathTree( this, from, to, init_state, options, timelimit, hoplimit );
     curr = sptGetVertex( raw_tree, to );
   } else {
-    raw_tree = gShortestPathTreeRetro( this, from, to, init_state, options, timelimit );
+    raw_tree = gShortestPathTreeRetro( this, from, to, init_state, options, timelimit, hoplimit );
     curr = sptGetVertex( raw_tree, from );
   }
 
@@ -272,10 +272,10 @@ sptDestroy( ShortestPathTree *this ) {
 }
 
 SPTVertex*
-sptAddVertex( ShortestPathTree *this, char *label ) {
+sptAddVertex( ShortestPathTree *this, char *label, int hop ) {
   SPTVertex* exists = sptGetVertex( this, label );
   if( !exists ) {
-    exists = sptvNew( label );
+    exists = sptvNew( label, hop );
     hashtable_insert_string( this->vertices, label, exists );
   }
 
@@ -433,11 +433,12 @@ vDegreeIn( Vertex* this ) {
 //SPTVERTEX METHODS
 
 SPTVertex *
-sptvNew( char* label ) {
+sptvNew( char* label, int hop ) {
     SPTVertex *this = (SPTVertex *)malloc(sizeof(SPTVertex));
     
     vInit( (Vertex*)this, label );
     this->state = NULL;
+    this->hop = hop;
     
     return this;
 }

@@ -334,6 +334,35 @@ class TestGraph(unittest.TestCase):
         wo.walking_speed = 1
         spt = g.shortest_path_tree( "A", None, State(1,0), wo )
 
+    def test_hop_limit(self):
+        gg = Graph()
+        gg.add_vertex( "A" )
+        gg.add_vertex( "B" )
+        gg.add_vertex( "C" )
+        gg.add_vertex( "D" )
+        gg.add_vertex( "E" )
+        gg.add_edge( "A", "B", Street( "AB", 1 ) )
+        gg.add_edge( "B", "C", Street( "BC", 1 ) )
+        gg.add_edge( "C", "D", Street( "CD", 1 ) )
+        gg.add_edge( "D", "E", Street( "DE", 1 ) )
+        
+        spt = gg.shortest_path_tree( "A", "E", State(0,0), WalkOptions() )
+        assert spt.get_vertex( "E" ).state.weight == 0
+        spt.destroy()
+        
+        spt = gg.shortest_path_tree( "A", "E", State(0,0), WalkOptions(), hoplimit=1 )
+        assert spt.get_vertex("A") != None
+        assert spt.get_vertex("B") != None
+        assert spt.get_vertex("C") == None
+        assert spt.get_vertex("D") == None
+        assert spt.get_vertex("E") == None
+        
+        spt = gg.shortest_path_tree( "A", "E", State(0,0), WalkOptions(), hoplimit=3 )
+        assert spt.get_vertex("A") != None
+        assert spt.get_vertex("B") != None
+        assert spt.get_vertex("C") != None
+        assert spt.get_vertex("D") != None
+        assert spt.get_vertex("E") == None
         
 if __name__ == '__main__':    
     unittest.main()
