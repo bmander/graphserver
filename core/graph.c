@@ -24,7 +24,7 @@ gNew() {
 }
 
 void
-gDestroy( Graph* this, int kill_vertex_payloads, int kill_edge_payloads ) {
+gDestroy( Graph* this ) {
 
   //destroy each vertex contained within
   struct hashtable_itr *itr = hashtable_iterator(this->vertices);
@@ -32,7 +32,7 @@ gDestroy( Graph* this, int kill_vertex_payloads, int kill_edge_payloads ) {
 
   while(itr && next_exists) {
     Vertex* vtx = hashtable_iterator_value( itr );
-    vDestroy( vtx, kill_vertex_payloads, kill_edge_payloads );
+    vDestroy( vtx, 1 );
     next_exists = hashtable_iterator_advance( itr );
   }
 
@@ -56,14 +56,14 @@ gAddVertex( Graph* this, char *label ) {
 }
 
 void
-gRemoveVertex( Graph* this, char *label, int free_vertex_payload, int free_edge_payloads ) {
+gRemoveVertex( Graph* this, char *label ) {
     Vertex *exists = gGetVertex( this, label );
     if(!exists) {
         return;
     }
     
     hashtable_remove( this->vertices, label );
-    vDestroy( exists, free_vertex_payload, free_edge_payloads );
+    vDestroy( exists, 1 );
 }
 
 void 
@@ -353,9 +353,7 @@ vNew( char* label ) {
 }
 
 void
-vDestroy(Vertex *this, int free_vertex_payload, int free_edge_payloads) {
-    if( free_vertex_payload && this->payload )
-      stateDestroy( this->payload );
+vDestroy(Vertex *this, int free_edge_payloads) {
 
     //delete incoming edges
     while(this->incoming->next != NULL) {
@@ -463,7 +461,7 @@ sptvDestroy(SPTVertex* this) {
     if( this->state ) {
         stateDestroy( this->state );
     }
-    vDestroy( (Vertex*)this, 0, 0 );
+    vDestroy( (Vertex*)this, 0 );
 }
 
 Edge*

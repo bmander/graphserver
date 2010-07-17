@@ -51,13 +51,13 @@ Graph*
 gNew();
 
 void
-gDestroy( Graph* this, int free_vertex_payloads, int free_edge_payloads );
+gDestroy( Graph* this );
 
 Vertex*
 gAddVertex( Graph* this, char *label );
 
 void
-gRemoveVertex( Graph* this, char *label, int free_vertex_payload, int free_edge_payloads );
+gRemoveVertex( Graph* this, char *label );
 
 Vertex*
 gGetVertex( Graph* this, char *label );
@@ -125,7 +125,7 @@ Vertex *
 vNew( char* label ) ;
 
 void
-vDestroy(Vertex* this, int free_vertex_payload, int free_edge_payloads) ;
+vDestroy(Vertex* this, int free_edge_payloads) ;
 
 void
 vMark(Vertex* this) ;

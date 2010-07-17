@@ -127,10 +127,10 @@ class Graph(CShadow):
         
         return self._cadd_vertex(self.soul, label)
         
-    def remove_vertex(self, label, free_vertex_payload, free_edge_payload):
+    def remove_vertex(self, label):
         #void gRemoveVertex( Graph* this, char *label, int free_vertex_payload, int free_edge_payloads );
         
-        return self._cremove_vertex(self.soul, label, free_vertex_payload, free_edge_payload)
+        return self._cremove_vertex(self.soul, label)
         
     def get_vertex(self, label):
         #Vertex* gGetVertex( Graph* this, char *label );
