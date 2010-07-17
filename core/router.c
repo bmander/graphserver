@@ -1,8 +1,8 @@
 ShortestPathTree*
 #ifndef RETRO
-gShortestPathTree( Graph* this, char *from, char *to, State* init_state, WalkOptions* options, long maxtime, int hoplimit ) {
+gShortestPathTree( Graph* this, char *from, char *to, State* init_state, WalkOptions* options, long maxtime, int hoplimit, long weightlimit ) {
 #else
-gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, WalkOptions* options, long mintime, int hoplimit ) {
+gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, WalkOptions* options, long mintime, int hoplimit, long weightlimit ) {
 #endif
     
 /*
@@ -50,6 +50,10 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
     spt_u = sptGetVertex( spt, u->label );             //get corresponding SPT Vertex,
     
     if( spt_u->hop >= hoplimit ) {
+      break;
+    }
+    
+    if( spt_u->state->weight > weightlimit ) {
       break;
     }
     

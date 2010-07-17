@@ -45,7 +45,7 @@ CHPath* dist( Graph *gg, char* from_v_label, char* to_v_label, WalkOptions *wo )
     }
     
     State *dummy = stateNew(0,0);
-    ShortestPathTree* spt = gShortestPathTree( gg, from_v_label, to_v_label, dummy, wo, INFINITY, INFINITY );
+    ShortestPathTree* spt = gShortestPathTree( gg, from_v_label, to_v_label, dummy, wo, INFINITY, INFINITY, INFINITY );
     
     SPTVertex* curs = sptGetVertex( spt, to_v_label );
     
@@ -70,7 +70,7 @@ CHPath* dist( Graph *gg, char* from_v_label, char* to_v_label, WalkOptions *wo )
 SPTVertex** gNearbyBehind( Graph *gg, Vertex *vv, int search_limit, long *n ) {
     State* dummy = stateNew( 1, 0 );
     WalkOptions *wo = woNew();
-    ShortestPathTree *sptout = gShortestPathTree( gg, vv->label, "bogus", dummy, wo, INFINITY, search_limit );
+    ShortestPathTree *sptout = gShortestPathTree( gg, vv->label, "bogus", dummy, wo, INFINITY, search_limit, INFINITY );
     SPTVertex** ret = sptVertices( sptout, n );
     
     woDestroy( wo );
@@ -85,10 +85,10 @@ CHPath** get_shortcuts( Graph *gg, Vertex* vv, WalkOptions* wo, int search_limit
     
     // GET VERTICES TO INCLUDE IN THE ALL-PAIRS SEARCH
     State *dummy = stateNew( 0, 10000 );
-    ShortestPathTree* sptin = gShortestPathTreeRetro( gg, "bogus", vv->label, dummy, wo, INFINITY, search_limit );
+    ShortestPathTree* sptin = gShortestPathTreeRetro( gg, "bogus", vv->label, dummy, wo, INFINITY, search_limit, INFINITY );
     SPTVertex** us = sptVertices( sptin, &n_us );
     State *dummy2 = stateNew( 0, 0 );
-    ShortestPathTree* sptout = gShortestPathTree( gg, vv->label, "bogus", dummy2, wo, INFINITY, search_limit );
+    ShortestPathTree* sptout = gShortestPathTree( gg, vv->label, "bogus", dummy2, wo, INFINITY, search_limit, INFINITY );
     SPTVertex** ws = sptVertices( sptout, &n_ws );
 
     // THE RETURN ARRAY CANNOT BE LARGER THAN len(u)*len(w) PATHS
