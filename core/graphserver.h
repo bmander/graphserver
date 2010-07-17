@@ -3,6 +3,7 @@
 
 #define ABSOLUTE_MAX_WALK 1000000 //meters. 100 km. prevents overflow
 #define MAX_LONG 2147483647
+#define INFINITY MAX_LONG
 #define SECS_IN_DAY 86400
 #define TRUE 1
 #define FALSE 0

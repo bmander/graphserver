@@ -31,7 +31,8 @@ OBJECTS= fibheap/dirfibheap.o \
     servicecalendar.o \
     timezone.o \
     path.o \
-    vector.o
+    vector.o \
+    contraction.o
 
 # You know what? Honestly? I don't know what most of these switches do.
 CFLAGS=-g -fno-strict-aliasing -O2 -fPIC -Wall
