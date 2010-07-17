@@ -111,7 +111,7 @@ def ccast(func, cls):
 pycapi(lgs.gNew, c_void_p)
 pycapi(lgs.gDestroy, c_void_p, [c_void_p])
 pycapi(lgs.gAddVertex, c_void_p, [c_void_p, c_char_p])
-pycapi(lgs.gRemoveVertex, c_void_p, [c_void_p, c_char_p])
+pycapi(lgs.gRemoveVertex, c_void_p, [c_void_p, c_char_p, c_int])
 pycapi(lgs.gGetVertex, c_void_p, [c_void_p, c_char_p])
 pycapi(lgs.gAddEdge, c_void_p, [c_void_p, c_char_p, c_char_p, c_void_p])
 pycapi(lgs.gVertices, c_void_p, [c_void_p, c_void_p])
