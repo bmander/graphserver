@@ -565,8 +565,8 @@ class SPTVertex(CShadow):
     hop = cproperty(lgs.sptvHop, c_int)
     edgeclass = SPTEdge
     
-    def __init__(self,label):
-        self.soul = self._cnew(label)
+    def __init__(self,label,hop=0):
+        self.soul = self._cnew(label,hop)
         
     def destroy(self):
         #void vDestroy(Vertex* this, int free_vertex_payload, int free_edge_payloads) ;

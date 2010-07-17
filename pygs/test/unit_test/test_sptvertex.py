@@ -5,6 +5,13 @@ class TestSPTVertex(unittest.TestCase):
     def test_basic(self):
         v=SPTVertex("home")
         assert v
+
+    def test_init_hop(self):
+        v = SPTVertex( "A" )
+	assert v.hop == 0
+
+	v = SPTVertex( "B", 1 )
+	assert v.hop == 1
         
     def test_destroy(self): #mostly just check that it doesn't segfault. the stress test will check if it works or not.
         v=SPTVertex("home")

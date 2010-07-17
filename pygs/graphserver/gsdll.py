@@ -176,7 +176,7 @@ pycapi(lgs.vGetOutgoingEdgeList, c_void_p, [c_void_p])
 pycapi(lgs.vGetIncomingEdgeList, c_void_p, [c_void_p])
 
 #SPTVERTEX API
-pycapi(lgs.sptvNew, c_void_p, [c_char_p])
+pycapi(lgs.sptvNew, c_void_p, [c_char_p, c_int])
 pycapi(lgs.sptvDestroy, c_void_p, [c_void_p])
 pycapi(lgs.sptvDegreeIn, c_int, [c_void_p])
 pycapi(lgs.sptvDegreeOut, c_int, [c_void_p])
