@@ -3,18 +3,21 @@ from graphserver.core import *
 
 class TestSPTVertex(unittest.TestCase):
     def test_basic(self):
-        v=SPTVertex("home")
+        vv = Vertex("home")
+        v=SPTVertex( vv )
+
+	assert v.mirror.soul == vv.soul
         assert v
 
     def test_init_hop(self):
-        v = SPTVertex( "A" )
+        v = SPTVertex( Vertex("A") )
 	assert v.hop == 0
 
-	v = SPTVertex( "B", 1 )
+	v = SPTVertex( Vertex("B"), 1 )
 	assert v.hop == 1
         
     def test_destroy(self): #mostly just check that it doesn't segfault. the stress test will check if it works or not.
-        v=SPTVertex("home")
+        v=SPTVertex( Vertex("home") )
         v.destroy()
         
         try:
@@ -24,22 +27,22 @@ class TestSPTVertex(unittest.TestCase):
             pass
         
     def test_label(self):
-        v=SPTVertex("home")
+        v=SPTVertex( Vertex("home") )
         print v.label
         assert v.label == "home"
     
     def test_incoming(self):
-        v=SPTVertex("home")
+        v=SPTVertex( Vertex("home") )
         assert v.incoming == []
         assert v.degree_in == 0
         
     def test_outgoing(self):
-        v=SPTVertex("home")
+        v=SPTVertex( Vertex("home") )
         assert v.outgoing == []
         assert v.degree_out == 0
         
     def test_prettyprint(self):
-        v = SPTVertex("home")
+        v = SPTVertex( Vertex("home") )
         assert v.to_xml() == "<SPTVertex degree_out='0' degree_in='0' label='home'/>"
 
 

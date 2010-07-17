@@ -237,11 +237,11 @@ class ShortestPathTree(CShadow):
         self._cdel(self.soul)
         self.soul = None
             
-    def add_vertex(self, label):
+    def add_vertex(self, shadow):
         #Vertex* sptAddVertex( ShortestPathTree* this, char *label );
         self.check_destroyed()
         
-        return self._cadd_vertex(self.soul, label)
+        return self._cadd_vertex(self.soul, shadow.soul)
         
     def remove_vertex(self, label):
         #void sptRemoveVertex( ShortestPathTree* this, char *label, int free_vertex_payload, int free_edge_payloads );
@@ -563,10 +563,11 @@ class SPTVertex(CShadow):
     degree_in = cproperty(lgs.sptvDegreeIn, c_int)
     degree_out = cproperty(lgs.sptvDegreeOut, c_int)
     hop = cproperty(lgs.sptvHop, c_int)
+    mirror = cproperty(lgs.sptvMirror, c_void_p, Vertex )
     edgeclass = SPTEdge
     
-    def __init__(self,label,hop=0):
-        self.soul = self._cnew(label,hop)
+    def __init__(self,mirror,hop=0):
+        self.soul = self._cnew(mirror.soul,hop)
         
     def destroy(self):
         #void vDestroy(Vertex* this, int free_vertex_payload, int free_edge_payloads) ;

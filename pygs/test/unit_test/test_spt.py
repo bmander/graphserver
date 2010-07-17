@@ -34,20 +34,20 @@ class TestShortestPathTree(unittest.TestCase):
         
     def test_add_vertex(self):
         spt = ShortestPathTree()
-        v = spt.add_vertex("home")
+        v = spt.add_vertex( Vertex("home") )
         assert v.label == "home"
         
         spt.destroy()
         
     def test_remove_vertex(self):
         spt = ShortestPathTree()
-        spt.add_vertex( "A" )
+        spt.add_vertex( Vertex("A") )
         spt.get_vertex( "A" ).label == "A"
         spt.remove_vertex( "A" )
         assert spt.get_vertex( "A" ) == None
         
-        spt.add_vertex( "A" )
-        spt.add_vertex( "B" )
+        spt.add_vertex( Vertex("A") )
+        spt.add_vertex( Vertex("B") )
         pl = Street( "AB", 1 )
         spt.add_edge( "A", "B", pl )
         spt.remove_vertex( "A" )
@@ -57,10 +57,10 @@ class TestShortestPathTree(unittest.TestCase):
         
     def test_double_add_vertex(self):
         spt = ShortestPathTree()
-        v = spt.add_vertex("double")
+        v = spt.add_vertex( Vertex("double") )
         assert v.label == "double"
         assert spt.size == 1
-        v = spt.add_vertex("double")
+        v = spt.add_vertex( Vertex("double") )
         assert spt.size == 1
         assert v.label == "double"
         
@@ -69,7 +69,7 @@ class TestShortestPathTree(unittest.TestCase):
     def test_get_vertex(self):
         spt = ShortestPathTree()
         
-        spt.add_vertex("home")
+        spt.add_vertex( Vertex("home") )
         v = spt.get_vertex("home")
         assert v.label == "home"
         v = spt.get_vertex("bogus")
@@ -80,8 +80,8 @@ class TestShortestPathTree(unittest.TestCase):
     def test_add_edge(self):
         spt = ShortestPathTree()
         
-        fromv = spt.add_vertex("home")
-        tov = spt.add_vertex("work")
+        fromv = spt.add_vertex( Vertex("home") )
+        tov = spt.add_vertex( Vertex("work") )
         s = Street( "helloworld", 1 )
         e = spt.add_edge("home", "work", s)
         assert e
@@ -94,8 +94,8 @@ class TestShortestPathTree(unittest.TestCase):
     def test_add_edge_effects_vertices(self):
         spt = ShortestPathTree()
         
-        fromv = spt.add_vertex("home")
-        tov = spt.add_vertex("work")
+        fromv = spt.add_vertex( Vertex("home") )
+        tov = spt.add_vertex( Vertex("work") )
         s = Street( "helloworld", 1 )
         e = spt.add_edge("home", "work", s)
         
@@ -107,8 +107,8 @@ class TestShortestPathTree(unittest.TestCase):
     def test_vertices(self):
         spt = ShortestPathTree()
         
-        fromv = spt.add_vertex("home")
-        tov = spt.add_vertex("work")
+        fromv = spt.add_vertex( Vertex("home") )
+        tov = spt.add_vertex( Vertex("work") )
         
         assert spt.vertices
         assert len(spt.vertices)==2
@@ -120,8 +120,8 @@ class TestShortestPathTree(unittest.TestCase):
     def test_walk_longstreet(self):
         spt = ShortestPathTree()
         
-        fromv = spt.add_vertex("home")
-        tov = spt.add_vertex("work")
+        fromv = spt.add_vertex( Vertex("home") )
+        tov = spt.add_vertex( Vertex("work") )
         s = Street( "helloworld", 24000 )
         e = spt.add_edge("home", "work", s)
         
@@ -137,8 +137,8 @@ class TestShortestPathTree(unittest.TestCase):
     def test_add_link(self):
         spt = ShortestPathTree()
         
-        fromv = spt.add_vertex("home")
-        tov = spt.add_vertex("work")
+        fromv = spt.add_vertex( Vertex("home") )
+        tov = spt.add_vertex( Vertex("work") )
         s = Street( "helloworld", 1 )
         e = spt.add_edge("home", "work", s)
         
@@ -153,8 +153,8 @@ class TestShortestPathTree(unittest.TestCase):
         
     def test_edgeclass(self):
         spt = ShortestPathTree()
-        spt.add_vertex( "A" )
-        spt.add_vertex( "B" )
+        spt.add_vertex( Vertex("A") )
+        spt.add_vertex( Vertex("B") )
         spt.add_edge( "A", "B", Street("AB", 1) )
         
         vv = spt.get_vertex( "A" )

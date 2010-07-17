@@ -36,6 +36,7 @@ struct SPTVertex {
    char* label;
    State* state;
    int hop;
+   Vertex *mirror;
 } ;
 
 struct Edge {
@@ -96,7 +97,7 @@ void
 sptDestroy( ShortestPathTree *this );
 
 SPTVertex*
-sptAddVertex( ShortestPathTree *this, char *label, int hop );
+sptAddVertex( ShortestPathTree *this, Vertex *mirror, int hop );
 
 void
 sptRemoveVertex( ShortestPathTree *this, char *label );
@@ -157,7 +158,7 @@ vDegreeIn( Vertex* this );
 //SPTVERTEX FUNCTIONS
 
 SPTVertex *
-sptvNew( char* label, int hop ) ;
+sptvNew( Vertex* mirror, int hop ) ;
 
 void
 sptvDestroy(SPTVertex* this) ;
@@ -197,6 +198,9 @@ sptvHop( SPTVertex* this );
 
 Edge*
 sptvGetParent( SPTVertex* this );
+
+Vertex*
+sptvMirror( SPTVertex* this );
 
 //EDGE FUNCTIONS
 
