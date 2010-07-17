@@ -40,13 +40,13 @@ void chpDestroy( CHPath* this ) {
     free( this );
 }
     
-CHPath* dist( Graph *gg, char* from_v_label, char* to_v_label, WalkOptions *wo )  {
+CHPath* dist( Graph *gg, char* from_v_label, char* to_v_label, WalkOptions *wo, int weightlimit, int return_full_path )  {
     if( strcmp( from_v_label, to_v_label ) == 0 ) {
         return NULL;
     }
     
     State *dummy = stateNew(0,0);
-    ShortestPathTree* spt = gShortestPathTree( gg, from_v_label, to_v_label, dummy, wo, INFINITY, INFINITY, INFINITY );
+    ShortestPathTree* spt = gShortestPathTree( gg, from_v_label, to_v_label, dummy, wo, INFINITY, INFINITY, weightlimit );
     
     SPTVertex* curs = sptGetVertex( spt, to_v_label );
     
@@ -55,12 +55,26 @@ CHPath* dist( Graph *gg, char* from_v_label, char* to_v_label, WalkOptions *wo )
         return NULL;
     }
     
-    CHPath *ret = chpNew( curs->hop+1, curs->state->weight );
-    int i;
-    for(i=curs->hop; i>0; i--) {
-        Edge* parent = sptvGetParent( curs ) ;
-        ret->payloads[i] = parent->payload;
-        curs = (SPTVertex*)parent->from;
+    CHPath* ret;
+    
+    if( return_full_path ) {
+        // get path length
+        int pathlength = 0;
+        Edge *currparent = sptvGetParent( curs );
+        while(currparent) {
+            pathlength++;
+            currparent = sptvGetParent( (SPTVertex*)currparent->from );
+        }
+        
+        ret = chpNew( pathlength, curs->state->weight );
+        int i;
+        for(i=pathlength-1; i>=0; i--) {
+            Edge* parent = sptvGetParent( curs ) ;
+            ret->payloads[i] = parent->payload;
+            curs = (SPTVertex*)parent->from;
+        }
+    } else {
+        ret = pathNewHollow( curs->state->weight );
     }
     
     sptDestroy( spt );
