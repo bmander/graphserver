@@ -3,6 +3,8 @@
 #include "fibheap/fibheap.h"
 #include "contraction.h"
 #include <stdio.h>
+#define TRUE 1
+#define FALSE 0
 
 CHPath* chpNew( int n, long length ) {
   CHPath *this = (CHPath*)malloc(sizeof(CHPath));
@@ -109,7 +111,7 @@ CHPath** get_shortcuts( Graph *gg, Vertex* vv, WalkOptions* wo, int search_limit
     
     // GET VERTICES TO INCLUDE IN THE ALL-PAIRS SEARCH
     State *dummy = stateNew( 0, 10000 );
-    ShortestPathTree* sptin = gShortestPathTreeRetro( gg, "bogus", vv->label, dummy, wo, INFINITY, search_limit, INFINITY );
+    ShortestPathTree* sptin = gShortestPathTreeRetro( gg, "bogus", vv->label, dummy, wo, 0, search_limit, INFINITY );
     SPTVertex** us = sptVertices( sptin, &n_us );
     State *dummy2 = stateNew( 0, 0 );
     ShortestPathTree* sptout = gShortestPathTree( gg, vv->label, "bogus", dummy2, wo, INFINITY, search_limit, INFINITY );
@@ -119,41 +121,52 @@ CHPath** get_shortcuts( Graph *gg, Vertex* vv, WalkOptions* wo, int search_limit
     CHPath** ret = (CHPath**)malloc(n_us*n_ws*sizeof(CHPath*));
     int count = 0;
     
-    // GET PATHS FROM ALL us TO v
+    // GET PATHS c(u,v) FROM ALL us TO v
     CHPath** cuv = (CHPath**)malloc(n_us*sizeof(CHPath*));
     for(i=0; i<n_us; i++) {
-        cuv[i] = dist( gg, us[i]->label, vv->label, wo );
-        printf( "uv path from %s to %s is %d\n", us[i]->label,vv->label, chpLength( cuv[i] ) );
+        cuv[i] = dist( gg, us[i]->label, vv->label, wo, INFINITY, TRUE );
     }
     
-    // GET PATHS FROM v to ALL ws
+    // GET PATHS c(v,w) FROM v to ALL ws, FINDING THE MAX c(v,w)
     CHPath** cvw = (CHPath**)malloc(n_ws*sizeof(CHPath*));
+    int max_cvw = -INFINITY;
     for(i=0; i<n_ws; i++) {
-        cvw[i] = dist( gg, vv->label, ws[i]->label, wo );
-        printf( "vw path from %s to %s is %d\n", vv->label, ws[i]->label, chpLength( cvw[i] ) );
+        cvw[i] = dist( gg, vv->label, ws[i]->label, wo, INFINITY, TRUE );
+        if( cvw[i] && cvw[i]->length > max_cvw ) {
+            max_cvw = cvw[i]->length;
+        }
     }
     
     // FOR ALL us AND ws, SEE IF THERE IS A PATH FROM u TO w IGNORING v THAT IS SHORTER THAN THE PATH THROUGH v
     gSetVertexEnabled( gg, vv->label, 0 );
+    
+    //FOR EACH U
     for(i=0; i<n_us; i++) {
         SPTVertex* u = us[i];
-        int cuv_length = chpLength( cuv[i] );
-        for(j=0; j<n_ws; j++) {
-            SPTVertex* w = ws[j];
-            if( u != w ) {
-                CHPath* duw = dist( gg, u->label, w->label, wo);
+        
+        //if the path c(u,v) is NULL, it means u==v; ignore
+        if(cuv[i]) {
+        
+            int cuv_length = chpLength( cuv[i] );
+            int weightlimit = cuv_length+max_cvw;
+            
+            //FOR EACH W
+            for(j=0; j<n_ws; j++) {
+                SPTVertex* w = ws[j];
                 
-                printf( "duw.length: %d\n", chpLength( duw ) );
-                printf( "shortcut length: %d\n", cuv_length+chpLength(cvw[j]) );
-                
-                // IF THE PATH AROUND IS LONGER THAN THE PATH THROUGH, ADD THE PATH THROUGH TO THE SHORTCUTS
-                if( cuv_length+chpLength(cvw[j]) < chpLength(duw) ) {
-                    CHPath* yld = chpCombine( cuv[i], cvw[i] );
-                    ret[count] = yld;
-                    count++;
+                // the path c(v,w) must be non-NULL, and u!=w
+                if( cvw[j] && strcmp(u->label,w->label)!=0 ) {
+                    CHPath* duw = dist( gg, u->label, w->label, wo, weightlimit, FALSE);
+                    
+                    // IF THE PATH AROUND IS LONGER THAN THE PATH THROUGH, ADD THE PATH THROUGH TO THE SHORTCUTS
+                    if( cuv_length+chpLength(cvw[j]) < chpLength(duw) ) {
+                        CHPath* yld = chpCombine( cuv[i], cvw[i] );
+                        ret[count] = yld;
+                        count++;
+                    }
+                    
+                    chpDestroy( duw );
                 }
-                
-                chpDestroy( duw );
             }
         }
     }
