@@ -182,6 +182,7 @@ pycapi(lgs.sptvDegreeIn, c_int, [c_void_p])
 pycapi(lgs.sptvDegreeOut, c_int, [c_void_p])
 pycapi(lgs.sptvGetOutgoingEdgeList, c_void_p, [c_void_p])
 pycapi(lgs.sptvGetIncomingEdgeList, c_void_p, [c_void_p])
+pycapi(lgs.sptvHop, c_void_p, [c_int])
 
 #EDGE API
 pycapi(lgs.eNew, c_void_p, [c_void_p, c_void_p, c_void_p])

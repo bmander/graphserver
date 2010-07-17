@@ -192,6 +192,9 @@ sptvDegreeIn( SPTVertex* this );
 State*
 sptvState( SPTVertex* this );
 
+int
+sptvHop( SPTVertex* this );
+
 //EDGE FUNCTIONS
 
 Edge*

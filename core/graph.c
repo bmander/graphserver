@@ -501,6 +501,11 @@ sptvState( SPTVertex* this ) {
     return this->state;
 }
 
+int
+sptvHop( SPTVertex* this ) {
+    return this->hop;
+}
+
 // EDGE FUNCTIONS
 
 Edge*

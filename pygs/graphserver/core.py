@@ -562,6 +562,7 @@ class SPTVertex(CShadow):
     label = cproperty(lgs.sptvGetLabel, c_char_p)
     degree_in = cproperty(lgs.sptvDegreeIn, c_int)
     degree_out = cproperty(lgs.sptvDegreeOut, c_int)
+    hop = cproperty(lgs.sptvHop, c_int)
     edgeclass = SPTEdge
     
     def __init__(self,label):
