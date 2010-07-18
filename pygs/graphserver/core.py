@@ -222,6 +222,17 @@ class Graph(CShadow):
         for e in self.edges:
             ret += "    %s -> %s;\n" % (e.from_v.label, e.to_v.label)
         return ret + "}"
+        
+    def get_contraction_hierarchies( self, walk_options, search_limit=1 ):
+        return self._get_ch( self.soul, walk_options.soul, search_limit )
+        
+class ContractionHierarchy(CShadow):
+    
+    upgraph = cproperty(lgs.chUpGraph, c_void_p, Graph)
+    downgraph = cproperty(lgs.chDownGraph, c_void_p, Graph)
+    
+    def __init__(self, upgraph, downgraph):
+        self.soul = lgs.chNew( upgraph.soul, downgraph.soul )
 
 class ShortestPathTree(CShadow):
     
@@ -1448,6 +1459,36 @@ class Combination(EdgePayload):
         self.check_destroyed()
         return "<Combination n=%d />"%self.n
         
+    def __getstate__(self):
+        return [ self.get( i ).soul for i in range(self.n) ]
+            
+    def __setstate__(self, state):
+        self.__init__(len(state))
+        
+    def __resources__(self):
+        components = [self.get(i) for i in range(self.n)]
+            
+        return [(str(component.soul), component) for component in components]
+    
+    @classmethod
+    def reconstitute(cls, state, resolver):
+        ret = Combination(len(state))
+        
+        for componentsoul in state:
+            ret.add( resolver.resolve( componentsoul ) )
+            
+        return ret
+        
+    def unpack(self):
+        components_unpacked = []
+        for i in range( self.n ):
+            component_to_unpack = self.get( i )
+            if component_to_unpack.__class__ == Combination:
+                components_unpacked.append( component_to_unpack.unpack() )
+            else:
+                components_unpacked.append( [component_to_unpack] )
+        return reduce( lambda x,y:x+y, components_unpacked )
+        
 class Alight(EdgePayload):
     calendar = cproperty( lgs.alGetCalendar, c_void_p, ServiceCalendar )
     timezone = cproperty( lgs.alGetTimezone, c_void_p, Timezone )
@@ -1571,6 +1612,7 @@ Graph._cget_vertex = ccast(lgs.gGetVertex, Vertex)
 Graph._cadd_edge = ccast(lgs.gAddEdge, Edge)
 Graph._cshortest_path_tree = ccast(lgs.gShortestPathTree, ShortestPathTree)
 Graph._cshortest_path_tree_retro = ccast(lgs.gShortestPathTreeRetro, ShortestPathTree)
+Graph._get_ch = ccast( lgs.get_contraction_hierarchies, ContractionHierarchy )
 
 ShortestPathTree._cnew = lgs.sptNew
 ShortestPathTree._cdel = lgs.sptDestroy

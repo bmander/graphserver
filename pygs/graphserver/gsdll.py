@@ -121,6 +121,8 @@ pycapi(lgs.gSize,c_void_p, [c_long])
 pycapi(lgs.sptPathRetro,c_void_p, [c_void_p, c_char_p])
 pycapi(lgs.gSetVertexEnabled,c_void_p, [c_void_p, c_char_p, c_int])
 
+pycapi(lgs.get_contraction_hierarchies, c_void_p, [c_void_p, c_void_p, c_int])
+
 # SPT API        
 pycapi(lgs.sptNew, c_void_p)
 pycapi(lgs.sptDestroy, c_void_p, [c_void_p])
@@ -262,6 +264,11 @@ pycapi(lgs.comboWalkBack, c_void_p, [c_void_p, c_void_p, c_void_p])
 pycapi(lgs.comboAdd, c_void_p, [c_void_p, c_void_p])
 pycapi(lgs.comboGet, c_void_p, [c_void_p, c_int])
 pycapi(lgs.comboN, c_int, [c_void_p])
+
+#CH API
+pycapi(lgs.chNew, c_void_p, [c_void_p, c_void_p])
+pycapi(lgs.chUpGraph, c_void_p, [c_void_p])
+pycapi(lgs.chDownGraph, c_void_p, [c_void_p])
 
 #CUSTOM TYPE API
 class PayloadMethodTypes:

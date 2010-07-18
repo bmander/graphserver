@@ -364,5 +364,31 @@ class TestGraph(unittest.TestCase):
         assert spt.get_vertex("D") != None
         assert spt.get_vertex("E") == None
         
+    def test_traverse(self):
+        gg = Graph()
+        gg.add_vertex( "A" )
+        gg.add_vertex( "B" )
+        gg.add_vertex( "C" )
+        gg.add_edge( "A", "B", Street("AB", 1) )
+        gg.add_edge( "A", "C", Street("AC", 1) )
+        
+        vv = gg.get_vertex( "A" )
+        assert [ee.payload.name for ee in vv.outgoing] == ["AC", "AB"]
+            
+    def test_ch(self):
+        gg = Graph()
+        gg.add_vertex( "A" )
+        gg.add_vertex( "B" )
+        ab = gg.add_edge( "A", "B", Street( "AB", 1 ) )
+        ba = gg.add_edge( "B", "A", Street( "BA", 1 ) )
+        
+        absoul = gg.get_vertex("A").outgoing[0].payload.soul
+        basoul = gg.get_vertex("B").outgoing[0].payload.soul
+        
+        ch = gg.get_contraction_hierarchies( WalkOptions() )
+        
+        assert ch.upgraph.get_vertex("A").outgoing[0].payload.soul == absoul
+        assert ch.downgraph.get_vertex("B").outgoing[0].payload.soul == basoul
+
 if __name__ == '__main__':    
     unittest.main()
