@@ -50,6 +50,15 @@ void chpDestroy( CHPath* this ) {
     free( this->payloads );
     free( this );
 }
+
+Combination* pathToEdgePayload( CHPath* this ) {
+    Combination* ret = comboNew( this->n );
+    int i;
+    for(i=0; i<this->n; i++) {
+        comboAdd( ret, this->payloads[i] );
+    }
+    return ret;
+}
     
 CHPath* dist( Graph *gg, char* from_v_label, char* to_v_label, WalkOptions *wo, int weightlimit, int return_full_path )  {
     if( strcmp( from_v_label, to_v_label ) == 0 ) {
