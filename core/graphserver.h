@@ -41,6 +41,7 @@ typedef struct HeadwayBoard HeadwayBoard;
 typedef struct HeadwayAlight HeadwayAlight;
 typedef struct Crossing Crossing;
 typedef struct Alight Alight;
+typedef struct Combination Combination;
 
 typedef enum {    
   PL_STREET,
@@ -57,7 +58,8 @@ typedef enum {
   PL_HEADWAYBOARD,
   PL_EGRESS,
   PL_HEADWAYALIGHT,
-  PL_ELAPSE_TIME
+  PL_ELAPSE_TIME,
+  PL_COMBINATION
 } edgepayload_t;
 
 #include "state.h"
@@ -76,6 +78,7 @@ typedef enum {
 #include "edgetypes/crossing.h"
 #include "edgetypes/alight.h"
 #include "edgetypes/custompayload.h"
+#include "edgetypes/combination.h"
 #include "edgepayload.h"
 #include "list.h"
 #include "servicecalendar.h"
