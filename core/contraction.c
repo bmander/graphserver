@@ -236,3 +236,72 @@ fibheap_t init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit ) {
     free(vertices);
     return pq;
 }
+
+
+CH* get_contraction_heirarchies(Graph* gg, WalkOptions* wo, int search_limit) {
+    fibheap* pq = init_priority_queue( gg, wo, search_limit );
+
+    Graph* gup = gNew();
+    Graph* gdown = gNew();
+    Vertex* vertex;
+    int n = gSize( gg );
+    
+    int i;
+    while( !fibheap_empty(pq) ) {
+        
+        int prio;
+        vertex = pqPop( pq, &prio );
+
+        printf( "contract %d/%d %s\n", (i,gg), vertex->label );
+        // make sure priority of current vertex
+        CHPath* shortcuts;
+        int n_shortcuts;
+        while(1) {
+            shortcuts = get_shortcuts( gg, vertex, wo, search_limit, &n_shortcuts );
+            int new_prio = get_importance( vv->degree_in, vv->degree_out, n_shortcuts );
+            if new_prio == prio:
+                break
+            else:
+                pqPush( pq, vertex, new_prio );
+                vertex = pqPop( pq, &prio );
+        }
+            
+        // ADD SHORTCUTS
+        for(i=0; i<n_shortcuts; i++) {
+            // ADD SHORTCUT
+            Combination* shortcut_payload = pathToEdgePayload( shortcuts[i] );
+            #print "add", shortcut_payload, from_v, to_v
+            gg.add_edge( from_v, to_v, shortcut_payload )
+            
+        // move edges from gg to gup and gdown
+        // vertices that are still in the graph are, by definition, of higher importance than the one
+        // currently being plucked from the graph. Edges that go out are upward edges. Edges that are coming in
+        // are downward edges.
+        
+        in_vert_counts = histogram( [ee.from_v.label for ee in vertex.incoming] )
+        out_vert_counts = histogram( [ee.to_v.label for ee in vertex.outgoing] )
+        for in_vert, count in in_vert_counts.items():
+            if count > 1:
+                print "WARNING: %d edges from %s to %s"%(count, in_vert, vertex.label)
+        for out_vert, count in out_vert_counts.items():
+            if count > 1:
+                print "WARNING: %d edges from %s to %s"%(count, vertex.label, out_vert)
+        
+        //incoming, therefore downward
+        gdown.add_vertex( vertex.label )
+        for ee in vertex.incoming:
+            gdown.add_vertex( ee.from_v.label )
+            gdown.add_edge( ee.from_v.label, ee.to_v.label, ee.payload )
+            
+        //outgoing, therefore upward
+        gup.add_vertex( vertex.label )
+        for ee in vertex.outgoing:
+            gup.add_vertex( ee.to_v.label )
+            gup.add_edge( ee.from_v.label, ee.to_v.label, ee.payload )
+            
+        // TODO inform neighbors their neighbor is being deleted
+        gg.remove_vertex( vertex.label, free_edge_payloads=False )
+        
+    return gup, gdown, vertex_order
+    
+
