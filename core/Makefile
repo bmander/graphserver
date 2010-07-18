@@ -26,6 +26,7 @@ OBJECTS= fibheap/dirfibheap.o \
     edgetypes/crossing.o \
     edgetypes/alight.o \
     edgetypes/custompayload.o \
+    edgetypes/combination.o \
     edgepayload.o \
     list.o \
     servicecalendar.o \
