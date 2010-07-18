@@ -1,10 +1,18 @@
 
 typedef struct CHPath CHPath;
+typedef struct CH CH;
 
 struct CHPath {
     int n;
     EdgePayload** payloads;
     long length;
+    Vertex* fromv;
+    Vertex* tov;
+} ;
+
+struct CH {
+    Graph* up;
+    Graph* down;
 } ;
 
 CHPath* chpNew( int n, long length ) ;
@@ -24,3 +32,5 @@ fibheap_t init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit );
 void pqPush( fibheap_t pq, Vertex* item, int priority );
 
 Vertex* pqPop( fibheap_t pq, int *priority ) ;
+
+CH* get_contraction_heirarchies(Graph* gg, WalkOptions* wo, int search_limit) ;

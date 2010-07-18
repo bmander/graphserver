@@ -6,6 +6,17 @@
 #define TRUE 1
 #define FALSE 0
 
+CH* chNew(Graph *up, Graph *down) {
+    CH* ret = (CH*)malloc(sizeof(CH));
+    ret->up = up;
+    ret->down = down;
+    return ret;
+}
+
+void chDestroy( CH* this ) {
+    free( this );
+}
+
 CHPath* chpNew( int n, long length ) {
   CHPath *this = (CHPath*)malloc(sizeof(CHPath));
   this->n = n;
@@ -19,6 +30,8 @@ CHPath* chpNewHollow( long length ) {
     CHPath *this = (CHPath*)malloc(sizeof(CHPath));
     this->n = 0;
     this->payloads = NULL;
+    this->fromv = NULL;
+    this->tov = NULL;
     this->length = length;
     
     return this;
@@ -34,6 +47,8 @@ int chpLength( CHPath* this ) {
 
 CHPath* chpCombine( CHPath* a, CHPath* b ) {
     CHPath* ret = chpNew( a->n+b->n, a->length+b->length );
+    ret->fromv = a->fromv;
+    ret->tov = b->tov;
     int i;
     for(i=0; i<a->n; i++) {
         ret->payloads[i]=a->payloads[i];
@@ -134,6 +149,10 @@ CHPath** get_shortcuts( Graph *gg, Vertex* vv, WalkOptions* wo, int search_limit
     CHPath** cuv = (CHPath**)malloc(n_us*sizeof(CHPath*));
     for(i=0; i<n_us; i++) {
         cuv[i] = dist( gg, us[i]->label, vv->label, wo, INFINITY, TRUE );
+        if(cuv[i]) {
+          cuv[i]->fromv = us[i]->mirror;
+          cuv[i]->tov = vv;
+        }
     }
     
     // GET PATHS c(v,w) FROM v to ALL ws, FINDING THE MAX c(v,w)
@@ -141,6 +160,11 @@ CHPath** get_shortcuts( Graph *gg, Vertex* vv, WalkOptions* wo, int search_limit
     int max_cvw = -INFINITY;
     for(i=0; i<n_ws; i++) {
         cvw[i] = dist( gg, vv->label, ws[i]->label, wo, INFINITY, TRUE );
+        if( cvw[i] ) {
+            cvw[i]->fromv = vv;
+            cvw[i]->tov = ws[i]->mirror;
+        }
+        
         if( cvw[i] && cvw[i]->length > max_cvw ) {
             max_cvw = cvw[i]->length;
         }
@@ -169,7 +193,7 @@ CHPath** get_shortcuts( Graph *gg, Vertex* vv, WalkOptions* wo, int search_limit
                     
                     // IF THE PATH AROUND IS LONGER THAN THE PATH THROUGH, ADD THE PATH THROUGH TO THE SHORTCUTS
                     if( cuv_length+chpLength(cvw[j]) < chpLength(duw) ) {
-                        CHPath* yld = chpCombine( cuv[i], cvw[i] );
+                        CHPath* yld = chpCombine( cuv[i], cvw[j] );
                         ret[count] = yld;
                         count++;
                     }
@@ -209,9 +233,14 @@ Vertex* pqPop( fibheap_t pq, int* priority ) {
     return (Vertex*)fibheap_extract_min( pq );
 }
 
-int get_importance(int degree_in, int degree_out, int n_shortcuts) {
+int get_importance(int degree_in, int degree_out, int n_shortcuts, int nds) {
+    
     int edge_difference = n_shortcuts - (degree_in+degree_out);
-    return edge_difference;
+    
+    printf( "nds: %d\n", nds );
+    printf( "ed: %d\n", edge_difference );
+    
+    return edge_difference + nds;
 }
 
 fibheap_t init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit ) {
@@ -222,10 +251,10 @@ fibheap_t init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit ) {
     Vertex** vertices = gVertices( gg, &n );
     for(i=0; i<n; i++) {
         Vertex* vv = vertices[i];
-        printf( "%s %d/%ld\n", vv->label, i+1, n );
         int n_shortcuts;
         CHPath** shortcuts = get_shortcuts( gg, vv, wo, search_limit, &n_shortcuts );
         int imp = get_importance( vv->degree_in, vv->degree_out, n_shortcuts );
+        printf( "%s %d/%ld, prio:%d\n", vv->label, i+1, n, imp );
         pqPush( pq, vv, imp );
         int j;
         for(j=0; j<n_shortcuts; j++){
@@ -239,69 +268,101 @@ fibheap_t init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit ) {
 
 
 CH* get_contraction_heirarchies(Graph* gg, WalkOptions* wo, int search_limit) {
-    fibheap* pq = init_priority_queue( gg, wo, search_limit );
+    fibheap_t pq = init_priority_queue( gg, wo, search_limit );
 
     Graph* gup = gNew();
     Graph* gdown = gNew();
-    Vertex* vertex;
-    int n = gSize( gg );
+    CH* ret = chNew( gup, gdown );
     
-    int i;
+    Vertex* vertex;
+    long n = gSize( gg );
+    
+    int i = 0;
     while( !fibheap_empty(pq) ) {
+        i++;
         
         int prio;
         vertex = pqPop( pq, &prio );
-
-        printf( "contract %d/%d %s\n", (i,gg), vertex->label );
+        
+        //printf( "new vertex candidate %s\n", vertex->label );
+        
         // make sure priority of current vertex
-        CHPath* shortcuts;
+        CHPath** shortcuts;
         int n_shortcuts;
         while(1) {
             shortcuts = get_shortcuts( gg, vertex, wo, search_limit, &n_shortcuts );
-            int new_prio = get_importance( vv->degree_in, vv->degree_out, n_shortcuts );
-            if new_prio == prio:
-                break
-            else:
+            int new_prio = get_importance( vertex->degree_in, vertex->degree_out, n_shortcuts, vertex->nds );
+            if(new_prio == prio) {
+                break;
+            } else {
+                //printf( "updated priority %d != old priority %d, reevaluate\n", new_prio, prio );
+                
+                //the shortcuts are invalid; delete them
+                int k;
+                for(k=0; k<n_shortcuts; k++) {
+                    chpDestroy( shortcuts[k] );
+                }
+                free( shortcuts );
+                
                 pqPush( pq, vertex, new_prio );
                 vertex = pqPop( pq, &prio );
+                //printf( "new vertex candidate %s\n", vertex->label );
+            }
         }
+        
+        printf( "contract %d/%ld %s (prio:%d) with %d shortcuts\n", i, n, vertex->label, prio, n_shortcuts );
             
         // ADD SHORTCUTS
-        for(i=0; i<n_shortcuts; i++) {
+        int j;
+        for(j=0; j<n_shortcuts; j++) {
             // ADD SHORTCUT
-            Combination* shortcut_payload = pathToEdgePayload( shortcuts[i] );
-            #print "add", shortcut_payload, from_v, to_v
-            gg.add_edge( from_v, to_v, shortcut_payload )
+            Combination* shortcut_payload = pathToEdgePayload( shortcuts[j] );
             
+            //State* s0 = epWalk( (EdgePayload*)shortcut_payload, stateNew(0,0), woNew() ); //TEMP
+            //printf( "add %s %s %p (%ld long)\n", shortcuts[j]->fromv->label, shortcuts[j]->tov->label, shortcut_payload, s0->weight );
+            
+            gAddEdge( gg, shortcuts[j]->fromv->label, shortcuts[j]->tov->label, (EdgePayload*)shortcut_payload );
+        }
+        
+        int k;
+        for(k=0; k<n_shortcuts; k++) {
+            chpDestroy( shortcuts[k] );
+        }
+        free( shortcuts );
+
         // move edges from gg to gup and gdown
         // vertices that are still in the graph are, by definition, of higher importance than the one
         // currently being plucked from the graph. Edges that go out are upward edges. Edges that are coming in
         // are downward edges.
-        
-        in_vert_counts = histogram( [ee.from_v.label for ee in vertex.incoming] )
-        out_vert_counts = histogram( [ee.to_v.label for ee in vertex.outgoing] )
-        for in_vert, count in in_vert_counts.items():
-            if count > 1:
-                print "WARNING: %d edges from %s to %s"%(count, in_vert, vertex.label)
-        for out_vert, count in out_vert_counts.items():
-            if count > 1:
-                print "WARNING: %d edges from %s to %s"%(count, vertex.label, out_vert)
-        
-        //incoming, therefore downward
-        gdown.add_vertex( vertex.label )
-        for ee in vertex.incoming:
-            gdown.add_vertex( ee.from_v.label )
-            gdown.add_edge( ee.from_v.label, ee.to_v.label, ee.payload )
+
+        // incoming, therefore downward
+        gAddVertex( gdown, vertex->label );
+        ListNode* incoming = vGetIncomingEdgeList( vertex );
+        while(incoming) {
+            Edge* ee = incoming->data;
             
-        //outgoing, therefore upward
-        gup.add_vertex( vertex.label )
-        for ee in vertex.outgoing:
-            gup.add_vertex( ee.to_v.label )
-            gup.add_edge( ee.from_v.label, ee.to_v.label, ee.payload )
+            ee->from->nds = ee->from->nds + 1; //increment neighbors deleted
+            
+            gAddVertex( gdown, ee->from->label );
+            gAddEdge( gdown, ee->from->label, ee->to->label, ee->payload );
+            incoming = incoming->next;
+        }
+            
+        // outgoing, therefore upward
+        gAddVertex( gup, vertex->label );
+        ListNode* outgoing = vGetOutgoingEdgeList( vertex );
+        while(outgoing) {
+            Edge* ee = outgoing->data;
+            gAddVertex( gup, ee->to->label );
+            gAddEdge( gup, ee->from->label, ee->to->label, ee->payload );
+            outgoing = outgoing->next;
+        }
             
         // TODO inform neighbors their neighbor is being deleted
-        gg.remove_vertex( vertex.label, free_edge_payloads=False )
-        
-    return gup, gdown, vertex_order
+        gRemoveVertex( gg, vertex->label, FALSE );
+    }
     
-
+    fibheap_delete( pq );
+    
+    return ret;
+}
