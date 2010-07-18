@@ -4,12 +4,12 @@
 #include "../core/graph.h"
 #include <valgrind/callgrind.h>
 #include "../core/contraction.h"
+#include <time.h>
 
 #define TRUE 1
 #define FALSE 0
 
-int main() {
-    
+void all_the_work() {
     int MAX_IMPORT = 100000000;
     
     Graph* gg = gNew();
@@ -37,13 +37,29 @@ int main() {
     fclose( fp );
     
     WalkOptions* wo = woNew();
-    CH* ch = get_contraction_heirarchies(gg, wo, 1);
+    
+    clock_t t0 = clock();
+    CH* ch = get_contraction_hierarchies(gg, wo, 1);
+    clock_t t1 = clock();
+    double time_elapsed = (t1-t0)/(double)CLOCKS_PER_SEC;
+    
+    printf( "time elapsed (%ld-%ld)/%ld= %lf\n", t1,t0,CLOCKS_PER_SEC,time_elapsed );
+    
+    //SPT ON SPT_UP
+    State *dummy = stateNew(0,0);
+    ShortestPathTree* spt = gShortestPathTree( ch->up, "53144830", "bogus", dummy, wo, INFINITY, INFINITY, INFINITY );
+    printf( "SPT found: %p\n", spt );
     
     gDestroy( ch->up );
     //gDestroyBasic( ch->down, FALSE );
     chDestroy( ch );
     gDestroy( gg );
     woDestroy( wo );
+}
+
+int main() {
+    
+    all_the_work();
     
     return 1;
 } 
