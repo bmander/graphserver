@@ -39,8 +39,9 @@ int main() {
     fibheap* pq = init_priority_queue( gg, wo, 1 );
     
     while( !fibheap_empty(pq) ) {
-        Vertex* next = pqPop( pq );
-        printf( "next vertex: %p\n", next );
+        int prio;
+        Vertex* next = pqPop( pq, &prio );
+        printf( "next vertex: %p has prio: %d\n", next, prio );
     }
     
     fibheap_delete( pq );

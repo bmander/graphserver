@@ -23,4 +23,4 @@ fibheap_t init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit );
 
 void pqPush( fibheap_t pq, Vertex* item, int priority );
 
-Vertex* pqPop( fibheap_t pq );
+Vertex* pqPop( fibheap_t pq, int *priority ) ;

@@ -195,7 +195,8 @@ void pqPush( fibheap_t pq, Vertex* item, int priority ) {
     fibheap_insert( pq, priority, (void*)item );
 }
 
-Vertex* pqPop( fibheap_t pq ) {
+Vertex* pqPop( fibheap_t pq, int* priority ) {
+    *priority = fibheap_min_key( pq );
     return (Vertex*)fibheap_extract_min( pq );
 }
 
