@@ -9,26 +9,30 @@ struct Combination {
   State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
   State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
     
-  EdgePayload* first;
-  EdgePayload* second;
+  int cap;
+  int n;
+  EdgePayload** payloads;
 } ;
 
 Combination*
-comboNew(EdgePayload* first, EdgePayload* second);
+comboNew(int cap) ;
 
 void
-comboDestroy(Combination* tokill);
+comboAdd(Combination *this, EdgePayload *ep) ;
+
+void
+comboDestroy(Combination* this) ;
 
 inline State*
-comboWalk(EdgePayload* this, State* param, WalkOptions* options);
+comboWalk(EdgePayload* superthis, State* param, WalkOptions* options) ;
 
 inline State*
-comboWalkBack(EdgePayload* this, State* param, WalkOptions* options);
+comboWalkBack(EdgePayload* superthis, State* param, WalkOptions* options) ;
 
 EdgePayload*
-comboGetFirst(Combination* this);
+comboGet(Combination *this, int i) ;
 
-EdgePayload*
-comboGetSecond(Combination* this);
+int
+comboN(Combination *this) ;
 
 #endif

@@ -1433,15 +1433,20 @@ class Crossing(EdgePayload):
         
 class Combination(EdgePayload):
     
-    first = cproperty( lgs.comboGetFirst, c_void_p, EdgePayload )
-    second = cproperty( lgs.comboGetSecond, c_void_p, EdgePayload )
+    n = cproperty( lgs.comboN, c_int )
     
-    def __init__(self, left, right):
-        self.soul = self._cnew(left.soul, right.soul)
+    def __init__(self, cap):
+        self.soul = self._cnew(cap)
+        
+    def add(self, ep):
+        lgs.comboAdd( self.soul, ep.soul )
+        
+    def get(self, i):
+        return EdgePayload.from_pointer( lgs.comboGet( self.soul, i ) )
         
     def to_xml(self):
         self.check_destroyed()
-        return "<Combination>%s%s</Combination>"%(self.first.to_xml(), self.second.to_xml())
+        return "<Combination n=%d />"%self.n
         
 class Alight(EdgePayload):
     calendar = cproperty( lgs.alGetCalendar, c_void_p, ServiceCalendar )

@@ -4,34 +4,55 @@ from graphserver.core import *
 class TestCombination(unittest.TestCase):
     def test_basic(self):
         s1 = Street( "A", 1 )
+        c0 = Combination( 1 )
+        c0.add( s1 )
+        
+        assert c0.__class__ == Combination
+        assert c0.get( -1 ) == None
+        assert c0.get( 0 ).__class__ == Street
+        assert c0.get( 1 ) == None
+        
+        assert c0.walk( State(0,0), WalkOptions() ).weight == 1
+        
         s2 = Street( "B", 2 )
-        c1 = Combination( s1, s2 )
+        c1 = Combination( 2 )
+        c1.add( s1 )
+        c1.add( s2 )
         
         assert c1.__class__ == Combination
-        assert c1.first.__class__ == Street
-        assert c1.first.name == "A"
-        assert c1.second.__class__ == Street
-        assert c1.second.name == "B"
+        assert c1.get( -1 ) == None
+        assert c1.get( 0 ).__class__ == Street
+        assert c1.get( 0 ).name == "A"
+        assert c1.get( 1 ).__class__ == Street
+        assert c1.get( 1 ).name == "B"
+        assert c1.get( 2 ) == None
         
-        assert s1.walk( State(0,0), WalkOptions() ).weight == 0
-        assert s2.walk( State(0,0), WalkOptions() ).weight == 0
-        assert c1.walk( State(0,0), WalkOptions() ).weight == 0
+        assert c1.walk( State(0,0), WalkOptions() ).weight == 3
+        assert c1.walk_back( State(0, 100), WalkOptions() ).weight == 3
         
-        assert s1.walk_back( State(0, 100), WalkOptions() ).time == 100
-        assert s2.walk_back( State(0, 100), WalkOptions() ).time == 100
-        assert c1.walk_back( State(0, 100), WalkOptions() ).time == 100
-
-	s3 = Street( "C", 3 )
-	c2 = Combination( c1, s3 )
-
-	assert c2.walk( State(0,0), WalkOptions() ).weight == 6
-	assert c2.walk_back( State(0,0), WalkOptions() ).weight == 6
+        s3 = Street( "C", 3 )
+        
+        c2 = Combination( 3 )
+        c2.add( s1 )
+        c2.add( s2 )
+        c2.add( s3 )
+        
+        assert c2.walk( State(0,0), WalkOptions() ).weight == 6
+        assert c2.walk_back( State(0,100), WalkOptions() ).weight == 6
+        
+        c3 = Combination( 2 )
+        c3.add( c1 )
+        c3.add( s3 )
+        
+        assert c3.walk( State(0,0), WalkOptions() ).weight == 6
+        assert c3.walk_back( State(0,100), WalkOptions() ).weight == 6
         
         s1.destroy()
         s2.destroy()
-	s3.destroy()
+        s3.destroy()
         c1.destroy()
-	c2.destroy()
+        c2.destroy()
+        
 
 if __name__ == '__main__':
     tl = unittest.TestLoader()

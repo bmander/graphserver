@@ -3,46 +3,80 @@
 //=========COMBINATION FUNCTIONS==============
 
 Combination*
-comboNew(EdgePayload* first, EdgePayload* second) {
+comboNew(int cap) {
     Combination* ret = (Combination*)malloc(sizeof(Combination));
     ret->type = PL_COMBINATION;
-    ret->first = first;
-    ret->second = second;
-
+    ret->cap = cap;
+    ret->n = 0;
+    ret->payloads = (EdgePayload**)malloc(cap*sizeof(EdgePayload*));
+    
     ret->walk = &comboWalk;
     ret->walkBack = &comboWalkBack;
-
+    
     return ret;
 }
 
 void
-comboDestroy(Combination* tokill) {
-    free( tokill );
+comboAdd(Combination *this, EdgePayload *ep) {
+    if( this->n < this->cap ) {
+      this->payloads[this->n] = ep;
+      this->n++;
+    }
+}
+
+void
+comboDestroy(Combination* this) {
+    free( this->payloads );
+    free( this );
 }
 
 inline State*
-comboWalk(EdgePayload* this, State* param, WalkOptions* options) {
-    State* intermediate = epWalk( ((Combination*)this)->first, param, options );
-    State* ret = epWalk( ((Combination*)this)->second, intermediate, options );
-    stateDestroy( intermediate );
+comboWalk(EdgePayload* superthis, State* param, WalkOptions* options) {
+    Combination* this = (Combination*)superthis;
+    
+    if( this->n == 0 ) return NULL;
+        
+    State* ret = epWalk( this->payloads[0], param, options );
+    
+    int i;
+    for(i=1; i<this->n; i++) {
+        State* intermediate = ret;
+        ret = epWalk( this->payloads[i], intermediate, options );
+        stateDestroy( intermediate );
+    }
+    
     return ret;
 }
 
 inline State*
-comboWalkBack(EdgePayload* this, State* param, WalkOptions* options) {
-    State* intermediate = epWalkBack( ((Combination*)this)->second, param, options );
-    State* ret = epWalkBack( ((Combination*)this)->first, intermediate, options );
-    stateDestroy( intermediate );
+comboWalkBack(EdgePayload* superthis, State* param, WalkOptions* options) {
+    Combination* this = (Combination*)superthis;
+    
+    if( this->n == 0 ) return NULL;
+        
+    State* ret = epWalkBack( this->payloads[this->n-1], param, options );
+    
+    int i;
+    for(i=this->n-2; i>=0; i--) {
+        State* intermediate = ret;
+        ret = epWalkBack( this->payloads[i], intermediate, options );
+        stateDestroy( intermediate );
+    }
+    
     return ret;
 }
 
 EdgePayload*
-comboGetFirst(Combination* this) {
-    return this->first;
+comboGet(Combination *this, int i) {
+    if( i < this->n && i >= 0 ) {
+        return this->payloads[i];
+    } else {
+        return NULL;
+    }
 }
 
-EdgePayload*
-comboGetSecond(Combination* this) {
-    return this->second;
+int
+comboN(Combination *this) {
+    return this->n;
 }
 
