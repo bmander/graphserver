@@ -27,10 +27,16 @@ CHPath* dist( Graph *gg, char* from_v_label, char* to_v_label, WalkOptions *wo, 
 
 CHPath** get_shortcuts( Graph *gg, Vertex* vv, WalkOptions* wo, int search_limit, int* n ) ;
 
-fibheap_t init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit );
+Heap* init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit );
 
-void pqPush( fibheap_t pq, Vertex* item, int priority );
+void pqPush( Heap *pq, Vertex* item, long priority );
 
-Vertex* pqPop( fibheap_t pq, int *priority ) ;
+Vertex* pqPop( Heap *pq, long *priority ) ;
 
-CH* get_contraction_heirarchies(Graph* gg, WalkOptions* wo, int search_limit) ;
+CH* get_contraction_hierarchies(Graph* gg, WalkOptions* wo, int search_limit) ;
+
+CH* chNew(Graph *up, Graph *down);
+
+Graph* chUpGraph( CH* this ) ;
+
+Graph* chDownGraph( CH* this ) ;
