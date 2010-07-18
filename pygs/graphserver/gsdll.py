@@ -254,6 +254,14 @@ pycapi(lgs.crGetCrossingTimeByIndex, c_int, [c_void_p, c_int])
 pycapi(lgs.crGetCrossingTimeTripIdByIndex, c_char_p, [c_void_p, c_int])
 pycapi(lgs.crGetSize, c_int, [c_void_p])
 
+#COMBINATION API
+pycapi(lgs.comboNew, c_void_p, [c_void_p, c_void_p])
+pycapi(lgs.comboDestroy, c_void_p, [c_void_p])
+pycapi(lgs.comboWalk, c_void_p, [c_void_p, c_void_p, c_void_p])
+pycapi(lgs.comboWalkBack, c_void_p, [c_void_p, c_void_p, c_void_p])
+pycapi(lgs.comboGetFirst, c_void_p, [c_void_p])
+pycapi(lgs.comboGetSecond, c_void_p, [c_void_p])
+
 #CUSTOM TYPE API
 class PayloadMethodTypes:
     """ Enumerates the ctypes of the function pointers."""
