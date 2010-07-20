@@ -26,6 +26,8 @@ struct Vertex {
    ListNode* outgoing;
    ListNode* incoming;
    char* label;
+    
+   int deleted_neighbors;
 } ;
 
 struct SPTVertex {
