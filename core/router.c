@@ -33,7 +33,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
   ShortestPathTree* spt = sptNew();
   sptAddVertex( spt, origin_v, 0 )->state = init_state;
   //Priority Queue
-  dirfibheap_t q = dirfibheap_new( gSize( this ) );
+  dirfibheap_t q = dirfibheap_new( 1 );
   dirfibheap_insert_or_dec_key( q, gGetVertex( this, origin ), 0 );
 
 /*
