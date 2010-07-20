@@ -1,5 +1,5 @@
 
-SRCS = testsetparent.c deadend.c hops.c streetprofile.c testdestroystates.c test_crossing.c init_prio_queue.c contract.c testheap.c
+SRCS = testsetparent.c deadend.c hops.c streetprofile.c testdestroystates.c test_crossing.c init_prio_queue.c contract.c testheap.c test_ch.c
 TESTS = $(SRCS:.c=)
 
 all: $(TESTS)
