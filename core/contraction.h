@@ -35,7 +35,7 @@ Vertex* pqPop( Heap *pq, long *priority ) ;
 
 CH* get_contraction_hierarchies(Graph* gg, WalkOptions* wo, int search_limit) ;
 
-CH* chNew(Graph *up, Graph *down);
+CH* chNew();
 
 Graph* chUpGraph( CH* this ) ;
 

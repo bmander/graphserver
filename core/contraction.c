@@ -6,10 +6,10 @@
 #define TRUE 1
 #define FALSE 0
 
-CH* chNew(Graph *up, Graph *down) {
+CH* chNew() {
     CH* ret = (CH*)malloc(sizeof(CH));
-    ret->up = up;
-    ret->down = down;
+    ret->up = gNew();
+    ret->down = gNew();
     return ret;
 }
 
@@ -22,6 +22,8 @@ Graph* chDownGraph( CH* this ) {
 }
 
 void chDestroy( CH* this ) {
+    gDestroyBasic( this->up, 0 );
+    gDestroyBasic( this->down, 0 );
     free( this );
 }
 
@@ -275,9 +277,7 @@ Heap* init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit ) {
 CH* get_contraction_hierarchies(Graph* gg, WalkOptions* wo, int search_limit) {
     Heap* pq = init_priority_queue( gg, wo, search_limit );
 
-    Graph* gup = gNew();
-    Graph* gdown = gNew();
-    CH* ret = chNew( gup, gdown );
+    CH* ret = chNew( );
     
     Vertex* vertex;
     long n = gSize( gg );
@@ -342,25 +342,25 @@ CH* get_contraction_hierarchies(Graph* gg, WalkOptions* wo, int search_limit) {
         // are downward edges.
 
         // incoming, therefore downward
-        gAddVertex( gdown, vertex->label );
+        gAddVertex( ret->down, vertex->label );
         ListNode* incoming = vGetIncomingEdgeList( vertex );
         while(incoming) {
             Edge* ee = incoming->data;
-            gAddVertex( gdown, ee->from->label );
-            gAddEdge( gdown, ee->from->label, ee->to->label, ee->payload );
+            gAddVertex( ret->down, ee->from->label );
+            gAddEdge( ret->down, ee->from->label, ee->to->label, ee->payload );
             incoming = incoming->next;
         }
             
         // outgoing, therefore upward
-        gAddVertex( gup, vertex->label );
+        gAddVertex( ret->up, vertex->label );
         ListNode* outgoing = vGetOutgoingEdgeList( vertex );
         while(outgoing) {
             Edge* ee = outgoing->data;
             
             ee->to->deleted_neighbors++;
             
-            gAddVertex( gup, ee->to->label );
-            gAddEdge( gup, ee->from->label, ee->to->label, ee->payload );
+            gAddVertex( ret->up, ee->to->label );
+            gAddEdge( ret->up, ee->from->label, ee->to->label, ee->payload );
             outgoing = outgoing->next;
         }
             
