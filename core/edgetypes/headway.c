@@ -6,6 +6,7 @@ Headway*
 headwayNew(int begin_time, int end_time, int wait_period, int transit, char* trip_id, ServiceCalendar* calendar, Timezone* timezone, int agency, ServiceId service_id) {
     Headway* ret = (Headway*)malloc(sizeof(Headway));
     
+    ret->external_id = 0;
     ret->type = PL_HEADWAY;
     ret->begin_time = begin_time;
     ret->end_time = end_time;

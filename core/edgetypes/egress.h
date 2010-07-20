@@ -5,6 +5,7 @@
 
 struct Egress {
    edgepayload_t type;
+   long external_id;
    State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
    State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
     

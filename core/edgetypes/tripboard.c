@@ -6,6 +6,7 @@
 TripBoard*
 tbNew( ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int agency ) {
   TripBoard* ret = (TripBoard*)malloc(sizeof(TripBoard));
+  ret->external_id = 0;
   ret->type = PL_TRIPBOARD;
   ret->n = 0;
   ret->departs = NULL;

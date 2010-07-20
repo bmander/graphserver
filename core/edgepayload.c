@@ -5,6 +5,7 @@
 EdgePayload*
 epNew( edgepayload_t type, void* payload ) {
   EdgePayload* ret = (EdgePayload*)malloc(sizeof(EdgePayload));
+  ret->external_id = 0;
   ret->type = PL_NONE;
   return ret;
 }
@@ -45,6 +46,16 @@ epDestroy( EdgePayload* this ) {
 edgepayload_t
 epGetType( EdgePayload* this ) {
     return this->type;
+}
+
+long
+epGetExternalId( EdgePayload *this ) {
+    return this->external_id;
+}
+
+void
+epSetExternalId( EdgePayload *this, long external_id ) {
+    this->external_id = external_id;
 }
 
 State*

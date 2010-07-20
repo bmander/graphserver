@@ -4,6 +4,7 @@
 Street*
 streetNew(const char *name, double length, int reverse_of_source) {
   Street* ret = (Street*)malloc(sizeof(Street));
+  ret->external_id = 0;
   ret->type = PL_STREET;
   ret->name = (char*)malloc((strlen(name)+1)*sizeof(char));
   strcpy(ret->name, name);

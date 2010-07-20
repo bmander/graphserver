@@ -5,6 +5,7 @@
 Combination*
 comboNew(int cap) {
     Combination* ret = (Combination*)malloc(sizeof(Combination));
+    ret->external_id = 0;
     ret->type = PL_COMBINATION;
     ret->cap = cap;
     ret->n = 0;

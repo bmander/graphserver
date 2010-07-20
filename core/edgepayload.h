@@ -5,6 +5,7 @@
 
 struct EdgePayload {
   edgepayload_t type;
+  long external_id;
   State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
   State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
 } ;
@@ -17,6 +18,9 @@ epDestroy( EdgePayload* this );
 
 edgepayload_t
 epGetType( EdgePayload* this );
+
+long
+epGetExternalId( EdgePayload* this );
 
 State*
 epWalk( EdgePayload* this, State* param, WalkOptions* options );

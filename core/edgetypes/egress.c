@@ -5,6 +5,7 @@
 Egress*
 egressNew(const char *name, double length) {
   Egress* ret = (Egress*)malloc(sizeof(Egress));
+  ret->external_id = 0;
   ret->type = PL_EGRESS;
   ret->name = (char*)malloc((strlen(name)+1)*sizeof(char));
   strcpy(ret->name, name);

@@ -6,6 +6,7 @@
 Alight*
 alNew( ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int agency ) {
   Alight* ret = (Alight*)malloc(sizeof(Alight));
+  ret->external_id = 0;
   ret->type = PL_ALIGHT;
   ret->n = 0;
   ret->arrivals = NULL;

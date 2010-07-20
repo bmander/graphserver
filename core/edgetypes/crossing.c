@@ -5,6 +5,7 @@
 Crossing*
 crNew( ) {
   Crossing* ret = (Crossing*)malloc(sizeof(Crossing));
+  ret->external_id = 0;
   ret->type = PL_CROSSING;
   ret->n = 0;
   ret->crossing_times = NULL;

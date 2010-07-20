@@ -5,6 +5,7 @@
 Link*
 linkNew() {
   Link* ret = (Link*)malloc(sizeof(Link));
+  ret->external_id = 0;
   ret->type = PL_LINK;
   ret->name = (char*)malloc(5*sizeof(char));
   strcpy(ret->name, "LINK");

@@ -5,6 +5,7 @@
 Wait*
 waitNew(long end, Timezone* timezone) {
     Wait* ret = (Wait*)malloc(sizeof(Wait));
+    ret->external_id = 0;
     ret->type = PL_WAIT;
     ret->end = end;
     ret->timezone = timezone;

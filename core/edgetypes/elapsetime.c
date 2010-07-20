@@ -4,6 +4,7 @@
 ElapseTime*
 elapseTimeNew(long seconds) {
     ElapseTime* ret = (ElapseTime*)malloc(sizeof(ElapseTime));
+    ret->external_id = 0;
     ret->type = PL_ELAPSE_TIME;
     ret->seconds = seconds;
     
