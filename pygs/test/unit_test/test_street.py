@@ -10,7 +10,11 @@ class TestStreet(unittest.TestCase):
         assert s.fall == 0
         assert s.slog == 1
         assert s.way == 0
+	assert s.external_id == 0
         assert s.to_xml() == "<Street name='mystreet' length='1.100000' rise='0.000000' fall='0.000000' way='0' reverse='False'/>"
+
+	s.external_id = 15
+	assert Street.from_pointer( s.soul ).external_id == 15
         
         s.slog = 2500
         s.way = 232323
