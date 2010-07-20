@@ -27,7 +27,7 @@ class GraphCrawler(Servable):
                                for vl in self.graphdb.execute("SELECT label from vertices order by label") ])
     vertices.mime = "text/html"
     
-    def vertex(self, label, currtime=None):
+    def vertex(self, label, currtime=None, hill_reluctance=1.5, walking_speed=0.85):
         currtime = currtime or int(time.time())
         
         ret = []
@@ -49,6 +49,9 @@ class GraphCrawler(Servable):
         ret.append( "<h3>incoming from:</h3>" )
         for i, (vertex1, vertex2, edgetype) in enumerate( self.graphdb.all_incoming( label ) ):
             s1 = State(1,int(currtime))
+            wo = WalkOptions()
+            wo.hill_reluctance=hill_reluctance
+            wo.walking_speed=walking_speed
             s0 = edgetype.walk_back( s1, wo )
             
             if s0:
@@ -65,6 +68,9 @@ class GraphCrawler(Servable):
         ret.append( "<h3>outgoing to:</h3>" )
         for i, (vertex1, vertex2, edgetype) in enumerate( self.graphdb.all_outgoing( label ) ):
             s0 = State(1,int(currtime))
+            wo = WalkOptions()
+            wo.hill_reluctance=hill_reluctance
+            wo.walking_speed=walking_speed
             s1 = edgetype.walk( s0, wo )
             
             if s1:
