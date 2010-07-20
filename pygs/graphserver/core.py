@@ -1461,33 +1461,34 @@ class Combination(EdgePayload):
         
     def __getstate__(self):
         return [ self.get( i ).soul for i in range(self.n) ]
-            
-    def __setstate__(self, state):
-        self.__init__(len(state))
-        
-    def __resources__(self):
-        components = [self.get(i) for i in range(self.n)]
-            
-        return [(str(component.soul), component) for component in components]
     
     @classmethod
-    def reconstitute(cls, state, resolver):
-        ret = Combination(len(state))
+    def reconstitute(cls, state, graphdb):
+        components = [ graphdb.get_edge_payload( epid ) for epid in state ]
         
-        for componentsoul in state:
-            ret.add( resolver.resolve( componentsoul ) )
+        ret = Combination(len(components))
+        
+        for component in components:
+            ret.add( component )
             
         return ret
         
+    @property
+    def components(self):
+        for i in range(self.n):
+            yield self.get( i )
+        
     def unpack(self):
         components_unpacked = []
-        for i in range( self.n ):
-            component_to_unpack = self.get( i )
+        for component_to_unpack in self.components:
             if component_to_unpack.__class__ == Combination:
                 components_unpacked.append( component_to_unpack.unpack() )
             else:
                 components_unpacked.append( [component_to_unpack] )
         return reduce( lambda x,y:x+y, components_unpacked )
+        
+    def expound(self):
+        return "\n".join( [str(x) for x in self.unpack()] )
         
 class Alight(EdgePayload):
     calendar = cproperty( lgs.alGetCalendar, c_void_p, ServiceCalendar )
