@@ -12,7 +12,7 @@ class TestCombination(unittest.TestCase):
         assert c0.get( 0 ).__class__ == Street
         assert c0.get( 1 ) == None
         
-        assert c0.walk( State(0,0), WalkOptions() ).weight == 1
+        assert c0.walk( State(0,0), WalkOptions() ).weight == 0
         
         s2 = Street( "B", 2 )
         c1 = Combination( 2 )
@@ -27,8 +27,8 @@ class TestCombination(unittest.TestCase):
         assert c1.get( 1 ).name == "B"
         assert c1.get( 2 ) == None
         
-        assert c1.walk( State(0,0), WalkOptions() ).weight == 3
-        assert c1.walk_back( State(0, 100), WalkOptions() ).weight == 3
+        assert c1.walk( State(0,0), WalkOptions() ).weight == 0
+        assert c1.walk_back( State(0, 100), WalkOptions() ).weight == 0
         
         s3 = Street( "C", 3 )
         
@@ -37,15 +37,15 @@ class TestCombination(unittest.TestCase):
         c2.add( s2 )
         c2.add( s3 )
         
-        assert c2.walk( State(0,0), WalkOptions() ).weight == 6
-        assert c2.walk_back( State(0,100), WalkOptions() ).weight == 6
+        assert c2.walk( State(0,0), WalkOptions() ).weight == 0
+        assert c2.walk_back( State(0,100), WalkOptions() ).weight == 0
         
         c3 = Combination( 2 )
         c3.add( c1 )
         c3.add( s3 )
         
-        assert c3.walk( State(0,0), WalkOptions() ).weight == 6
-        assert c3.walk_back( State(0,100), WalkOptions() ).weight == 6
+        assert c3.walk( State(0,0), WalkOptions() ).weight == 0
+        assert c3.walk_back( State(0,100), WalkOptions() ).weight == 0
         
         s1.destroy()
         s2.destroy()
