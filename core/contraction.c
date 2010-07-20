@@ -256,7 +256,7 @@ Heap* init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit ) {
     Vertex** vertices = gVertices( gg, &n );
     for(i=0; i<n; i++) {
         Vertex* vv = vertices[i];
-        int n_shortcuts;
+        int n_shortcuts=0;
         CHPath** shortcuts = get_shortcuts( gg, vv, wo, search_limit, &n_shortcuts );
         int imp = get_importance( vv->degree_in, vv->degree_out, n_shortcuts, vv->deleted_neighbors );
         printf( "%s %d/%ld, prio:%d\n", vv->label, i+1, n, imp );
