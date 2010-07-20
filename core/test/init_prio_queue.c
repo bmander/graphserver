@@ -8,7 +8,6 @@
 #include "../contraction.h"
 #include "../fibheap/fibheap.h"
 
-//This should leak memory
 int main() {
     
     int MAX_IMPORT = 100;
