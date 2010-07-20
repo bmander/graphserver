@@ -242,11 +242,11 @@ Vertex* pqPop( Heap *pq, long* priority ) {
     return (Vertex*)heapPop( pq, priority );
 }
 
-int get_importance(int degree_in, int degree_out, int n_shortcuts, int deleted_neighbors) {
+int get_importance(Vertex *vertex, int n_shortcuts) {
     
-    int edge_difference = n_shortcuts - (degree_in+degree_out);
+    int edge_difference = n_shortcuts - (vertex->degree_in+vertex->degree_out);
     
-    return edge_difference + deleted_neighbors;
+    return edge_difference + vertex->deleted_neighbors;
 }
 
 Heap* init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit ) {
@@ -260,7 +260,7 @@ Heap* init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit ) {
         Vertex* vv = vertices[i];
         int n_shortcuts=0;
         CHPath** shortcuts = get_shortcuts( gg, vv, wo, search_limit, &n_shortcuts );
-        int imp = get_importance( vv->degree_in, vv->degree_out, n_shortcuts, vv->deleted_neighbors );
+        int imp = get_importance( vv, n_shortcuts );
         printf( "%s %d/%ld, prio:%d\n", vv->label, i+1, n, imp );
         pqPush( pq, vv, imp );
         int j;
@@ -296,7 +296,7 @@ CH* get_contraction_hierarchies(Graph* gg, WalkOptions* wo, int search_limit) {
         int n_shortcuts;
         while(1) {
             shortcuts = get_shortcuts( gg, vertex, wo, search_limit, &n_shortcuts );
-            long new_prio = get_importance( vertex->degree_in, vertex->degree_out, n_shortcuts, vertex->deleted_neighbors );
+            long new_prio = get_importance( vertex, n_shortcuts );
             if(new_prio == prio) {
                 break;
             } else {
