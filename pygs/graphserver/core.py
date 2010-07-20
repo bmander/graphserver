@@ -386,6 +386,7 @@ class EdgePayload(CShadow, Walkable):
         return "<abstractedgepayload type='%s'/>" % self.type
     
     type = cproperty(lgs.epGetType, c_int)
+    external_id = cproperty(lgs.epGetExternalId, c_long, setter=lgs.epSetExternalId)
     
     @classmethod
     def from_pointer(cls, ptr):
