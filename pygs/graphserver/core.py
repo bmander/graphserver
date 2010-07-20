@@ -233,6 +233,35 @@ class ContractionHierarchy(CShadow):
     
     def __init__(self, upgraph, downgraph):
         self.soul = lgs.chNew( upgraph.soul, downgraph.soul )
+        
+    def shortest_path(self, fromv_label, tov_label, init_state, walk_options ):
+        # GET UPGRAPH AND DOWNGRAPH SPTS
+        sptup = self.upgraph.shortest_path_tree( fromv_label, None, init_state, walk_options )
+        sptdown = self.downgraph.shortest_path_tree_retro( None, tov_label, State(0,10000000), walk_options )
+        
+        # FIND SMALLEST MEETUP VERTEX
+        meetup_vertices = []
+        for upvv in sptup.vertices:
+            downvv = sptdown.get_vertex( upvv.label )
+            if downvv is not None:
+                meetup_vertices.append( (upvv.state.weight + downvv.state.weight, upvv.label ) )
+        min_meetup = min(meetup_vertices)[1]
+        
+        # GET AND JOIN PATHS TO MEETUP VERTEX
+        upvertices, upedges = sptup.path( min_meetup )
+        downvertices, downedges = sptdown.path_retro( min_meetup )
+        
+        vertices = upvertices+downvertices[1:]
+        edges = upedges+downedges
+        
+        ret = []
+        for ee in edges:
+            if ee.payload.__class__ == Combination:
+                ret.extend( ee.payload.unpack() )
+            else:
+                ret.append( ee.payload )
+            
+        return ret
 
 class ShortestPathTree(CShadow):
     
