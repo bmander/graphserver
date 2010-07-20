@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../core/graph.h"
+#include "../graphserver.h"
+#include "../graph.h"
+#include "../heap.h"
 #include <valgrind/callgrind.h>
-#include "../core/contraction.h"
-#include "../core/fibheap.h"
+#include "../contraction.h"
+#include "../fibheap/fibheap.h"
 
 //This should leak memory
 int main() {
@@ -28,23 +30,23 @@ int main() {
         gAddVertex( gg, from );
         gAddVertex( gg, to );
         
-        Street* s1 = streetNew( via, length );
+        Street* s1 = streetNew( via, length, 0 );
         gAddEdge(gg, from, to, (EdgePayload*)s1);
-        Street* s2 = streetNew( via, length );
+        Street* s2 = streetNew( via, length, 0 );
         gAddEdge(gg, to, from, (EdgePayload*)s2);
     }
     fclose( fp );
     
     WalkOptions* wo = woNew();
-    fibheap* pq = init_priority_queue( gg, wo, 1 );
+    Heap* pq = init_priority_queue( gg, wo, 1 );
     
-    while( !fibheap_empty(pq) ) {
-        int prio;
+    while( !heapEmpty(pq) ) {
+        long prio;
         Vertex* next = pqPop( pq, &prio );
         printf( "next vertex: %p has prio: %d\n", next, prio );
     }
     
-    fibheap_delete( pq );
+    heapDestroy( pq );
     woDestroy( wo );
     gDestroy(gg);
     

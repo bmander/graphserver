@@ -59,6 +59,6 @@ int main() {
     tzDestroy(tz);
     scDestroy(sc);
     fclose( fp );
-    gDestroy( gg, 1, 1 );
+    gDestroy( gg );
     return 1;
 }

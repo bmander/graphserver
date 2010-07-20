@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../core/graph.h"
+#include "../graphserver.h"
+#include "../graph.h"
 #include <valgrind/callgrind.h>
-#include "../core/heap.h"
+#include "../heap.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -54,7 +55,7 @@ int main() {
         long priority = rand()%1000+1;
         sprintf(payload, "%ld", priority);
         
-        printf( "inserting '%s' with priority %d\n", payload, priority );
+        printf( "inserting '%s' with priority %ld\n", payload, priority );
         
         heapInsert( hh, payload, priority );
     }

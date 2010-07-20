@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../core/graph.h"
+#include "../graphserver.h"
+#include "../graph.h"
 #include <valgrind/callgrind.h>
-#include "../core/contraction.h"
+#include "../heap.h"
+#include "../contraction.h"
 #include <time.h>
 
 #define TRUE 1
@@ -29,9 +31,9 @@ void all_the_work() {
         gAddVertex( gg, from );
         gAddVertex( gg, to );
         
-        Street* s1 = streetNew( via, length );
+        Street* s1 = streetNew( via, length, 0 );
         gAddEdge(gg, from, to, (EdgePayload*)s1);
-        Street* s2 = streetNew( via, length );
+        Street* s2 = streetNew( via, length, 0 );
         gAddEdge(gg, to, from, (EdgePayload*)s2);
     }
     fclose( fp );

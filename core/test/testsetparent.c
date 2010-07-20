@@ -13,8 +13,8 @@ int main() {
     vLink(v1, v2, (EdgePayload*)origlink);
     vSetParent(v2, v1, (EdgePayload*)linkNew()); //results in invalid write
     
-    vDestroy(v1, 1, 1);
-    vDestroy(v2, 1, 1);
+    vDestroy(v1, 1);
+    vDestroy(v2, 1);
     linkDestroy(origlink);
     
     return 1;

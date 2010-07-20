@@ -29,10 +29,10 @@ int main() {
     
     State* initstate = stateNew(1, 20);
     WalkOptions* wo = woNew();
-    Graph* spt = gShortestPathTree( gg, "A", "B", initstate, wo, 1000000  );
+    ShortestPathTree* spt = gShortestPathTree( gg, "A", "B", initstate, wo, 1000000, 1000000, 1000000 );
     
-    gDestroy(spt, 1, 0);
-    gDestroy(gg, 1, 1);
+    sptDestroy(spt);
+    gDestroy(gg);
     tzDestroy( tz );
     scDestroy( cal );
     free( sids );

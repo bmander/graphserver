@@ -14,11 +14,11 @@ int main() {
     WalkOptions *wo = woNew();
     
     State* initstate = stateNew(1, 0);
-    Graph* spt = gShortestPathTree( gg, "A", "B", initstate, wo, 1000001 );
+    ShortestPathTree* spt = gShortestPathTree( gg, "A", "B", initstate, wo, 1000001, 100000, 100000 );
     
     woDestroy(wo);
-    gDestroy(spt, 1, 0);
-    gDestroy(gg, 1, 1);
+    sptDestroy(spt);
+    gDestroy(gg);
     //nothing should be left
     
     return 1;
