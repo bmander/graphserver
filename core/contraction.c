@@ -250,7 +250,6 @@ int get_importance(Vertex *vertex, int n_shortcuts) {
 }
 
 Heap* init_priority_queue( Graph* gg, WalkOptions* wo, int search_limit ) {
-    //fibheap* pq = fibheap_new();
     Heap* pq = heapNew( 100 );
 
     long n;
@@ -289,8 +288,6 @@ CH* get_contraction_hierarchies(Graph* gg, WalkOptions* wo, int search_limit) {
         long prio;
         vertex = pqPop( pq, &prio );
         
-        //printf( "new vertex candidate %s\n", vertex->label );
-        
         // make sure priority of current vertex
         CHPath** shortcuts;
         int n_shortcuts;
@@ -311,7 +308,6 @@ CH* get_contraction_hierarchies(Graph* gg, WalkOptions* wo, int search_limit) {
                 
                 pqPush( pq, vertex, new_prio );
                 vertex = pqPop( pq, &prio );
-                //printf( "new vertex candidate %s\n", vertex->label );
             }
         }
         
@@ -323,9 +319,6 @@ CH* get_contraction_hierarchies(Graph* gg, WalkOptions* wo, int search_limit) {
         for(j=0; j<n_shortcuts; j++) {
             // ADD SHORTCUT
             Combination* shortcut_payload = pathToEdgePayload( shortcuts[j] );
-            
-            //State* s0 = epWalk( (EdgePayload*)shortcut_payload, stateNew(0,0), woNew() ); //TEMP
-            //printf( "add %s %s %p (%ld long)\n", shortcuts[j]->fromv->label, shortcuts[j]->tov->label, shortcut_payload, s0->weight );
             
             gAddEdge( gg, shortcuts[j]->fromv->label, shortcuts[j]->tov->label, (EdgePayload*)shortcut_payload );
         }
@@ -363,9 +356,6 @@ CH* get_contraction_hierarchies(Graph* gg, WalkOptions* wo, int search_limit) {
             gAddEdge( ret->up, ee->from->label, ee->to->label, ee->payload );
             outgoing = outgoing->next;
         }
-            
-        // TODO inform neighbors their neighbor is being deleted
-        
         
         gRemoveVertex( gg, vertex->label, FALSE );
     }
