@@ -231,8 +231,8 @@ class ContractionHierarchy(CShadow):
     upgraph = cproperty(lgs.chUpGraph, c_void_p, Graph)
     downgraph = cproperty(lgs.chDownGraph, c_void_p, Graph)
     
-    def __init__(self, upgraph, downgraph):
-        self.soul = lgs.chNew( upgraph.soul, downgraph.soul )
+    def __init__(self):
+        self.soul = lgs.chNew( )
         
     def shortest_path(self, fromv_label, tov_label, init_state, walk_options ):
         # GET UPGRAPH AND DOWNGRAPH SPTS

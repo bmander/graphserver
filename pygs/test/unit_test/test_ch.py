@@ -3,14 +3,11 @@ from graphserver.core import *
 
 class TestCH( unittest.TestCase ):
     def test_basic(self):
-        gup = Graph()
-        gdown = Graph()
-        
-        ch = ContractionHierarchy(gup, gdown)
+        ch = ContractionHierarchy()
         assert ch.soul
         
-        assert ch.upgraph.soul == gup.soul
-        assert ch.downgraph.soul == gdown.soul
+        assert ch.upgraph.soul
+        assert ch.downgraph.soul
 
 if __name__ == '__main__':
     tl = unittest.TestLoader()

@@ -268,7 +268,7 @@ pycapi(lgs.comboGet, c_void_p, [c_void_p, c_int])
 pycapi(lgs.comboN, c_int, [c_void_p])
 
 #CH API
-pycapi(lgs.chNew, c_void_p, [c_void_p, c_void_p])
+pycapi(lgs.chNew, c_void_p, [])
 pycapi(lgs.chUpGraph, c_void_p, [c_void_p])
 pycapi(lgs.chDownGraph, c_void_p, [c_void_p])
 
