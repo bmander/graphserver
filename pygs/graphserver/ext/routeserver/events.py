@@ -52,11 +52,11 @@ class DescribeCrossingAtAlightEvent:
         
     @staticmethod
     def applies_to(vertex1, edge, vertex2):
-        # if the stop_sequence is the same before and after the Alight was crossed, it means the algorithm crossed in the forward
+        # if the stop_sequence is the same before and after the TripAlight was crossed, it means the algorithm crossed in the forward
         # direction - because the stop_sequence doesn't get set on a forward alight. If this is true then this is the appropriate time
         # to describe the transit trip that led to this alighting
         return edge is not None \
-               and isinstance(edge.payload, graphserver.core.Alight) \
+               and isinstance(edge.payload, graphserver.core.TripAlight) \
                and vertex1.payload.stop_sequence == vertex2.payload.stop_sequence
         
     def __call__(self, vertex1, edge, vertex2, context):
@@ -78,7 +78,7 @@ class AlightEvent:
         
     @staticmethod
     def applies_to(vertex1, edge, vertex2):
-        return edge is not None and isinstance(edge.payload, graphserver.core.Alight)
+        return edge is not None and isinstance(edge.payload, graphserver.core.TripAlight)
         
     def __call__(self, vertex1, edge, vertex2, context):
         event_time = vertex1.payload.time

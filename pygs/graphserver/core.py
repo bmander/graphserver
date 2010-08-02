@@ -1522,7 +1522,7 @@ class Combination(EdgePayload):
     def expound(self):
         return "\n".join( [str(x) for x in self.unpack()] )
         
-class Alight(EdgePayload):
+class TripAlight(EdgePayload):
     calendar = cproperty( lgs.alGetCalendar, c_void_p, ServiceCalendar )
     timezone = cproperty( lgs.alGetTimezone, c_void_p, Timezone )
     agency = cproperty( lgs.alGetAgency, c_int )
@@ -1577,10 +1577,10 @@ class Alight(EdgePayload):
         return self.get_alighting( alighting_index )
         
     def to_xml(self):
-        return "<Alight/>"
+        return "<TripAlight/>"
         
     def __repr__(self):
-        return "<Alight int_sid=%d agency=%d calendar=%s timezone=%s alightings=%s>"%(self.int_service_id, self.agency, self.calendar.soul,self.timezone.soul,[self.get_alighting(i) for i in range(self.num_alightings)])
+        return "<TripAlight int_sid=%d agency=%d calendar=%s timezone=%s alightings=%s>"%(self.int_service_id, self.agency, self.calendar.soul,self.timezone.soul,[self.get_alighting(i) for i in range(self.num_alightings)])
         
     def __getstate__(self):
         state = {}
@@ -1605,7 +1605,7 @@ class Alight(EdgePayload):
         int_sid = state['int_sid']
         agency = state['agency']
         
-        ret = Alight(int_sid, calendar, timezone, agency)
+        ret = TripAlight(int_sid, calendar, timezone, agency)
         
         for trip_id, arrival, stop_sequence in state['alightings']:
             ret.add_alighting( trip_id, arrival, stop_sequence )
@@ -1619,7 +1619,7 @@ class Alight(EdgePayload):
             trip_id, arrival_secs, stop_sequence = self.get_alighting(i)
             alightingstrs.append( "on trip id='%s' at %s, stop sequence %s"%(trip_id, unparse_secs(arrival_secs), stop_sequence) )
         
-        ret = """Alight
+        ret = """TripAlight
    agency (internal id): %d
    service_id (internal id): %d
    calendar:
@@ -1680,7 +1680,7 @@ SPTEdge._cwalk = ccast(lgs.eWalk, State)
 SPTEdge._cwalk_back = lgs.eWalkBack
 
 EdgePayload._subtypes = {0:Street,1:None,2:None,3:Link,4:GenericPyPayload,5:None,
-                         6:Wait,7:Headway,8:TripBoard,9:Crossing,10:Alight,
+                         6:Wait,7:Headway,8:TripBoard,9:Crossing,10:TripAlight,
                          11:HeadwayBoard,12:Egress,13:HeadwayAlight,14:ElapseTime,15:Combination}
 EdgePayload._cget_type = lgs.epGetType
 EdgePayload._cwalk = lgs.epWalk
@@ -1744,8 +1744,8 @@ TripBoard._cwalk = lgs.epWalk
 Crossing._cnew = lgs.crNew
 Crossing._cdel = lgs.crDestroy
 
-Alight._cnew = lgs.alNew
-Alight._cdel = lgs.alDestroy
+TripAlight._cnew = lgs.alNew
+TripAlight._cdel = lgs.alDestroy
 
 HeadwayBoard._cnew = lgs.hbNew
 HeadwayBoard._cdel = lgs.hbDestroy

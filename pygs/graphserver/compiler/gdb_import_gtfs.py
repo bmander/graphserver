@@ -1,4 +1,4 @@
-from graphserver.core import State, Graph, TripBoard, HeadwayBoard, HeadwayAlight, Crossing, Alight, Link, ServiceCalendar, Timezone, TimezonePeriod, Street
+from graphserver.core import State, Graph, TripBoard, HeadwayBoard, HeadwayAlight, Crossing, TripAlight, Link, ServiceCalendar, Timezone, TimezonePeriod, Street
 from optparse import OptionParser
 from graphserver.graphdb import GraphDatabase
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
@@ -65,7 +65,7 @@ def bundle_to_boardalight_edges(agency_namespace, bundle, service_id, sc, tz):
         else:
             patternstop_vx_name = "psv-%s-%03d-%03d-%s"%(agency_namespace,bundle.pattern.pattern_id,i+1,service_id)
         
-        al = Alight(service_id, sc, tz, 0)
+        al = TripAlight(service_id, sc, tz, 0)
         for trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_dist_traveled in stop_time_bundle:
             al.add_alighting( trip_id.encode('ascii'), arrival_time, stop_sequence )
             
