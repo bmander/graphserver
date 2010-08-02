@@ -42,7 +42,7 @@ int main() {
         Crossing* cr = crNew( crossing );
         gAddEdge( gg, frompsv, topsv, (EdgePayload*)cr );
         
-        Alight* al = alNew( 0, sc, tz, 0 );
+        TripAlight* al = alNew( 0, sc, tz, 0 );
         alAddAlighting( al, tripid, arrive, 0 );
         gAddEdge( gg, topsv, tov, (EdgePayload*)al );
         
