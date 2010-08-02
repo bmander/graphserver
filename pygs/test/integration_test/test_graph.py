@@ -4,7 +4,7 @@ import csv
 import unittest
 from graphserver.core import Graph, Street, State, WalkOptions, Link, \
                              ServiceCalendar, Timezone, TimezonePeriod, \
-                             TripBoard, Crossing, Alight
+                             TripBoard, Crossing, TripAlight
 import time
 
 class TestGraph(unittest.TestCase):
@@ -160,7 +160,7 @@ class TestGraph(unittest.TestCase):
         
         cr = Crossing()
         
-        al = Alight("WKDY", sc, tz, 0)
+        al = TripAlight("WKDY", sc, tz, 0)
         al.add_alighting( "A", 10+20, 0 )
         al.add_alighting( "B", 15+20, 0 )
         al.add_alighting( "C", 400+20, 0 )
@@ -177,7 +177,7 @@ class TestGraph(unittest.TestCase):
         vertices, edges = spt.path( "Portland" )
         
         assert [v.label for v in vertices] == ['Seattle', 'Seattle-busstop', "Seattle-busstop-onbus", "Portland-busstop-onbus", 'Portland-busstop', 'Portland']
-        assert [e.payload.__class__ for e in edges] == [Link, TripBoard, Crossing, Alight, Link]
+        assert [e.payload.__class__ for e in edges] == [Link, TripBoard, Crossing, TripAlight, Link]
         
         spt.destroy()
         g.destroy()

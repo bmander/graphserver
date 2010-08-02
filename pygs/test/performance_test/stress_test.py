@@ -107,7 +107,7 @@ class StressTest(unittest.TestCase):
         cal = ServiceCalendar()            
                                        
         def func():                        
-            al = Alight(0, cal,tz, 0)      
+            al = TripAlight(0, cal,tz, 0)      
             al.destroy()                   
                                        
         grind( func, 100000 )           

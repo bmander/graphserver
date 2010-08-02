@@ -2,14 +2,14 @@ import unittest
 from graphserver.core import *
 from random import randint
 
-class TestAlight(unittest.TestCase):
+class TestTripAlight(unittest.TestCase):
     def test_basic(self):
         sc = ServiceCalendar()
         sc.add_period( 0, 1*3600*24, ['WKDY','SAT'] )
         tz = Timezone()
         tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
         
-        al = Alight("WKDY", sc, tz, 0)
+        al = TripAlight("WKDY", sc, tz, 0)
         
         assert al.int_service_id == 0
         assert al.timezone.soul == tz.soul
@@ -30,7 +30,7 @@ class TestAlight(unittest.TestCase):
         tz = Timezone()
         tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
         
-        al = Alight( "WKDY", sc, tz, 0 )
+        al = TripAlight( "WKDY", sc, tz, 0 )
         
         al.add_alighting( "trip1", 0, 0 )
         al.get_alighting_by_trip_id( "trip1" ) == ("trip1", 0, 0)
@@ -49,7 +49,7 @@ class TestAlight(unittest.TestCase):
         tz = Timezone()
         tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
         
-        al = Alight("WKDY", sc, tz, 0)
+        al = TripAlight("WKDY", sc, tz, 0)
         
         assert al.overage == 0
         
@@ -73,7 +73,7 @@ class TestAlight(unittest.TestCase):
         tz = Timezone()
         tz.add_period( TimezonePeriod(0,2*3600*24,0) )
         
-        al = Alight( "WKDY", sc, tz, 0 )
+        al = TripAlight( "WKDY", sc, tz, 0 )
         al.add_alighting( "eleven", 23*3600, 0 )
         al.add_alighting( "midnight", 24*3600, 0 )
         al.add_alighting( "one", 25*3600, 0 )
@@ -117,7 +117,7 @@ class TestAlight(unittest.TestCase):
         tz = Timezone()
         tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
         
-        al = Alight("WKDY", sc, tz, 0)
+        al = TripAlight("WKDY", sc, tz, 0)
     
         try:
             al.get_alighting( 0 )
@@ -146,7 +146,7 @@ class TestAlight(unittest.TestCase):
         tz = Timezone()
         tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
         
-        al = Alight("WKDY", sc, tz, 0)
+        al = TripAlight("WKDY", sc, tz, 0)
     
         try:
             al.get_alighting( 0 )
@@ -210,7 +210,7 @@ class TestAlight(unittest.TestCase):
         tz = Timezone()
         tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
         
-        al = Alight("WKDY", sc, tz, 0)
+        al = TripAlight("WKDY", sc, tz, 0)
     
         try:
             al.get_alighting( 0 )
@@ -274,7 +274,7 @@ class TestAlight(unittest.TestCase):
         tz = Timezone()
         tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
         
-        al = Alight("WKDY", sc, tz, 0)
+        al = TripAlight("WKDY", sc, tz, 0)
         
         for i in range(1000):
             al.add_alighting( str(i), randint(0,10000), 0 )
@@ -293,7 +293,7 @@ class TestAlight(unittest.TestCase):
         tz = Timezone()
         tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
         
-        al = Alight("WKDY", sc, tz, 0)
+        al = TripAlight("WKDY", sc, tz, 0)
         
         assert al.search_alightings_list(0) == 0
         
@@ -311,7 +311,7 @@ class TestAlight(unittest.TestCase):
         tz = Timezone()
         tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
         
-        al = Alight("WKDY", sc, tz, 0)
+        al = TripAlight("WKDY", sc, tz, 0)
         
         assert al.get_last_alighting_index(0) == -1
         
@@ -327,7 +327,7 @@ class TestAlight(unittest.TestCase):
         tz = Timezone()
         tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
         
-        al = Alight("WKDY", sc, tz, 0)
+        al = TripAlight("WKDY", sc, tz, 0)
         
         assert al.get_last_alighting(0) == None
         
@@ -343,7 +343,7 @@ class TestAlight(unittest.TestCase):
         tz = Timezone()
         tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
         
-        al = Alight("WKDY", sc, tz, 0)
+        al = TripAlight("WKDY", sc, tz, 0)
         
         assert al.get_last_alighting(0) == None
         
@@ -369,7 +369,7 @@ class TestAlight(unittest.TestCase):
         tz = Timezone()
         tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
         
-        al = Alight( "WKDY", sc, tz, 0 )
+        al = TripAlight( "WKDY", sc, tz, 0 )
         al.add_alighting( "1", 50, 0 )
         al.add_alighting( "2", 100, 0 )
         al.add_alighting( "3", 200, 0 )
@@ -425,7 +425,7 @@ class TestAlight(unittest.TestCase):
         tz = Timezone()
         tz.add_period( TimezonePeriod(0, 1*3600*24, 0) )
         
-        al = Alight( "WKDY", sc, tz, 0 )
+        al = TripAlight( "WKDY", sc, tz, 0 )
         al.add_alighting( "1", 50, 0 )
         al.add_alighting( "2", 100, 0 )
         al.add_alighting( "3", 200, 0 )
@@ -449,7 +449,7 @@ class TestAlight(unittest.TestCase):
         tz.add_period( TimezonePeriod(0, 2*3600*24, 0) )
         
         # tripboard runs on weekdays for agency 0
-        al = Alight( "WKDY", sc, tz, 0 )
+        al = TripAlight( "WKDY", sc, tz, 0 )
         
         # one alighting - one second before midnight
         al.add_alighting( "1", 86400-1, 0 )
@@ -474,7 +474,7 @@ class TestAlight(unittest.TestCase):
         tz.add_period( TimezonePeriod(0, 2*3600*24, 0) )
         
         # tripboard runs on weekdays for agency 0
-        al = Alight( "WKDY", sc, tz, 0 )
+        al = TripAlight( "WKDY", sc, tz, 0 )
         
         # one boarding - noon
         al.add_alighting( "1", 43200, 1 )
@@ -490,5 +490,5 @@ class TestAlight(unittest.TestCase):
 if __name__ == '__main__':
     tl = unittest.TestLoader()
 
-    suite = tl.loadTestsFromTestCase(TestAlight)
+    suite = tl.loadTestsFromTestCase(TestTripAlight)
     unittest.TextTestRunner(verbosity=2).run(suite)
