@@ -7,18 +7,14 @@ import sys
 from graphserver.ext.osm.profiledb import ProfileDB
 from gdb_import_ned import get_rise_and_fall
 
-def gdb_import_osm(gdb, osmdb, vertex_namespace, slogs, profiledb=None):
-    cursor = gdb.get_cursor()
-	
-    n_edges = osmdb.count_edges()
+def edges_from_osmdb(osmdb, vertex_namespace, slogs, profiledb=None):
+    """generates (vertex1_label, vertex2_label, edgepayload) from osmdb"""
     
     street_id_counter = 0
     street_names = {}
     
     # for each edge in the osmdb
     for i, (id, parent_id, node1, node2, distance, geom, tags) in enumerate( osmdb.edges() ):
-        
-        if i%(n_edges//100+1)==0: sys.stdout.write( "%d/%d edges loaded\r\n"%(i, n_edges))
             
         # Find rise/fall of edge, if profiledb is given
         rise=0
@@ -31,8 +27,6 @@ def gdb_import_osm(gdb, osmdb, vertex_namespace, slogs, profiledb=None):
         # insert end vertices of edge to graph
         vertex1_label = "%s-%s"%(vertex_namespace,node1)
         vertex2_label = "%s-%s"%(vertex_namespace,node2)
-        gdb.add_vertex( vertex1_label, cursor )
-        gdb.add_vertex( vertex2_label, cursor )
                 
         # create ID for the way's street
         street_name = tags.get("name")
@@ -57,10 +51,26 @@ def gdb_import_osm(gdb, osmdb, vertex_namespace, slogs, profiledb=None):
             s1.slog = s2.slog = slog
         
         # Add the forward edge and the return edge if the edge is not oneway
-        gdb.add_edge( vertex1_label, vertex2_label, s1, cursor )
+	yield vertex1_label, vertex2_label, s1
+
         oneway = tags.get("oneway")
         if oneway != "true" and oneway != "yes":
-            gdb.add_edge( vertex2_label, vertex1_label, s2, cursor )
+	    yield vertex2_label, vertex1_label, s2
+
+def gdb_import_osm(gdb, osmdb, vertex_namespace, slogs, profiledb=None):
+    cursor = gdb.get_cursor()
+	
+    n_edges = osmdb.count_edges()
+    
+    # for each edge in the osmdb
+    for i, (vertex1_label, vertex2_label, edge ) in enumerate( edges_from_osmdb( osmdb, vertices_namespace, slogs, profiledb ) ):
+        
+        if i%(n_edges//100+1)==0: sys.stdout.write( "%d/%d edges loaded\r\n"%(i, n_edges))
+            
+        gdb.add_vertex( vertex1_label, cursor )
+        gdb.add_vertex( vertex2_label, cursor )
+                
+        gdb.add_edge( vertex1_label, vertex2_label, edge, cursor )
             
     gdb.commit()
     
