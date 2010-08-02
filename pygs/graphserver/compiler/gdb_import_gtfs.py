@@ -10,7 +10,8 @@ def cons(ary):
     for i in range(len(ary)-1):
         yield (ary[i], ary[i+1])
 
-def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, tz, cursor):
+def bundle_to_boardalight_edges(agency_namespace, bundle, service_id, sc, tz):
+    """takes a bundle and yields a bunch of edges"""
     
     stop_time_bundles = bundle.stop_time_bundles(service_id)
     
@@ -25,7 +26,6 @@ def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, t
         return
         
     print "inserting %d trips with %d stop_time bundles on service_id '%s'"%(len(stop_time_bundles[0]),len(stop_time_bundles),service_id)
-    #print bundle.pattern.stop_ids
 
     #add board edges
     for i, stop_time_bundle in enumerate(stop_time_bundles[:-1]):
@@ -37,27 +37,23 @@ def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, t
             
             # construct the board/alight/dwell triangle for this patternstop
             patternstop_arrival_vx_name = "psv-%s-%03d-%03d-%s-arrive"%(agency_namespace,bundle.pattern.pattern_id,i,service_id)
-            gdb.add_vertex( patternstop_arrival_vx_name, cursor )
             
             dwell_crossing = Crossing()
             for trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_dist_traveled in stop_time_bundle:
                 dwell_crossing.add_crossing_time( trip_id, departure_time-arrival_time )
             
-            gdb.add_edge( patternstop_arrival_vx_name, 
-                          patternstop_vx_name,
-                          dwell_crossing, 
-                          cursor )
+	    yield (patternstop_arrival_vx_name, 
+                   patternstop_vx_name,
+                   dwell_crossing)
             
         else:
             patternstop_vx_name = "psv-%s-%03d-%03d-%s"%(agency_namespace,bundle.pattern.pattern_id,i,service_id)
-        
-        gdb.add_vertex( patternstop_vx_name, cursor )
         
         b = TripBoard(service_id, sc, tz, 0)
         for trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_dist_traveled in stop_time_bundle:
             b.add_boarding( trip_id, departure_time, stop_sequence )
             
-        gdb.add_edge( "sta-%s"%stop_id, patternstop_vx_name, b, cursor )
+        yield ( "sta-%s"%stop_id, patternstop_vx_name, b )
         
     #add alight edges
     for i, stop_time_bundle in enumerate(stop_time_bundles[1:]):
@@ -68,14 +64,12 @@ def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, t
             patternstop_vx_name = "psv-%s-%03d-%03d-%s-arrive"%(agency_namespace,bundle.pattern.pattern_id,i+1,service_id)
         else:
             patternstop_vx_name = "psv-%s-%03d-%03d-%s"%(agency_namespace,bundle.pattern.pattern_id,i+1,service_id)
-            
-        gdb.add_vertex( patternstop_vx_name, cursor )
         
         al = Alight(service_id, sc, tz, 0)
         for trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_dist_traveled in stop_time_bundle:
             al.add_alighting( trip_id.encode('ascii'), arrival_time, stop_sequence )
             
-        gdb.add_edge( patternstop_vx_name, "sta-%s"%stop_id, al, cursor )
+        yield ( patternstop_vx_name, "sta-%s"%stop_id, al )
     
     # add crossing edges
     for i, (from_stop_time_bundle, to_stop_time_bundle) in enumerate(cons(stop_time_bundles)):
@@ -99,26 +93,17 @@ def gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, t
             trip_id, to_arrival_time, to_departure_time, stop_id, stop_sequence, stop_dist_traveled = to_stop_time_bundle[i]
             crossing.add_crossing_time( trip_id, (to_arrival_time-from_departure_time) )
         
-        gdb.add_edge( from_patternstop_vx_name, 
-                      to_patternstop_vx_name, 
-                      crossing, 
-                      cursor )
-                      
-    gdb.commit()
+        yield ( from_patternstop_vx_name, 
+                to_patternstop_vx_name, 
+                crossing )
 
-def gdb_load_gtfsdb_to_boardalight(gdb, agency_namespace, gtfsdb, cursor, agency_id=None, maxtrips=None, reporter=sys.stdout):
+def gtfsdb_to_scheduled_edges(agency_namespace, gtfsdb, agency_id=None, maxtrips=None, reporter=sys.stdout):
 
     # get graphserver.core.Timezone and graphserver.core.ServiceCalendars from gtfsdb for agency with given agency_id
     timezone_name = gtfsdb.agency_timezone_name(agency_id)
     gs_tz = Timezone.generate( timezone_name )
     print "constructing service calendar for timezone '%s'"%timezone_name
     sc = service_calendar_from_timezone(gtfsdb, timezone_name )
-
-    # enter station vertices
-    for stop_id, stop_name, stop_lat, stop_lon in gtfsdb.stops():
-        station_vertex_label = "sta-%s"%stop_id
-        reporter.write("adding station vertex '%s'\n"%station_vertex_label)
-        gdb.add_vertex( station_vertex_label )
     
     # compile trip bundles from gtfsdb
     if reporter: reporter.write( "Compiling trip bundles...\n" )
@@ -131,8 +116,17 @@ def gdb_load_gtfsdb_to_boardalight(gdb, agency_namespace, gtfsdb, cursor, agency
         if reporter: reporter.write( "%d/%d loading %s\n"%(i+1, n_bundles, bundle) )
         
         for service_id in [x.encode("ascii") for x in gtfsdb.service_ids()]:
-            gdb_boardalight_load_bundle(gdb, agency_namespace, bundle, service_id, sc, gs_tz, cursor)
-            
+	    for fromv_label, tov_label, edge in bundle_to_boardalight_edges(agency_namespace, bundle, service_id, sc, gs_tz):
+	        yield fromv_label, tov_label, edge
+
+def gtfsdb_to_headway_edges(agency_namespace, gtfsdb, agency_id=None, maxtrips=None, reporter=sys.stdout):
+
+    # get graphserver.core.Timezone and graphserver.core.ServiceCalendars from gtfsdb for agency with given agency_id
+    timezone_name = gtfsdb.agency_timezone_name(agency_id)
+    gs_tz = Timezone.generate( timezone_name )
+    print "constructing service calendar for timezone '%s'"%timezone_name
+    sc = service_calendar_from_timezone(gtfsdb, timezone_name )
+
     # load headways
     if reporter: reporter.write( "Loading headways trips to graph...\n" )
     for trip_id, start_time, end_time, headway_secs in gtfsdb.execute( "SELECT * FROM frequencies" ):
@@ -146,25 +140,43 @@ def gdb_load_gtfsdb_to_boardalight(gdb, agency_namespace, gtfsdb, cursor, agency
         
         #add board edges
         for trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_dist_traveled in stoptimes[:-1]:
-            gdb.add_vertex( "hwv-%s-%s-%s"%(agency_namespace,stop_id, trip_id) )
-            gdb.add_edge( "sta-%s"%stop_id, "hwv-%s-%s-%s"%(agency_namespace,stop_id, trip_id), hb )
+            yield ( "sta-%s"%stop_id, "hwv-%s-%s-%s"%(agency_namespace,stop_id, trip_id), hb )
             
         #add alight edges
         for trip_id, arrival_time, departure_time, stop_id, stop_sequence, stop_dist_traveled in stoptimes[1:]:
-            gdb.add_vertex( "hwv-%s-%s-%s"%(agency_namespace,stop_id, trip_id) )
-            gdb.add_edge( "hwv-%s-%s-%s"%(agency_namespace,stop_id, trip_id), "sta-%s"%stop_id, ha )
+            yield ( "hwv-%s-%s-%s"%(agency_namespace,stop_id, trip_id), "sta-%s"%stop_id, ha )
         
         #add crossing edges
         for (trip_id1, arrival_time1, departure_time1, stop_id1, stop_sequence1, stop_dist_traveled1), (trip_id2, arrival_time2, departure_time2, stop_id2, stop_sequence2,stop_dist_traveled2) in cons(stoptimes):
             cr = Crossing()
             cr.add_crossing_time( trip_id1, (arrival_time2-departure_time1) )
-            gdb.add_edge( "hwv-%s-%s-%s"%(agency_namespace,stop_id1, trip_id1), "hwv-%s-%s-%s"%(agency_namespace,stop_id2, trip_id2), cr )
+            yield ( "hwv-%s-%s-%s"%(agency_namespace,stop_id1, trip_id1), "hwv-%s-%s-%s"%(agency_namespace,stop_id2, trip_id2), cr )
+
+def gtfsdb_to_connection_edges(gtfsdb, reporter=sys.stdout):
             
     # load connections
     if reporter: reporter.write( "Loading connections to graph...\n" )
     for stop_id1, stop_id2, conn_type, distance in gtfsdb.execute( "SELECT * FROM connections" ):
-        gdb.add_edge( "sta-%s"%stop_id1, "sta-%s"%stop_id2, Street( conn_type, distance ) )
-        gdb.add_edge( "sta-%s"%stop_id2, "sta-%s"%stop_id1, Street( conn_type, distance ) )
+        yield ( "sta-%s"%stop_id1, "sta-%s"%stop_id2, Street( conn_type, distance ) )
+        yield ( "sta-%s"%stop_id2, "sta-%s"%stop_id1, Street( conn_type, distance ) )
+
+
+def gtfsdb_to_edges(agency_namespace, gtfsdb, agency_id=None, maxtrips=None, reporter=sys.stdout):
+    for edge_tuple in gtfsdb_to_scheduled_edges(agency_namespace, gtfsdb, agency_id, maxtrips, reporter):
+        yield edge_tuple
+
+    for edge_tuple in gtfsdb_to_headway_edges(agency_namespace, gtfsdb, agency_id, maxtrips, reporter):
+        yield edge_tuple 
+
+    for edge_tuple in gtfsdb_to_connection_edges( gtfsdb, reporter ):
+        yield edge_tuple
+
+def gdb_load_gtfsdb(gdb, agency_namespace, gtfsdb, cursor, agency_id=None, maxtrips=None, reporter=sys.stdout):
+
+    for fromv_label, tov_label, edge in gtfsdb_to_edges( agency_namespace, gtfsdb, agency_id, maxtrips, reporter ):
+        gdb.add_vertex( fromv_label )
+	gdb.add_vertex( tov_label )
+	gdb.add_edge( fromv_label, tov_label, edge )
         
 def main():
     usage = """usage: python gdb_import_gtfs.py [options] <graphdb_filename> <gtfsdb_filename> [<agency_id>]"""
@@ -189,7 +201,7 @@ def main():
     gdb = GraphDatabase( graphdb_filename, overwrite=False )
     
     maxtrips = int(options.maxtrips) if options.maxtrips else None
-    gdb_load_gtfsdb_to_boardalight(gdb, options.namespace, gtfsdb, gdb.get_cursor(), agency_id, maxtrips=maxtrips)
+    gdb_load_gtfsdb( gdb, options.namespace, gtfsdb, gdb.get_cursor(), agency_id, maxtrips=maxtrips)
     gdb.commit()
     
     print "done"
