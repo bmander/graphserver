@@ -67,7 +67,7 @@ def load_gtfs_table_to_sqlite(fp, gtfs_basename, cc, header=None, verbose=False)
         
         _line = []
         for i, converter in field_operator:
-            if i is not None and line[i].strip() != "":
+            if i<len(line) and i is not None and line[i].strip() != "":
                 if converter:
                     _line.append( converter(line[i].strip()) )
                 else:
