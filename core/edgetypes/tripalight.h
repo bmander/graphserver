@@ -3,7 +3,7 @@
 
 //---------------DECLARATIONS FOR ALIGHT CLASS---------------------------------------------
 
-struct Alight {
+struct TripAlight {
     edgepayload_t type;
     long external_id;
     State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
@@ -22,50 +22,50 @@ struct Alight {
     int overage; //number of seconds schedules past midnight of the last departure. If it's at 12:00:00, the overage is 0.
 } ;
 
-Alight*
+TripAlight*
 alNew( ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int agency );
 
 void
-alDestroy(Alight* this);
+alDestroy(TripAlight* this);
 
 ServiceCalendar*
-alGetCalendar( Alight* this );
+alGetCalendar( TripAlight* this );
 
 Timezone*
-alGetTimezone( Alight* this );
+alGetTimezone( TripAlight* this );
 
 int
-alGetAgency( Alight* this );
+alGetAgency( TripAlight* this );
 
 ServiceId
-alGetServiceId( Alight* this );
+alGetServiceId( TripAlight* this );
 
 int
-alGetNumAlightings(Alight* this);
+alGetNumAlightings(TripAlight* this);
 
 void
-alAddAlighting(Alight* this, char* trip_id, int arrival, int stop_sequence);
+alAddAlighting(TripAlight* this, char* trip_id, int arrival, int stop_sequence);
 
 char*
-alGetAlightingTripId(Alight* this, int i);
+alGetAlightingTripId(TripAlight* this, int i);
 
 int
-alGetAlightingArrival(Alight* this, int i);
+alGetAlightingArrival(TripAlight* this, int i);
 
 int
-alGetAlightingStopSequence(Alight* this, int i);
+alGetAlightingStopSequence(TripAlight* this, int i);
 
 int
-alSearchAlightingsList(Alight* this, int time);
+alSearchAlightingsList(TripAlight* this, int time);
 
 int
-alGetLastAlightingIndex(Alight* this, int time);
+alGetLastAlightingIndex(TripAlight* this, int time);
 
 int
-alGetOverage(Alight* this);
+alGetOverage(TripAlight* this);
 
 int
-alGetAlightingIndexByTripId(Alight* this, char* trip_id);
+alGetAlightingIndexByTripId(TripAlight* this, char* trip_id);
 
 inline State*
 alWalk(EdgePayload* this, State* state, WalkOptions* options);

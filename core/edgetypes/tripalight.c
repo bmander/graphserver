@@ -3,9 +3,9 @@
 
 // ALIGHT FUNCTIONS
 
-Alight*
+TripAlight*
 alNew( ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int agency ) {
-  Alight* ret = (Alight*)malloc(sizeof(Alight));
+  TripAlight* ret = (TripAlight*)malloc(sizeof(TripAlight));
   ret->external_id = 0;
   ret->type = PL_ALIGHT;
   ret->n = 0;
@@ -27,7 +27,7 @@ alNew( ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int 
 }
 
 void
-alDestroy(Alight* this) {
+alDestroy(TripAlight* this) {
   int i;
   for(i=0; i<this->n; i++) {
     free(this->trip_ids[i]);
@@ -45,32 +45,32 @@ alDestroy(Alight* this) {
 }
 
 ServiceCalendar*
-alGetCalendar( Alight* this ) {
+alGetCalendar( TripAlight* this ) {
   return this->calendar;
 }
 
 Timezone*
-alGetTimezone( Alight* this ) {
+alGetTimezone( TripAlight* this ) {
   return this->timezone;
 }
 
 int
-alGetAgency( Alight* this ) {
+alGetAgency( TripAlight* this ) {
   return this->agency;
 }
 
 ServiceId
-alGetServiceId( Alight* this ) {
+alGetServiceId( TripAlight* this ) {
   return this->service_id;
 }
 
 int
-alGetNumAlightings( Alight* this) {
+alGetNumAlightings( TripAlight* this) {
   return this->n;
 }
 
 void
-alAddAlighting(Alight* this, char* trip_id, int arrival, int stop_sequence) {
+alAddAlighting(TripAlight* this, char* trip_id, int arrival, int stop_sequence) {
     if (arrival > SECS_IN_DAY+this->overage)
         this->overage = arrival-SECS_IN_DAY;
     
@@ -131,7 +131,7 @@ alAddAlighting(Alight* this, char* trip_id, int arrival, int stop_sequence) {
 }
 
 char*
-alGetAlightingTripId(Alight* this, int i) {
+alGetAlightingTripId(TripAlight* this, int i) {
     if(i<0 || i >= this->n) {
         return NULL;
     }
@@ -140,7 +140,7 @@ alGetAlightingTripId(Alight* this, int i) {
 }
 
 int
-alGetAlightingArrival(Alight* this, int i) {
+alGetAlightingArrival(TripAlight* this, int i) {
     if(i<0 || i >= this->n) {
         return -1;
     }
@@ -149,7 +149,7 @@ alGetAlightingArrival(Alight* this, int i) {
 }
 
 int
-alGetAlightingStopSequence(Alight* this, int i) {
+alGetAlightingStopSequence(TripAlight* this, int i) {
     if(i<0 || i >= this->n) {
         return -1;
     }
@@ -178,23 +178,23 @@ binsearch(int* ary, int n, int key, int before) {
 }
 
 int
-alSearchAlightingsList(Alight* this, int time) {
+alSearchAlightingsList(TripAlight* this, int time) {
     return binsearch( this->arrivals, this->n, time, 0);
 }
 
 int
-alGetLastAlightingIndex(Alight* this, int time) {
+alGetLastAlightingIndex(TripAlight* this, int time) {
     //if insertion point is before end of array, -1 will be returned, which is coincidentally the error code
     return binsearch( this->arrivals, this->n, time, 1 );
 }
 
 int
-alGetOverage(Alight* this) {
+alGetOverage(TripAlight* this) {
     return this->overage;
 }
 
 int
-alGetAlightingIndexByTripId(Alight* this, char* trip_id) {
+alGetAlightingIndexByTripId(TripAlight* this, char* trip_id) {
     /* returns the boarding index of the alighting with the given trip_id */
     
     int i;
@@ -217,7 +217,7 @@ alWalk(EdgePayload* this, State* state, WalkOptions* options) {
 
 inline State*
 alWalkBack( EdgePayload* superthis, State* state, WalkOptions* options ) {
-    Alight* this = (Alight*)superthis;
+    TripAlight* this = (TripAlight*)superthis;
     
     //Get service period cached in travel state. If it doesn't exist, figure it out and cache it
     ServicePeriod* service_period = state->service_periods[this->agency];

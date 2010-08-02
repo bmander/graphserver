@@ -40,7 +40,7 @@ typedef struct TripBoard TripBoard;
 typedef struct HeadwayBoard HeadwayBoard;
 typedef struct HeadwayAlight HeadwayAlight;
 typedef struct Crossing Crossing;
-typedef struct Alight Alight;
+typedef struct TripAlight TripAlight;
 typedef struct Combination Combination;
 
 typedef enum {    
@@ -76,7 +76,7 @@ typedef enum {
 #include "edgetypes/headwayboard.h"
 #include "edgetypes/headwayalight.h"
 #include "edgetypes/crossing.h"
-#include "edgetypes/alight.h"
+#include "edgetypes/tripalight.h"
 #include "edgetypes/custompayload.h"
 #include "edgetypes/combination.h"
 #include "edgepayload.h"

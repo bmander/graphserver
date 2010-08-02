@@ -24,7 +24,7 @@ OBJECTS= fibheap/dirfibheap.o \
     edgetypes/headwayboard.o \
     edgetypes/headwayalight.o \
     edgetypes/crossing.o \
-    edgetypes/alight.o \
+    edgetypes/tripalight.o \
     edgetypes/custompayload.o \
     edgetypes/combination.o \
     edgepayload.o \
