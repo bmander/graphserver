@@ -339,9 +339,6 @@ class GTFSDatabase:
                 bundles[pattern] = TripBundle( self, pattern )
             
             bundles[pattern].add_trip( trip_id )
-            
-            #if i==10:
-            #    break
 
         c.close()
         
