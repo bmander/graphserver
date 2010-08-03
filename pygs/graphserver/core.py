@@ -1473,6 +1473,9 @@ class Crossing(EdgePayload):
             ret.append( "%s: %s"%(trip_id, crossing_time) )
             
         return "\n".join( ret )
+
+    def __repr__(self):
+        return "<Crossing %s>"%list(self.get_all_crossings())
         
 class Combination(EdgePayload):
     
