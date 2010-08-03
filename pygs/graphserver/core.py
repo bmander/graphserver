@@ -1246,7 +1246,7 @@ class TripBoard(EdgePayload):
         return "<TripBoard />"
         
     def __repr__(self):
-        return "<TripBoard int_sid=%d sid=%s agency=%d calendar=%s timezone=%s boardings=%s>"%(self.int_service_id, self.calendar.get_service_id_string(self.int_service_id), self.agency, self.calendar.soul,self.timezone.soul,[self.get_boarding(i) for i in range(self.num_boardings)])
+        return "<TripBoard int_sid=%d sid=%s agency=%d calendar=%s timezone=%s boardings=%s>"%(self.int_service_id, self.calendar.get_service_id_string(self.int_service_id), self.agency, hex(self.calendar.soul),hex(self.timezone.soul),[self.get_boarding(i) for i in range(self.num_boardings)])
         
     def __getstate__(self):
         state = {}
@@ -1580,7 +1580,7 @@ class TripAlight(EdgePayload):
         return "<TripAlight/>"
         
     def __repr__(self):
-        return "<TripAlight int_sid=%d agency=%d calendar=%s timezone=%s alightings=%s>"%(self.int_service_id, self.agency, self.calendar.soul,self.timezone.soul,[self.get_alighting(i) for i in range(self.num_alightings)])
+        return "<TripAlight int_sid=%d agency=%d calendar=%s timezone=%s alightings=%s>"%(self.int_service_id, self.agency, hex(self.calendar.soul),hex(self.timezone.soul),[self.get_alighting(i) for i in range(self.num_alightings)])
         
     def __getstate__(self):
         state = {}
