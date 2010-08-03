@@ -10,7 +10,7 @@ def cons(ary):
     for i in range(len(ary)-1):
         yield (ary[i], ary[i+1])
 
-def bundle_to_boardalight_edges(agency_namespace, bundle, service_id, sc, tz):
+def bundle_to_boardalight_edges(agency_namespace, bundle, service_id, sc, tz, reporter=None):
     """takes a bundle and yields a bunch of edges"""
     
     stop_time_bundles = bundle.stop_time_bundles(service_id)
@@ -25,7 +25,7 @@ def bundle_to_boardalight_edges(agency_namespace, bundle, service_id, sc, tz):
     if n_trips==0:
         return
         
-    print "inserting %d trips with %d stop_time bundles on service_id '%s'"%(len(stop_time_bundles[0]),len(stop_time_bundles),service_id)
+    if reporter: reporter.write( "inserting %d trips with %d stop_time bundles on service_id '%s'\n"%(len(stop_time_bundles[0]),len(stop_time_bundles),service_id) )
 
     #add board edges
     for i, stop_time_bundle in enumerate(stop_time_bundles[:-1]):
@@ -102,7 +102,7 @@ def gtfsdb_to_scheduled_edges(agency_namespace, gtfsdb, agency_id=None, maxtrips
     # get graphserver.core.Timezone and graphserver.core.ServiceCalendars from gtfsdb for agency with given agency_id
     timezone_name = gtfsdb.agency_timezone_name(agency_id)
     gs_tz = Timezone.generate( timezone_name )
-    print "constructing service calendar for timezone '%s'"%timezone_name
+    if reporter: reporter.write( "constructing service calendar for timezone '%s'\n"%timezone_name )
     sc = service_calendar_from_timezone(gtfsdb, timezone_name )
     
     # compile trip bundles from gtfsdb
@@ -116,7 +116,7 @@ def gtfsdb_to_scheduled_edges(agency_namespace, gtfsdb, agency_id=None, maxtrips
         if reporter: reporter.write( "%d/%d loading %s\n"%(i+1, n_bundles, bundle) )
         
         for service_id in [x.encode("ascii") for x in gtfsdb.service_ids()]:
-	    for fromv_label, tov_label, edge in bundle_to_boardalight_edges(agency_namespace, bundle, service_id, sc, gs_tz):
+	    for fromv_label, tov_label, edge in bundle_to_boardalight_edges(agency_namespace, bundle, service_id, sc, gs_tz, reporter):
 	        yield fromv_label, tov_label, edge
 
 def gtfsdb_to_headway_edges(agency_namespace, gtfsdb, agency_id=None, maxtrips=None, reporter=sys.stdout):
@@ -124,7 +124,7 @@ def gtfsdb_to_headway_edges(agency_namespace, gtfsdb, agency_id=None, maxtrips=N
     # get graphserver.core.Timezone and graphserver.core.ServiceCalendars from gtfsdb for agency with given agency_id
     timezone_name = gtfsdb.agency_timezone_name(agency_id)
     gs_tz = Timezone.generate( timezone_name )
-    print "constructing service calendar for timezone '%s'"%timezone_name
+    if reporter: reporter.write( "constructing service calendar for timezone '%s'\n"%timezone_name )
     sc = service_calendar_from_timezone(gtfsdb, timezone_name )
 
     # load headways
