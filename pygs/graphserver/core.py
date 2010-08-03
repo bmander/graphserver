@@ -1318,8 +1318,8 @@ class HeadwayBoard(EdgePayload):
         self.soul = self._cnew(service_id, calendar.soul, timezone.soul, agency, trip_id, start_time, end_time, headway_secs)
         
     def __repr__(self):
-        return "<HeadwayBoard calendar=%d timezone=%d agency=%d service_id=%d trip_id=\"%s\" start_time=%d end_time=%d headway_secs=%d>"%(self.calendar.soul,
-                                                                                                                                          self.timezone.soul,
+        return "<HeadwayBoard calendar=%s timezone=%s agency=%d service_id=%d trip_id=\"%s\" start_time=%d end_time=%d headway_secs=%d>"%(hex(self.calendar.soul),
+                                                                                                                                          hex(self.timezone.soul),
                                                                                                                                           self.agency,
                                                                                                                                           self.int_service_id,
                                                                                                                                           self.trip_id,
@@ -1378,8 +1378,8 @@ class HeadwayAlight(EdgePayload):
         self.soul = self._cnew(service_id, calendar.soul, timezone.soul, agency, trip_id, start_time, end_time, headway_secs)
         
     def __repr__(self):
-        return "<HeadwayAlight calendar=%d timezone=%d agency=%d service_id=%d trip_id=\"%s\" start_time=%d end_time=%d headway_secs=%d>"%(self.calendar.soul,
-                                                                                                                                          self.timezone.soul,
+        return "<HeadwayAlight calendar=%s timezone=%s agency=%d service_id=%d trip_id=\"%s\" start_time=%d end_time=%d headway_secs=%d>"%(hex(self.calendar.soul),
+                                                                                                                                          hex(self.timezone.soul),
                                                                                                                                           self.agency,
                                                                                                                                           self.int_service_id,
                                                                                                                                           self.trip_id,
