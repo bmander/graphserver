@@ -37,7 +37,7 @@ class GTFSGraphCompiler:
         if n_trips==0:
             return
             
-        if self.reporter: reporter.write( "inserting %d trips with %d stop_time bundles on service_id '%s'\n"%(len(stop_time_bundles[0]),len(stop_time_bundles),service_id) )
+        if self.reporter: self.reporter.write( "inserting %d trips with %d stop_time bundles on service_id '%s'\n"%(len(stop_time_bundles[0]),len(stop_time_bundles),service_id) )
 
         #add board edges
         for i, stop_time_bundle in enumerate(stop_time_bundles[:-1]):
@@ -156,7 +156,7 @@ class GTFSGraphCompiler:
                 
         # load connections
         if self.reporter: self.reporter.write( "Loading connections to graph...\n" )
-        for stop_id1, stop_id2, conn_type, distance in gtfsdb.execute( "SELECT * FROM connections" ):
+        for stop_id1, stop_id2, conn_type, distance in self.gtfsdb.execute( "SELECT * FROM connections" ):
             yield ( "sta-%s"%stop_id1, "sta-%s"%stop_id2, Street( conn_type, distance ) )
             yield ( "sta-%s"%stop_id2, "sta-%s"%stop_id1, Street( conn_type, distance ) )
 
@@ -179,6 +179,18 @@ def gdb_load_gtfsdb(gdb, agency_namespace, gtfsdb, cursor, agency_id=None, maxtr
         gdb.add_vertex( fromv_label )
 	gdb.add_vertex( tov_label )
 	gdb.add_edge( fromv_label, tov_label, edge )
+
+def graph_load_gtfsdb( agency_namespace, gtfsdb, agency_id=None, maxtrips=None, reporter=sys.stdout ):
+    compiler = GTFSGraphCompiler( gtfsdb, agency_namespace, agency_id, reporter )
+
+    gg = Graph()
+
+    for fromv_label, tov_label, edge in compiler.gtfsdb_to_edges( maxtrips ):
+        gg.add_vertex( fromv_label )
+	gg.add_vertex( tov_label )
+	gg.add_edge( fromv_label, tov_label, edge )
+
+    return gg
         
 def main():
     usage = """usage: python gdb_import_gtfs.py [options] <graphdb_filename> <gtfsdb_filename> [<agency_id>]"""
