@@ -13,6 +13,8 @@
   #define INFINITY 1000000000
 #endif
 
+const size_t EDGEPAYLOAD_ENUM_SIZE = sizeof(edgepayload_t);
+
 //GRAPH FUNCTIONS
 
 Graph*
