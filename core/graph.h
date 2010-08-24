@@ -130,8 +130,9 @@ vNew( char* label ) ;
 void
 vDestroy(Vertex* this, int free_edge_payloads) ;
 
-void
-vMark(Vertex* this) ;
+// TODO
+//void
+//vMark(Vertex* this) ;
 
 Edge*
 vLink(Vertex* this, Vertex* to, EdgePayload* payload) ;
@@ -215,8 +216,9 @@ eNew(Vertex* from, Vertex* to, EdgePayload* payload);
 void
 eDestroy(Edge *this, int destroy_payload) ;
 
-void
-eMark(Edge *this) ;
+// TODO
+//void
+//eMark(Edge *this) ;
 
 State*
 eWalk(Edge *this, State* state, WalkOptions* options) ;
