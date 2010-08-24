@@ -63,7 +63,7 @@ def gdb_import_osm(gdb, osmdb, vertex_namespace, slogs, profiledb=None):
     n_edges = osmdb.count_edges()
     
     # for each edge in the osmdb
-    for i, (vertex1_label, vertex2_label, edge ) in enumerate( edges_from_osmdb( osmdb, vertices_namespace, slogs, profiledb ) ):
+    for i, (vertex1_label, vertex2_label, edge ) in enumerate( edges_from_osmdb( osmdb, vertex_namespace, slogs, profiledb ) ):
         
         if i%(n_edges//100+1)==0: sys.stdout.write( "%d/%d edges loaded\r\n"%(i, n_edges))
             
