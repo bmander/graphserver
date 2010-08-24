@@ -1,18 +1,18 @@
 #ifndef _CUSTOMPAYLOAD_H_
 #define _CUSTOMPAYLOAD_H_
 
-typedef struct PayloadMethods {
+struct PayloadMethods {
 	void (*destroy)(void*);
 	State* (*walk)(void*,State*,WalkOptions*);
 	State* (*walkBack)(void*,State*,WalkOptions*);
 	//char* (*to_str)(void*);
-} PayloadMethods;
+};
 
-typedef struct CustomPayload {
+struct CustomPayload {
   edgepayload_t type;
   void* soul;
   PayloadMethods* methods;
-} CustomPayload;
+};
 
 PayloadMethods*
 defineCustomPayloadType(void (*destroy)(void*),
@@ -36,9 +36,9 @@ PayloadMethods*
 cpMethods( CustomPayload* this );
 
 State*
-cpWalk(CustomPayload* this, State* state, struct WalkOptions* walkoptions);
+cpWalk(CustomPayload* this, State* state, WalkOptions* walkoptions);
 
 State*
-cpWalkBack(CustomPayload* this, State* state, struct WalkOptions* walkoptions);
+cpWalkBack(CustomPayload* this, State* state, WalkOptions* walkoptions);
 
 #endif

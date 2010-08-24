@@ -47,7 +47,8 @@ typedef struct CH CH;
 typedef struct Heap Heap;
 typedef struct HeapNode HeapNode;
 
-
+typedef struct PayloadMethods PayloadMethods;
+typedef struct CustomPayload CustomPayload;
 
 typedef enum {    
   PL_STREET,
