@@ -1,7 +1,7 @@
 import atexit
 from ctypes import cdll, CDLL, pydll, PyDLL, CFUNCTYPE
 from ctypes import string_at, byref, c_int, c_long, c_float, c_size_t, c_char_p, c_double, c_void_p, py_object
-from ctypes import c_int8, c_int16, c_int32, c_int64
+from ctypes import c_int8, c_int16, c_int32, c_int64, sizeof
 from ctypes import Structure, pointer, cast, POINTER, addressof
 from ctypes.util import find_library
 
@@ -318,6 +318,8 @@ declarations = [\
     (lgs.crGetSize, c_int, [LGSTypes.Crossing]),
     (lgs.crWalk, LGSTypes.State, [LGSTypes.EdgePayload, LGSTypes.State, LGSTypes.WalkOptions]),
     (lgs.crWalkBack, LGSTypes.State, [LGSTypes.EdgePayload, LGSTypes.State, LGSTypes.WalkOptions]),
+#   For reasons presently opaque to me, argtypes for this function are set to None to make this work.
+#   Old comment says: args are not specified to allow for None - therefore, setting to none
 #    (lgs.defineCustomPayloadType, LGSTypes.PayloadMethods, [CFUNCTYPE(c_void_p, c_void_p), CFUNCTYPE(LGSTypes.State, c_void_p, LGSTypes.State, LGSTypes.WalkOptions), CFUNCTYPE(LGSTypes.State, c_void_p, LGSTypes.State, LGSTypes.WalkOptions)]),
     (lgs.defineCustomPayloadType, LGSTypes.PayloadMethods, None),
     (lgs.undefineCustomPayloadType, None, [LGSTypes.PayloadMethods]),
@@ -446,6 +448,7 @@ for d in declarations:
 def caccessor(cfunc, restype, ptrclass=None):
     """Wraps a C data accessor in a python function.
        If a ptrclass is provided, the result will be converted to by the class' from_pointer method."""
+    # Leaving this the the bulk declare process
     #cfunc.restype = restype
     #cfunc.argtypes = [c_void_p]
     if ptrclass:
@@ -462,6 +465,7 @@ def caccessor(cfunc, restype, ptrclass=None):
 def cmutator(cfunc, argtype, ptrclass=None):
     """Wraps a C data mutator in a python function.  
        If a ptrclass is provided, the soul of the argument will be used."""
+    # Leaving this to the bulk declare function
     #cfunc.argtypes = [c_void_p, argtype]
     #cfunc.restype = None
     if ptrclass:
@@ -493,37 +497,26 @@ class PayloadMethodTypes:
     destroy = CFUNCTYPE(c_void_p, py_object)
     walk = CFUNCTYPE(c_void_p, py_object, c_void_p, c_void_p)
     walk_back = CFUNCTYPE(c_void_p, py_object, c_void_p, c_void_p)
-    
-# pycapi(lgs.cpSoul, py_object, [c_void_p])
-# pycapi(lgs.cpDestroy, None, [c_void_p])
-# pycapi(lgs.cpNew, c_void_p, [c_void_p, c_void_p])
-# args are not specified to allow for None
-#lgs.defineCustomPayloadType.restype = c_void_p
-#lgs.undefineCustomPayloadType.restype = None
 
-import traceback, sys
+# 
+import sys
 class SafeWrapper(object):
     def __init__(self, lib, name):
         self.lib = lib
-        self.called = set([])
         self.name = name
 
     def __getattr__(self, attr):
         v = getattr(self.lib, attr)
         if not getattr(v, 'safe', False):
-            raise Exception("Calling unsafe method %s" % attr)
-        if attr not in self.called:
-            #print "%s" % attr
-            #sys.stdout.flush()
-            #traceback.print_stack(limit=3)
-            self.called.add(attr)
+            raise Exception("Using unsafe method %s - you must declare the ctypes restype and argtypes in gsdll.py to ensure 64-bit compatibility." % attr)
         return SafeWrapper(v, name=self.name + "." + attr)
 
     def __call__(self, *args):
-        sys.stderr.write( "-%s %s\n" % (self.lib.restype, self.name))
+        """Very useful for debugging bogus calls to the DLL which result in segfaluts."""
+        sys.stderr.write( ">%s %s(%s)\n" % (self.lib.restype and self.lib.restype.__name__ or None, self.name, ",".join(map(repr, args))))
         sys.stderr.flush()
 
         return self.lib(*args)
 
-if 'GS_RUN_SAFE' in os.environ:
+if 'GS_VERBOSE_CTYPES' in os.environ:
     lgs = SafeWrapper(lgs,'lgs')
