@@ -146,7 +146,7 @@ declarations = [\
     (lgs.gAddVertex, LGSTypes.Vertex, [LGSTypes.Graph, c_char_p]),
     (lgs.gRemoveVertex, None, [LGSTypes.Graph, c_char_p, c_int]),
     (lgs.gGetVertex, LGSTypes.Vertex, [LGSTypes.Graph, c_char_p]),
-    (lgs.gAddVertices, None, [LGSTypes.Graph, c_char_p, c_int]),
+    (lgs.gAddVertices, None, [LGSTypes.Graph, POINTER(c_char_p), c_int]),
     (lgs.gAddEdge, LGSTypes.Edge, [LGSTypes.Graph, c_char_p, c_char_p, LGSTypes.EdgePayload]),
     (lgs.gVertices, POINTER(LGSTypes.Vertex), [LGSTypes.Graph, POINTER(c_long)]),
     (lgs.gShortestPathTree, LGSTypes.ShortestPathTree, [LGSTypes.Graph, c_char_p, c_char_p, LGSTypes.State, LGSTypes.WalkOptions, c_long, c_int, c_long]),
