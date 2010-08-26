@@ -1,5 +1,5 @@
 import unittest
-from graphserver.core import Graph, Link, Street
+from graphserver.core import Graph, Link, Street, WalkOptions, Combination
 from graphserver.graphdb import GraphDatabase
 import os
 
@@ -47,6 +47,31 @@ class TestGraphDatabase(unittest.TestCase):
         assert gdb.num_edges() == 2
         
         os.remove( gdb_file )
+
+    def test_ch(self):
+        g = Graph()
+
+	g.add_vertex( "A" )
+	g.add_vertex( "B" )
+        g.add_vertex( "C" )
+	g.add_edge( "A", "B", Street( "foo", 10 ) )
+	g.add_edge( "B", "C", Street( "bar", 10 ) )
+	g.add_edge( "C", "A", Street( "baz", 10 ) )
+
+        wo = WalkOptions()
+	ch = g.get_contraction_hierarchies(wo)
+
+        gdb_file = os.path.dirname(__file__) + "unit_test.db"
+        gdb = GraphDatabase( gdb_file )
+	gdb.populate( ch.upgraph )
+
+	laz = gdb.incarnate()
+
+        combo = laz.edges[1]
+	self.assertEqual( combo.payload.get(0).name, "baz" )
+	self.assertEqual( combo.payload.get(1).name, "foo" )
+
+	os.remove( gdb_file )
         
 if __name__ == '__main__':
     tl = unittest.TestLoader()
