@@ -1498,15 +1498,21 @@ class Combination(EdgePayload):
         
     def __getstate__(self):
         return [ self.get( i ).soul for i in range(self.n) ]
+            
+    def __setstate__(self, state):
+        self.__init__(len(state))
+        
+    def __resources__(self):
+        components = [self.get(i) for i in range(self.n)]
+            
+        return [(str(component.soul), component) for component in components]
     
     @classmethod
-    def reconstitute(cls, state, graphdb):
-        components = [ graphdb.get_edge_payload( epid ) for epid in state ]
+    def reconstitute(cls, state, resolver):
+        ret = Combination(len(state))
         
-        ret = Combination(len(components))
-        
-        for component in components:
-            ret.add( component )
+        for componentsoul in state:
+            ret.add( resolver.resolve( componentsoul ) )
             
         return ret
         
