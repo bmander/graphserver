@@ -70,7 +70,7 @@ class GraphDatabase:
                 
                 if hasattr(ee.payload, "__resources__"):
                     for name, resource in ee.payload.__resources__():
-                        self.store( name, resource )
+                        self.store( name, resource, c )
         
         self.conn.commit()
         c.close()
@@ -156,13 +156,13 @@ class GraphDatabase:
             edgestate = cPickle.loads( str(edgestate) )
             yield vertex1, vertex2, edgetype.reconstitute(edgestate, self)
             
-    def store(self, name, obj):
-        c = self.conn.cursor()
+    def store(self, name, obj, c=None):
+        cc = self.conn.cursor() if c is None else c
         resource_count = list(c.execute( "SELECT count(*) FROM resources WHERE name = ?", (name,) ))[0][0]
         if resource_count == 0:
-            c.execute( "INSERT INTO resources VALUES (?, ?)", (name, cPickle.dumps( obj )) )
-            self.conn.commit()
-        c.close()
+            cc.execute( "INSERT INTO resources VALUES (?, ?)", (name, cPickle.dumps( obj )) )
+            if not c: self.conn.commit()
+        if not c: cc.close()
         
     def resolve(self, name):
         if name in self.resources_cache:
