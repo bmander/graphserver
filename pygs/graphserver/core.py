@@ -13,8 +13,6 @@ import calendar
 from util import TimeHelpers
 from vector import Vector
 
-# define a c-style NULL
-NULL = 0
 
 def indent( a, n ):
     return "\n".join( [" "*n+x for x in a.split("\n")] )
@@ -78,7 +76,7 @@ class Path(Structure):
         vertex_soul = lgs.pathGetVertex( addressof(self), i )
         
         # reinterpret the error code as an exception
-        if vertex_soul == NULL:
+        if vertex_soul is None:
             raise IndexError("%d is out of bounds"%i)
         
         return Vertex.from_pointer( vertex_soul )
@@ -87,7 +85,7 @@ class Path(Structure):
         edge_soul = lgs.pathGetEdge( addressof(self), i )
         
         # reinterpret the error code as an exception
-        if edge_soul == NULL:
+        if edge_soul is None:
             raise IndexError("%d is out of bounds"%i)
             
         return Edge.from_pointer( edge_soul )
