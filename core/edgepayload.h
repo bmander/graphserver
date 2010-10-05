@@ -22,6 +22,9 @@ epGetType( EdgePayload* this );
 long
 epGetExternalId( EdgePayload* this );
 
+void
+epSetExternalId( EdgePayload *this, long external_id );
+
 State*
 epWalk( EdgePayload* this, State* param, WalkOptions* options );
 

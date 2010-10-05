@@ -28,7 +28,7 @@ struct ServicePeriod {
 } ;
 
 ServiceCalendar*
-scNew( );
+scNew(void);
 
 int
 scAddServiceId( ServiceCalendar* this, char* service_id );

@@ -51,7 +51,7 @@ struct Edge {
 //GRAPH FUNCTIONS
 
 Graph*
-gNew();
+gNew(void);
 
 void
 gDestroyBasic( Graph* this, int free_edge_payloads );
@@ -96,7 +96,7 @@ gSetVertexEnabled( Graph *this, char *label, int enabled );
 //SPT METHODS
 
 ShortestPathTree*
-sptNew();
+sptNew(void);
 
 void
 sptDestroy( ShortestPathTree *this );

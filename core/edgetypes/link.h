@@ -13,7 +13,7 @@ struct Link {
 };
 
 Link*
-linkNew();
+linkNew(void);
 
 void
 linkDestroy(Link* tokill);

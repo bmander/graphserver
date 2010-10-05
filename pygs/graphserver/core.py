@@ -277,11 +277,11 @@ class ShortestPathTree(CShadow):
         self._cdel(self.soul)
         self.soul = None
             
-    def add_vertex(self, shadow):
+    def add_vertex(self, shadow, hop=0):
         #Vertex* sptAddVertex( ShortestPathTree* this, char *label );
         self.check_destroyed()
         
-        return self._cadd_vertex(self.soul, shadow.soul)
+        return self._cadd_vertex(self.soul, shadow.soul, hop)
         
     def remove_vertex(self, label):
         #void sptRemoveVertex( ShortestPathTree* this, char *label, int free_vertex_payload, int free_edge_payloads );
@@ -310,7 +310,7 @@ class ShortestPathTree(CShadow):
     def vertices(self):
         self.check_destroyed()
         
-        count = c_int()
+        count = c_long()
         p_va = lgs.sptVertices(self.soul, byref(count))
         verts = []
         arr = cast(p_va, POINTER(c_void_p)) # a bit of necessary voodoo

@@ -1,16 +1,13 @@
 #ifndef _HEAP_H_
 #define _HEAP_H_
 
-typedef struct HeapNode HeapNode;
-typedef struct Heap Heap;
-
 struct HeapNode {
     long priority;
     void *payload;
 } ;
 
 struct Heap {
-    HeapNode* nodes;
+    struct HeapNode* nodes;
     int capacity;
     int size;
 } ;

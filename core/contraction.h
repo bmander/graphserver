@@ -1,7 +1,4 @@
 
-typedef struct CHPath CHPath;
-typedef struct CH CH;
-
 struct CHPath {
     int n;
     EdgePayload** payloads;
@@ -35,7 +32,7 @@ Vertex* pqPop( Heap *pq, long *priority ) ;
 
 CH* get_contraction_hierarchies(Graph* gg, WalkOptions* wo, int search_limit) ;
 
-CH* chNew();
+CH* chNew(void);
 
 Graph* chUpGraph( CH* this ) ;
 

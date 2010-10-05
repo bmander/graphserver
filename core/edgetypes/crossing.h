@@ -15,7 +15,7 @@ struct Crossing {
 } ;
 
 Crossing*
-crNew( );
+crNew(void);
 
 void
 crDestroy(Crossing* this);

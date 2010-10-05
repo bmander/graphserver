@@ -19,7 +19,7 @@ struct WalkOptions {
 } ;
 
 WalkOptions*
-woNew();
+woNew(void);
 
 void
 woDestroy( WalkOptions* this );
