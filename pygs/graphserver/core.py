@@ -160,7 +160,7 @@ class Graph(CShadow):
     def vertices(self):
         self.check_destroyed()
         
-        count = c_int()
+        count = c_long()
         p_va = lgs.gVertices(self.soul, byref(count))
         verts = []
         arr = cast(p_va, POINTER(c_void_p)) # a bit of necessary voodoo
