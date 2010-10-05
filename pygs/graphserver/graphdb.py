@@ -105,13 +105,14 @@ class GraphDatabase:
         
     def add_edge(self, from_v_label, to_v_label, payload, outside_c=None):
         c = outside_c or self.conn.cursor()
-            
-        c.execute( "INSERT INTO edges VALUES (?, ?, ?, ?)", (from_v_label, to_v_label, cPickle.dumps( payload.__class__ ), cPickle.dumps( payload.__getstate__() ) ) )
-        
+    
+        epid = self.put_edge_payload( payload, c )
+        c.execute( "INSERT INTO edges VALUES (?, ?, ?)", (from_v_label, to_v_label, epid) )
+    
         if hasattr(payload, "__resources__"):
             for name, resource in payload.__resources__():
                 self.store( name, resource )
-                
+    
         if outside_c is None:
             self.conn.commit()
             c.close()
