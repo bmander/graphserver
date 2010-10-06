@@ -51,7 +51,7 @@ Class Definitions
 """
 
 class Path(Structure):
-    """Represents a path of vertics and edges as returned by ShortestPathTree.path()"""
+    """Represents a path of vertices and edges as returned by ShortestPathTree.path()"""
     
     _fields_ = [("vertices", POINTER(Vector)),
                 ("edges", POINTER(Vector))]
