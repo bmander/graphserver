@@ -190,14 +190,9 @@ def graph_load_gtfsdb( agency_namespace, gtfsdb, agency_id=None, maxtrips=None, 
 
     gg = Graph()
 
-    v_added = set([])
     for fromv_label, tov_label, edge in compiler.gtfsdb_to_edges( maxtrips ):
-        if fromv_label not in v_added:
-            gg.add_vertex( fromv_label )
-            v_added.add(fromv_label)
-        if tov_label not in v_added:
-            gg.add_vertex( tov_label )
-            v_added.add(tov_label)
+        gg.add_vertex( fromv_label )
+        gg.add_vertex( tov_label )
         gg.add_edge( fromv_label, tov_label, edge )
 
     return gg
