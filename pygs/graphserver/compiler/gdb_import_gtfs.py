@@ -174,21 +174,31 @@ class GTFSGraphCompiler:
 def gdb_load_gtfsdb(gdb, agency_namespace, gtfsdb, cursor, agency_id=None, maxtrips=None, reporter=sys.stdout):
 
     compiler = GTFSGraphCompiler( gtfsdb, agency_namespace, agency_id, reporter )
-
+    
+    v_added = set([])
     for fromv_label, tov_label, edge in compiler.gtfsdb_to_edges( maxtrips ):
-        gdb.add_vertex( fromv_label )
-	gdb.add_vertex( tov_label )
-	gdb.add_edge( fromv_label, tov_label, edge )
+        if fromv_label not in v_added:
+            gdb.add_vertex( fromv_label )
+            v_added.add(fromv_label)
+        if tov_label not in v_added:
+            gdb.add_vertex( tov_label )
+            v_added.add(tov_label)
+        gdb.add_edge( fromv_label, tov_label, edge )
 
 def graph_load_gtfsdb( agency_namespace, gtfsdb, agency_id=None, maxtrips=None, reporter=sys.stdout ):
     compiler = GTFSGraphCompiler( gtfsdb, agency_namespace, agency_id, reporter )
 
     gg = Graph()
 
+    v_added = set([])
     for fromv_label, tov_label, edge in compiler.gtfsdb_to_edges( maxtrips ):
-        gg.add_vertex( fromv_label )
-	gg.add_vertex( tov_label )
-	gg.add_edge( fromv_label, tov_label, edge )
+        if fromv_label not in v_added:
+            gg.add_vertex( fromv_label )
+            v_added.add(fromv_label)
+        if tov_label not in v_added:
+            gg.add_vertex( tov_label )
+            v_added.add(tov_label)
+        gg.add_edge( fromv_label, tov_label, edge )
 
     return gg
         
