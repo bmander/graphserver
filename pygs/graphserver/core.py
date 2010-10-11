@@ -79,7 +79,7 @@ class Path(Structure):
         if vertex_soul is None:
             raise IndexError("%d is out of bounds"%i)
         
-        return Vertex.from_pointer( vertex_soul )
+        return SPTVertex.from_pointer( vertex_soul )
         
     def getEdge( self, i ):
         edge_soul = lgs.pathGetEdge( addressof(self), i )
