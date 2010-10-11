@@ -31,8 +31,8 @@ class BoardEvent:
     
     def __call__(self, vertex1, edge, vertex2, context):
         
-        event_time = vertex2.payload.time
-        trip_id = vertex2.payload.trip_id
+        event_time = vertex2.state.time
+        trip_id = vertex2.state.trip_id
         stop_id = vertex1.label.split("-")[-1]
         
         route_desc = "-".join([str(x) for x in list( self.gtfsdb.execute( "SELECT routes.route_short_name, routes.route_long_name FROM routes, trips WHERE routes.route_id=trips.route_id AND trip_id=?", (trip_id,) ) )[0]])
@@ -57,18 +57,18 @@ class DescribeCrossingAtAlightEvent:
         # to describe the transit trip that led to this alighting
         return edge is not None \
                and isinstance(edge.payload, graphserver.core.TripAlight) \
-               and vertex1.payload.stop_sequence == vertex2.payload.stop_sequence
+               and vertex1.state.stop_sequence == vertex2.state.stop_sequence
         
     def __call__(self, vertex1, edge, vertex2, context):
         
-        stop_sequence_of_boarding = vertex1.payload.stop_sequence
-        trip_id = vertex1.payload.trip_id
+        stop_sequence_of_boarding = vertex1.state.stop_sequence
+        trip_id = vertex1.state.trip_id
         alighting_trip_id, alighting_time, alighting_stop_sequences = edge.payload.get_alighting_by_trip_id( trip_id )
         
-        what = "Ride trip %s from stop_seq %s to stop_seq %s"%(trip_id, vertex1.payload.stop_sequence, alighting_stop_sequences)
+        what = "Ride trip %s from stop_seq %s to stop_seq %s"%(trip_id, vertex1.state.stop_sequence, alighting_stop_sequences)
         where = None
         when = None
-        geom = self.gtfsdb.shape_between( trip_id, vertex1.payload.stop_sequence, alighting_stop_sequences )
+        geom = self.gtfsdb.shape_between( trip_id, vertex1.state.stop_sequence, alighting_stop_sequences )
         return NarrativeEvent(what, where, when, geom)
 
 class AlightEvent:
@@ -78,10 +78,10 @@ class AlightEvent:
         
     @staticmethod
     def applies_to(vertex1, edge, vertex2):
-        return edge is not None and isinstance(edge.payload, graphserver.core.TripAlight)
+        return edge is not None and isinstance(edge.state, graphserver.core.TripAlight)
         
     def __call__(self, vertex1, edge, vertex2, context):
-        event_time = vertex1.payload.time
+        event_time = vertex1.state.time
         stop_id = vertex2.label.split("-")[-1]
         
         stop_desc = list( self.gtfsdb.execute( "SELECT stop_name FROM stops WHERE stop_id = ?", (stop_id,) ) )[0][0]
@@ -103,8 +103,8 @@ class HeadwayBoardEvent:
         return edge is not None and isinstance(edge.payload, graphserver.core.HeadwayBoard)
         
     def __call__(self, vertex1, edge, vertex2, context):
-        event_time = vertex2.payload.time
-        trip_id = vertex2.payload.trip_id
+        event_time = vertex2.state.time
+        trip_id = vertex2.state.trip_id
         stop_id = vertex1.label.split("-")[-1]
         
         route_desc = "-".join(list( self.gtfsdb.execute( "SELECT routes.route_short_name, routes.route_long_name FROM routes, trips WHERE routes.route_id=trips.route_id AND trip_id=?", (trip_id,) ) )[0])
@@ -127,7 +127,7 @@ class HeadwayAlightEvent:
         return edge is not None and isinstance(edge.payload, graphserver.core.HeadwayAlight)
         
     def __call__(self, vertex1, edge, vertex2, context):
-        event_time = vertex1.payload.time
+        event_time = vertex1.state.time
         stop_id = vertex2.label.split("-")[-1]
         
         stop_desc = list( self.gtfsdb.execute( "SELECT stop_name FROM stops WHERE stop_id = ?", (stop_id,) ) )[0][0]
@@ -173,8 +173,8 @@ class CrossingEvent:
         return edge is not None and isinstance(edge.payload, graphserver.core.Crossing)
         
     def __call__(self, v1, e, v2, context):
-        trip_id = v1.payload.trip_id
-        return (str(v1.payload), str(e), str(v2.payload))
+        trip_id = v1.state.trip_id
+        return (str(v1.state), str(e), str(v2.state))
 
 from math import asin, acos, degrees
 
@@ -275,7 +275,7 @@ class StreetStartEvent:
         context['sumlength'] = 0
         context['sumrise'] = 0
         context['sumfall'] = 0
-        context['lastturntime'] = vertex.payload.time
+        context['lastturntime'] = vertex.state.time
         
         osm_way2 = edge2.payload.name.split("-")[0]
         street_name2 = self.osmdb.way( osm_way2 ).tags.get('name', "unnamed")
@@ -293,7 +293,7 @@ class StreetStartEvent:
         
         what = "start walking"
         where = "on %s facing %s"%(street_name2, direction)
-        when = "about %s"%str(TimeHelpers.unix_to_localtime( vertex.payload.time, self.timezone_name ))
+        when = "about %s"%str(TimeHelpers.unix_to_localtime( vertex.state.time, self.timezone_name ))
         geom = [osm_node_lon, osm_node_lat]
         return NarrativeEvent(what,where,when,geom)
         
@@ -315,10 +315,10 @@ class StreetEndEvent:
         osm_id = vertex.label.split("-")[1]
         osm_node_id, osm_node_tags, osm_node_lat, osm_node_lon, osm_node_refcount = self.osmdb.node( osm_id )
         
-        average_speed = context['sumlength']/(vertex.payload.time-context['lastturntime']) if vertex.payload.time-context['lastturntime']>0 else 100000000
+        average_speed = context['sumlength']/(vertex.state.time-context['lastturntime']) if vertex.state.time-context['lastturntime']>0 else 100000000
         what = "arrive walking after %dm, %0.1f rise, %0.1f fall (%0.1fm/s)"%(context['sumlength'], context['sumrise'], context['sumfall'], average_speed)
         where = "on %s"%(street_name1)
-        when = "about %s"%str(TimeHelpers.unix_to_localtime( vertex.payload.time, self.timezone_name ))
+        when = "about %s"%str(TimeHelpers.unix_to_localtime( vertex.state.time, self.timezone_name ))
         geom = [osm_node_lon, osm_node_lat]
         return NarrativeEvent(what,where,when,geom)
         
@@ -382,16 +382,16 @@ class StreetTurnEvent:
         
         osm_node_id, osm_node_tags, osm_node_lat, osm_node_lon, osm_node_refcount = self.osmdb.node( osm_id )
         
-        average_speed = context['sumlength']/(vertex.payload.time-context['lastturntime']) if vertex.payload.time-context['lastturntime']>0 else 100000000
+        average_speed = context['sumlength']/(vertex.state.time-context['lastturntime']) if vertex.state.time-context['lastturntime']>0 else 100000000
         what = "%s onto %s after %dm, %0.1fm rise, %0.1fm fall (%0.1fm/s)"%(direction, street_name2, context['sumlength'], context['sumrise'], context['sumfall'], average_speed)
         where = "%s & %s"%(street_name1, street_name2)
-        when = "about %s"%str(TimeHelpers.unix_to_localtime( vertex.payload.time, self.timezone_name ))
+        when = "about %s"%str(TimeHelpers.unix_to_localtime( vertex.state.time, self.timezone_name ))
         geom = (osm_node_lon, osm_node_lat)
         
         context['sumlength'] = 0
         context['sumrise'] = 0
         context['sumfall'] = 0
-        context['lastturntime'] = vertex.payload.time
+        context['lastturntime'] = vertex.state.time
         return NarrativeEvent(what,where,when,geom)
     
 class AllVertexEvent:

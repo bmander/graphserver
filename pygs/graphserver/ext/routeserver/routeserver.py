@@ -33,7 +33,7 @@ def postprocess_path_raw(vertices, edges):
     retbuilder.append("")
     retbuilder.append("states")
     for i, vertex in enumerate(vertices):
-        retbuilder.append( "%d %s"%(i, str(vertex.payload)) )
+        retbuilder.append( "%d %s"%(i, str(vertex.state)) )
     
     retbuilder.append("")
     retbuilder.append("edges")
