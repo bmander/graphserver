@@ -57,10 +57,8 @@ def load_gtfs_table_to_sqlite(fp, gtfs_basename, cc, header=None, verbose=False)
     insert_template = 'insert into %s (%s) values (%s)'%(gtfs_basename,",".join([x[0] for x in header]), ",".join(["?"]*len(header)))
     print( insert_template )
     for i, line in enumerate(rd):
-        
-        #print( i%50, line )
         if i%5000==0: print(i)
-               
+        
         # carry on quietly if there's a blank line in the csv
         if line == []:
             continue
@@ -193,10 +191,10 @@ class GTFSDatabase:
                                        ("start_time", "INTEGER", parse_gtfs_time),
                                        ("end_time", "INTEGER", parse_gtfs_time),
                                        ("headway_secs", "INTEGER", None)) )
-    CONNECTIONS_DEF = ("connections", (("stop_id1", None, None),
-                                       ("stop_id2", None, None),
-                                       ("type", None, None),
-                                       ("distance", "INTEGER", None)))
+    TRANSFERS_DEF = ("transfers", (("from_stop_id", None, None),    
+                                       ("to_stop_id", None, None),
+                                       ("transfer_type", "INTEGER", None),
+                                       ("min_transfer_time", "FLOAT", None)))
     SHAPES_DEF = ("shapes", (("shape_id", None, None),
                                ("shape_pt_lat", "FLOAT", None),
                                ("shape_pt_lon", "FLOAT", None),
@@ -211,7 +209,7 @@ class GTFSDatabase:
                 AGENCY_DEF, 
                 FREQUENCIES_DEF, 
                 ROUTES_DEF, 
-                CONNECTIONS_DEF,
+                TRANSFERS_DEF,
                 SHAPES_DEF)
     
     def __init__(self, sqlite_filename, overwrite=False):
