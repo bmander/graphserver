@@ -1,6 +1,7 @@
 import pytz
 from datetime import datetime
 import time
+import sys
 
 import calendar
 
@@ -51,3 +52,10 @@ class TimeHelpers:
         ret = dt.hour*3600+dt.minute*60+dt.second
         return ret, ret+24*3600, ret+2*24*3600
         
+def withProgress(seq, modValue=100):
+    for c, v in enumerate(seq):
+        if (c+1) % modValue == 0: 
+            sys.stdout.write("%s\r" % (c+1)) 
+            sys.stdout.flush()
+        yield v
+    print("\nCompleted %s" % (c+1))
