@@ -1,4 +1,4 @@
-from graphserver.core import Graph, TripBoard, HeadwayBoard, HeadwayAlight, Crossing, TripAlight, Timezone, Street
+from graphserver.core import Graph, TripBoard, HeadwayBoard, HeadwayAlight, Crossing, TripAlight, Timezone, Street, Link
 from optparse import OptionParser
 from graphserver.graphdb import GraphDatabase
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
@@ -152,14 +152,47 @@ class GTFSGraphCompiler:
                 cr.add_crossing_time( trip_id1, (arrival_time2-departure_time1) )
                 yield ( "hwv-%s-%s-%s"%(self.agency_namespace,stop_id1, trip_id1), "hwv-%s-%s-%s"%(self.agency_namespace,stop_id2, trip_id2), cr )
 
-    def gtfsdb_to_connection_edges( self ):
+    def gtfsdb_to_transfer_edges( self ):
                 
-        # load connections
-        if self.reporter: self.reporter.write( "Loading connections to graph...\n" )
-        for stop_id1, stop_id2, conn_type, distance in self.gtfsdb.execute( "SELECT * FROM connections" ):
-            yield ( "sta-%s"%stop_id1, "sta-%s"%stop_id2, Street( conn_type, distance ) )
-            yield ( "sta-%s"%stop_id2, "sta-%s"%stop_id1, Street( conn_type, distance ) )
-
+        # load transfers
+        if self.reporter: self.reporter.write( "Loading transfers to graph...\n" )
+        
+        # keep track to avoid redundancies
+        # this assumes that transfer relationships are bi-directional.
+        # TODO this implementation is also incomplete - it's theoretically possible that
+        # a transfers.txt table could contain "A,A,3,", which would mean you can't transfer
+        # at A.
+        seen = set([]) 
+        for stop_id1, stop_id2, conn_type, min_transfer_time in self.gtfsdb.execute( "SELECT * FROM transfers" ):            
+            s1 = "sta-%s"%stop_id1
+            s2 = "sta-%s"%stop_id2
+            
+            # TODO - what is the semantics of this? see note above
+            if s1 == s2:
+                continue
+            
+            key = ".".join(sorted([s1,s2]))
+            if key not in seen:
+                seen.add(key)
+            else:
+                continue
+            
+            assert conn_type == None or type(conn_type) == int
+            if conn_type in (0, None): # This is a recommended transfer point between two routes
+                if min_transfer_time == None:
+                    yield (s1, s2, Link())
+                    yield (s2, s1, Link())
+                else:
+                    yield (s1, s2, ElapseTime(min_transfer_time))
+                    yield (s2, s1, ElapseTime(min_transfer_time))                    
+            elif conn_type == 1: # This is a timed transfer point between two routes
+                yield (s1, s2, Link())
+                yield (s2, s1, Link())
+            elif conn_type == 2: # This transfer requires a minimum amount of time
+                yield (s1, s2, ElapseTime(min_transfer_time))
+                yield (s2, s1, ElapseTime(min_transfer_time))                    
+            elif conn_type == 3: # Transfers are not possible between routes at this location. 
+                assert False, "Support for no-transfer (transfers.txt transfer_type=3) not implemented."
 
     def gtfsdb_to_edges( self, maxtrips=None ):
         for edge_tuple in self.gtfsdb_to_scheduled_edges(maxtrips):
@@ -168,7 +201,7 @@ class GTFSGraphCompiler:
         for edge_tuple in self.gtfsdb_to_headway_edges(maxtrips):
             yield edge_tuple 
 
-        for edge_tuple in self.gtfsdb_to_connection_edges():
+        for edge_tuple in self.gtfsdb_to_transfer_edges():
             yield edge_tuple
 
 def gdb_load_gtfsdb(gdb, agency_namespace, gtfsdb, cursor, agency_id=None, maxtrips=None, reporter=sys.stdout):
