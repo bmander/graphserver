@@ -78,7 +78,7 @@ class AlightEvent:
         
     @staticmethod
     def applies_to(vertex1, edge, vertex2):
-        return edge is not None and isinstance(edge.state, graphserver.core.TripAlight)
+        return edge is not None and isinstance(edge.payload, graphserver.core.TripAlight)
         
     def __call__(self, vertex1, edge, vertex2, context):
         event_time = vertex1.state.time
