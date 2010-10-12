@@ -5,6 +5,7 @@ import os
 from zipfile import ZipFile
 from codecs import iterdecode
 import datetime
+from graphserver.util import withProgress
 
 class UTF8TextFile(object):
     def __init__(self, fp):
@@ -56,9 +57,7 @@ def load_gtfs_table_to_sqlite(fp, gtfs_basename, cc, header=None, verbose=False)
     # populate stoptimes table
     insert_template = 'insert into %s (%s) values (%s)'%(gtfs_basename,",".join([x[0] for x in header]), ",".join(["?"]*len(header)))
     print( insert_template )
-    for i, line in enumerate(rd):
-        if i%5000==0: print(i)
-        
+    for i, line in withProgress(enumerate(rd), 5000):
         # carry on quietly if there's a blank line in the csv
         if line == []:
             continue
