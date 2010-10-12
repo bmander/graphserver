@@ -353,6 +353,9 @@ class ShortestPathTree(CShadow):
         
         path_pointer = lgs.sptPathRetro( self.soul, origin )
         
+        if path_pointer is None:
+            return (None, None)
+            
         path = Path.from_address( path_pointer )
         
         vertices = [path.getVertex( i ) for i in range(path.num_elements+1)]
