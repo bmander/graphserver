@@ -325,7 +325,7 @@ declarations = [\
     (lgs.undefineCustomPayloadType, None, [LGSTypes.PayloadMethods]),
     (lgs.cpNew, LGSTypes.CustomPayload, [py_object, LGSTypes.PayloadMethods]),
     (lgs.cpDestroy, None, [LGSTypes.CustomPayload]),
-    (lgs.cpSoul, c_void_p, [LGSTypes.CustomPayload]),
+    (lgs.cpSoul, py_object, [LGSTypes.CustomPayload]),
     (lgs.cpMethods, LGSTypes.PayloadMethods, [LGSTypes.CustomPayload]),
     (lgs.cpWalk, LGSTypes.State, [LGSTypes.CustomPayload, LGSTypes.State, LGSTypes.WalkOptions]),
     (lgs.cpWalkBack, LGSTypes.State, [LGSTypes.CustomPayload, LGSTypes.State, LGSTypes.WalkOptions]),
