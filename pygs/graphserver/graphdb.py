@@ -131,7 +131,7 @@ class GraphDatabase:
         c.close()
         
     def all_vertex_labels(self):
-        for vertex_label, in self.execute( "SELECT label FROM vertices" ):
+        for vertex_label, in self.execute( "SELECT DISTINCT label FROM (SELECT vertex1 AS label FROM edges UNION SELECT vertex2 AS label FROM edges)" ):
             yield vertex_label
     
     def all_edges(self):
