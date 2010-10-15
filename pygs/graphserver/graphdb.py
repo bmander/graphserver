@@ -103,13 +103,14 @@ class GraphDatabase:
         
     def add_edge(self, from_v_label, to_v_label, payload, outside_c=None):
         c = outside_c or self.conn.cursor()
-            
-        c.execute( "INSERT INTO edges VALUES (?, ?, ?, ?)", (from_v_label, to_v_label, cPickle.dumps( payload.__class__ ), cPickle.dumps( payload.__getstate__() ) ) )
-        
+    
+        epid = self.put_edge_payload( payload, c )
+        c.execute( "INSERT INTO edges VALUES (?, ?, ?)", (from_v_label, to_v_label, epid) )
+    
         if hasattr(payload, "__resources__"):
             for name, resource in payload.__resources__():
                 self.store( name, resource )
-                
+    
         if outside_c is None:
             self.conn.commit()
             c.close()
@@ -128,7 +129,7 @@ class GraphDatabase:
         c.close()
         
     def all_vertex_labels(self):
-        for vertex_label, in self.execute( "SELECT label FROM vertices" ):
+        for vertex_label, in self.execute( "SELECT DISTINCT label FROM (SELECT vertex1 AS label FROM edges UNION SELECT vertex2 AS label FROM edges)" ):
             yield vertex_label
     
     def all_edges(self, include_oid=False):

@@ -42,6 +42,13 @@ typedef struct HeadwayAlight HeadwayAlight;
 typedef struct Crossing Crossing;
 typedef struct TripAlight TripAlight;
 typedef struct Combination Combination;
+typedef struct CHPath CHPath;
+typedef struct CH CH;
+typedef struct Heap Heap;
+typedef struct HeapNode HeapNode;
+
+typedef struct PayloadMethods PayloadMethods;
+typedef struct CustomPayload CustomPayload;
 
 typedef enum {    
   PL_STREET,
@@ -85,6 +92,7 @@ typedef enum {
 #include "timezone.h"
 #include "path.h"
 #include "vector.h"
+#include "heap.h"
 
 // things that everyone needs
 #include <stdlib.h>

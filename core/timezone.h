@@ -9,7 +9,7 @@ struct TimezonePeriod {
 } ;
 
 Timezone*
-tzNew( );
+tzNew(void);
 
 void
 tzAddPeriod( Timezone* this, TimezonePeriod* period );

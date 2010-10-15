@@ -13,8 +13,6 @@ import calendar
 from util import TimeHelpers
 from vector import Vector
 
-# define a c-style NULL
-NULL = 0
 
 def indent( a, n ):
     return "\n".join( [" "*n+x for x in a.split("\n")] )
@@ -53,7 +51,7 @@ Class Definitions
 """
 
 class Path(Structure):
-    """Represents a path of vertics and edges as returned by ShortestPathTree.path()"""
+    """Represents a path of vertices and edges as returned by ShortestPathTree.path()"""
     
     _fields_ = [("vertices", POINTER(Vector)),
                 ("edges", POINTER(Vector))]
@@ -78,16 +76,16 @@ class Path(Structure):
         vertex_soul = lgs.pathGetVertex( addressof(self), i )
         
         # reinterpret the error code as an exception
-        if vertex_soul == NULL:
+        if vertex_soul is None:
             raise IndexError("%d is out of bounds"%i)
         
-        return Vertex.from_pointer( vertex_soul )
+        return SPTVertex.from_pointer( vertex_soul )
         
     def getEdge( self, i ):
         edge_soul = lgs.pathGetEdge( addressof(self), i )
         
         # reinterpret the error code as an exception
-        if edge_soul == NULL:
+        if edge_soul is None:
             raise IndexError("%d is out of bounds"%i)
             
         return Edge.from_pointer( edge_soul )
@@ -160,7 +158,7 @@ class Graph(CShadow):
     def vertices(self):
         self.check_destroyed()
         
-        count = c_int()
+        count = c_long()
         p_va = lgs.gVertices(self.soul, byref(count))
         verts = []
         arr = cast(p_va, POINTER(c_void_p)) # a bit of necessary voodoo
@@ -277,11 +275,11 @@ class ShortestPathTree(CShadow):
         self._cdel(self.soul)
         self.soul = None
             
-    def add_vertex(self, shadow):
+    def add_vertex(self, shadow, hop=0):
         #Vertex* sptAddVertex( ShortestPathTree* this, char *label );
         self.check_destroyed()
         
-        return self._cadd_vertex(self.soul, shadow.soul)
+        return self._cadd_vertex(self.soul, shadow.soul, hop)
         
     def remove_vertex(self, label):
         #void sptRemoveVertex( ShortestPathTree* this, char *label, int free_vertex_payload, int free_edge_payloads );
@@ -310,7 +308,7 @@ class ShortestPathTree(CShadow):
     def vertices(self):
         self.check_destroyed()
         
-        count = c_int()
+        count = c_long()
         p_va = lgs.sptVertices(self.soul, byref(count))
         verts = []
         arr = cast(p_va, POINTER(c_void_p)) # a bit of necessary voodoo
@@ -355,6 +353,9 @@ class ShortestPathTree(CShadow):
         
         path_pointer = lgs.sptPathRetro( self.soul, origin )
         
+        if path_pointer is None:
+            return (None, None)
+            
         path = Path.from_address( path_pointer )
         
         vertices = [path.getVertex( i ) for i in range(path.num_elements+1)]

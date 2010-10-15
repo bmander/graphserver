@@ -28,7 +28,7 @@ struct ServicePeriod {
 } ;
 
 ServiceCalendar*
-scNew( );
+scNew(void);
 
 int
 scAddServiceId( ServiceCalendar* this, char* service_id );
@@ -39,8 +39,9 @@ scGetServiceIdString( ServiceCalendar* this, int service_id );
 int
 scGetServiceIdInt( ServiceCalendar* this, char* service_id );
 
-int
-scGetOrAddServiceIdInt( ServiceCalendar* this, char* service_id );
+// TODO
+//int
+//scGetOrAddServiceIdInt( ServiceCalendar* this, char* service_id );
 
 void
 scAddPeriod( ServiceCalendar* this, ServicePeriod* period );

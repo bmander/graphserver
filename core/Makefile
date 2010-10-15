@@ -62,6 +62,7 @@ endif
 	@rm -f $*.d.tmp
 -include $(OBJECTS:.o=.d)
 
+
 libgraphserver.so: $(OBJECTS)
 	cc -shared -o $@ $(OBJECTS) $(LDFLAGS)
 
@@ -78,4 +79,4 @@ install:
 	cp hashtable/hashtable_private.h $(PREFIX)/include/graphserver
 
 clean:
-	rm -f *.o *.so *~ *.d
+	rm -f *.{o,so,~,d} */*.{o,so,~,d} 

@@ -13,6 +13,8 @@
   #define INFINITY 1000000000
 #endif
 
+const size_t EDGEPAYLOAD_ENUM_SIZE = sizeof(edgepayload_t);
+
 //GRAPH FUNCTIONS
 
 Graph*
@@ -208,22 +210,24 @@ gShortestPath( Graph* this, char *from, char *to, State* init_state, int directi
 
 Path *
 sptPathRetro(Graph* g, char* origin_label) {
-	Vertex* curr = gGetVertex(g, origin_label);
-	ListNode* incoming = NULL;
-	Edge* edge = NULL;
+  Vertex* curr = gGetVertex(g, origin_label);
+  ListNode* incoming = NULL;
+  Edge* edge = NULL;
     
-    Path *path = pathNew(curr, 50, 50);
-	
-    // trace backwards up the tree until the current vertex has no parents
-	while ((incoming = vGetIncomingEdgeList(curr))) {
-        
-		edge = liGetData(incoming);
-		curr = eGetFrom(edge);
-        
-        pathAddSegment( path, curr, edge );
-	}
+  if (!curr) return NULL;
 
-	return path;	
+  Path *path = pathNew(curr, 50, 50);
+	
+  // trace backwards up the tree until the current vertex has no parents
+  while ((incoming = vGetIncomingEdgeList(curr))) {
+        
+    edge = liGetData(incoming);
+    curr = eGetFrom(edge);
+        
+    pathAddSegment( path, curr, edge );
+  }
+
+  return path;	
 }
 
 long
