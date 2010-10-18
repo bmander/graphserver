@@ -328,7 +328,7 @@ class GeomAtStreetEndEvent:
         
     @staticmethod
     def applies_to(edge1, vertex, edge2):
-        # if edge1 is not a street and edge2 is
+        # if edge2 is not a street and edge1 is
         return (edge2 is None or not isinstance(edge2.payload, graphserver.core.Street)) and \
                (edge1 and isinstance(edge1.payload, graphserver.core.Street))
     
