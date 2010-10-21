@@ -106,8 +106,8 @@ class OSMDB:
         
     def setup(self):
         c = self.get_cursor()
-        c.execute( "CREATE TABLE nodes (id TEXT, tags TEXT, lat FLOAT, lon FLOAT, endnode_refs INTEGER DEFAULT 1)" )
-        c.execute( "CREATE TABLE ways (id TEXT, tags TEXT, nds TEXT)" )
+        c.execute( "CREATE TABLE nodes (id TEXT UNIQUE, tags TEXT, lat FLOAT, lon FLOAT, endnode_refs INTEGER DEFAULT 1)" )
+        c.execute( "CREATE TABLE ways (id TEXT UNIQUE, tags TEXT, nds TEXT)" )
         self.conn.commit()
         c.close()
         
@@ -120,8 +120,8 @@ class OSMDB:
         self.conn.commit()
         c.close()
         
-    def populate(self, osm_filename, dryrun=False, accept=lambda tags: True, reporter=None):
-        print "importing osm from XML to sqlite database"
+    def populate(self, osm_filename, dryrun=False, accept=lambda tags: True, reporter=None, create_indexes=True):
+        print "importing %s osm from XML to sqlite database" % osm_filename
         
         c = self.get_cursor()
         
@@ -176,7 +176,7 @@ class OSMDB:
         self.conn.commit()
         c.close()
         
-        if not dryrun:
+        if not dryrun and create_indexes:
             print "indexing primary tables...",
             self.create_indexes()
         
@@ -310,7 +310,7 @@ class OSMDB:
         else:
             close_cursor = False
             
-        curs.execute("INSERT INTO ways (id, tags, nds) VALUES (?, ?, ?)", (way.id, json.dumps(way.tags), json.dumps(way.nd_ids) ))
+        curs.execute("INSERT OR IGNORE INTO ways (id, tags, nds) VALUES (?, ?, ?)", (way.id, json.dumps(way.tags), json.dumps(way.nd_ids) ))
         
         if close_cursor:
             self.conn.commit()
@@ -323,7 +323,7 @@ class OSMDB:
         else:
             close_cursor = False
             
-        curs.execute("INSERT INTO nodes (id, tags, lat, lon) VALUES (?, ?, ?, ?)", ( node.id, json.dumps(node.tags), node.lat, node.lon ) )
+        curs.execute("INSERT OR IGNORE INTO nodes (id, tags, lat, lon) VALUES (?, ?, ?, ?)", ( node.id, json.dumps(node.tags), node.lat, node.lon ) )
         
         if close_cursor:
             self.conn.commit()
@@ -476,31 +476,38 @@ def test_wayrecord():
     assert wr.tags == {'highway':'bumpkis'}
     assert wr.nds == ['1','2','3']
 
-def osm_to_osmdb(osm_filename, osmdb_filename, tolerant=False, skipload=False):
+def osm_to_osmdb(osm_filenames, osmdb_filename, tolerant=False, skipload=False):
     osmdb = OSMDB( osmdb_filename, overwrite=True )
 
-    if not skipload:
-      osmdb.populate( osm_filename, accept=lambda tags: 'highway' in tags, reporter=sys.stdout )
+    if isinstance(osm_filenames, basestring):
+        osm_filenames = [osm_filenames]
 
+    for osm_filename in osm_filenames:
+        if not skipload:
+            osmdb.populate( osm_filename, accept=lambda tags: 'highway' in tags, reporter=sys.stdout, create_indexes=False )
+
+    if not skipload:
+        print "indexing primary tables...",
+        osmdb.create_indexes()
+        
     osmdb.create_and_populate_edges_table(tolerant)
 
 from optparse import OptionParser
 def main():
     from sys import argv
     
-    parser = OptionParser(usage="%prog [options] osm_filename osmdb_filename")
+    parser = OptionParser(usage="%prog [options] osm_filename [osm_filename ...] osmdb_filename")
     parser.add_option( "-t", "--tolerant", dest="tolerant",
                        action="store_true" )
     parser.add_option( "-d", "--dryrun", dest="dryrun", help="Just read the OSM file; don't copy anything to a database", action="store_true" )
     
     (options, args) = parser.parse_args()
     
-    if len(args) != 2:
+    if len(args) < 2:
         parser.error("incorrect number of arguments")
-        
-    osm_filename, osmdb_filename = args
-        
-    osm_to_osmdb(osm_filename, osmdb_filename, options.tolerant, options.dryrun)
+    osmdb_filename = args.pop()
+
+    osm_to_osmdb(args, osmdb_filename, options.tolerant, options.dryrun)
 
 if __name__=='__main__':
     main()
