@@ -1,4 +1,4 @@
-from graphserver.core import Graph, TripBoard, HeadwayBoard, HeadwayAlight, Crossing, TripAlight, Timezone, Street, Link
+from graphserver.core import Graph, TripBoard, HeadwayBoard, HeadwayAlight, Crossing, TripAlight, Timezone, Street, Link, ElapseTime
 from optparse import OptionParser
 from graphserver.graphdb import GraphDatabase
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
@@ -179,20 +179,20 @@ class GTFSGraphCompiler:
             
             assert conn_type == None or type(conn_type) == int
             if conn_type in (0, None): # This is a recommended transfer point between two routes
-                if min_transfer_time == None:
+                if min_transfer_time in ("", None):
                     yield (s1, s2, Link())
                     yield (s2, s1, Link())
                 else:
-                    yield (s1, s2, ElapseTime(min_transfer_time))
-                    yield (s2, s1, ElapseTime(min_transfer_time))                    
+                    yield (s1, s2, ElapseTime(int(min_transfer_time)))
+                    yield (s2, s1, ElapseTime(int(min_transfer_time)))
             elif conn_type == 1: # This is a timed transfer point between two routes
                 yield (s1, s2, Link())
                 yield (s2, s1, Link())
             elif conn_type == 2: # This transfer requires a minimum amount of time
-                yield (s1, s2, ElapseTime(min_transfer_time))
-                yield (s2, s1, ElapseTime(min_transfer_time))                    
+                yield (s1, s2, int(ElapseTime(min_transfer_time)))
+                yield (s2, s1, int(ElapseTime(min_transfer_time)))
             elif conn_type == 3: # Transfers are not possible between routes at this location. 
-                assert False, "Support for no-transfer (transfers.txt transfer_type=3) not implemented."
+                print "WARNING: Support for no-transfer (transfers.txt transfer_type=3) not implemented."
 
     def gtfsdb_to_edges( self, maxtrips=None ):
         for edge_tuple in self.gtfsdb_to_scheduled_edges(maxtrips):
