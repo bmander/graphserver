@@ -152,7 +152,7 @@ class GraphDatabase:
             
     def store(self, name, obj, c=None):
         cc = self.conn.cursor() if c is None else c
-        resource_count = list(c.execute( "SELECT count(*) FROM resources WHERE name = ?", (name,) ))[0][0]
+        resource_count = list(cc.execute( "SELECT count(*) FROM resources WHERE name = ?", (name,) ))[0][0]
         if resource_count == 0:
             cc.execute( "INSERT INTO resources VALUES (?, ?)", (name, cPickle.dumps( obj )) )
             if not c: self.conn.commit()
