@@ -165,7 +165,7 @@ class OSMDB:
                     if superself.n_ways%5000==0:
                         print "way %d"%superself.n_ways
                     superself.n_ways += 1
-                    if not dryrun: superself.add_way( self.currElem, c )
+                    if not dryrun and accept(self.currElem.tags): superself.add_way( self.currElem, c )
 
             @classmethod
             def characters(self, chars):
