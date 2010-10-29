@@ -491,6 +491,8 @@ def osm_to_osmdb(osm_filenames, osmdb_filename, tolerant=False, skipload=False):
         osmdb.create_indexes()
         
     osmdb.create_and_populate_edges_table(tolerant)
+    if osmdb.count_edges() == 0:
+        print "WARNING: osmdb has no edges!"
 
 from optparse import OptionParser
 def main():
