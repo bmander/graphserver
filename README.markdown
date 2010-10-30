@@ -6,7 +6,7 @@ through GTFS, and street-based modes through OSM.
 The core graphserver library has Python bindings which provide easy construction, 
 storage, and analysis of graph objects.
 
-Learn more about Graphserver at [http://graphserver.github.com/graphserver/]
+Learn more about Graphserver at [http://graphserver.github.com/graphserver/](http://graphserver.github.com/graphserver/)
 
 ## PYTHON BINDINGS
 
@@ -14,42 +14,43 @@ Learn more about Graphserver at [http://graphserver.github.com/graphserver/]
 Python 2.6+ (or 2.5+ for only graphserver.core)
 
 ### Build
-> $ cd pygs
-> $ sudo python2.6 setup.py install
+
+  $ cd pygs
+  $ sudo python2.6 setup.py install
 
 setup.py installs several executables.  On debian these go into /usr/local/bin/*.
 On Mac OS X, these go into
 /Library/Frameworks/Python.framework/Versions/2.6/bin/*
 
 #### gs_gtfsdb_compile: create a GTFSDatabase (sqlite3 db) from a GTFS zip file
-> $ gs_gtfsdb_compile test/google_transit.zip test/google_transit.zip.gtfsdb
+  $ gs_gtfsdb_compile test/google_transit.zip test/google_transit.zip.gtfsdb
 
 #### gs_gtfsdb_inspect: run a query against a GTFSDatabase
-> $ gs_gtfsdb_inspect test/google_transit.zip.gtfsdb "select * from agency"
+  $ gs_gtfsdb_inspect test/google_transit.zip.gtfsdb "select * from agency"
 
 #### gs_osmdb_compile: compile an OSMDB from an OSM xml file
-> $ (cd test && unzip map.osm.zip)
-> $ gs_osmdb_compile test/map.osm test/map.osmdb>
+  $ (cd test && unzip map.osm.zip)
+  $ gs_osmdb_compile test/map.osm test/map.osmdb>
 
 #### gs_osmfilter: run one of the filter classes from graphserver.ext.osm.osmfilters on an OSMDB instance
-> $ gs_osmfilter <Filter Name> <run|rerun|visualize> <osmdb_file> [<filter args> ...]
+  $ gs_osmfilter <Filter Name> <run|rerun|visualize> <osmdb_file> [<filter args> ...]
 
 #### gs_compile_gdb: the a graph compiler; accepts compiled GTFSDatabase(s) and/or a compiled OSMDB as inputs
->   # compile only GTFS data
-> $ gs_compile_gdb` -g bart.gtfsdb bart.gdb
->   # compile an OSM street graph only
-> $ gs_compile_gdb -o pygs/test/map.osmdb map.gdb
->   # compile GTFS with OSM
-> $ gs_compile_gdb -o pygs/test/map.osmdb -g bart.gtfsdb bart_with_streets.gdb
->   # compile multiple GTFS files into one graph 
-> $ gs_compile_gdb -g A.gtfsdb -g B.gtfsdb -g ... 
+    # compile only GTFS data
+  $ gs_compile_gdb` -g bart.gtfsdb bart.gdb
+    # compile an OSM street graph only
+  $ gs_compile_gdb -o pygs/test/map.osmdb map.gdb
+    # compile GTFS with OSM
+  $ gs_compile_gdb -o pygs/test/map.osmdb -g bart.gtfsdb bart_with_streets.gdb
+    # compile multiple GTFS files into one graph 
+  $ gs_compile_gdb -g A.gtfsdb -g B.gtfsdb -g ... 
    
 
 #### Test a successful installation:
-> $ python2.6 -c "import graphserver.core; graphserver.core.Graph(); print 'Graphserver can be imported'"
+  $ python2.6 -c "import graphserver.core; graphserver.core.Graph(); print 'Graphserver can be imported'"
 
 #### Run the test harness (in verbose mode):
-> user@graphserver/pygs$ python2.6 setup.py nosetests -v
+  user@graphserver/pygs$ python2.6 setup.py nosetests -v
 
 ## C .dll/.so
 
@@ -57,10 +58,10 @@ Provides the core DLL for routing. It is not necessary to manually build this if
 using the Python bindings.
 
 Build:
-> $ cd core
-> $ make
+  $ cd core
+  $ make
 
 Install:
-> $ cd core
-> $ sudo make install
+  $ cd core
+  $ sudo make install
 
