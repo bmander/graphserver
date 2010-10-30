@@ -529,7 +529,7 @@ def main_inspect_gtfsdb():
 
 from optparse import OptionParser
 
-def main_build_gtfsdb():
+def main_compile_gtfsdb():
     parser = OptionParser()
     parser.add_option("-t", "--table", dest="tables", action="append", default=[], help="copy over only the given tables")
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False, help="make a bunch of noise" )
@@ -550,4 +550,4 @@ def main_build_gtfsdb():
 
 
 if __name__=='__main__': 
-    main_build_gtfsdb()
+    main_compile_gtfsdb()

@@ -24,8 +24,8 @@ setup.py installs several executables.  On debian these go into /usr/local/bin/*
 On Mac OS X, these go into
 /Library/Frameworks/Python.framework/Versions/2.6/bin/*
 
-  gs_gtfsdb_build: create a GTFSDatabase (sqlite3 db) from a GTFS zip file
-  $ gs_gtfsdb_build test/google_transit.zip test/google_transit.zip.gtfsdb
+  gs_gtfsdb_compile: create a GTFSDatabase (sqlite3 db) from a GTFS zip file
+  $ gs_gtfsdb_compile test/google_transit.zip test/google_transit.zip.gtfsdb
 
   gs_gtfsdb_inspect: run a query against a GTFSDatabase
   $ gs_gtfsdb_inspect test/google_transit.zip.gtfsdb "select * from agency"

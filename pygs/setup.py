@@ -33,7 +33,7 @@ setup(  name='graphserver',
             'console_scripts': [
                 'gs_osmfilter = graphserver.ext.osm.osmfilters:main',
                 'gs_osmdb_compile = graphserver.ext.osm.osmdb:main',
-                'gs_gtfsdb_build = graphserver.ext.gtfs.gtfsdb:main_build_gtfsdb',
+                'gs_gtfsdb_compile = graphserver.ext.gtfs.gtfsdb:main_compile_gtfsdb',
                 'gs_gtfsdb_inspect = graphserver.ext.gtfs.gtfsdb:main_inspect_gtfsdb',
                 'gs_crawl = graphserver.ext.graphcrawler:main',
                 'gs_new = graphserver.compiler.gdb_new:main',
