@@ -189,8 +189,8 @@ class GTFSGraphCompiler:
                 yield (s1, s2, Link())
                 yield (s2, s1, Link())
             elif conn_type == 2: # This transfer requires a minimum amount of time
-                yield (s1, s2, int(ElapseTime(min_transfer_time)))
-                yield (s2, s1, int(ElapseTime(min_transfer_time)))
+                yield (s1, s2, ElapseTime(int(min_transfer_time)))
+                yield (s2, s1, ElapseTime(int(min_transfer_time)))
             elif conn_type == 3: # Transfers are not possible between routes at this location. 
                 print "WARNING: Support for no-transfer (transfers.txt transfer_type=3) not implemented."
 
