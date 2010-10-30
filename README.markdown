@@ -8,7 +8,7 @@ storage, and analysis of graph objects.
 
 Learn more about Graphserver at [http://graphserver.github.com/graphserver/](http://graphserver.github.com/graphserver/)
 
-## PYTHON BINDINGS
+## INSTALLATION
 
 ### Prerequisites
 Python 2.6+ (or 2.5+ for only graphserver.core)
@@ -21,6 +21,14 @@ Python 2.6+ (or 2.5+ for only graphserver.core)
 setup.py installs several executables.  On debian these go into /usr/local/bin/*.
 On Mac OS X, these go into
 /Library/Frameworks/Python.framework/Versions/2.6/bin/*
+
+### Test a successful installation:
+    $ python2.6 -c "import graphserver.core; graphserver.core.Graph(); print 'Graphserver can be imported'"
+
+### Run the test harness (in verbose mode):
+    $ python2.6 setup.py nosetests -v
+
+## TOOLS
 
 #### gs_gtfsdb_compile: create a GTFSDatabase (sqlite3 db) from a GTFS zip file
     $ gs_gtfsdb_compile test/google_transit.zip test/google_transit.zip.gtfsdb
@@ -45,14 +53,7 @@ On Mac OS X, these go into
     # compile multiple GTFS files into one graph 
     $ gs_compile_gdb -g A.gtfsdb -g B.gtfsdb -g ... 
    
-
-#### Test a successful installation:
-    $ python2.6 -c "import graphserver.core; graphserver.core.Graph(); print 'Graphserver can be imported'"
-
-#### Run the test harness (in verbose mode):
-    $ python2.6 setup.py nosetests -v
-
-## C .dll/.so
+## Building just the C .dll/.so
 
 Provides the core DLL for routing. It is not necessary to manually build this if
 using the Python bindings.
