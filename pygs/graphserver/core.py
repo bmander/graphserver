@@ -197,10 +197,14 @@ class Graph(CShadow):
             walk_options = WalkOptions()
             ret = self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(maxtime), c_int(hoplimit), c_long(weightlimit) )
             walk_options.destroy()
-            return ret
         else:
-            return self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(maxtime), c_int(hoplimit), c_long(weightlimit) )
+            ret = self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(maxtime), c_int(hoplimit), c_long(weightlimit) )
         
+        if ret is None:
+	  raise Exception( "Could not create shortest path tree" ) # this shouldn't happen; TODO: more descriptive error
+
+	return ret
+
     def shortest_path_tree_retro(self, fromv, tov, finalstate, walk_options=None, mintime=0, hoplimit=1000000, weightlimit=2000000000):
         #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
         self.check_destroyed()
@@ -211,9 +215,13 @@ class Graph(CShadow):
             walk_options = WalkOptions()
             ret = self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime), c_int(hoplimit), c_long(weightlimit) )
             walk_options.destroy()
-            return ret
         else:
-            return self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime), c_int(hoplimit), c_long(weightlimit) )
+            ret = self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime), c_int(hoplimit), c_long(weightlimit) )
+
+        if ret is None:
+	  raise Exception( "Could not create shortest path tree" ) # this shouldn't happen; TODO: more descriptive error
+
+        return ret
 
     def to_dot(self):
         self.check_destroyed()
@@ -354,7 +362,7 @@ class ShortestPathTree(CShadow):
         path_pointer = lgs.sptPathRetro( self.soul, origin )
         
         if path_pointer is None:
-            return (None, None)
+	    raise Exception( "A path to %s could not be found"%origin )
             
         path = Path.from_address( path_pointer )
         
