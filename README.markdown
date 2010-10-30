@@ -37,13 +37,13 @@ On Mac OS X, these go into
 
 #### gs_compile_gdb: the a graph compiler; accepts compiled GTFSDatabase(s) and/or a compiled OSMDB as inputs
     # compile only GTFS data
-  $ gs_compile_gdb` -g bart.gtfsdb bart.gdb
+    $ gs_compile_gdb` -g bart.gtfsdb bart.gdb
     # compile an OSM street graph only
-  $ gs_compile_gdb -o pygs/test/map.osmdb map.gdb
+    $ gs_compile_gdb -o pygs/test/map.osmdb map.gdb
     # compile GTFS with OSM
-  $ gs_compile_gdb -o pygs/test/map.osmdb -g bart.gtfsdb bart_with_streets.gdb
+    $ gs_compile_gdb -o pygs/test/map.osmdb -g bart.gtfsdb bart_with_streets.gdb
     # compile multiple GTFS files into one graph 
-  $ gs_compile_gdb -g A.gtfsdb -g B.gtfsdb -g ... 
+    $ gs_compile_gdb -g A.gtfsdb -g B.gtfsdb -g ... 
    
 
 #### Test a successful installation:
