@@ -6,7 +6,7 @@ through GTFS, and street-based modes through OSM.
 The core graphserver library has Python bindings which provide easy construction, 
 storage, and analysis of graph objects.
 
-Learn more about Graphserver at http://graphserver.github.com/graphserver/
+Learn more about Graphserver at [http://graphserver.github.com/graphserver/]
 
 ## PYTHON BINDINGS
 
@@ -14,8 +14,8 @@ Learn more about Graphserver at http://graphserver.github.com/graphserver/
 Python 2.6+ (or 2.5+ for only graphserver.core)
 
 ### Build
-$ cd pygs
-$ sudo python2.6 setup.py install
+> $ cd pygs
+> $ sudo python2.6 setup.py install
 
 setup.py installs several executables.  On debian these go into /usr/local/bin/*.
 On Mac OS X, these go into
