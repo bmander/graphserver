@@ -30,28 +30,32 @@ On Mac OS X, these go into
 
 ## TOOLS
 
-#### gs_gtfsdb_compile: create a GTFSDatabase (sqlite3 db) from a GTFS zip file
-    $ gs_gtfsdb_compile test/google_transit.zip test/google_transit.zip.gtfsdb
+#### gs_gtfsdb_compile
+Create a GTFSDatabase (sqlite3 db) from a GTFS zip file
+    $ gs_gtfsdb_compile google_transit.zip google_transit.gtfsdb
 
-#### gs_gtfsdb_inspect: run a query against a GTFSDatabase
-    $ gs_gtfsdb_inspect test/google_transit.zip.gtfsdb "select * from agency"
+#### gs_osmdb_compile
+Create a OSM database (sqlite3 db) from an OSM xml file
+    $ gs_osmdb_compile map.osm map.osmdb
 
-#### gs_osmdb_compile: compile an OSMDB from an OSM xml file
-    $ (cd test && unzip map.osm.zip)
-    $ gs_osmdb_compile test/map.osm test/map.osmdb>
+#### gs_new
+Create a new graph file
+    $ gs_new foobar.gdb
+
+#### gs_import_osm
+Import an OSM database to a graph file
+    $ gs_import_osm foobar.gdb map.osmdb
+
+#### gs_import_gtfs
+Import a GTFS database to a graph file
+    $ gs_import_gtfs foobar.gdb google_transit.gtfsdb
+
+#### gs_link_osm_gtfs
+Link OSM vertices to GTFS vertices to enable multimodal trip planning
+    $ gs_link_osm_gtfs foobar.gdb map.osmdb google_transit.gtfsdb
 
 #### gs_osmfilter: run one of the filter classes from graphserver.ext.osm.osmfilters on an OSMDB instance
     $ gs_osmfilter <Filter Name> <run|rerun|visualize> <osmdb_file> [<filter args> ...]
-
-#### gs_compile_gdb: the a graph compiler; accepts compiled GTFSDatabase(s) and/or a compiled OSMDB as inputs
-    # compile only GTFS data
-    $ gs_compile_gdb` -g bart.gtfsdb bart.gdb
-    # compile an OSM street graph only
-    $ gs_compile_gdb -o pygs/test/map.osmdb map.gdb
-    # compile GTFS with OSM
-    $ gs_compile_gdb -o pygs/test/map.osmdb -g bart.gtfsdb bart_with_streets.gdb
-    # compile multiple GTFS files into one graph 
-    $ gs_compile_gdb -g A.gtfsdb -g B.gtfsdb -g ... 
    
 ## Building just the C .dll/.so
 
