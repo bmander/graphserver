@@ -126,14 +126,9 @@ class TestGraph(unittest.TestCase):
         e = g.add_edge("home", "work", s)
         g.add_edge("work", "home", Street("backwards",1) )
         
-        spt = g.shortest_path_tree("bogus", "work", State(g.numagencies,0), WalkOptions())
+        self.assertRaises(Exception, g.shortest_path_tree, "bogus", "work", State(g.numagencies,0), WalkOptions())
         
-        assert spt == None
-        
-        spt = g.shortest_path_tree_retro("home", "bogus", State(g.numagencies,0), WalkOptions())
-        
-        assert spt == None
-        
+        self.assertRaises(Exception, g.shortest_path_tree_retro, "home", "bogus", State(g.numagencies,0), WalkOptions())
         
     def test_spt_retro(self):
         
