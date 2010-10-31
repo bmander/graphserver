@@ -8,7 +8,7 @@ subprocess.call(["make","-s", "-C","../core"])
 subprocess.call(["cp",LIBSO,"graphserver/"])
 
 setup(  name='graphserver',
-        version='0.1',
+        version='1.0.0',
         packages = find_packages(exclude=['examples.*','examples','test','test.*']),
         install_requires=['pytz>=2008b','servable>=2009b','nose>=0.10.4'], 
         zip_safe=False,
