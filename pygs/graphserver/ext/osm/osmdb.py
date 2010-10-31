@@ -7,7 +7,7 @@ except ImportError:
 import sys
 import xml.sax
 import binascii
-from vincenty import vincenty
+from graphserver.vincenty import vincenty
 from struct import pack, unpack
 from rtree import Rtree
 

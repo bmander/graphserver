@@ -1,7 +1,7 @@
 import xml.sax
 import copy
 from math import *
-from vincenty import vincenty
+from graphserver.vincenty import vincenty
 
 INFINITY = float('inf')
 
@@ -274,12 +274,3 @@ class OSM:
             
         return (l,b,r,t)
         
-if __name__=='__main__':
-    fp = download_osm( -122.326884, 47.684496, -122.319417, 47.689638 )
-    osm = OSM( fp )
-    for way in osm.ways.values():
-        print( way.length() )
-        print( way.fromv )
-        print( way.tov )
-    for node in osm.nodes:
-        print( node )
