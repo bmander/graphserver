@@ -1,10 +1,11 @@
 from graphserver.core import Graph, TripBoard, HeadwayBoard, HeadwayAlight, Crossing, TripAlight, Timezone, Street, Link, ElapseTime
 from optparse import OptionParser
 from graphserver.graphdb import GraphDatabase
-from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
+from graphserver.ext.gtfs.gtfsdb import GTFSDatabase, parse_gtfs_date
 import sys
 import pytz
 from tools import service_calendar_from_timezone
+import datetime
 
 def cons(ary):
     for i in range(len(ary)-1):
@@ -109,7 +110,7 @@ class GTFSGraphCompiler:
                     to_patternstop_vx_name, 
                     crossing )
 
-    def gtfsdb_to_scheduled_edges(self, maxtrips=None):
+    def gtfsdb_to_scheduled_edges(self, maxtrips=None, service_ids=None):
         
         # compile trip bundles from gtfsdb
         if self.reporter: self.reporter.write( "Compiling trip bundles...\n" )
@@ -122,6 +123,9 @@ class GTFSGraphCompiler:
             if self.reporter: self.reporter.write( "%d/%d loading %s\n"%(i+1, n_bundles, bundle) )
             
             for service_id in [x.encode("ascii") for x in self.gtfsdb.service_ids()]:
+                if service_ids is not None and service_id not in service_ids:
+		    continue
+
                 for fromv_label, tov_label, edge in self.bundle_to_boardalight_edges(bundle, service_id):
                     yield fromv_label, tov_label, edge
 
@@ -194,8 +198,8 @@ class GTFSGraphCompiler:
             elif conn_type == 3: # Transfers are not possible between routes at this location. 
                 print "WARNING: Support for no-transfer (transfers.txt transfer_type=3) not implemented."
 
-    def gtfsdb_to_edges( self, maxtrips=None ):
-        for edge_tuple in self.gtfsdb_to_scheduled_edges(maxtrips):
+    def gtfsdb_to_edges( self, maxtrips=None, service_ids=None ):
+        for edge_tuple in self.gtfsdb_to_scheduled_edges(maxtrips, service_ids=service_ids):
             yield edge_tuple
 
         for edge_tuple in self.gtfsdb_to_headway_edges(maxtrips):
@@ -204,12 +208,20 @@ class GTFSGraphCompiler:
         for edge_tuple in self.gtfsdb_to_transfer_edges():
             yield edge_tuple
 
-def gdb_load_gtfsdb(gdb, agency_namespace, gtfsdb, cursor, agency_id=None, maxtrips=None, reporter=sys.stdout):
+def gdb_load_gtfsdb(gdb, agency_namespace, gtfsdb, cursor, agency_id=None, maxtrips=None, sample_date=None, reporter=sys.stdout):
+
+    # determine which service periods run on the given day, if a day is given
+    if sample_date is not None:
+        sample_date = datetime.date( *parse_gtfs_date( sample_date ) )
+	acceptable_service_ids = gtfsdb.service_periods( sample_date )
+	print "Importing only service periods operating on %s: %s"%(sample_date, acceptable_service_ids)
+    else:
+        acceptable_service_ids = None
 
     compiler = GTFSGraphCompiler( gtfsdb, agency_namespace, agency_id, reporter )
     c = gdb.get_cursor()
     v_added = set([])
-    for fromv_label, tov_label, edge in compiler.gtfsdb_to_edges( maxtrips ):
+    for fromv_label, tov_label, edge in compiler.gtfsdb_to_edges( maxtrips, service_ids=acceptable_service_ids ):
         if fromv_label not in v_added:
             gdb.add_vertex( fromv_label, c )
             v_added.add(fromv_label)
@@ -237,6 +249,7 @@ def main():
     parser.add_option("-n", "--namespace", dest="namespace", default="0",
                       help="agency namespace")
     parser.add_option("-m", "--maxtrips", dest="maxtrips", default=None, help="maximum number of trips to load")
+    parser.add_option("-d", "--date", dest="sample_date", default=None, help="only load transit running on a given day. YYYYMMDD" )
     
     (options, args) = parser.parse_args()
     
@@ -254,7 +267,7 @@ def main():
     gdb = GraphDatabase( graphdb_filename, overwrite=False )
     
     maxtrips = int(options.maxtrips) if options.maxtrips else None
-    gdb_load_gtfsdb( gdb, options.namespace, gtfsdb, gdb.get_cursor(), agency_id, maxtrips=maxtrips)
+    gdb_load_gtfsdb( gdb, options.namespace, gtfsdb, gdb.get_cursor(), agency_id, maxtrips=maxtrips, sample_date=options.sample_date)
     gdb.commit()
     
     print "done"
