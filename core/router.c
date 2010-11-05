@@ -105,6 +105,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
       if(new_dv->weight < du->weight) {
         fprintf(stderr, "Negative weight (%s(%ld) -> %s(%ld))\n",edge->from->label, du->weight, edge->to->label, new_dv->weight);
         edges = edges->next;
+	stateDestroy( new_dv );
         continue;
       }
 
