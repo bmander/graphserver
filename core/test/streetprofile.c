@@ -86,6 +86,7 @@ int main() {
     }
     
     gDestroy(gg);
+    woDestroy( wo );
     
     return 1;
 } 
