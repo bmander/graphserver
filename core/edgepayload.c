@@ -38,6 +38,15 @@ epDestroy( EdgePayload* this ) {
     case PL_EGRESS:
       egressDestroy( (Egress*)this ); 
       break;
+    case PL_TRIPBOARD:
+      tbDestroy( (TripBoard*)this );
+      break;
+    case PL_ALIGHT:
+      alDestroy( (TripAlight*)this );
+      break;
+    case PL_CROSSING:
+      crDestroy( (Crossing*)this );
+      break;
     default:
       free( this );
   }
