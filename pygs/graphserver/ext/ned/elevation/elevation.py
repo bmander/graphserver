@@ -2,7 +2,7 @@ import os
 import re
 import struct
 from math import floor
-from vincenty import vincenty
+from graphserver.vincenty import vincenty
 
 def floatrange(start, stop, step):
     i = start

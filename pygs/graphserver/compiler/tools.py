@@ -10,6 +10,11 @@ def iter_dates(startdate, enddate):
         currdate += timedelta(1)
     
 def service_calendar_from_timezone(gtfsdb, timezone_name):
+
+    MAX_CALENDAR_SIZE = 1024
+    sc_count = list(gtfsdb.execute( "SELECT DISTINCT count(*) FROM (SELECT service_id FROM calendar_dates UNION SELECT service_id FROM calendar )" ))[0][0]
+    if sc_count > MAX_CALENDAR_SIZE:
+        raise Exception( "Service period count %d is greater than the maximum of %d"%(sc_count, MAX_CALENDAR_SIZE) )
     
     timezone = pytz.timezone( timezone_name )
 

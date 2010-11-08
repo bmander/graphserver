@@ -1,7 +1,7 @@
 from graphserver.core import Graph, Link, Street, State
 from osmdb import OSMDB
 import time
-from vincenty import vincenty as dist_earth
+from graphserver.vincenty import vincenty as dist_earth
 try:
   import json
 except ImportError:

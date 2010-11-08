@@ -26,6 +26,7 @@ def main():
 
     n_stops = gtfsdb.count_stops()
 
+    c = gdb.get_cursor()
     for i, (stop_id, stop_name, stop_lat, stop_lon) in enumerate( gtfsdb.stops() ):
         print "%d/%d"%(i,n_stops)
         
@@ -35,8 +36,10 @@ def main():
         
         print station_vertex_id, osm_vertex_id
         
-        gdb.add_edge( station_vertex_id, osm_vertex_id, Link() )
-        gdb.add_edge( osm_vertex_id, station_vertex_id, Link() )
-
+        gdb.add_edge( station_vertex_id, osm_vertex_id, Link(), c )
+        gdb.add_edge( osm_vertex_id, station_vertex_id, Link(), c )
+    
+    gdb.commit()
+    
 if __name__=='__main__':
     main()

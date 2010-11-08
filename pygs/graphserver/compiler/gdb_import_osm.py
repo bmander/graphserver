@@ -41,7 +41,7 @@ def edges_from_osmdb(osmdb, vertex_namespace, slogs, profiledb=None):
         
         # Create edges to be inserted into graph
         s1 = Street( id, distance, rise, fall )
-        s2 = Street( id, distance, fall, rise )
+        s2 = Street( id, distance, fall, rise, reverse_of_source=True )
         s1.way = street_id
         s2.way = street_id
         
@@ -60,12 +60,12 @@ def edges_from_osmdb(osmdb, vertex_namespace, slogs, profiledb=None):
 def gdb_import_osm(gdb, osmdb, vertex_namespace, slogs, profiledb=None):
     cursor = gdb.get_cursor()
 	
-    n_edges = osmdb.count_edges()
+    n_edges = osmdb.count_edges()*2   # two edges for each bidirectional edge
     
     # for each edge in the osmdb
     for i, (vertex1_label, vertex2_label, edge ) in enumerate( edges_from_osmdb( osmdb, vertex_namespace, slogs, profiledb ) ):
         
-        if i%(n_edges//100+1)==0: sys.stdout.write( "%d/%d edges loaded\r\n"%(i, n_edges))
+        if i%(n_edges//100+1)==0: sys.stdout.write( "%d/~%d edges loaded\r\n"%(i, n_edges))
             
         gdb.add_vertex( vertex1_label, cursor )
         gdb.add_vertex( vertex2_label, cursor )

@@ -39,7 +39,7 @@ int main() {
         tbAddBoarding(tb, tripid, depart, 0);
         gAddEdge( gg, fromv, frompsv, (EdgePayload*)tb );
         
-        Crossing* cr = crNew( crossing );
+        Crossing* cr = crNew( );
         gAddEdge( gg, frompsv, topsv, (EdgePayload*)cr );
         
         TripAlight* al = alNew( 0, sc, tz, 0 );

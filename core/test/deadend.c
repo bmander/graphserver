@@ -32,6 +32,7 @@ int main() {
     ShortestPathTree* spt = gShortestPathTree( gg, "A", "B", initstate, wo, 1000000, 1000000, 1000000 );
     
     sptDestroy(spt);
+    woDestroy( wo );
     gDestroy(gg);
     tzDestroy( tz );
     scDestroy( cal );

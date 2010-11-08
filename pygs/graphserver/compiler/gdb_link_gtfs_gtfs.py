@@ -2,7 +2,7 @@ from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
 from graphserver.ext.osm.osmdb import OSMDB
 from graphserver.graphdb import GraphDatabase
 from graphserver.core import Link, Street
-from vincenty import vincenty
+from graphserver.vincenty import vincenty
 
 import sys
 from optparse import OptionParser

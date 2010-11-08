@@ -1,10 +1,10 @@
-Graphserver Styleguide.
+# Graphserver Styleguide.
 
---== A note ==--
+## A note
 
 These principles are broken by older code. Over time, the entire codebase should conform.
 
---== Principles ==--
+## Principles 
 
 Classes are camel-cased. Instance variable are lower-cased, with underscores between words.
 
@@ -14,7 +14,7 @@ Items in a vector of items of homogenous type are named (object1, object2, objec
 
 Name like object_property not object_propertytype. For example, "arrival_time" not "arrival_secs".
 
---== Preferred Terms ==--
+## Preferred Terms
 
 arrival_time
 departure_time

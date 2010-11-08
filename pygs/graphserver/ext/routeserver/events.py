@@ -151,11 +151,11 @@ class StreetEvent:
     def __call__(self, vertex1, edge, vertex2, context):
         # adds to the variable set up by the StreetStartEvent
         geometry_chunk = self.osmdb.edge( edge.payload.name )[5]
-        
-        if len(context['streetgeom'])==0 or len(geometry_chunk)==0 or context['streetgeom'][-1] == geometry_chunk[0]:
-            context['streetgeom'].extend( geometry_chunk )
-        else:
-            context['streetgeom'].extend( reversed( geometry_chunk ) )
+      
+        if edge.payload.reverse_of_source:
+	    context['streetgeom'].extend( reversed( geometry_chunk ) )
+	else:
+	    context['streetgeom'].extend( geometry_chunk )
             
         context['sumlength'] += edge.payload.length
         context['sumrise'] += edge.payload.rise
@@ -328,7 +328,7 @@ class GeomAtStreetEndEvent:
         
     @staticmethod
     def applies_to(edge1, vertex, edge2):
-        # if edge1 is not a street and edge2 is
+        # if edge2 is not a street and edge1 is
         return (edge2 is None or not isinstance(edge2.payload, graphserver.core.Street)) and \
                (edge1 and isinstance(edge1.payload, graphserver.core.Street))
     

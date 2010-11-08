@@ -405,26 +405,26 @@ class GTFSDatabase:
     DOWS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
     DOW_INDEX = dict(zip(range(len(DOWS)),DOWS))
     
-    def service_periods(self, datetime):
-        datetimestr = datetime.strftime( "%Y%m%d" ) #datetime to string like "20081225"
+    def service_periods(self, sample_date):
+        datetimestr = sample_date.strftime( "%Y%m%d" ) #sample_date to string like "20081225"
         datetimeint = int(datetimestr)              #int like 20081225. These ints have the same ordering as regular dates, so comparison operators work
         
-        # Get the gtfs date range. If the datetime is out of the range, no service periods are in effect
+        # Get the gtfs date range. If the sample_date is out of the range, no service periods are in effect
         start_date, end_date = self.date_range()
-        if datetime < start_date or datetime > end_date:
+        if sample_date < start_date or sample_date > end_date:
             return []
         
         # Use the day-of-week name to query for all service periods that run on that day
-        dow_name = self.DOW_INDEX[datetime.weekday()]
+        dow_name = self.DOW_INDEX[sample_date.weekday()]
         service_periods = list( self.execute( "SELECT service_id, start_date, end_date FROM calendar WHERE %s=1"%dow_name ) )
          
-        # Exclude service periods whose range does not include this datetime
+        # Exclude service periods whose range does not include this sample_date
         service_periods = [x for x in service_periods if (int(x[1]) <= datetimeint and int(x[2]) >= datetimeint)]
         
         # Cut service periods down to service IDs
         sids = set( [x[0] for x in service_periods] )
             
-        # For each exception on the given datetime, add or remove service_id to the accumulating list
+        # For each exception on the given sample_date, add or remove service_id to the accumulating list
         
         for exception_sid, exception_type in self.execute( "select service_id, exception_type from calendar_dates WHERE date = ?", (datetimestr,) ):
             if exception_type == 1:
@@ -529,7 +529,7 @@ def main_inspect_gtfsdb():
 
 from optparse import OptionParser
 
-def main_build_gtfsdb():
+def main_compile_gtfsdb():
     parser = OptionParser()
     parser.add_option("-t", "--table", dest="tables", action="append", default=[], help="copy over only the given tables")
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False, help="make a bunch of noise" )
@@ -550,4 +550,4 @@ def main_build_gtfsdb():
 
 
 if __name__=='__main__': 
-    main_build_gtfsdb()
+    main_compile_gtfsdb()

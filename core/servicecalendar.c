@@ -11,7 +11,7 @@ scNew( ) {
     ret->head = NULL;
     ret->num_sids = 0;
     ret->sid_str_to_int = create_hashtable_string(16);
-    ret->sid_int_to_str = (char**)malloc(256*sizeof(char*));
+    ret->sid_int_to_str = (char**)malloc(1024*sizeof(char*));
     
     return ret;
 }
