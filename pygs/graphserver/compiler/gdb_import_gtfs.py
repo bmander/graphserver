@@ -219,17 +219,15 @@ def gdb_load_gtfsdb(gdb, agency_namespace, gtfsdb, cursor, agency_id=None, maxtr
         acceptable_service_ids = None
 
     compiler = GTFSGraphCompiler( gtfsdb, agency_namespace, agency_id, reporter )
-    c = gdb.get_cursor()
     v_added = set([])
     for fromv_label, tov_label, edge in compiler.gtfsdb_to_edges( maxtrips, service_ids=acceptable_service_ids ):
         if fromv_label not in v_added:
-            gdb.add_vertex( fromv_label, c )
+            gdb.add_vertex( fromv_label, cursor )
             v_added.add(fromv_label)
         if tov_label not in v_added:
-            gdb.add_vertex( tov_label, c )
+            gdb.add_vertex( tov_label, cursor )
             v_added.add(tov_label)
-        gdb.add_edge( fromv_label, tov_label, edge, c )
-    gdb.commit()
+        gdb.add_edge( fromv_label, tov_label, edge, cursor )
 
 def graph_load_gtfsdb( agency_namespace, gtfsdb, agency_id=None, maxtrips=None, reporter=sys.stdout ):
     compiler = GTFSGraphCompiler( gtfsdb, agency_namespace, agency_id, reporter )
