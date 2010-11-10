@@ -25,7 +25,7 @@ class GraphDatabase:
         
     def setup(self):
         c = self.conn.cursor()
-        c.execute( "CREATE TABLE vertices (label)" )
+        c.execute( "CREATE TABLE vertices (label TEXT UNIQUE ON CONFLICT IGNORE)" )
         c.execute( "CREATE TABLE payloads (id TEXT UNIQUE ON CONFLICT IGNORE, type TEXT, state TEXT)" )
         c.execute( "CREATE TABLE edges (vertex1 TEXT, vertex2 TEXT, epid TEXT)" )
         c.execute( "CREATE TABLE resources (name TEXT UNIQUE ON CONFLICT IGNORE, image TEXT)" )
