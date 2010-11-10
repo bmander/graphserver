@@ -26,8 +26,8 @@ class GraphDatabase:
     def setup(self):
         c = self.conn.cursor()
         c.execute( "CREATE TABLE vertices (label TEXT UNIQUE ON CONFLICT IGNORE)" )
-        c.execute( "CREATE TABLE payloads (id TEXT UNIQUE ON CONFLICT IGNORE, type TEXT, state TEXT)" )
-        c.execute( "CREATE TABLE edges (vertex1 TEXT, vertex2 TEXT, epid TEXT)" )
+        c.execute( "CREATE TABLE payloads (id INTEGER PRIMARY KEY, type TEXT, state TEXT)" )
+        c.execute( "CREATE TABLE edges (vertex1 TEXT, vertex2 TEXT, epid INTEGER)" )
         c.execute( "CREATE TABLE resources (name TEXT UNIQUE ON CONFLICT IGNORE, image TEXT)" )
     
         self.conn.commit()
@@ -39,9 +39,9 @@ class GraphDatabase:
             for component in edgepayload.components:
                 self.put_edge_payload( component, cc )
         
-        cc.execute( "INSERT INTO payloads VALUES (?, ?, ?)", ( str(edgepayload.soul), cPickle.dumps( edgepayload.__class__ ), cPickle.dumps( edgepayload.__getstate__() ) ) )
-        
-        return str(edgepayload.soul)
+        cc.execute( "INSERT INTO payloads (type, state) VALUES (?, ?)", ( cPickle.dumps( edgepayload.__class__ ), cPickle.dumps( edgepayload.__getstate__() ) ) )
+
+	return cc.lastrowid
         
     def get_edge_payload(self, id):
         queryresult = list(self.execute( "SELECT id, type, state FROM payloads WHERE id=?", (id,) ))
