@@ -323,6 +323,8 @@ class ShortestPathTree(CShadow):
         for i in range(count.value):
             v = SPTVertex.from_pointer(arr[i])
             verts.append(v)
+	del arr
+	libc.free(p_va)
         return verts
     
     @property
