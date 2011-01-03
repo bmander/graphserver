@@ -109,7 +109,10 @@ streetWalkGeneral(EdgePayload* superthis, State* state, WalkOptions* options, in
   Street* this = (Street*)superthis;
   State* ret = stateDup( state );
   
-  float average_grade = (this->rise-this->fall)/this->length;
+  float average_grade = 0;
+  if (this->length > 0) {
+    average_grade = (this->rise-this->fall)/this->length;
+  }
   float average_speed = speed_from_grade(options, average_grade);
   
   long delta_t = this->length / average_speed;
