@@ -8,6 +8,10 @@ struct TimezonePeriod {
   TimezonePeriod* next_period;
 } ;
 
+struct Timezone {
+    TimezonePeriod* head;
+} ; 
+
 Timezone*
 tzNew(void);
 

@@ -82,8 +82,4 @@ spPrintPeriod( ServicePeriod* this ) ;
 inline long
 spNormalizeTime( ServicePeriod* this, int timezone_offset, long time ) ;
 
-struct Timezone {
-    TimezonePeriod* head;
-} ; 
-
 #endif
