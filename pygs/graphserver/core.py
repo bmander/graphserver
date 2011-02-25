@@ -1491,7 +1491,6 @@ class Crossing(EdgePayload):
         return "<Crossing %s>"%list(self.get_all_crossings())
         
 class Combination(EdgePayload):
-    
     n = cproperty( lgs.comboN, c_int )
     
     def __init__(self, cap):
@@ -1508,7 +1507,7 @@ class Combination(EdgePayload):
         return "<Combination n=%d />"%self.n
         
     def __getstate__(self):
-        return [ self.get( i ).soul for i in range(self.n) ]
+        raise NotImplementedError("A Combination's state is the set of rowids of the rows storing its constituants in the graphdb, which it doesn't know.")
     
     @classmethod
     def reconstitute(cls, state, graphdb):

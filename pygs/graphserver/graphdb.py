@@ -36,10 +36,19 @@ class GraphDatabase:
     def put_edge_payload(self, edgepayload, cc):
         
         if edgepayload.__class__ == Combination:
+	    edge_state = []
+
             for component in edgepayload.components:
-                self.put_edge_payload( component, cc )
+                rowid = self.put_edge_payload( component, cc )
+
+		edge_state.append( rowid )
+        else:
+	    edge_state = edgepayload.__getstate__()
+
         
-        cc.execute( "INSERT INTO payloads (type, state) VALUES (?, ?)", ( cPickle.dumps( edgepayload.__class__ ), cPickle.dumps( edgepayload.__getstate__() ) ) )
+        cc.execute( "INSERT INTO payloads (type, state) VALUES (?, ?)", 
+	            ( cPickle.dumps( edgepayload.__class__ ), 
+		      cPickle.dumps( edge_state ) ) )
 
 	return cc.lastrowid
         
@@ -70,10 +79,12 @@ class GraphDatabase:
             c.execute( "INSERT INTO vertices VALUES (?)", (vv.label,) )
             for ee in vv.outgoing:
                 epid = self.put_edge_payload( ee.payload, c )
+
                 c.execute( "INSERT INTO edges VALUES (?, ?, ?)", (ee.from_v.label, ee.to_v.label, epid) )
-                
+
                 if hasattr(ee.payload, "__resources__"):
                     for name, resource in ee.payload.__resources__():
+
                         self.store( name, resource, c )
         
         self.conn.commit()
