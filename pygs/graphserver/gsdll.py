@@ -1,15 +1,11 @@
-import atexit
-from ctypes import cdll, CDLL, pydll, PyDLL, CFUNCTYPE
-from ctypes import string_at, byref, c_int, c_long, c_float, c_size_t, c_char_p, c_double, c_void_p, py_object
+from ctypes import cdll, PyDLL, CFUNCTYPE
+from ctypes import c_int, c_long, c_float, c_size_t, c_char_p, c_double, c_void_p, py_object
 from ctypes import c_int8, c_int16, c_int32, c_int64, sizeof
-from ctypes import Structure, pointer, cast, POINTER, addressof
+from ctypes import POINTER
 from ctypes.util import find_library
 
 import os
 import sys
-
-# The libgraphserver.so object:
-lgs = None
 
 # if this thing is not installed, use so in source tree lib directory
 #if not CURRENTLY_INSTALLED
@@ -31,12 +27,6 @@ def instantiate(cls):
     ret = _EmptyClass()
     ret.__class__ = cls
     return ret
-
-def cleanup():
-    """ Perform any necessary cleanup when the library is unloaded."""
-    pass
-
-atexit.register(cleanup)
 
 class CShadow(object):
     """ Base class for all objects that shadow a C structure."""
@@ -493,8 +483,6 @@ class PayloadMethodTypes:
     walk = CFUNCTYPE(c_void_p, py_object, c_void_p, c_void_p)
     walk_back = CFUNCTYPE(c_void_p, py_object, c_void_p, c_void_p)
 
-# 
-import sys
 class SafeWrapper(object):
     def __init__(self, lib, name):
         self.lib = lib
