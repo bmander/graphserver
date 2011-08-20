@@ -1,4 +1,8 @@
 import unittest
+
+from sys import path
+path.insert(0, "../.." )
+
 from graphserver.core import *
 
 class TestCrossing(unittest.TestCase):
