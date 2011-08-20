@@ -2,26 +2,33 @@ cmake_minimum_required( VERSION 2.6 )
 project( graphserver )
 add_library( graphserver SHARED 
              contraction.c
-             contraction.h
              edgepayload.c
-             edgepayload.h
              graph.c
-             graph.h
-             graphserver.h
              heap.c
-             heap.h
              list.c
-             list.h
              path.c
-             path.h
-             router.c
              servicecalendar.c
-             servicecalendar.h
              state.c
-             state.h
              timezone.c
-             timezone.h
              vector.c
-             vector.h
              walkoptions.c
-             walkoptions.h )
+             edgetypes/combination.c
+             edgetypes/crossing.c
+             edgetypes/custompayload.c
+             edgetypes/egress.c
+             edgetypes/elapsehelpers.c
+             edgetypes/elapsetime.c
+             edgetypes/headwayalight.c
+             edgetypes/headwayboard.c
+             edgetypes/headway.c
+             edgetypes/link.c
+             edgetypes/street.c
+             edgetypes/tripalight.c
+             edgetypes/tripboard.c
+             edgetypes/wait.c
+             fibheap/fibheap.c
+             fibheap/dirfibheap.c
+             hashtable/hashtable.c
+             hashtable/hashtable_gs.c
+             hashtable/hashtable_itr.c
+             hashtable/hashtable_utility.c )

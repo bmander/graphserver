@@ -35,6 +35,9 @@ CMAKE_COMMAND = /usr/bin/cmake
 # The command to remove a file.
 RM = /usr/bin/cmake -E remove -f
 
+# The program to use to edit the cache.
+CMAKE_EDIT_COMMAND = /usr/bin/ccmake
+
 # The top-level source directory on which CMake was run.
 CMAKE_SOURCE_DIR = /home/brandon/projects/graphserver/core
 
@@ -46,8 +49,8 @@ CMAKE_BINARY_DIR = /home/brandon/projects/graphserver/core
 
 # Special rule for the target edit_cache
 edit_cache:
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running interactive CMake command-line interface..."
-	/usr/bin/cmake -i .
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake cache editor..."
+	/usr/bin/ccmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : edit_cache
 
 # Special rule for the target edit_cache
@@ -156,6 +159,390 @@ edgepayload.c.s:
 	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgepayload.c.s
 .PHONY : edgepayload.c.s
 
+edgetypes/combination.o: edgetypes/combination.c.o
+.PHONY : edgetypes/combination.o
+
+# target to build an object file
+edgetypes/combination.c.o:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/combination.c.o
+.PHONY : edgetypes/combination.c.o
+
+edgetypes/combination.i: edgetypes/combination.c.i
+.PHONY : edgetypes/combination.i
+
+# target to preprocess a source file
+edgetypes/combination.c.i:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/combination.c.i
+.PHONY : edgetypes/combination.c.i
+
+edgetypes/combination.s: edgetypes/combination.c.s
+.PHONY : edgetypes/combination.s
+
+# target to generate assembly for a file
+edgetypes/combination.c.s:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/combination.c.s
+.PHONY : edgetypes/combination.c.s
+
+edgetypes/crossing.o: edgetypes/crossing.c.o
+.PHONY : edgetypes/crossing.o
+
+# target to build an object file
+edgetypes/crossing.c.o:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/crossing.c.o
+.PHONY : edgetypes/crossing.c.o
+
+edgetypes/crossing.i: edgetypes/crossing.c.i
+.PHONY : edgetypes/crossing.i
+
+# target to preprocess a source file
+edgetypes/crossing.c.i:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/crossing.c.i
+.PHONY : edgetypes/crossing.c.i
+
+edgetypes/crossing.s: edgetypes/crossing.c.s
+.PHONY : edgetypes/crossing.s
+
+# target to generate assembly for a file
+edgetypes/crossing.c.s:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/crossing.c.s
+.PHONY : edgetypes/crossing.c.s
+
+edgetypes/custompayload.o: edgetypes/custompayload.c.o
+.PHONY : edgetypes/custompayload.o
+
+# target to build an object file
+edgetypes/custompayload.c.o:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/custompayload.c.o
+.PHONY : edgetypes/custompayload.c.o
+
+edgetypes/custompayload.i: edgetypes/custompayload.c.i
+.PHONY : edgetypes/custompayload.i
+
+# target to preprocess a source file
+edgetypes/custompayload.c.i:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/custompayload.c.i
+.PHONY : edgetypes/custompayload.c.i
+
+edgetypes/custompayload.s: edgetypes/custompayload.c.s
+.PHONY : edgetypes/custompayload.s
+
+# target to generate assembly for a file
+edgetypes/custompayload.c.s:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/custompayload.c.s
+.PHONY : edgetypes/custompayload.c.s
+
+edgetypes/egress.o: edgetypes/egress.c.o
+.PHONY : edgetypes/egress.o
+
+# target to build an object file
+edgetypes/egress.c.o:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/egress.c.o
+.PHONY : edgetypes/egress.c.o
+
+edgetypes/egress.i: edgetypes/egress.c.i
+.PHONY : edgetypes/egress.i
+
+# target to preprocess a source file
+edgetypes/egress.c.i:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/egress.c.i
+.PHONY : edgetypes/egress.c.i
+
+edgetypes/egress.s: edgetypes/egress.c.s
+.PHONY : edgetypes/egress.s
+
+# target to generate assembly for a file
+edgetypes/egress.c.s:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/egress.c.s
+.PHONY : edgetypes/egress.c.s
+
+edgetypes/elapsehelpers.o: edgetypes/elapsehelpers.c.o
+.PHONY : edgetypes/elapsehelpers.o
+
+# target to build an object file
+edgetypes/elapsehelpers.c.o:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/elapsehelpers.c.o
+.PHONY : edgetypes/elapsehelpers.c.o
+
+edgetypes/elapsehelpers.i: edgetypes/elapsehelpers.c.i
+.PHONY : edgetypes/elapsehelpers.i
+
+# target to preprocess a source file
+edgetypes/elapsehelpers.c.i:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/elapsehelpers.c.i
+.PHONY : edgetypes/elapsehelpers.c.i
+
+edgetypes/elapsehelpers.s: edgetypes/elapsehelpers.c.s
+.PHONY : edgetypes/elapsehelpers.s
+
+# target to generate assembly for a file
+edgetypes/elapsehelpers.c.s:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/elapsehelpers.c.s
+.PHONY : edgetypes/elapsehelpers.c.s
+
+edgetypes/elapsetime.o: edgetypes/elapsetime.c.o
+.PHONY : edgetypes/elapsetime.o
+
+# target to build an object file
+edgetypes/elapsetime.c.o:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/elapsetime.c.o
+.PHONY : edgetypes/elapsetime.c.o
+
+edgetypes/elapsetime.i: edgetypes/elapsetime.c.i
+.PHONY : edgetypes/elapsetime.i
+
+# target to preprocess a source file
+edgetypes/elapsetime.c.i:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/elapsetime.c.i
+.PHONY : edgetypes/elapsetime.c.i
+
+edgetypes/elapsetime.s: edgetypes/elapsetime.c.s
+.PHONY : edgetypes/elapsetime.s
+
+# target to generate assembly for a file
+edgetypes/elapsetime.c.s:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/elapsetime.c.s
+.PHONY : edgetypes/elapsetime.c.s
+
+edgetypes/headway.o: edgetypes/headway.c.o
+.PHONY : edgetypes/headway.o
+
+# target to build an object file
+edgetypes/headway.c.o:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/headway.c.o
+.PHONY : edgetypes/headway.c.o
+
+edgetypes/headway.i: edgetypes/headway.c.i
+.PHONY : edgetypes/headway.i
+
+# target to preprocess a source file
+edgetypes/headway.c.i:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/headway.c.i
+.PHONY : edgetypes/headway.c.i
+
+edgetypes/headway.s: edgetypes/headway.c.s
+.PHONY : edgetypes/headway.s
+
+# target to generate assembly for a file
+edgetypes/headway.c.s:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/headway.c.s
+.PHONY : edgetypes/headway.c.s
+
+edgetypes/headwayalight.o: edgetypes/headwayalight.c.o
+.PHONY : edgetypes/headwayalight.o
+
+# target to build an object file
+edgetypes/headwayalight.c.o:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/headwayalight.c.o
+.PHONY : edgetypes/headwayalight.c.o
+
+edgetypes/headwayalight.i: edgetypes/headwayalight.c.i
+.PHONY : edgetypes/headwayalight.i
+
+# target to preprocess a source file
+edgetypes/headwayalight.c.i:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/headwayalight.c.i
+.PHONY : edgetypes/headwayalight.c.i
+
+edgetypes/headwayalight.s: edgetypes/headwayalight.c.s
+.PHONY : edgetypes/headwayalight.s
+
+# target to generate assembly for a file
+edgetypes/headwayalight.c.s:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/headwayalight.c.s
+.PHONY : edgetypes/headwayalight.c.s
+
+edgetypes/headwayboard.o: edgetypes/headwayboard.c.o
+.PHONY : edgetypes/headwayboard.o
+
+# target to build an object file
+edgetypes/headwayboard.c.o:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/headwayboard.c.o
+.PHONY : edgetypes/headwayboard.c.o
+
+edgetypes/headwayboard.i: edgetypes/headwayboard.c.i
+.PHONY : edgetypes/headwayboard.i
+
+# target to preprocess a source file
+edgetypes/headwayboard.c.i:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/headwayboard.c.i
+.PHONY : edgetypes/headwayboard.c.i
+
+edgetypes/headwayboard.s: edgetypes/headwayboard.c.s
+.PHONY : edgetypes/headwayboard.s
+
+# target to generate assembly for a file
+edgetypes/headwayboard.c.s:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/headwayboard.c.s
+.PHONY : edgetypes/headwayboard.c.s
+
+edgetypes/link.o: edgetypes/link.c.o
+.PHONY : edgetypes/link.o
+
+# target to build an object file
+edgetypes/link.c.o:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/link.c.o
+.PHONY : edgetypes/link.c.o
+
+edgetypes/link.i: edgetypes/link.c.i
+.PHONY : edgetypes/link.i
+
+# target to preprocess a source file
+edgetypes/link.c.i:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/link.c.i
+.PHONY : edgetypes/link.c.i
+
+edgetypes/link.s: edgetypes/link.c.s
+.PHONY : edgetypes/link.s
+
+# target to generate assembly for a file
+edgetypes/link.c.s:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/link.c.s
+.PHONY : edgetypes/link.c.s
+
+edgetypes/street.o: edgetypes/street.c.o
+.PHONY : edgetypes/street.o
+
+# target to build an object file
+edgetypes/street.c.o:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/street.c.o
+.PHONY : edgetypes/street.c.o
+
+edgetypes/street.i: edgetypes/street.c.i
+.PHONY : edgetypes/street.i
+
+# target to preprocess a source file
+edgetypes/street.c.i:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/street.c.i
+.PHONY : edgetypes/street.c.i
+
+edgetypes/street.s: edgetypes/street.c.s
+.PHONY : edgetypes/street.s
+
+# target to generate assembly for a file
+edgetypes/street.c.s:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/street.c.s
+.PHONY : edgetypes/street.c.s
+
+edgetypes/tripalight.o: edgetypes/tripalight.c.o
+.PHONY : edgetypes/tripalight.o
+
+# target to build an object file
+edgetypes/tripalight.c.o:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/tripalight.c.o
+.PHONY : edgetypes/tripalight.c.o
+
+edgetypes/tripalight.i: edgetypes/tripalight.c.i
+.PHONY : edgetypes/tripalight.i
+
+# target to preprocess a source file
+edgetypes/tripalight.c.i:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/tripalight.c.i
+.PHONY : edgetypes/tripalight.c.i
+
+edgetypes/tripalight.s: edgetypes/tripalight.c.s
+.PHONY : edgetypes/tripalight.s
+
+# target to generate assembly for a file
+edgetypes/tripalight.c.s:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/tripalight.c.s
+.PHONY : edgetypes/tripalight.c.s
+
+edgetypes/tripboard.o: edgetypes/tripboard.c.o
+.PHONY : edgetypes/tripboard.o
+
+# target to build an object file
+edgetypes/tripboard.c.o:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/tripboard.c.o
+.PHONY : edgetypes/tripboard.c.o
+
+edgetypes/tripboard.i: edgetypes/tripboard.c.i
+.PHONY : edgetypes/tripboard.i
+
+# target to preprocess a source file
+edgetypes/tripboard.c.i:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/tripboard.c.i
+.PHONY : edgetypes/tripboard.c.i
+
+edgetypes/tripboard.s: edgetypes/tripboard.c.s
+.PHONY : edgetypes/tripboard.s
+
+# target to generate assembly for a file
+edgetypes/tripboard.c.s:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/tripboard.c.s
+.PHONY : edgetypes/tripboard.c.s
+
+edgetypes/wait.o: edgetypes/wait.c.o
+.PHONY : edgetypes/wait.o
+
+# target to build an object file
+edgetypes/wait.c.o:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/wait.c.o
+.PHONY : edgetypes/wait.c.o
+
+edgetypes/wait.i: edgetypes/wait.c.i
+.PHONY : edgetypes/wait.i
+
+# target to preprocess a source file
+edgetypes/wait.c.i:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/wait.c.i
+.PHONY : edgetypes/wait.c.i
+
+edgetypes/wait.s: edgetypes/wait.c.s
+.PHONY : edgetypes/wait.s
+
+# target to generate assembly for a file
+edgetypes/wait.c.s:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/wait.c.s
+.PHONY : edgetypes/wait.c.s
+
+fibheap/dirfibheap.o: fibheap/dirfibheap.c.o
+.PHONY : fibheap/dirfibheap.o
+
+# target to build an object file
+fibheap/dirfibheap.c.o:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/fibheap/dirfibheap.c.o
+.PHONY : fibheap/dirfibheap.c.o
+
+fibheap/dirfibheap.i: fibheap/dirfibheap.c.i
+.PHONY : fibheap/dirfibheap.i
+
+# target to preprocess a source file
+fibheap/dirfibheap.c.i:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/fibheap/dirfibheap.c.i
+.PHONY : fibheap/dirfibheap.c.i
+
+fibheap/dirfibheap.s: fibheap/dirfibheap.c.s
+.PHONY : fibheap/dirfibheap.s
+
+# target to generate assembly for a file
+fibheap/dirfibheap.c.s:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/fibheap/dirfibheap.c.s
+.PHONY : fibheap/dirfibheap.c.s
+
+fibheap/fibheap.o: fibheap/fibheap.c.o
+.PHONY : fibheap/fibheap.o
+
+# target to build an object file
+fibheap/fibheap.c.o:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/fibheap/fibheap.c.o
+.PHONY : fibheap/fibheap.c.o
+
+fibheap/fibheap.i: fibheap/fibheap.c.i
+.PHONY : fibheap/fibheap.i
+
+# target to preprocess a source file
+fibheap/fibheap.c.i:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/fibheap/fibheap.c.i
+.PHONY : fibheap/fibheap.c.i
+
+fibheap/fibheap.s: fibheap/fibheap.c.s
+.PHONY : fibheap/fibheap.s
+
+# target to generate assembly for a file
+fibheap/fibheap.c.s:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/fibheap/fibheap.c.s
+.PHONY : fibheap/fibheap.c.s
+
 graph.o: graph.c.o
 .PHONY : graph.o
 
@@ -179,6 +566,102 @@ graph.s: graph.c.s
 graph.c.s:
 	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/graph.c.s
 .PHONY : graph.c.s
+
+hashtable/hashtable.o: hashtable/hashtable.c.o
+.PHONY : hashtable/hashtable.o
+
+# target to build an object file
+hashtable/hashtable.c.o:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/hashtable/hashtable.c.o
+.PHONY : hashtable/hashtable.c.o
+
+hashtable/hashtable.i: hashtable/hashtable.c.i
+.PHONY : hashtable/hashtable.i
+
+# target to preprocess a source file
+hashtable/hashtable.c.i:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/hashtable/hashtable.c.i
+.PHONY : hashtable/hashtable.c.i
+
+hashtable/hashtable.s: hashtable/hashtable.c.s
+.PHONY : hashtable/hashtable.s
+
+# target to generate assembly for a file
+hashtable/hashtable.c.s:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/hashtable/hashtable.c.s
+.PHONY : hashtable/hashtable.c.s
+
+hashtable/hashtable_gs.o: hashtable/hashtable_gs.c.o
+.PHONY : hashtable/hashtable_gs.o
+
+# target to build an object file
+hashtable/hashtable_gs.c.o:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/hashtable/hashtable_gs.c.o
+.PHONY : hashtable/hashtable_gs.c.o
+
+hashtable/hashtable_gs.i: hashtable/hashtable_gs.c.i
+.PHONY : hashtable/hashtable_gs.i
+
+# target to preprocess a source file
+hashtable/hashtable_gs.c.i:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/hashtable/hashtable_gs.c.i
+.PHONY : hashtable/hashtable_gs.c.i
+
+hashtable/hashtable_gs.s: hashtable/hashtable_gs.c.s
+.PHONY : hashtable/hashtable_gs.s
+
+# target to generate assembly for a file
+hashtable/hashtable_gs.c.s:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/hashtable/hashtable_gs.c.s
+.PHONY : hashtable/hashtable_gs.c.s
+
+hashtable/hashtable_itr.o: hashtable/hashtable_itr.c.o
+.PHONY : hashtable/hashtable_itr.o
+
+# target to build an object file
+hashtable/hashtable_itr.c.o:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/hashtable/hashtable_itr.c.o
+.PHONY : hashtable/hashtable_itr.c.o
+
+hashtable/hashtable_itr.i: hashtable/hashtable_itr.c.i
+.PHONY : hashtable/hashtable_itr.i
+
+# target to preprocess a source file
+hashtable/hashtable_itr.c.i:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/hashtable/hashtable_itr.c.i
+.PHONY : hashtable/hashtable_itr.c.i
+
+hashtable/hashtable_itr.s: hashtable/hashtable_itr.c.s
+.PHONY : hashtable/hashtable_itr.s
+
+# target to generate assembly for a file
+hashtable/hashtable_itr.c.s:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/hashtable/hashtable_itr.c.s
+.PHONY : hashtable/hashtable_itr.c.s
+
+hashtable/hashtable_utility.o: hashtable/hashtable_utility.c.o
+.PHONY : hashtable/hashtable_utility.o
+
+# target to build an object file
+hashtable/hashtable_utility.c.o:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/hashtable/hashtable_utility.c.o
+.PHONY : hashtable/hashtable_utility.c.o
+
+hashtable/hashtable_utility.i: hashtable/hashtable_utility.c.i
+.PHONY : hashtable/hashtable_utility.i
+
+# target to preprocess a source file
+hashtable/hashtable_utility.c.i:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/hashtable/hashtable_utility.c.i
+.PHONY : hashtable/hashtable_utility.c.i
+
+hashtable/hashtable_utility.s: hashtable/hashtable_utility.c.s
+.PHONY : hashtable/hashtable_utility.s
+
+# target to generate assembly for a file
+hashtable/hashtable_utility.c.s:
+	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/hashtable/hashtable_utility.c.s
+.PHONY : hashtable/hashtable_utility.c.s
 
 heap.o: heap.c.o
 .PHONY : heap.o
@@ -251,30 +734,6 @@ path.s: path.c.s
 path.c.s:
 	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/path.c.s
 .PHONY : path.c.s
-
-router.o: router.c.o
-.PHONY : router.o
-
-# target to build an object file
-router.c.o:
-	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/router.c.o
-.PHONY : router.c.o
-
-router.i: router.c.i
-.PHONY : router.i
-
-# target to preprocess a source file
-router.c.i:
-	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/router.c.i
-.PHONY : router.c.i
-
-router.s: router.c.s
-.PHONY : router.s
-
-# target to generate assembly for a file
-router.c.s:
-	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/router.c.s
-.PHONY : router.c.s
 
 servicecalendar.o: servicecalendar.c.o
 .PHONY : servicecalendar.o
@@ -411,9 +870,69 @@ help:
 	@echo "... edgepayload.o"
 	@echo "... edgepayload.i"
 	@echo "... edgepayload.s"
+	@echo "... edgetypes/combination.o"
+	@echo "... edgetypes/combination.i"
+	@echo "... edgetypes/combination.s"
+	@echo "... edgetypes/crossing.o"
+	@echo "... edgetypes/crossing.i"
+	@echo "... edgetypes/crossing.s"
+	@echo "... edgetypes/custompayload.o"
+	@echo "... edgetypes/custompayload.i"
+	@echo "... edgetypes/custompayload.s"
+	@echo "... edgetypes/egress.o"
+	@echo "... edgetypes/egress.i"
+	@echo "... edgetypes/egress.s"
+	@echo "... edgetypes/elapsehelpers.o"
+	@echo "... edgetypes/elapsehelpers.i"
+	@echo "... edgetypes/elapsehelpers.s"
+	@echo "... edgetypes/elapsetime.o"
+	@echo "... edgetypes/elapsetime.i"
+	@echo "... edgetypes/elapsetime.s"
+	@echo "... edgetypes/headway.o"
+	@echo "... edgetypes/headway.i"
+	@echo "... edgetypes/headway.s"
+	@echo "... edgetypes/headwayalight.o"
+	@echo "... edgetypes/headwayalight.i"
+	@echo "... edgetypes/headwayalight.s"
+	@echo "... edgetypes/headwayboard.o"
+	@echo "... edgetypes/headwayboard.i"
+	@echo "... edgetypes/headwayboard.s"
+	@echo "... edgetypes/link.o"
+	@echo "... edgetypes/link.i"
+	@echo "... edgetypes/link.s"
+	@echo "... edgetypes/street.o"
+	@echo "... edgetypes/street.i"
+	@echo "... edgetypes/street.s"
+	@echo "... edgetypes/tripalight.o"
+	@echo "... edgetypes/tripalight.i"
+	@echo "... edgetypes/tripalight.s"
+	@echo "... edgetypes/tripboard.o"
+	@echo "... edgetypes/tripboard.i"
+	@echo "... edgetypes/tripboard.s"
+	@echo "... edgetypes/wait.o"
+	@echo "... edgetypes/wait.i"
+	@echo "... edgetypes/wait.s"
+	@echo "... fibheap/dirfibheap.o"
+	@echo "... fibheap/dirfibheap.i"
+	@echo "... fibheap/dirfibheap.s"
+	@echo "... fibheap/fibheap.o"
+	@echo "... fibheap/fibheap.i"
+	@echo "... fibheap/fibheap.s"
 	@echo "... graph.o"
 	@echo "... graph.i"
 	@echo "... graph.s"
+	@echo "... hashtable/hashtable.o"
+	@echo "... hashtable/hashtable.i"
+	@echo "... hashtable/hashtable.s"
+	@echo "... hashtable/hashtable_gs.o"
+	@echo "... hashtable/hashtable_gs.i"
+	@echo "... hashtable/hashtable_gs.s"
+	@echo "... hashtable/hashtable_itr.o"
+	@echo "... hashtable/hashtable_itr.i"
+	@echo "... hashtable/hashtable_itr.s"
+	@echo "... hashtable/hashtable_utility.o"
+	@echo "... hashtable/hashtable_utility.i"
+	@echo "... hashtable/hashtable_utility.s"
 	@echo "... heap.o"
 	@echo "... heap.i"
 	@echo "... heap.s"
@@ -423,9 +942,6 @@ help:
 	@echo "... path.o"
 	@echo "... path.i"
 	@echo "... path.s"
-	@echo "... router.o"
-	@echo "... router.i"
-	@echo "... router.s"
 	@echo "... servicecalendar.o"
 	@echo "... servicecalendar.i"
 	@echo "... servicecalendar.s"
