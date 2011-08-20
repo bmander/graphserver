@@ -19,30 +19,6 @@ if not lgs:
 
 libc = cdll.LoadLibrary(find_library('c'))
 
-class _EmptyClass(object):
-    pass
-
-def instantiate(cls):
-    """instantiates a class without calling the constructor"""
-    ret = _EmptyClass()
-    ret.__class__ = cls
-    return ret
-
-class CShadow(object):
-    """ Base class for all objects that shadow a C structure."""
-    @classmethod
-    def from_pointer(cls, ptr):
-        if ptr is None:
-            return None
-        
-        ret = instantiate(cls)
-        ret.soul = ptr
-        return ret
-        
-    def check_destroyed(self):
-        if self.soul is None:
-            raise Exception("You are trying to use an instance that has been destroyed")
-
 def _declare(fun, restype, argtypes):
     fun.argtypes = argtypes
     fun.restype = restype

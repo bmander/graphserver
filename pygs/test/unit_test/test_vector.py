@@ -1,4 +1,4 @@
-from graphserver.vector import Vector
+from graphserver.core import Vector
 import unittest
 
 class TestVector(unittest.TestCase):
