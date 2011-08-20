@@ -1,4 +1,4 @@
-from gsdll import libc, lgs, cproperty, ccast, PayloadMethodTypes
+from gsdll import lgs, cproperty, ccast, PayloadMethodTypes
 from ctypes import string_at, byref, c_int, c_long, c_size_t, c_char_p, c_double, c_void_p, py_object, c_float
 from ctypes import Structure, pointer, cast, POINTER, addressof
 from _ctypes import Py_INCREF, Py_DECREF
@@ -7,6 +7,10 @@ from time import time as now
 import pytz
 import calendar
 from util import TimeHelpers
+
+from ctypes import cdll
+from ctypes.util import find_library
+libc = cdll.LoadLibrary(find_library('c'))
 
 """
 Helpers for wrapping c functions in python classes
@@ -380,8 +384,8 @@ class ShortestPathTree(CShadow):
         for i in range(count.value):
             v = SPTVertex.from_pointer(arr[i])
             verts.append(v)
-	del arr
-	libc.free(p_va)
+        del arr
+        libc.free(p_va)
         return verts
     
     @property

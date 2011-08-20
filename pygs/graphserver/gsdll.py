@@ -2,7 +2,6 @@ from ctypes import cdll, PyDLL, CFUNCTYPE
 from ctypes import c_int, c_long, c_float, c_size_t, c_char_p, c_double, c_void_p, py_object
 from ctypes import c_int8, c_int16, c_int32, c_int64, sizeof
 from ctypes import POINTER
-from ctypes.util import find_library
 
 import os
 import sys
@@ -16,8 +15,6 @@ lgs = PyDLL( os.path.join( os.path.dirname(os.path.abspath(__file__)) + "/../../
 
 if not lgs:
     raise ImportError("unable to find libgraphserver shared library")
-
-libc = cdll.LoadLibrary(find_library('c'))
 
 def _declare(fun, restype, argtypes):
     fun.argtypes = argtypes
