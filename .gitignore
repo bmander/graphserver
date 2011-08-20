@@ -36,3 +36,7 @@ test/wallingford.csv
 pygs/test/unit_testunit_test.db
 *.swp
 pygs/test/integration_test/map.osm
+
+CMakeFiles
+CMakeCache.txt
+cmake_install.cmake
