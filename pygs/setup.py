@@ -1,12 +1,6 @@
 from setuptools import setup, find_packages
 import os.path, sys, subprocess
 
-LIBSO = os.path.join('..','core','libgraphserver.so')
-
-# build and copy libgraphserver.so
-subprocess.call(["make","-s", "-C","../core"])
-subprocess.call(["cp",LIBSO,"graphserver/"])
-
 setup(  name='graphserver',
         version='1.0.0',
         packages = find_packages(exclude=['examples.*','examples','test','test.*']),
