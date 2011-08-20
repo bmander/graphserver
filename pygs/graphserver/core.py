@@ -8,10 +8,6 @@ import pytz
 import calendar
 from util import TimeHelpers
 
-from ctypes import cdll
-from ctypes.util import find_library
-libc = cdll.LoadLibrary(find_library('c'))
-
 """
 Helpers for wrapping c functions in python classes
 """
@@ -227,7 +223,7 @@ class Graph(CShadow):
             v = Vertex.from_pointer(arr[i])
             verts.append(v)
         del arr
-        libc.free(p_va)
+        lgs.gFreeVertexArray(p_va)
         return verts
     
     def add_vertices(self, vs):
@@ -385,7 +381,7 @@ class ShortestPathTree(CShadow):
             v = SPTVertex.from_pointer(arr[i])
             verts.append(v)
         del arr
-        libc.free(p_va)
+        lgs.gFreeVertexArray(p_va)
         return verts
     
     @property

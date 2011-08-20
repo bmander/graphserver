@@ -119,6 +119,11 @@ gVertices( Graph* this, long* num_vertices ) {
   return ret;
 }
 
+void
+gFreeVertexArray( Vertex** ary ) {
+  free(ary);
+}
+
 #undef RETRO
 #include "router.c"
 #define RETRO
