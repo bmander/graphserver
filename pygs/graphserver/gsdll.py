@@ -11,20 +11,15 @@ import sys
 # The libgraphserver.so object:
 lgs = None
 
-# Try loading from the source tree. If that doesn't work, fall back to the installed location.
-_dlldirs = [os.path.dirname(os.path.abspath(__file__)),
-            os.path.dirname(os.path.abspath(__file__)) + '/../../core',
-            '/usr/lib',
-            '/usr/local/lib']
+# if this thing is not installed, use so in source tree lib directory
+#if not CURRENTLY_INSTALLED
+lgs = PyDLL( os.path.join( os.path.dirname(os.path.abspath(__file__)) + "/../../core", "libgraphserver.so" ) )
 
-for _dlldir in _dlldirs:
-    _dllpath = os.path.join(_dlldir, 'libgraphserver.so')
-    if os.path.exists(_dllpath):
-        lgs = PyDLL( _dllpath )
-        break
+# if we are installed, use so in standard directory
+#TODO look up location of standard library directory in some standard way
 
 if not lgs:
-    raise ImportError("unable to find libgraphserver shared library in the usual locations: %s" % "\n".join(_dlldirs))
+    raise ImportError("unable to find libgraphserver shared library")
 
 libc = cdll.LoadLibrary(find_library('c'))
 
