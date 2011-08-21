@@ -1,4 +1,4 @@
-from gsdll import libgs, cproperty, ccast, PayloadMethodTypes
+from libgs import libgs, cproperty, ccast, PayloadMethodTypes
 from ctypes import string_at, byref, c_int, c_long, c_size_t, c_char_p, c_double, c_void_p, py_object, c_float
 from ctypes import Structure, pointer, cast, POINTER, addressof
 from _ctypes import Py_INCREF, Py_DECREF
