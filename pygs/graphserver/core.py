@@ -332,44 +332,6 @@ class Graph(CShadow):
             ret += "    %s -> %s;\n" % (e.from_v.label, e.to_v.label)
         return ret + "}"
         
-    def get_contraction_hierarchies( self, walk_options, search_limit=1 ):
-        return self._get_ch( self.soul, walk_options.soul, search_limit )
-        
-class ContractionHierarchy(CShadow):
-    
-    upgraph = cproperty(libgs.chUpGraph, c_void_p, Graph)
-    downgraph = cproperty(libgs.chDownGraph, c_void_p, Graph)
-    
-    def __init__(self):
-        self.soul = libgs.chNew( )
-        
-    def shortest_path(self, fromv_label, tov_label, init_state, walk_options ):
-        # GET UPGRAPH AND DOWNGRAPH SPTS
-        sptup = self.upgraph.shortest_path_tree( fromv_label, None, init_state, walk_options )
-        sptdown = self.downgraph.shortest_path_tree_retro( None, tov_label, State(0,10000000), walk_options )
-        
-        # FIND SMALLEST MEETUP VERTEX
-        meetup_vertices = []
-        for upvv in sptup.vertices:
-            downvv = sptdown.get_vertex( upvv.label )
-            if downvv is not None:
-                meetup_vertices.append( (upvv.state.weight + downvv.state.weight, upvv.label ) )
-        min_meetup = min(meetup_vertices)[1]
-        
-        # GET AND JOIN PATHS TO MEETUP VERTEX
-        upvertices, upedges = sptup.path( min_meetup )
-        downvertices, downedges = sptdown.path_retro( min_meetup )
-        
-        vertices = upvertices+downvertices[1:]
-        edges = upedges+downedges
-        
-        ret = [ee.payload for ee in edges]
-                
-        sptup.destroy()
-        sptdown.destroy()
-            
-        return ret
-
 class ShortestPathTree(CShadow):
     
     size = cproperty(libgs.sptSize, c_long)
@@ -1768,7 +1730,6 @@ Graph._cget_vertex = ccast(libgs.gGetVertex, Vertex)
 Graph._cadd_edge = ccast(libgs.gAddEdge, Edge)
 Graph._cshortest_path_tree = ccast(libgs.gShortestPathTree, ShortestPathTree)
 Graph._cshortest_path_tree_retro = ccast(libgs.gShortestPathTreeRetro, ShortestPathTree)
-Graph._get_ch = ccast( libgs.get_contraction_hierarchies, ContractionHierarchy )
 
 ShortestPathTree._cnew = libgs.sptNew
 ShortestPathTree._cdel = libgs.sptDestroy

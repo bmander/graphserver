@@ -1,7 +1,6 @@
 cmake_minimum_required( VERSION 2.6 )
 project( graphserver )
 add_library( graphserver SHARED 
-             contraction.c
              edgepayload.c
              graph.c
              heap.c

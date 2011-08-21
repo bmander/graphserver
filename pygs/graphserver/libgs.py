@@ -73,19 +73,6 @@ class LGSTypes:
 
 LGSTypes.edgepayload_t = {1:c_int8, 2:c_int16, 4:c_int32, 8:c_int64}[c_size_t.in_dll(libgs, "EDGEPAYLOAD_ENUM_SIZE").value]
 declarations = [\
-    (libgs.chpNew, LGSTypes.CHPath, [c_int, c_long]),
-    (libgs.chpLength, c_int, [LGSTypes.CHPath]),
-    (libgs.chpCombine, LGSTypes.CHPath, [LGSTypes.CHPath, LGSTypes.CHPath]),
-    (libgs.chpDestroy, None, [LGSTypes.CHPath]),
-    (libgs.dist, LGSTypes.CHPath, [LGSTypes.Graph, c_char_p, c_char_p, LGSTypes.WalkOptions, c_int, c_int]),
-    (libgs.get_shortcuts, POINTER(LGSTypes.CHPath), [LGSTypes.Graph, LGSTypes.Vertex, LGSTypes.WalkOptions, c_int, POINTER(c_int)]),
-    (libgs.init_priority_queue, LGSTypes.Heap, [LGSTypes.Graph, LGSTypes.WalkOptions, c_int]),
-    (libgs.pqPush, None, [LGSTypes.Heap, LGSTypes.Vertex, c_long]),
-    (libgs.pqPop, LGSTypes.Vertex, [LGSTypes.Heap, POINTER(c_long)]),
-    (libgs.get_contraction_hierarchies, LGSTypes.CH, [LGSTypes.Graph, LGSTypes.WalkOptions, c_int]),
-    (libgs.chNew, LGSTypes.CH, []),
-    (libgs.chUpGraph, LGSTypes.Graph, [LGSTypes.CH]),
-    (libgs.chDownGraph, LGSTypes.Graph, [LGSTypes.CH]),
     (libgs.epNew, LGSTypes.EdgePayload, [LGSTypes.edgepayload_t, c_void_p]),
     (libgs.epDestroy, None, [LGSTypes.EdgePayload]),
     (libgs.epGetType, LGSTypes.edgepayload_t, [LGSTypes.EdgePayload]),

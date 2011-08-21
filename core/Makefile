@@ -111,30 +111,6 @@ graphserver/fast:
 	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/build
 .PHONY : graphserver/fast
 
-contraction.o: contraction.c.o
-.PHONY : contraction.o
-
-# target to build an object file
-contraction.c.o:
-	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/contraction.c.o
-.PHONY : contraction.c.o
-
-contraction.i: contraction.c.i
-.PHONY : contraction.i
-
-# target to preprocess a source file
-contraction.c.i:
-	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/contraction.c.i
-.PHONY : contraction.c.i
-
-contraction.s: contraction.c.s
-.PHONY : contraction.s
-
-# target to generate assembly for a file
-contraction.c.s:
-	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/contraction.c.s
-.PHONY : contraction.c.s
-
 edgepayload.o: edgepayload.c.o
 .PHONY : edgepayload.o
 
@@ -864,9 +840,6 @@ help:
 	@echo "... edit_cache"
 	@echo "... graphserver"
 	@echo "... rebuild_cache"
-	@echo "... contraction.o"
-	@echo "... contraction.i"
-	@echo "... contraction.s"
 	@echo "... edgepayload.o"
 	@echo "... edgepayload.i"
 	@echo "... edgepayload.s"
