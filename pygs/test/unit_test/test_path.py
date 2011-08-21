@@ -1,6 +1,5 @@
 from graphserver.core import Vertex, Edge, Link, Street, Path
 import unittest
-from ctypes import addressof
 
 class TestPathCreate(unittest.TestCase):
     def test_path_new(self):
