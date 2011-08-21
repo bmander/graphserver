@@ -85,9 +85,9 @@ class TestShortestPathTree(unittest.TestCase):
         s = Street( "helloworld", 1 )
         e = spt.add_edge("home", "work", s)
         assert e
-        assert e.from_v.label == "home"
-        assert e.to_v.label == "work"
-        assert str(e)=="<Edge><Street name='helloworld' length='1.000000' rise='0.000000' fall='0.000000' way='0' reverse='False'/></Edge>"
+        self.assertEqual( e.from_v.label, "home" )
+        self.assertEqual( e.to_v.label, "work" )
+        self.assertEqual( str(e), "<Edge><Street name='helloworld' length='1.000000' rise='0.000000' fall='0.000000' way='0' reverse='False'/></Edge>" )
         
         spt.destroy()
     
