@@ -1560,53 +1560,6 @@ class Crossing(EdgePayload):
     def __repr__(self):
         return "<Crossing %s>"%list(self.get_all_crossings())
         
-class Combination(EdgePayload):
-    n = cproperty( libgs.comboN, c_int )
-    
-    def __init__(self, cap):
-        self.soul = self._cnew(cap)
-        
-    def add(self, ep):
-        libgs.comboAdd( self.soul, ep.soul )
-        
-    def get(self, i):
-        return EdgePayload.from_pointer( libgs.comboGet( self.soul, i ) )
-        
-    def to_xml(self):
-        self.check_destroyed()
-        return "<Combination n=%d />"%self.n
-        
-    def __getstate__(self):
-        raise NotImplementedError("A Combination's state is the set of rowids of the rows storing its constituants in the graphdb, which it doesn't know.")
-    
-    @classmethod
-    def reconstitute(cls, state, graphdb):
-        components = [ graphdb.get_edge_payload( epid ) for epid in state ]
-        
-        ret = Combination(len(components))
-        
-        for component in components:
-            ret.add( component )
-            
-        return ret
-        
-    @property
-    def components(self):
-        for i in range(self.n):
-            yield self.get( i )
-        
-    def unpack(self):
-        components_unpacked = []
-        for component_to_unpack in self.components:
-            if component_to_unpack.__class__ == Combination:
-                components_unpacked.append( component_to_unpack.unpack() )
-            else:
-                components_unpacked.append( [component_to_unpack] )
-        return reduce( lambda x,y:x+y, components_unpacked )
-        
-    def expound(self):
-        return "\n".join( [str(x) for x in self.unpack()] )
-        
 class TripAlight(EdgePayload):
     calendar = cproperty( libgs.alGetCalendar, c_void_p, ServiceCalendar )
     timezone = cproperty( libgs.alGetTimezone, c_void_p, Timezone )
@@ -1765,7 +1718,7 @@ SPTEdge._cwalk_back = libgs.eWalkBack
 
 EdgePayload._subtypes = {0:Street,1:None,2:None,3:Link,4:GenericPyPayload,5:None,
                          6:Wait,7:Headway,8:TripBoard,9:Crossing,10:TripAlight,
-                         11:HeadwayBoard,12:Egress,13:HeadwayAlight,14:ElapseTime,15:Combination}
+                         11:HeadwayBoard,12:Egress,13:HeadwayAlight,14:ElapseTime}
 EdgePayload._cget_type = libgs.epGetType
 EdgePayload._cwalk = libgs.epWalk
 EdgePayload._cwalk_back = libgs.epWalkBack
@@ -1814,11 +1767,6 @@ ElapseTime._cnew = libgs.elapseTimeNew
 ElapseTime._cdel = libgs.elapseTimeDestroy
 ElapseTime._cwalk = libgs.elapseTimeWalk
 ElapseTime._cwalk_back = libgs.elapseTimeWalkBack
-
-Combination._cnew = libgs.comboNew
-Combination._cdel = libgs.comboDestroy
-Combination._cwalk = libgs.comboWalk
-Combination._cwalk_back = libgs.comboWalkBack
 
 TripBoard._cnew = libgs.tbNew
 TripBoard._cdel = libgs.tbDestroy

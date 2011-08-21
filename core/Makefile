@@ -135,30 +135,6 @@ edgepayload.c.s:
 	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgepayload.c.s
 .PHONY : edgepayload.c.s
 
-edgetypes/combination.o: edgetypes/combination.c.o
-.PHONY : edgetypes/combination.o
-
-# target to build an object file
-edgetypes/combination.c.o:
-	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/combination.c.o
-.PHONY : edgetypes/combination.c.o
-
-edgetypes/combination.i: edgetypes/combination.c.i
-.PHONY : edgetypes/combination.i
-
-# target to preprocess a source file
-edgetypes/combination.c.i:
-	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/combination.c.i
-.PHONY : edgetypes/combination.c.i
-
-edgetypes/combination.s: edgetypes/combination.c.s
-.PHONY : edgetypes/combination.s
-
-# target to generate assembly for a file
-edgetypes/combination.c.s:
-	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/combination.c.s
-.PHONY : edgetypes/combination.c.s
-
 edgetypes/crossing.o: edgetypes/crossing.c.o
 .PHONY : edgetypes/crossing.o
 
@@ -843,9 +819,6 @@ help:
 	@echo "... edgepayload.o"
 	@echo "... edgepayload.i"
 	@echo "... edgepayload.s"
-	@echo "... edgetypes/combination.o"
-	@echo "... edgetypes/combination.i"
-	@echo "... edgetypes/combination.s"
 	@echo "... edgetypes/crossing.o"
 	@echo "... edgetypes/crossing.i"
 	@echo "... edgetypes/crossing.s"

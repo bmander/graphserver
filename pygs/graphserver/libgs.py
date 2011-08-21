@@ -47,7 +47,6 @@ class LGSTypes:
     PayloadMethods = c_void_p
     CustomPayload = c_void_p
     TripAlight = c_void_p
-    Combination = c_void_p
     CHPath = c_void_p
     CH = c_void_p
     Heap = c_void_p
@@ -69,7 +68,6 @@ class LGSTypes:
         PL_EGRESS = 12
         PL_HEADWAYALIGHT = 13
         PL_ELAPSE_TIME = 14
-        PL_COMBINATION = 15
 
 LGSTypes.edgepayload_t = {1:c_int8, 2:c_int16, 4:c_int32, 8:c_int64}[c_size_t.in_dll(libgs, "EDGEPAYLOAD_ENUM_SIZE").value]
 declarations = [\
@@ -243,13 +241,6 @@ declarations = [\
     (libgs.woSetWalkingOverage, None, [LGSTypes.WalkOptions, c_float]),
     (libgs.woGetTurnPenalty, c_int, [LGSTypes.WalkOptions]),
     (libgs.woSetTurnPenalty, None, [LGSTypes.WalkOptions, c_int]),
-    (libgs.comboNew, LGSTypes.Combination, [c_int]),
-    (libgs.comboAdd, None, [LGSTypes.Combination, LGSTypes.EdgePayload]),
-    (libgs.comboDestroy, None, [LGSTypes.Combination]),
-    (libgs.comboWalk, LGSTypes.State, [LGSTypes.EdgePayload, LGSTypes.State, LGSTypes.WalkOptions]),
-    (libgs.comboWalkBack, LGSTypes.State, [LGSTypes.EdgePayload, LGSTypes.State, LGSTypes.WalkOptions]),
-    (libgs.comboGet, LGSTypes.EdgePayload, [LGSTypes.Combination, c_int]),
-    (libgs.comboN, c_int, [LGSTypes.Combination]),
     (libgs.crNew, LGSTypes.Crossing, []),
     (libgs.crDestroy, None, [LGSTypes.Crossing]),
     (libgs.crAddCrossingTime, None, [LGSTypes.Crossing, c_char_p, c_int]),

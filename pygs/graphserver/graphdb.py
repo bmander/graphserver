@@ -1,7 +1,7 @@
 import os
 import sqlite3
 import cPickle
-from graphserver.core import State, Graph, Combination
+from graphserver.core import State, Graph
 from graphserver import core
 from sys import argv
 import sys
@@ -35,16 +35,7 @@ class GraphDatabase:
         
     def put_edge_payload(self, edgepayload, cc):
         
-        if edgepayload.__class__ == Combination:
-	    edge_state = []
-
-            for component in edgepayload.components:
-                rowid = self.put_edge_payload( component, cc )
-
-		edge_state.append( rowid )
-        else:
-	    edge_state = edgepayload.__getstate__()
-
+        edge_state = edgepayload.__getstate__()
         
         cc.execute( "INSERT INTO payloads (type, state) VALUES (?, ?)", 
 	            ( cPickle.dumps( edgepayload.__class__ ), 

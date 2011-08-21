@@ -11,7 +11,6 @@ add_library( graphserver SHARED
              timezone.c
              vector.c
              walkoptions.c
-             edgetypes/combination.c
              edgetypes/crossing.c
              edgetypes/custompayload.c
              edgetypes/egress.c
