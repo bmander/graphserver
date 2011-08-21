@@ -394,7 +394,6 @@ vNew( char* label ) {
 
 void
 vGut(Vertex *this, int free_edge_payloads) {
-
     //delete incoming edges
     while(this->incoming->next != NULL) {
       eDestroy( this->incoming->next->data, free_edge_payloads );
@@ -406,6 +405,10 @@ vGut(Vertex *this, int free_edge_payloads) {
     //free the list dummy-heads that remain
     free(this->outgoing);
     free(this->incoming);
+
+    //set incoming and outgoing to NULL to signify that this has been gutted
+    this->outgoing = NULL;
+    this->incoming = NULL;
 
 }
 
