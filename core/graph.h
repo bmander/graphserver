@@ -25,7 +25,7 @@ struct Vertex {
    int degree_in;
    ListNode* outgoing;
    ListNode* incoming;
-   char* label;
+   char label[256];
     
    int deleted_neighbors;
 } ;
@@ -35,7 +35,8 @@ struct SPTVertex {
    int degree_in;
    ListNode* outgoing;
    ListNode* incoming;
-   char* label;
+   char label[256];
+
    State* state;
    int hop;
    Vertex *mirror;

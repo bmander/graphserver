@@ -346,8 +346,6 @@ void vInit( Vertex *this, char *label ) {
     
     this->deleted_neighbors = 0;
 
-    size_t labelsize = strlen(label)+1;
-    this->label = (char*)malloc(labelsize*sizeof(char));
     strcpy(this->label, label);
 }
 
@@ -377,7 +375,6 @@ vDestroy(Vertex *this, int free_edge_payloads) {
     free(this->incoming);
 
     //and finally, sweet release*/
-    free( this->label );
     free( this );
 }
 
