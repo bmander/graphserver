@@ -1,4 +1,4 @@
-from gsdll import lgs, cproperty, ccast, PayloadMethodTypes
+from gsdll import libgs, cproperty, ccast, PayloadMethodTypes
 from ctypes import string_at, byref, c_int, c_long, c_size_t, c_char_p, c_double, c_void_p, py_object, c_float
 from ctypes import Structure, pointer, cast, POINTER, addressof
 from _ctypes import Py_INCREF, Py_DECREF
@@ -83,7 +83,7 @@ class Vector(Structure):
                 
     def __new__(cls, init_size=50, expand_delta=50):
         # initiate the Path Struct with a C constructor
-        soul = lgs.vecNew( init_size, expand_delta )
+        soul = libgs.vecNew( init_size, expand_delta )
         
         # wrap an instance of this class around that pointer
         return cls.from_address( soul )
@@ -96,13 +96,13 @@ class Vector(Structure):
         pass
         
     def expand(self, amount):
-        lgs.vecExpand( addressof(self), amount )
+        libgs.vecExpand( addressof(self), amount )
         
     def add(self, element):
-        lgs.vecAdd( addressof(self), element )
+        libgs.vecAdd( addressof(self), element )
         
     def get(self, index):
-        return lgs.vecGet( addressof(self), index )
+        return libgs.vecGet( addressof(self), index )
         
     def __repr__(self):
         return "<Vector shadow of %s (%d/%d)>"%(hex(addressof(self)),self.num_elements, self.num_alloc)
@@ -115,7 +115,7 @@ class Path(Structure):
                 
     def __new__(cls, origin, init_size=50, expand_delta=50):
         # initiate the Path Struct with a C constructor
-        soul = lgs.pathNew( origin.soul, init_size, expand_delta )
+        soul = libgs.pathNew( origin.soul, init_size, expand_delta )
         
         # wrap an instance of this class around that pointer
         return cls.from_address( soul )
@@ -127,10 +127,10 @@ class Path(Structure):
         pass
         
     def addSegment(self, vertex, edge):
-        lgs.pathAddSegment( addressof(self), vertex.soul, edge.soul )
+        libgs.pathAddSegment( addressof(self), vertex.soul, edge.soul )
         
     def getVertex( self, i ):
-        vertex_soul = lgs.pathGetVertex( addressof(self), i )
+        vertex_soul = libgs.pathGetVertex( addressof(self), i )
         
         # reinterpret the error code as an exception
         if vertex_soul is None:
@@ -139,7 +139,7 @@ class Path(Structure):
         return SPTVertex.from_pointer( vertex_soul )
         
     def getEdge( self, i ):
-        edge_soul = lgs.pathGetEdge( addressof(self), i )
+        edge_soul = libgs.pathGetEdge( addressof(self), i )
         
         # reinterpret the error code as an exception
         if edge_soul is None:
@@ -148,7 +148,7 @@ class Path(Structure):
         return Edge.from_pointer( edge_soul )
         
     def destroy( self ):
-        lgs.pathDestroy( addressof(self) )
+        libgs.pathDestroy( addressof(self) )
         
     @property
     def num_elements(self):
@@ -163,7 +163,7 @@ class Path(Structure):
 
 class Graph(CShadow):
     
-    size = cproperty(lgs.gSize, c_long)
+    size = cproperty(libgs.gSize, c_long)
     
     def __init__(self, numagencies=1):
         self.soul = self._cnew()
@@ -209,28 +209,28 @@ class Graph(CShadow):
         #void gSetVertexEnabled( Graph *this, char *label, int enabled );
         self.check_destroyed()
         
-        lgs.gSetVertexEnabled( self.soul, vertex_label, enabled )
+        libgs.gSetVertexEnabled( self.soul, vertex_label, enabled )
         
     @property
     def vertices(self):
         self.check_destroyed()
         
         count = c_long()
-        p_va = lgs.gVertices(self.soul, byref(count))
+        p_va = libgs.gVertices(self.soul, byref(count))
         verts = []
         arr = cast(p_va, POINTER(c_void_p)) # a bit of necessary voodoo
         for i in range(count.value):
             v = Vertex.from_pointer(arr[i])
             verts.append(v)
         del arr
-        lgs.gFreeVertexArray(p_va)
+        libgs.gFreeVertexArray(p_va)
         return verts
     
     def add_vertices(self, vs):
         a = (c_char_p * len(vs))()
         for i, v in enumerate(vs):
             a[i] = str(v)
-        lgs.gAddVertices(self.soul, a, len(vs))
+        libgs.gAddVertices(self.soul, a, len(vs))
     
     @property
     def edges(self):
@@ -293,11 +293,11 @@ class Graph(CShadow):
         
 class ContractionHierarchy(CShadow):
     
-    upgraph = cproperty(lgs.chUpGraph, c_void_p, Graph)
-    downgraph = cproperty(lgs.chDownGraph, c_void_p, Graph)
+    upgraph = cproperty(libgs.chUpGraph, c_void_p, Graph)
+    downgraph = cproperty(libgs.chDownGraph, c_void_p, Graph)
     
     def __init__(self):
-        self.soul = lgs.chNew( )
+        self.soul = libgs.chNew( )
         
     def shortest_path(self, fromv_label, tov_label, init_state, walk_options ):
         # GET UPGRAPH AND DOWNGRAPH SPTS
@@ -328,7 +328,7 @@ class ContractionHierarchy(CShadow):
 
 class ShortestPathTree(CShadow):
     
-    size = cproperty(lgs.sptSize, c_long)
+    size = cproperty(libgs.sptSize, c_long)
     
     def __init__(self, numagencies=1):
         self.soul = self._cnew()
@@ -374,14 +374,14 @@ class ShortestPathTree(CShadow):
         self.check_destroyed()
         
         count = c_long()
-        p_va = lgs.sptVertices(self.soul, byref(count))
+        p_va = libgs.sptVertices(self.soul, byref(count))
         verts = []
         arr = cast(p_va, POINTER(c_void_p)) # a bit of necessary voodoo
         for i in range(count.value):
             v = SPTVertex.from_pointer(arr[i])
             verts.append(v)
         del arr
-        lgs.gFreeVertexArray(p_va)
+        libgs.gFreeVertexArray(p_va)
         return verts
     
     @property
@@ -418,7 +418,7 @@ class ShortestPathTree(CShadow):
     def path_retro(self,origin):
         self.check_destroyed()
         
-        path_pointer = lgs.sptPathRetro( self.soul, origin )
+        path_pointer = libgs.sptPathRetro( self.soul, origin )
         
         if path_pointer is None:
 	    raise Exception( "A path to %s could not be found"%origin )
@@ -450,8 +450,8 @@ class EdgePayload(CShadow, Walkable):
         self.check_destroyed()
         return "<abstractedgepayload type='%s'/>" % self.type
     
-    type = cproperty(lgs.epGetType, c_int)
-    external_id = cproperty(lgs.epGetExternalId, c_long, setter=lgs.epSetExternalId)
+    type = cproperty(libgs.epGetType, c_int)
+    external_id = cproperty(libgs.epGetExternalId, c_long, setter=libgs.epSetExternalId)
     
     @classmethod
     def from_pointer(cls, ptr):
@@ -461,7 +461,7 @@ class EdgePayload(CShadow, Walkable):
         
         payloadtype = EdgePayload._subtypes[EdgePayload._cget_type(ptr)]
         if payloadtype is GenericPyPayload:
-            p = lgs.cpSoul(ptr)
+            p = libgs.cpSoul(ptr)
             # this is required to prevent garbage collection of the object
             Py_INCREF(p)
             return p
@@ -477,14 +477,14 @@ class State(CShadow):
         self.soul = self._cnew(n_agencies, long(time))
         
     def service_period(self, agency):
-        soul = lgs.stateServicePeriod( self.soul, agency )
+        soul = libgs.stateServicePeriod( self.soul, agency )
         return ServicePeriod.from_pointer( soul )
         
     def set_service_period(self, agency, sp):
         if agency>self.num_agencies-1:
             raise Exception("Agency index %d out of bounds"%agency)
         
-        lgs.stateSetServicePeriod( self.soul, c_int(agency), sp.soul)
+        libgs.stateSetServicePeriod( self.soul, c_int(agency), sp.soul)
         
     def destroy(self):
         self.check_destroyed()
@@ -526,16 +526,16 @@ class State(CShadow):
     # the state does not keep ownership of the trip_id, so the state
     # may not live longer than whatever object set its trip_id
     def dangerous_set_trip_id( self, trip_id ):
-        lgs.stateDangerousSetTripId( self.soul, trip_id )
+        libgs.stateDangerousSetTripId( self.soul, trip_id )
         
-    time           = cproperty(lgs.stateGetTime, c_long, setter=lgs.stateSetTime)
-    weight         = cproperty(lgs.stateGetWeight, c_long, setter=lgs.stateSetWeight)
-    dist_walked    = cproperty(lgs.stateGetDistWalked, c_double, setter=lgs.stateSetDistWalked)
-    num_transfers  = cproperty(lgs.stateGetNumTransfers, c_int, setter=lgs.stateSetNumTransfers)
-    prev_edge      = cproperty(lgs.stateGetPrevEdge, c_void_p, EdgePayload, setter=lgs.stateSetPrevEdge )
-    num_agencies     = cproperty(lgs.stateGetNumAgencies, c_int)
-    trip_id          = cproperty(lgs.stateGetTripId, c_char_p)
-    stop_sequence    = cproperty(lgs.stateGetStopSequence, c_int)
+    time           = cproperty(libgs.stateGetTime, c_long, setter=libgs.stateSetTime)
+    weight         = cproperty(libgs.stateGetWeight, c_long, setter=libgs.stateSetWeight)
+    dist_walked    = cproperty(libgs.stateGetDistWalked, c_double, setter=libgs.stateSetDistWalked)
+    num_transfers  = cproperty(libgs.stateGetNumTransfers, c_int, setter=libgs.stateSetNumTransfers)
+    prev_edge      = cproperty(libgs.stateGetPrevEdge, c_void_p, EdgePayload, setter=libgs.stateSetPrevEdge )
+    num_agencies     = cproperty(libgs.stateGetNumAgencies, c_int)
+    trip_id          = cproperty(libgs.stateGetTripId, c_char_p)
+    stop_sequence    = cproperty(libgs.stateGetStopSequence, c_int)
     
 class WalkOptions(CShadow):
     
@@ -557,15 +557,15 @@ class WalkOptions(CShadow):
         ret.soul = ptr
         return ret
  
-    transfer_penalty = cproperty(lgs.woGetTransferPenalty, c_int, setter=lgs.woSetTransferPenalty)
-    turn_penalty = cproperty(lgs.woGetTurnPenalty, c_int, setter=lgs.woSetTurnPenalty)
-    walking_speed = cproperty(lgs.woGetWalkingSpeed, c_float, setter=lgs.woSetWalkingSpeed)
-    walking_reluctance = cproperty(lgs.woGetWalkingReluctance, c_float, setter=lgs.woSetWalkingReluctance)
-    uphill_slowness = cproperty(lgs.woGetUphillSlowness, c_float, setter=lgs.woSetUphillSlowness)
-    downhill_fastness = cproperty(lgs.woGetDownhillFastness, c_float, setter=lgs.woSetDownhillFastness)
-    hill_reluctance = cproperty(lgs.woGetHillReluctance, c_float, setter=lgs.woSetHillReluctance)
-    max_walk = cproperty(lgs.woGetMaxWalk, c_int, setter=lgs.woSetMaxWalk)
-    walking_overage = cproperty(lgs.woGetWalkingOverage, c_float, setter=lgs.woSetWalkingOverage)
+    transfer_penalty = cproperty(libgs.woGetTransferPenalty, c_int, setter=libgs.woSetTransferPenalty)
+    turn_penalty = cproperty(libgs.woGetTurnPenalty, c_int, setter=libgs.woSetTurnPenalty)
+    walking_speed = cproperty(libgs.woGetWalkingSpeed, c_float, setter=libgs.woSetWalkingSpeed)
+    walking_reluctance = cproperty(libgs.woGetWalkingReluctance, c_float, setter=libgs.woSetWalkingReluctance)
+    uphill_slowness = cproperty(libgs.woGetUphillSlowness, c_float, setter=libgs.woSetUphillSlowness)
+    downhill_fastness = cproperty(libgs.woGetDownhillFastness, c_float, setter=libgs.woSetDownhillFastness)
+    hill_reluctance = cproperty(libgs.woGetHillReluctance, c_float, setter=libgs.woSetHillReluctance)
+    max_walk = cproperty(libgs.woGetMaxWalk, c_int, setter=libgs.woSetMaxWalk)
+    walking_overage = cproperty(libgs.woGetWalkingOverage, c_float, setter=libgs.woSetWalkingOverage)
 
 class Edge(CShadow, Walkable):
     def __init__(self, from_v, to_v, payload):
@@ -593,7 +593,7 @@ class Edge(CShadow, Walkable):
     def walk(self, state, walk_options):
         return self._cwalk(self.soul, state.soul, walk_options.soul)
         
-    enabled = cproperty(lgs.eGetEnabled, c_int, setter=lgs.eSetEnabled)
+    enabled = cproperty(libgs.eGetEnabled, c_int, setter=libgs.eSetEnabled)
     
 class SPTEdge(Edge):
     def to_xml(self):
@@ -601,9 +601,9 @@ class SPTEdge(Edge):
 
 class Vertex(CShadow):
     
-    label = cproperty(lgs.vGetLabel, c_char_p)
-    degree_in = cproperty(lgs.vDegreeIn, c_int)
-    degree_out = cproperty(lgs.vDegreeOut, c_int)
+    label = cproperty(libgs.vGetLabel, c_char_p)
+    degree_in = cproperty(libgs.vDegreeIn, c_int)
+    degree_out = cproperty(libgs.vDegreeOut, c_int)
     edgeclass = Edge
     
     def __init__(self,label):
@@ -668,11 +668,11 @@ class Vertex(CShadow):
         
 class SPTVertex(CShadow):
     
-    label = cproperty(lgs.sptvGetLabel, c_char_p)
-    degree_in = cproperty(lgs.sptvDegreeIn, c_int)
-    degree_out = cproperty(lgs.sptvDegreeOut, c_int)
-    hop = cproperty(lgs.sptvHop, c_int)
-    mirror = cproperty(lgs.sptvMirror, c_void_p, Vertex )
+    label = cproperty(libgs.sptvGetLabel, c_char_p)
+    degree_in = cproperty(libgs.sptvDegreeIn, c_int)
+    degree_out = cproperty(libgs.sptvDegreeOut, c_int)
+    hop = cproperty(libgs.sptvHop, c_int)
+    mirror = cproperty(libgs.sptvMirror, c_void_p, Vertex )
     edgeclass = SPTEdge
     
     def __init__(self,mirror,hop=0):
@@ -745,7 +745,7 @@ class SPTVertex(CShadow):
 class ListNode(CShadow):
     
     def data(self, edgeclass=Edge):
-        return edgeclass.from_pointer( lgs.liGetData(self.soul) )
+        return edgeclass.from_pointer( libgs.liGetData(self.soul) )
     
     @property
     def next(self):
@@ -825,7 +825,7 @@ class GenericPyPayload(EdgePayload):
                     PayloadMethodTypes.walk(_cwalk),
                     PayloadMethodTypes.walk_back(_cwalk_back)]
 
-    _cmethods = lgs.defineCustomPayloadType(*_cmethodptrs)
+    _cmethods = libgs.defineCustomPayloadType(*_cmethodptrs)
 
  
 class NoOpPyPayload(GenericPyPayload):
@@ -850,8 +850,8 @@ class NoOpPyPayload(GenericPyPayload):
 
 class ServicePeriod(CShadow):   
 
-    begin_time = cproperty(lgs.spBeginTime, c_long)
-    end_time = cproperty(lgs.spEndTime, c_long)
+    begin_time = cproperty(libgs.spBeginTime, c_long)
+    end_time = cproperty(libgs.spEndTime, c_long)
 
     def __init__(self, begin_time, end_time, service_ids):
         n, sids = ServicePeriod._py2c_service_ids(service_ids)
@@ -860,7 +860,7 @@ class ServicePeriod(CShadow):
     @property
     def service_ids(self):
         count = c_int()
-        ptr = lgs.spServiceIds(self.soul, byref(count))
+        ptr = libgs.spServiceIds(self.soul, byref(count))
         ptr = cast(ptr, POINTER(ServiceIdType))
         ids = []
         for i in range(count.value):
@@ -893,10 +893,10 @@ class ServicePeriod(CShadow):
         return "<ServicePeriod begin_time='%d' end_time='%d' service_ids='%s'/>" %( self.begin_time, self.end_time, ",".join(sids))
     
     def datum_midnight(self, timezone_offset):
-        return lgs.spDatumMidnight( self.soul, timezone_offset )
+        return libgs.spDatumMidnight( self.soul, timezone_offset )
     
     def normalize_time(self, timezone_offset, time):
-        return lgs.spNormalizeTime(self.soul, timezone_offset, time)
+        return libgs.spNormalizeTime(self.soul, timezone_offset, time)
         
     def __getstate__(self):
         return (self.begin_time, self.end_time, self.service_ids)
@@ -918,10 +918,10 @@ class ServicePeriod(CShadow):
 class ServiceCalendar(CShadow):
     """Calendar provides a set of convient methods for dealing with the wrapper class ServicePeriod, which
        wraps a single node in the doubly linked list that represents a calendar in Graphserver."""
-    head = cproperty( lgs.scHead, c_void_p, ServicePeriod )
+    head = cproperty( libgs.scHead, c_void_p, ServicePeriod )
        
     def __init__(self):
-        self.soul = lgs.scNew()
+        self.soul = libgs.scNew()
         
     def destroy(self):
         self.check_destroyed()
@@ -934,25 +934,25 @@ class ServiceCalendar(CShadow):
         if type(service_id)!=type("string"):
             raise TypeError("service_id is supposed to be a string")
         
-        return lgs.scGetServiceIdInt( self.soul, service_id );
+        return libgs.scGetServiceIdInt( self.soul, service_id );
         
     def get_service_id_string( self, service_id ):
         if type(service_id)!=type(1):
             raise TypeError("service_id is supposed to be an int, in this case")
         
-        return lgs.scGetServiceIdString( self.soul, service_id )
+        return libgs.scGetServiceIdString( self.soul, service_id )
         
     def add_period(self, begin_time, end_time, service_ids):
         sp = ServicePeriod( begin_time, end_time, [self.get_service_id_int(x) for x in service_ids] )
         
-        lgs.scAddPeriod(self.soul, sp.soul)
+        libgs.scAddPeriod(self.soul, sp.soul)
 
     def period_of_or_after(self,time):
-        soul = lgs.scPeriodOfOrAfter(self.soul, time)
+        soul = libgs.scPeriodOfOrAfter(self.soul, time)
         return ServicePeriod.from_pointer(soul)
     
     def period_of_or_before(self,time):
-        soul = lgs.scPeriodOfOrBefore(self.soul, time)
+        soul = libgs.scPeriodOfOrBefore(self.soul, time)
         return ServicePeriod.from_pointer(soul)
     
     @property
@@ -1008,19 +1008,19 @@ class ServiceCalendar(CShadow):
         return "\n".join( periodstrs )
     
 class TimezonePeriod(CShadow):
-    begin_time = cproperty(lgs.tzpBeginTime, c_long)
-    end_time = cproperty(lgs.tzpEndTime, c_long)
-    utc_offset = cproperty(lgs.tzpUtcOffset, c_long)
+    begin_time = cproperty(libgs.tzpBeginTime, c_long)
+    end_time = cproperty(libgs.tzpEndTime, c_long)
+    utc_offset = cproperty(libgs.tzpUtcOffset, c_long)
     
     def __init__(self, begin_time, end_time, utc_offset):
-        self.soul = lgs.tzpNew(begin_time, end_time, utc_offset)
+        self.soul = libgs.tzpNew(begin_time, end_time, utc_offset)
     
     @property
     def next_period(self):
-        return TimezonePeriod.from_pointer( lgs.tzpNextPeriod( self.soul ) )
+        return TimezonePeriod.from_pointer( libgs.tzpNextPeriod( self.soul ) )
         
     def time_since_midnight(self, time):
-        return lgs.tzpTimeSinceMidnight( self.soul, c_long(time) )
+        return libgs.tzpTimeSinceMidnight( self.soul, c_long(time) )
         
     def __getstate__(self):
         return (self.begin_time, self.end_time, self.utc_offset)
@@ -1030,10 +1030,10 @@ class TimezonePeriod(CShadow):
                 
         
 class Timezone(CShadow):
-    head = cproperty( lgs.tzHead, c_void_p, TimezonePeriod )
+    head = cproperty( libgs.tzHead, c_void_p, TimezonePeriod )
     
     def __init__(self):
-        self.soul = lgs.tzNew()
+        self.soul = libgs.tzNew()
         
     def destroy(self):
         self.check_destroyed()
@@ -1042,14 +1042,14 @@ class Timezone(CShadow):
         self.soul = None
 
     def add_period(self, timezone_period):
-        lgs.tzAddPeriod( self.soul, timezone_period.soul)
+        libgs.tzAddPeriod( self.soul, timezone_period.soul)
         
     def period_of(self, time):
-        tzpsoul = lgs.tzPeriodOf( self.soul, time )
+        tzpsoul = libgs.tzPeriodOf( self.soul, time )
         return TimezonePeriod.from_pointer( tzpsoul )
         
     def utc_offset(self, time):
-        ret = lgs.tzUtcOffset( self.soul, time )
+        ret = libgs.tzUtcOffset( self.soul, time )
         
         if ret==-360000:
             raise IndexError( "%d lands within no timezone period"%time )
@@ -1057,7 +1057,7 @@ class Timezone(CShadow):
         return ret
         
     def time_since_midnight(self, time):
-        ret = lgs.tzTimeSinceMidnight( self.soul, c_long(time) )
+        ret = libgs.tzTimeSinceMidnight( self.soul, c_long(time) )
         
         if ret==-1:
             raise IndexError( "%d lands within no timezone period"%time )
@@ -1102,7 +1102,7 @@ class Timezone(CShadow):
 #=============================================================================#
     
 class Link(EdgePayload):
-    name = cproperty(lgs.linkGetName, c_char_p)
+    name = cproperty(libgs.linkGetName, c_char_p)
     
     def __init__(self):
         self.soul = self._cnew()
@@ -1123,12 +1123,12 @@ class Link(EdgePayload):
         return Link()
     
 class Street(EdgePayload):
-    length = cproperty(lgs.streetGetLength, c_double)
-    name   = cproperty(lgs.streetGetName, c_char_p)
-    rise = cproperty(lgs.streetGetRise, c_float, setter=lgs.streetSetRise)
-    fall = cproperty(lgs.streetGetFall, c_float, setter=lgs.streetSetFall)
-    slog = cproperty(lgs.streetGetSlog, c_float, setter=lgs.streetSetSlog)
-    way = cproperty(lgs.streetGetWay, c_long, setter=lgs.streetSetWay)
+    length = cproperty(libgs.streetGetLength, c_double)
+    name   = cproperty(libgs.streetGetName, c_char_p)
+    rise = cproperty(libgs.streetGetRise, c_float, setter=libgs.streetSetRise)
+    fall = cproperty(libgs.streetGetFall, c_float, setter=libgs.streetSetFall)
+    slog = cproperty(libgs.streetGetSlog, c_float, setter=libgs.streetSetSlog)
+    way = cproperty(libgs.streetGetWay, c_long, setter=libgs.streetSetWay)
     
     def __init__(self,name,length,rise=0,fall=0,reverse_of_source=False):
         self.soul = self._cnew(name, length, rise, fall,reverse_of_source)
@@ -1160,11 +1160,11 @@ class Street(EdgePayload):
         
     @property
     def reverse_of_source(self):
-        return lgs.streetGetReverseOfSource(self.soul)==1
+        return libgs.streetGetReverseOfSource(self.soul)==1
 
 class Egress(EdgePayload):
-    length = cproperty(lgs.egressGetLength, c_double)
-    name   = cproperty(lgs.egressGetName, c_char_p)
+    length = cproperty(libgs.egressGetLength, c_double)
+    name   = cproperty(libgs.egressGetName, c_char_p)
     
     def __init__(self,name,length):
         self.soul = self._cnew(name, length)
@@ -1189,8 +1189,8 @@ class Egress(EdgePayload):
 
 
 class Wait(EdgePayload):
-    end = cproperty(lgs.waitGetEnd, c_long)
-    timezone = cproperty(lgs.waitGetTimezone, c_void_p, Timezone)
+    end = cproperty(libgs.waitGetEnd, c_long)
+    timezone = cproperty(libgs.waitGetTimezone, c_void_p, Timezone)
     
     def __init__(self, end, timezone):
         self.soul = self._cnew( end, timezone.soul )
@@ -1204,7 +1204,7 @@ class Wait(EdgePayload):
         return (self.end, self.timezone.soul)
 
 class ElapseTime(EdgePayload):
-    seconds = cproperty(lgs.elapseTimeGetSeconds, c_long)
+    seconds = cproperty(libgs.elapseTimeGetSeconds, c_long)
     
     def __init__(self, seconds):
         self.soul = self._cnew( seconds )
@@ -1225,15 +1225,15 @@ class ElapseTime(EdgePayload):
 
 class Headway(EdgePayload):
     
-    begin_time = cproperty( lgs.headwayBeginTime, c_int )
-    end_time = cproperty( lgs.headwayEndTime, c_int )
-    wait_period = cproperty( lgs.headwayWaitPeriod, c_int )
-    transit = cproperty( lgs.headwayTransit, c_int )
-    trip_id = cproperty( lgs.headwayTripId, c_char_p )
-    calendar = cproperty( lgs.headwayCalendar, c_void_p, ServiceCalendar )
-    timezone = cproperty( lgs.headwayTimezone, c_void_p, Timezone )
-    agency = cproperty( lgs.headwayAgency, c_int )
-    int_service_id = cproperty( lgs.headwayServiceId, c_int )
+    begin_time = cproperty( libgs.headwayBeginTime, c_int )
+    end_time = cproperty( libgs.headwayEndTime, c_int )
+    wait_period = cproperty( libgs.headwayWaitPeriod, c_int )
+    transit = cproperty( libgs.headwayTransit, c_int )
+    trip_id = cproperty( libgs.headwayTripId, c_char_p )
+    calendar = cproperty( libgs.headwayCalendar, c_void_p, ServiceCalendar )
+    timezone = cproperty( libgs.headwayTimezone, c_void_p, Timezone )
+    agency = cproperty( libgs.headwayAgency, c_int )
+    int_service_id = cproperty( libgs.headwayServiceId, c_int )
     
     def __init__(self, begin_time, end_time, wait_period, transit, trip_id, calendar, timezone, agency, service_id):
         if type(service_id)!=type('string'):
@@ -1241,7 +1241,7 @@ class Headway(EdgePayload):
             
         int_sid = calendar.get_service_id_int( service_id )
         
-        self.soul = lgs.headwayNew(begin_time, end_time, wait_period, transit, trip_id.encode("ascii"),  calendar.soul, timezone.soul, c_int(agency), ServiceIdType(int_sid))
+        self.soul = libgs.headwayNew(begin_time, end_time, wait_period, transit, trip_id.encode("ascii"),  calendar.soul, timezone.soul, c_int(agency), ServiceIdType(int_sid))
         
     @property
     def service_id(self):
@@ -1261,12 +1261,12 @@ class Headway(EdgePayload):
         return (self.begin_time, self.end_time, self.wait_period, self.transit, self.trip_id, self.calendar.soul, self.timezone.soul, self.agency, self.calendar.get_service_id_string(self.int_service_id))
         
 class TripBoard(EdgePayload):
-    calendar = cproperty( lgs.tbGetCalendar, c_void_p, ServiceCalendar )
-    timezone = cproperty( lgs.tbGetTimezone, c_void_p, Timezone )
-    agency = cproperty( lgs.tbGetAgency, c_int )
-    int_service_id = cproperty( lgs.tbGetServiceId, c_int )
-    num_boardings = cproperty( lgs.tbGetNumBoardings, c_int )
-    overage = cproperty( lgs.tbGetOverage, c_int )
+    calendar = cproperty( libgs.tbGetCalendar, c_void_p, ServiceCalendar )
+    timezone = cproperty( libgs.tbGetTimezone, c_void_p, Timezone )
+    agency = cproperty( libgs.tbGetAgency, c_int )
+    int_service_id = cproperty( libgs.tbGetServiceId, c_int )
+    num_boardings = cproperty( libgs.tbGetNumBoardings, c_int )
+    overage = cproperty( libgs.tbGetOverage, c_int )
     
     def __init__(self, service_id, calendar, timezone, agency):
         service_id = service_id if type(service_id)==int else calendar.get_service_id_int(service_id)
@@ -1281,9 +1281,9 @@ class TripBoard(EdgePayload):
         self._cadd_boarding( self.soul, trip_id, depart, stop_sequence )
         
     def get_boarding(self, i):
-        trip_id = lgs.tbGetBoardingTripId(self.soul, c_int(i))
-        depart = lgs.tbGetBoardingDepart(self.soul, c_int(i))
-        stop_sequence = lgs.tbGetBoardingStopSequence(self.soul, c_int(i))
+        trip_id = libgs.tbGetBoardingTripId(self.soul, c_int(i))
+        depart = libgs.tbGetBoardingDepart(self.soul, c_int(i))
+        stop_sequence = libgs.tbGetBoardingStopSequence(self.soul, c_int(i))
         
         if trip_id is None:
             raise IndexError("Index %d out of bounds"%i)
@@ -1291,7 +1291,7 @@ class TripBoard(EdgePayload):
         return (trip_id, depart, stop_sequence)
         
     def get_boarding_by_trip_id( self, trip_id ):
-        boarding_index = lgs.tbGetBoardingIndexByTripId( self.soul, trip_id )
+        boarding_index = libgs.tbGetBoardingIndexByTripId( self.soul, trip_id )
         
         if boarding_index == -1:
             return None
@@ -1299,10 +1299,10 @@ class TripBoard(EdgePayload):
         return self.get_boarding( boarding_index )
     
     def search_boardings_list(self, time):
-        return lgs.tbSearchBoardingsList( self.soul, c_int(time) )
+        return libgs.tbSearchBoardingsList( self.soul, c_int(time) )
         
     def get_next_boarding_index(self, time):
-        return lgs.tbGetNextBoardingIndex( self.soul, c_int(time) )
+        return libgs.tbGetNextBoardingIndex( self.soul, c_int(time) )
         
     def get_next_boarding(self, time):
         i = self.get_next_boarding_index(time)
@@ -1373,14 +1373,14 @@ class TripBoard(EdgePayload):
         
         
 class HeadwayBoard(EdgePayload):
-    calendar = cproperty( lgs.hbGetCalendar, c_void_p, ServiceCalendar )
-    timezone = cproperty( lgs.hbGetTimezone, c_void_p, Timezone )
-    agency = cproperty( lgs.hbGetAgency, c_int )
-    int_service_id = cproperty( lgs.hbGetServiceId, c_int )
-    trip_id = cproperty( lgs.hbGetTripId, c_char_p )
-    start_time = cproperty( lgs.hbGetStartTime, c_int )
-    end_time = cproperty( lgs.hbGetEndTime, c_int )
-    headway_secs = cproperty( lgs.hbGetHeadwaySecs, c_int )
+    calendar = cproperty( libgs.hbGetCalendar, c_void_p, ServiceCalendar )
+    timezone = cproperty( libgs.hbGetTimezone, c_void_p, Timezone )
+    agency = cproperty( libgs.hbGetAgency, c_int )
+    int_service_id = cproperty( libgs.hbGetServiceId, c_int )
+    trip_id = cproperty( libgs.hbGetTripId, c_char_p )
+    start_time = cproperty( libgs.hbGetStartTime, c_int )
+    end_time = cproperty( libgs.hbGetEndTime, c_int )
+    headway_secs = cproperty( libgs.hbGetHeadwaySecs, c_int )
     
     def __init__(self, service_id, calendar, timezone, agency, trip_id, start_time, end_time, headway_secs):
         service_id = service_id if type(service_id)==int else calendar.get_service_id_int(service_id)
@@ -1433,14 +1433,14 @@ class HeadwayBoard(EdgePayload):
         return ret
         
 class HeadwayAlight(EdgePayload):
-    calendar = cproperty( lgs.haGetCalendar, c_void_p, ServiceCalendar )
-    timezone = cproperty( lgs.haGetTimezone, c_void_p, Timezone )
-    agency = cproperty( lgs.haGetAgency, c_int )
-    int_service_id = cproperty( lgs.haGetServiceId, c_int )
-    trip_id = cproperty( lgs.haGetTripId, c_char_p )
-    start_time = cproperty( lgs.haGetStartTime, c_int )
-    end_time = cproperty( lgs.haGetEndTime, c_int )
-    headway_secs = cproperty( lgs.haGetHeadwaySecs, c_int )
+    calendar = cproperty( libgs.haGetCalendar, c_void_p, ServiceCalendar )
+    timezone = cproperty( libgs.haGetTimezone, c_void_p, Timezone )
+    agency = cproperty( libgs.haGetAgency, c_int )
+    int_service_id = cproperty( libgs.haGetServiceId, c_int )
+    trip_id = cproperty( libgs.haGetTripId, c_char_p )
+    start_time = cproperty( libgs.haGetStartTime, c_int )
+    end_time = cproperty( libgs.haGetEndTime, c_int )
+    headway_secs = cproperty( libgs.haGetHeadwaySecs, c_int )
     
     def __init__(self, service_id, calendar, timezone, agency, trip_id, start_time, end_time, headway_secs):
         service_id = service_id if type(service_id)==int else calendar.get_service_id_int(service_id)
@@ -1494,17 +1494,17 @@ class Crossing(EdgePayload):
         self.soul = self._cnew()
         
     def add_crossing_time(self, trip_id, crossing_time):
-        lgs.crAddCrossingTime( self.soul, trip_id, crossing_time )
+        libgs.crAddCrossingTime( self.soul, trip_id, crossing_time )
         
     def get_crossing_time(self, trip_id):
-        ret = lgs.crGetCrossingTime( self.soul, trip_id )
+        ret = libgs.crGetCrossingTime( self.soul, trip_id )
         if ret==-1:
             return None
         return ret
         
     def get_crossing(self, i):
-        trip_id = lgs.crGetCrossingTimeTripIdByIndex( self.soul, i )
-        crossing_time = lgs.crGetCrossingTimeByIndex( self.soul, i )
+        trip_id = libgs.crGetCrossingTimeTripIdByIndex( self.soul, i )
+        crossing_time = libgs.crGetCrossingTimeByIndex( self.soul, i )
         
         if crossing_time==-1:
             return None
@@ -1513,7 +1513,7 @@ class Crossing(EdgePayload):
     
     @property
     def size(self):
-        return lgs.crGetSize( self.soul )
+        return libgs.crGetSize( self.soul )
     
     def get_all_crossings(self):
         for i in range(self.size):
@@ -1548,16 +1548,16 @@ class Crossing(EdgePayload):
         return "<Crossing %s>"%list(self.get_all_crossings())
         
 class Combination(EdgePayload):
-    n = cproperty( lgs.comboN, c_int )
+    n = cproperty( libgs.comboN, c_int )
     
     def __init__(self, cap):
         self.soul = self._cnew(cap)
         
     def add(self, ep):
-        lgs.comboAdd( self.soul, ep.soul )
+        libgs.comboAdd( self.soul, ep.soul )
         
     def get(self, i):
-        return EdgePayload.from_pointer( lgs.comboGet( self.soul, i ) )
+        return EdgePayload.from_pointer( libgs.comboGet( self.soul, i ) )
         
     def to_xml(self):
         self.check_destroyed()
@@ -1595,12 +1595,12 @@ class Combination(EdgePayload):
         return "\n".join( [str(x) for x in self.unpack()] )
         
 class TripAlight(EdgePayload):
-    calendar = cproperty( lgs.alGetCalendar, c_void_p, ServiceCalendar )
-    timezone = cproperty( lgs.alGetTimezone, c_void_p, Timezone )
-    agency = cproperty( lgs.alGetAgency, c_int )
-    int_service_id = cproperty( lgs.alGetServiceId, c_int )
-    num_alightings = cproperty( lgs.alGetNumAlightings, c_int )
-    overage = cproperty( lgs.tbGetOverage, c_int )
+    calendar = cproperty( libgs.alGetCalendar, c_void_p, ServiceCalendar )
+    timezone = cproperty( libgs.alGetTimezone, c_void_p, Timezone )
+    agency = cproperty( libgs.alGetAgency, c_int )
+    int_service_id = cproperty( libgs.alGetServiceId, c_int )
+    num_alightings = cproperty( libgs.alGetNumAlightings, c_int )
+    overage = cproperty( libgs.tbGetOverage, c_int )
     
     def __init__(self, service_id, calendar, timezone, agency):
         service_id = service_id if type(service_id)==int else calendar.get_service_id_int(service_id)
@@ -1608,12 +1608,12 @@ class TripAlight(EdgePayload):
         self.soul = self._cnew(service_id, calendar.soul, timezone.soul, agency)
         
     def add_alighting(self, trip_id, arrival, stop_sequence):
-        lgs.alAddAlighting( self.soul, trip_id, arrival, stop_sequence )
+        libgs.alAddAlighting( self.soul, trip_id, arrival, stop_sequence )
         
     def get_alighting(self, i):
-        trip_id = lgs.alGetAlightingTripId(self.soul, c_int(i))
-        arrival = lgs.alGetAlightingArrival(self.soul, c_int(i))
-        stop_sequence = lgs.alGetAlightingStopSequence(self.soul, c_int(i))
+        trip_id = libgs.alGetAlightingTripId(self.soul, c_int(i))
+        arrival = libgs.alGetAlightingArrival(self.soul, c_int(i))
+        stop_sequence = libgs.alGetAlightingStopSequence(self.soul, c_int(i))
         
         if trip_id is None:
             raise IndexError("Index %d out of bounds"%i)
@@ -1626,10 +1626,10 @@ class TripAlight(EdgePayload):
             yield self.get_alighting( i )
         
     def search_alightings_list(self, time):
-        return lgs.alSearchAlightingsList( self.soul, c_int(time) )
+        return libgs.alSearchAlightingsList( self.soul, c_int(time) )
         
     def get_last_alighting_index(self, time):
-        return lgs.alGetLastAlightingIndex( self.soul, c_int(time) )
+        return libgs.alGetLastAlightingIndex( self.soul, c_int(time) )
         
     def get_last_alighting(self, time):
         i = self.get_last_alighting_index(time)
@@ -1641,7 +1641,7 @@ class TripAlight(EdgePayload):
             
 
     def get_alighting_by_trip_id( self, trip_id ):
-        alighting_index = lgs.alGetAlightingIndexByTripId( self.soul, trip_id )
+        alighting_index = libgs.alGetAlightingIndexByTripId( self.soul, trip_id )
         
         if alighting_index == -1:
             return None
@@ -1709,126 +1709,126 @@ class TripAlight(EdgePayload):
 
 class VertexNotFoundError(Exception): pass
 
-Graph._cnew = lgs.gNew
-Graph._cdel = lgs.gDestroy
-Graph._cadd_vertex = ccast(lgs.gAddVertex, Vertex)
-Graph._cremove_vertex = lgs.gRemoveVertex
-Graph._cget_vertex = ccast(lgs.gGetVertex, Vertex)
-Graph._cadd_edge = ccast(lgs.gAddEdge, Edge)
-Graph._cshortest_path_tree = ccast(lgs.gShortestPathTree, ShortestPathTree)
-Graph._cshortest_path_tree_retro = ccast(lgs.gShortestPathTreeRetro, ShortestPathTree)
-Graph._get_ch = ccast( lgs.get_contraction_hierarchies, ContractionHierarchy )
+Graph._cnew = libgs.gNew
+Graph._cdel = libgs.gDestroy
+Graph._cadd_vertex = ccast(libgs.gAddVertex, Vertex)
+Graph._cremove_vertex = libgs.gRemoveVertex
+Graph._cget_vertex = ccast(libgs.gGetVertex, Vertex)
+Graph._cadd_edge = ccast(libgs.gAddEdge, Edge)
+Graph._cshortest_path_tree = ccast(libgs.gShortestPathTree, ShortestPathTree)
+Graph._cshortest_path_tree_retro = ccast(libgs.gShortestPathTreeRetro, ShortestPathTree)
+Graph._get_ch = ccast( libgs.get_contraction_hierarchies, ContractionHierarchy )
 
-ShortestPathTree._cnew = lgs.sptNew
-ShortestPathTree._cdel = lgs.sptDestroy
-ShortestPathTree._cadd_vertex = ccast(lgs.sptAddVertex, SPTVertex)
-ShortestPathTree._cremove_vertex = lgs.sptRemoveVertex
-ShortestPathTree._cget_vertex = ccast(lgs.sptGetVertex, SPTVertex)
-ShortestPathTree._cadd_edge = ccast(lgs.sptAddEdge, Edge)
+ShortestPathTree._cnew = libgs.sptNew
+ShortestPathTree._cdel = libgs.sptDestroy
+ShortestPathTree._cadd_vertex = ccast(libgs.sptAddVertex, SPTVertex)
+ShortestPathTree._cremove_vertex = libgs.sptRemoveVertex
+ShortestPathTree._cget_vertex = ccast(libgs.sptGetVertex, SPTVertex)
+ShortestPathTree._cadd_edge = ccast(libgs.sptAddEdge, Edge)
 
-Vertex._cnew = lgs.vNew
-Vertex._cdel = lgs.vDestroy
-Vertex._coutgoing_edges = ccast(lgs.vGetOutgoingEdgeList, ListNode)
-Vertex._cincoming_edges = ccast(lgs.vGetIncomingEdgeList, ListNode)
+Vertex._cnew = libgs.vNew
+Vertex._cdel = libgs.vDestroy
+Vertex._coutgoing_edges = ccast(libgs.vGetOutgoingEdgeList, ListNode)
+Vertex._cincoming_edges = ccast(libgs.vGetIncomingEdgeList, ListNode)
 
-SPTVertex._cnew = lgs.sptvNew
-SPTVertex._cdel = lgs.sptvDestroy
-SPTVertex._coutgoing_edges = ccast(lgs.sptvGetOutgoingEdgeList, ListNode)
-SPTVertex._cincoming_edges = ccast(lgs.sptvGetIncomingEdgeList, ListNode)
-SPTVertex._cstate = ccast(lgs.sptvState, State)
+SPTVertex._cnew = libgs.sptvNew
+SPTVertex._cdel = libgs.sptvDestroy
+SPTVertex._coutgoing_edges = ccast(libgs.sptvGetOutgoingEdgeList, ListNode)
+SPTVertex._cincoming_edges = ccast(libgs.sptvGetIncomingEdgeList, ListNode)
+SPTVertex._cstate = ccast(libgs.sptvState, State)
 
-Edge._cnew = lgs.eNew
-Edge._cfrom_v = ccast(lgs.eGetFrom, Vertex)
-Edge._cto_v = ccast(lgs.eGetTo, Vertex)
-Edge._cpayload = ccast(lgs.eGetPayload, EdgePayload)
-Edge._cwalk = ccast(lgs.eWalk, State)
-Edge._cwalk_back = lgs.eWalkBack
+Edge._cnew = libgs.eNew
+Edge._cfrom_v = ccast(libgs.eGetFrom, Vertex)
+Edge._cto_v = ccast(libgs.eGetTo, Vertex)
+Edge._cpayload = ccast(libgs.eGetPayload, EdgePayload)
+Edge._cwalk = ccast(libgs.eWalk, State)
+Edge._cwalk_back = libgs.eWalkBack
 
-SPTEdge._cnew = lgs.eNew
-SPTEdge._cfrom_v = ccast(lgs.eGetFrom, SPTVertex)
-SPTEdge._cto_v = ccast(lgs.eGetTo, SPTVertex)
-SPTEdge._cpayload = ccast(lgs.eGetPayload, EdgePayload)
-SPTEdge._cwalk = ccast(lgs.eWalk, State)
-SPTEdge._cwalk_back = lgs.eWalkBack
+SPTEdge._cnew = libgs.eNew
+SPTEdge._cfrom_v = ccast(libgs.eGetFrom, SPTVertex)
+SPTEdge._cto_v = ccast(libgs.eGetTo, SPTVertex)
+SPTEdge._cpayload = ccast(libgs.eGetPayload, EdgePayload)
+SPTEdge._cwalk = ccast(libgs.eWalk, State)
+SPTEdge._cwalk_back = libgs.eWalkBack
 
 EdgePayload._subtypes = {0:Street,1:None,2:None,3:Link,4:GenericPyPayload,5:None,
                          6:Wait,7:Headway,8:TripBoard,9:Crossing,10:TripAlight,
                          11:HeadwayBoard,12:Egress,13:HeadwayAlight,14:ElapseTime,15:Combination}
-EdgePayload._cget_type = lgs.epGetType
-EdgePayload._cwalk = lgs.epWalk
-EdgePayload._cwalk_back = lgs.epWalkBack
+EdgePayload._cget_type = libgs.epGetType
+EdgePayload._cwalk = libgs.epWalk
+EdgePayload._cwalk_back = libgs.epWalkBack
 
-ServicePeriod._cnew = lgs.spNew
-ServicePeriod._crewind = ccast(lgs.spRewind, ServicePeriod)
-ServicePeriod._cfast_forward = ccast(lgs.spFastForward, ServicePeriod)
-ServicePeriod._cnext = ccast(lgs.spNextPeriod, ServicePeriod)
-ServicePeriod._cprev = ccast(lgs.spPreviousPeriod, ServicePeriod)
+ServicePeriod._cnew = libgs.spNew
+ServicePeriod._crewind = ccast(libgs.spRewind, ServicePeriod)
+ServicePeriod._cfast_forward = ccast(libgs.spFastForward, ServicePeriod)
+ServicePeriod._cnext = ccast(libgs.spNextPeriod, ServicePeriod)
+ServicePeriod._cprev = ccast(libgs.spPreviousPeriod, ServicePeriod)
 
-ServiceCalendar._cnew = lgs.scNew
-ServiceCalendar._cdel = lgs.scDestroy
-ServiceCalendar._cperiod_of_or_before = ccast(lgs.scPeriodOfOrBefore, ServicePeriod)
-ServiceCalendar._cperiod_of_or_after = ccast(lgs.scPeriodOfOrAfter, ServicePeriod)
+ServiceCalendar._cnew = libgs.scNew
+ServiceCalendar._cdel = libgs.scDestroy
+ServiceCalendar._cperiod_of_or_before = ccast(libgs.scPeriodOfOrBefore, ServicePeriod)
+ServiceCalendar._cperiod_of_or_after = ccast(libgs.scPeriodOfOrAfter, ServicePeriod)
 
-Timezone._cdel = lgs.tzDestroy
+Timezone._cdel = libgs.tzDestroy
 
-State._cnew = lgs.stateNew
-State._cdel = lgs.stateDestroy
-State._ccopy = ccast(lgs.stateDup, State)
+State._cnew = libgs.stateNew
+State._cdel = libgs.stateDestroy
+State._ccopy = ccast(libgs.stateDup, State)
 
-ListNode._cdata = ccast(lgs.liGetData, Edge)
-ListNode._cnext = ccast(lgs.liGetNext, ListNode)
+ListNode._cdata = ccast(libgs.liGetData, Edge)
+ListNode._cnext = ccast(libgs.liGetNext, ListNode)
 
-Street._cnew = lgs.streetNewElev
-Street._cdel = lgs.streetDestroy
-Street._cwalk = lgs.streetWalk
-Street._cwalk_back = lgs.streetWalkBack
+Street._cnew = libgs.streetNewElev
+Street._cdel = libgs.streetDestroy
+Street._cwalk = libgs.streetWalk
+Street._cwalk_back = libgs.streetWalkBack
 
-Egress._cnew = lgs.egressNew
-Egress._cdel = lgs.egressDestroy
-Egress._cwalk = lgs.egressWalk
-Egress._cwalk_back = lgs.egressWalkBack
+Egress._cnew = libgs.egressNew
+Egress._cdel = libgs.egressDestroy
+Egress._cwalk = libgs.egressWalk
+Egress._cwalk_back = libgs.egressWalkBack
 
-Link._cnew = lgs.linkNew
-Link._cdel = lgs.linkDestroy
-Link._cwalk = lgs.epWalk
-Link._cwalk_back = lgs.linkWalkBack
+Link._cnew = libgs.linkNew
+Link._cdel = libgs.linkDestroy
+Link._cwalk = libgs.epWalk
+Link._cwalk_back = libgs.linkWalkBack
 
-Wait._cnew = lgs.waitNew
-Wait._cdel = lgs.waitDestroy
-Wait._cwalk = lgs.waitWalk
-Wait._cwalk_back = lgs.waitWalkBack
+Wait._cnew = libgs.waitNew
+Wait._cdel = libgs.waitDestroy
+Wait._cwalk = libgs.waitWalk
+Wait._cwalk_back = libgs.waitWalkBack
 
-ElapseTime._cnew = lgs.elapseTimeNew
-ElapseTime._cdel = lgs.elapseTimeDestroy
-ElapseTime._cwalk = lgs.elapseTimeWalk
-ElapseTime._cwalk_back = lgs.elapseTimeWalkBack
+ElapseTime._cnew = libgs.elapseTimeNew
+ElapseTime._cdel = libgs.elapseTimeDestroy
+ElapseTime._cwalk = libgs.elapseTimeWalk
+ElapseTime._cwalk_back = libgs.elapseTimeWalkBack
 
-Combination._cnew = lgs.comboNew
-Combination._cdel = lgs.comboDestroy
-Combination._cwalk = lgs.comboWalk
-Combination._cwalk_back = lgs.comboWalkBack
+Combination._cnew = libgs.comboNew
+Combination._cdel = libgs.comboDestroy
+Combination._cwalk = libgs.comboWalk
+Combination._cwalk_back = libgs.comboWalkBack
 
-TripBoard._cnew = lgs.tbNew
-TripBoard._cdel = lgs.tbDestroy
-TripBoard._cadd_boarding = lgs.tbAddBoarding
-TripBoard._cwalk = lgs.epWalk
+TripBoard._cnew = libgs.tbNew
+TripBoard._cdel = libgs.tbDestroy
+TripBoard._cadd_boarding = libgs.tbAddBoarding
+TripBoard._cwalk = libgs.epWalk
 
-Crossing._cnew = lgs.crNew
-Crossing._cdel = lgs.crDestroy
+Crossing._cnew = libgs.crNew
+Crossing._cdel = libgs.crDestroy
 
-TripAlight._cnew = lgs.alNew
-TripAlight._cdel = lgs.alDestroy
+TripAlight._cnew = libgs.alNew
+TripAlight._cdel = libgs.alDestroy
 
-HeadwayBoard._cnew = lgs.hbNew
-HeadwayBoard._cdel = lgs.hbDestroy
-HeadwayBoard._cwalk = lgs.epWalk
+HeadwayBoard._cnew = libgs.hbNew
+HeadwayBoard._cdel = libgs.hbDestroy
+HeadwayBoard._cwalk = libgs.epWalk
 
-HeadwayAlight._cnew = lgs.haNew
-HeadwayAlight._cdel = lgs.haDestroy
-HeadwayAlight._cwalk = lgs.epWalk
+HeadwayAlight._cnew = libgs.haNew
+HeadwayAlight._cdel = libgs.haDestroy
+HeadwayAlight._cwalk = libgs.epWalk
 
-WalkOptions._cnew = lgs.woNew
-WalkOptions._cdel = lgs.woDestroy
+WalkOptions._cnew = libgs.woNew
+WalkOptions._cdel = libgs.woDestroy
 
-GenericPyPayload._cnew = lgs.cpNew
-GenericPyPayload._cdel = lgs.cpDestroy
+GenericPyPayload._cnew = libgs.cpNew
+GenericPyPayload._cdel = libgs.cpDestroy
