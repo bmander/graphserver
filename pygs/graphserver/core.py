@@ -1,6 +1,6 @@
-from libgs import libgs, cproperty, ccast, PayloadMethodTypes
+from libgs import libgs
 from ctypes import string_at, byref, c_int, c_long, c_size_t, c_char_p, c_double, c_void_p, py_object, c_float
-from ctypes import Structure, pointer, cast, POINTER, addressof
+from ctypes import Structure, pointer, cast, POINTER, addressof, CFUNCTYPE
 from _ctypes import Py_INCREF, Py_DECREF
 from time import asctime, gmtime
 from time import time as now
@@ -37,7 +37,51 @@ class CShadow(object):
         if self.soul is None:
             raise Exception("You are trying to use an instance that has been destroyed")
 
+def caccessor(cfunc, restype, ptrclass=None):
+    """Wraps a C data accessor in a python function.
+       If a ptrclass is provided, the result will be converted to by the class' from_pointer method."""
+    # Leaving this the the bulk declare process
+    #cfunc.restype = restype
+    #cfunc.argtypes = [c_void_p]
+    if ptrclass:
+        def prop(self):
+            self.check_destroyed()
+            ret = cfunc( c_void_p( self.soul ) )
+            return ptrclass.from_pointer(ret)
+    else:
+        def prop(self):
+            self.check_destroyed()
+            return cfunc( c_void_p( self.soul ) )
+    return prop
 
+def cmutator(cfunc, argtype, ptrclass=None):
+    """Wraps a C data mutator in a python function.  
+       If a ptrclass is provided, the soul of the argument will be used."""
+    # Leaving this to the bulk declare function
+    #cfunc.argtypes = [c_void_p, argtype]
+    #cfunc.restype = None
+    if ptrclass:
+        def propset(self, arg):
+            cfunc( self.soul, arg.soul )
+    else:
+        def propset(self, arg):
+            cfunc( self.soul, arg )
+    return propset
+
+def cproperty(cfunc, restype, ptrclass=None, setter=None):
+    """if restype is c_null_p, specify a class to convert the pointer into"""
+    if not setter:
+        return property(caccessor(cfunc, restype, ptrclass))
+    return property(caccessor(cfunc, restype, ptrclass),
+                    cmutator(setter, restype, ptrclass))
+
+def ccast(func, cls):
+    """Wraps a function to casts the result of a function (assumed c_void_p)
+       into an object using the class's from_pointer method."""
+    func.restype = c_void_p
+    def _cast(self, *args):
+        return cls.from_pointer(func(*args))
+    return _cast
 
 def indent( a, n ):
     return "\n".join( [" "*n+x for x in a.split("\n")] )
@@ -768,6 +812,13 @@ def failsafe(return_arg_num_on_failure):
                 return args[return_arg_num_on_failure]
         return safe
     return deco
+
+#CUSTOM TYPE API
+class PayloadMethodTypes:
+    """ Enumerates the ctypes of the function pointers."""
+    destroy = CFUNCTYPE(c_void_p, py_object)
+    walk = CFUNCTYPE(c_void_p, py_object, c_void_p, c_void_p)
+    walk_back = CFUNCTYPE(c_void_p, py_object, c_void_p, c_void_p)
 
 class GenericPyPayload(EdgePayload):
     """ This class is the base type for custom payloads created in Python.  

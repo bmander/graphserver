@@ -1,4 +1,4 @@
-from ctypes import cdll, PyDLL, CFUNCTYPE
+from ctypes import cdll, PyDLL
 from ctypes import c_int, c_long, c_float, c_size_t, c_char_p, c_double, c_void_p, py_object
 from ctypes import c_int8, c_int16, c_int32, c_int64, sizeof
 from ctypes import POINTER
@@ -403,59 +403,6 @@ declarations = [\
 
 for d in declarations:
     _declare(*d)
-
-def caccessor(cfunc, restype, ptrclass=None):
-    """Wraps a C data accessor in a python function.
-       If a ptrclass is provided, the result will be converted to by the class' from_pointer method."""
-    # Leaving this the the bulk declare process
-    #cfunc.restype = restype
-    #cfunc.argtypes = [c_void_p]
-    if ptrclass:
-        def prop(self):
-            self.check_destroyed()
-            ret = cfunc( c_void_p( self.soul ) )
-            return ptrclass.from_pointer(ret)
-    else:
-        def prop(self):
-            self.check_destroyed()
-            return cfunc( c_void_p( self.soul ) )
-    return prop
-
-def cmutator(cfunc, argtype, ptrclass=None):
-    """Wraps a C data mutator in a python function.  
-       If a ptrclass is provided, the soul of the argument will be used."""
-    # Leaving this to the bulk declare function
-    #cfunc.argtypes = [c_void_p, argtype]
-    #cfunc.restype = None
-    if ptrclass:
-        def propset(self, arg):
-            cfunc( self.soul, arg.soul )
-    else:
-        def propset(self, arg):
-            cfunc( self.soul, arg )
-    return propset
-
-def cproperty(cfunc, restype, ptrclass=None, setter=None):
-    """if restype is c_null_p, specify a class to convert the pointer into"""
-    if not setter:
-        return property(caccessor(cfunc, restype, ptrclass))
-    return property(caccessor(cfunc, restype, ptrclass),
-                    cmutator(setter, restype, ptrclass))
-
-def ccast(func, cls):
-    """Wraps a function to casts the result of a function (assumed c_void_p)
-       into an object using the class's from_pointer method."""
-    func.restype = c_void_p
-    def _cast(self, *args):
-        return cls.from_pointer(func(*args))
-    return _cast
-
-#CUSTOM TYPE API
-class PayloadMethodTypes:
-    """ Enumerates the ctypes of the function pointers."""
-    destroy = CFUNCTYPE(c_void_p, py_object)
-    walk = CFUNCTYPE(c_void_p, py_object, c_void_p, c_void_p)
-    walk_back = CFUNCTYPE(c_void_p, py_object, c_void_p, c_void_p)
 
 class SafeWrapper(object):
     def __init__(self, lib, name):
