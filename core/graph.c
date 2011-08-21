@@ -20,6 +20,10 @@ const size_t EDGEPAYLOAD_ENUM_SIZE = sizeof(edgepayload_t);
 Graph*
 gNew() {
   Graph *this = (Graph*)malloc(sizeof(Graph));
+
+  this->n = 0;
+  this->cap = INITIAL_GRAPH_CAP;
+  this->vertices_store = (Vertex*)malloc( this->cap*sizeof(Vertex) );
   this->vertices = create_hashtable_string(16); //TODO: find a better number.
 
   return this;
@@ -34,13 +38,15 @@ gDestroyBasic( Graph* this, int free_edge_payloads ) {
 
   while(itr && next_exists) {
     Vertex* vtx = hashtable_iterator_value( itr );
-    vDestroy( vtx, 1 );
+    vGut( vtx, 1 );
     next_exists = hashtable_iterator_advance( itr );
   }
 
   free(itr);
   //destroy the table
   hashtable_destroy( this->vertices, 0 );
+  //destory vertex store
+  free( this->vertices_store );
   //destroy the graph object itself
   free( this );
 
@@ -53,13 +59,27 @@ gDestroy( Graph* this ) {
 
 Vertex*
 gAddVertex( Graph* this, char *label ) {
+
   Vertex* exists = gGetVertex( this, label );
+
   if( !exists ) {
-    exists = vNew( label );
+    exists = &(this->vertices_store[this->n]);
+    vInit( exists, label );
+    this->n++;
+
+    if(this->n >= this->cap) {
+        gExpand(this);
+    }
+
     hashtable_insert_string( this->vertices, label, exists );
   }
 
   return exists;
+}
+
+void
+gExpand(Graph *this) {
+    this->vertices_store = realloc( this->vertices_store, this->cap*EXPAND_RATIO*sizeof(Vertex) );
 }
 
 void
@@ -70,7 +90,7 @@ gRemoveVertex( Graph* this, char *label, int free_edge_payloads ) {
     }
     
     hashtable_remove( this->vertices, label );
-    vDestroy( exists, free_edge_payloads );
+    vGut( exists, free_edge_payloads );
 }
 
 void 
@@ -276,7 +296,7 @@ sptDestroy( ShortestPathTree *this ) {
 
   while(itr && next_exists) {
     SPTVertex* vtx = hashtable_iterator_value( itr );
-    sptvDestroy( vtx );
+    sptvGut( vtx );
     next_exists = hashtable_iterator_advance( itr );
   }
 
@@ -290,12 +310,25 @@ sptDestroy( ShortestPathTree *this ) {
 SPTVertex*
 sptAddVertex( ShortestPathTree *this, Vertex *mirror, int hop ) {
   SPTVertex* exists = sptGetVertex( this, mirror->label );
+
   if( !exists ) {
-    exists = sptvNew( mirror, hop );
+    exists = &(this->vertices_store[this->n]);
+    sptvInit( exists, mirror, hop );
+    this->n++;
+
+    if(this->n >= this->cap) {
+        sptExpand(this);
+    }
+
     hashtable_insert_string( this->vertices, mirror->label, exists );
   }
 
   return exists;
+}
+
+void
+sptExpand(ShortestPathTree *this) {
+    gExpand( (Graph*)this );
 }
 
 void
@@ -306,7 +339,7 @@ sptRemoveVertex( ShortestPathTree *this, char *label ) {
     }
     
     hashtable_remove( this->vertices, label );
-    sptvDestroy( exists );
+    sptvGut( exists );
 }
 
 SPTVertex*
@@ -360,7 +393,7 @@ vNew( char* label ) {
 }
 
 void
-vDestroy(Vertex *this, int free_edge_payloads) {
+vGut(Vertex *this, int free_edge_payloads) {
 
     //delete incoming edges
     while(this->incoming->next != NULL) {
@@ -373,6 +406,13 @@ vDestroy(Vertex *this, int free_edge_payloads) {
     //free the list dummy-heads that remain
     free(this->outgoing);
     free(this->incoming);
+
+}
+
+void
+vDestroy(Vertex *this, int free_edge_payloads) {
+
+    vGut( this, free_edge_payloads );
 
     //and finally, sweet release*/
     free( this );
@@ -449,16 +489,26 @@ vDegreeIn( Vertex* this ) {
 
 //SPTVERTEX METHODS
 
-SPTVertex *
-sptvNew( Vertex* mirror, int hop ) {
-    SPTVertex *this = (SPTVertex *)malloc(sizeof(SPTVertex));
-    
+void
+sptvInit( SPTVertex* this, Vertex* mirror, int hop ) {
     vInit( (Vertex*)this, mirror->label );
     this->state = NULL;
     this->hop = hop;
     this->mirror = mirror;
+}
+
+SPTVertex *
+sptvNew( Vertex* mirror, int hop ) {
+    SPTVertex *this = (SPTVertex *)malloc(sizeof(SPTVertex));
+
+    sptvInit( this, mirror, hop );
     
     return this;
+}
+
+void
+sptvGut( SPTVertex* this ) {
+    vGut( (Vertex*)this, 0 );
 }
 
 void

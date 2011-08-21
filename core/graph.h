@@ -1,12 +1,23 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
+#define INITIAL_GRAPH_CAP 2048
+#define EXPAND_RATIO 1.5
+
 struct Graph {
-   struct hashtable* vertices;
+    long int n;
+    long int cap;
+    Vertex* vertices_store;
+
+    struct hashtable* vertices;
 };
 
 struct ShortestPathTree {
-   struct hashtable* vertices;
+    long int n;
+    long int cap;
+    SPTVertex* vertices_store;
+
+    struct hashtable* vertices;
 };
 
 //for shortest path trees
@@ -60,6 +71,9 @@ gDestroyBasic( Graph* this, int free_edge_payloads );
 void
 gDestroy( Graph* this );
 
+void
+gExpand( Graph *this );
+
 Vertex*
 gAddVertex( Graph* this, char *label );
 
@@ -102,6 +116,9 @@ sptNew(void);
 void
 sptDestroy( ShortestPathTree *this );
 
+void
+sptExpand(ShortestPathTree *this); 
+
 SPTVertex*
 sptAddVertex( ShortestPathTree *this, Vertex *mirror, int hop );
 
@@ -127,6 +144,12 @@ sptPathRetro(Graph* g, char* origin_label);
 
 Vertex *
 vNew( char* label ) ;
+
+void
+vInit( Vertex *this, char *label );
+
+void
+vGut(Vertex *this, int free_edge_payloads);
 
 void
 vDestroy(Vertex* this, int free_edge_payloads) ;
@@ -164,8 +187,14 @@ vDegreeIn( Vertex* this );
 
 //SPTVERTEX FUNCTIONS
 
+void
+sptvInit( SPTVertex* this, Vertex* mirror, int hop );
+
 SPTVertex *
 sptvNew( Vertex* mirror, int hop ) ;
+
+void
+sptvGut( SPTVertex* this ) ;
 
 void
 sptvDestroy(SPTVertex* this) ;
