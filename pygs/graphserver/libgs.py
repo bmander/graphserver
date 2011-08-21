@@ -16,11 +16,6 @@ libgs = PyDLL( os.path.join( os.path.dirname(os.path.abspath(__file__)) + "/../.
 if not libgs:
     raise ImportError("unable to find libgraphserver shared library")
 
-def _declare(fun, restype, argtypes):
-    fun.argtypes = argtypes
-    fun.restype = restype
-    fun.safe = True
-
 class LGSTypes:
     ServiceId = c_int
     EdgePayload = c_void_p
@@ -401,8 +396,10 @@ declarations = [\
     (libgs.waitGetTimezone, LGSTypes.Timezone, [LGSTypes.Wait])
 ]
 
-for d in declarations:
-    _declare(*d)
+for fun, restype, argtypes in declarations:
+    fun.argtypes = argtypes
+    fun.restype = restype
+    fun.safe = True
 
 class SafeWrapper(object):
     def __init__(self, lib, name):
