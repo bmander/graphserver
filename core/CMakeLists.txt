@@ -25,7 +25,6 @@ add_library( graphserver SHARED
              edgetypes/tripboard.c
              edgetypes/wait.c
              fibheap/fibheap.c
-             fibheap/dirfibheap.c
              hashtable/hashtable.c
              hashtable/hashtable_gs.c
              hashtable/hashtable_itr.c

@@ -1,7 +1,6 @@
 #include "graphserver.h"
 
 #include "fibheap/fibheap.h"
-#include "fibheap/dirfibheap.h"
 #include "graph.h"
 
 #include <stddef.h>

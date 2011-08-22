@@ -447,30 +447,6 @@ edgetypes/wait.c.s:
 	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/edgetypes/wait.c.s
 .PHONY : edgetypes/wait.c.s
 
-fibheap/dirfibheap.o: fibheap/dirfibheap.c.o
-.PHONY : fibheap/dirfibheap.o
-
-# target to build an object file
-fibheap/dirfibheap.c.o:
-	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/fibheap/dirfibheap.c.o
-.PHONY : fibheap/dirfibheap.c.o
-
-fibheap/dirfibheap.i: fibheap/dirfibheap.c.i
-.PHONY : fibheap/dirfibheap.i
-
-# target to preprocess a source file
-fibheap/dirfibheap.c.i:
-	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/fibheap/dirfibheap.c.i
-.PHONY : fibheap/dirfibheap.c.i
-
-fibheap/dirfibheap.s: fibheap/dirfibheap.c.s
-.PHONY : fibheap/dirfibheap.s
-
-# target to generate assembly for a file
-fibheap/dirfibheap.c.s:
-	$(MAKE) -f CMakeFiles/graphserver.dir/build.make CMakeFiles/graphserver.dir/fibheap/dirfibheap.c.s
-.PHONY : fibheap/dirfibheap.c.s
-
 fibheap/fibheap.o: fibheap/fibheap.c.o
 .PHONY : fibheap/fibheap.o
 
@@ -858,9 +834,6 @@ help:
 	@echo "... edgetypes/wait.o"
 	@echo "... edgetypes/wait.i"
 	@echo "... edgetypes/wait.s"
-	@echo "... fibheap/dirfibheap.o"
-	@echo "... fibheap/dirfibheap.i"
-	@echo "... fibheap/dirfibheap.s"
 	@echo "... fibheap/fibheap.o"
 	@echo "... fibheap/fibheap.i"
 	@echo "... fibheap/fibheap.s"
