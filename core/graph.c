@@ -73,7 +73,8 @@ gAddVertex( Graph* this, char *label ) {
 
 void
 gExpand(Graph *this) {
-    this->vertices_store = realloc( this->vertices_store, this->cap*EXPAND_RATIO*sizeof(Vertex) );
+    this->cap = this->cap*EXPAND_RATIO;
+    this->vertices_store = realloc( this->vertices_store, this->cap*sizeof(Vertex) );
 }
 
 void
@@ -304,7 +305,8 @@ sptAddVertex( ShortestPathTree *this, Vertex *mirror, int hop ) {
 
 void
 sptExpand(ShortestPathTree *this) {
-    this->vertices_store = realloc( this->vertices_store, this->cap*EXPAND_RATIO*sizeof(SPTVertex) );
+    this->cap = this->cap*EXPAND_RATIO;
+    this->vertices_store = realloc( this->vertices_store, this->cap*sizeof(SPTVertex) );
 }
 
 void
