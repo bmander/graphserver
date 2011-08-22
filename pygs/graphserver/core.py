@@ -258,18 +258,13 @@ class Graph(CShadow):
     @property
     def vertices(self):
         self.check_destroyed()
+
+        ret = []
+        for i in range(self.size):
+            ret.append( Vertex.from_pointer( libgs.gGetVertexByIndex( self.soul, i ) ) )
+
+        return ret;
         
-        count = c_long()
-        p_va = libgs.gVertices(self.soul, byref(count))
-        verts = []
-        arr = cast(p_va, POINTER(c_void_p)) # a bit of necessary voodoo
-        for i in range(count.value):
-            v = Vertex.from_pointer(arr[i])
-            verts.append(v)
-        del arr
-        libgs.gFreeVertexArray(p_va)
-        return verts
-    
     def add_vertices(self, vs):
         a = (c_char_p * len(vs))()
         for i, v in enumerate(vs):
@@ -374,22 +369,17 @@ class ShortestPathTree(CShadow):
         if not self.get_vertex(fromv):
             raise VertexNotFoundError(fromv)
         raise VertexNotFoundError(tov)
-        
+    
     @property
     def vertices(self):
         self.check_destroyed()
-        
-        count = c_long()
-        p_va = libgs.sptVertices(self.soul, byref(count))
-        verts = []
-        arr = cast(p_va, POINTER(c_void_p)) # a bit of necessary voodoo
-        for i in range(count.value):
-            v = SPTVertex.from_pointer(arr[i])
-            verts.append(v)
-        del arr
-        libgs.gFreeVertexArray(p_va)
-        return verts
-    
+
+        ret = []
+        for i in range(self.size):
+            ret.append( SPTVertex.from_pointer( libgs.sptGetVertexByIndex( self.soul, i ) ) )
+
+        return ret;
+
     @property
     def edges(self):
         self.check_destroyed()

@@ -89,8 +89,8 @@ gAddVertices( Graph* this, char **labels, int n );
 Edge*
 gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload );
 
-Vertex**
-gVertices( Graph* this, long* num_vertices );
+Vertex*
+gGetVertexByIndex( Graph* this, long index );
 
 ShortestPathTree*
 gShortestPathTree( Graph* this, char *from, char *to, State* init_state, WalkOptions* options, long maxtime, int hoplimit, long weightlimit );

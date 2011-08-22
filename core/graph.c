@@ -111,26 +111,13 @@ gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload ) {
   return vLink( vtx_from, vtx_to, payload );
 }
 
-Vertex**
-gVertices( Graph* this, long* num_vertices ) {
-  unsigned int nn = hashtable_count(this->vertices);
-  Vertex** ret = (Vertex**)malloc(nn*sizeof(Vertex*));
-
-  long i=0;
-  struct hashtable_itr *itr = hashtable_iterator(this->vertices);
-  int next_exists=nn; //next_exists is false when number of vertices is 0
-
-  while(itr && next_exists) {
-    Vertex* vtx = hashtable_iterator_value( itr );
-    ret[i] = vtx;
-    next_exists = hashtable_iterator_advance( itr );
-    i++;
+Vertex*
+gGetVertexByIndex( Graph* this, long index ) {
+  if( index < 0 || index >= this->n ) {
+    return NULL;
   }
   
-  free(itr);
-
-  *num_vertices = nn;
-  return ret;
+  return &(this->vertices_store[index]);
 }
 
 void
@@ -322,7 +309,7 @@ sptAddVertex( ShortestPathTree *this, Vertex *mirror, int hop ) {
 
 void
 sptExpand(ShortestPathTree *this) {
-    gExpand( (Graph*)this );
+    this->vertices_store = realloc( this->vertices_store, this->cap*EXPAND_RATIO*sizeof(SPTVertex) );
 }
 
 void
@@ -352,9 +339,13 @@ sptAddEdge( ShortestPathTree *this, char *from, char *to, EdgePayload *payload )
   return sptvLink( vtx_from, vtx_to, payload );
 }
 
-SPTVertex**
-sptVertices( ShortestPathTree *this, long* num_vertices ) {
-    return (SPTVertex**)gVertices( (Graph*)this, num_vertices );
+SPTVertex*
+sptGetVertexByIndex( ShortestPathTree* this, long index ) {
+  if( index < 0 || index >= this->n ) {
+    return NULL;
+  }
+  
+  return &(this->vertices_store[index]);
 }
 
 long
