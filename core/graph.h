@@ -5,8 +5,8 @@
 #define EXPAND_RATIO 1.5
 
 struct Graph {
-    long int n;
-    long int cap;
+    uint32_t n;
+    uint32_t cap;
     Vertex* vertices_store;
 
     struct hashtable* vertices;

@@ -94,5 +94,6 @@ typedef enum {
 // things that everyone needs
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #endif
