@@ -32,17 +32,11 @@ gNew() {
 void
 gDestroyBasic( Graph* this, int free_edge_payloads ) {
 
-  //destroy each vertex contained within
-  struct hashtable_itr *itr = hashtable_iterator(this->vertices);
-  int next_exists = hashtable_count(this->vertices);
-
-  while(itr && next_exists) {
-    Vertex* vtx = hashtable_iterator_value( itr );
-    vGut( vtx, 1 );
-    next_exists = hashtable_iterator_advance( itr );
+  long i;
+  for(i=0; i<this->n; i++) {
+    vGut( &(this->vertices_store[i]), 1 );
   }
 
-  free(itr);
   //destroy the table
   hashtable_destroy( this->vertices, 0 );
   //destory vertex store
