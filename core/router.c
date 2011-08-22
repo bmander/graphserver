@@ -87,11 +87,15 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
 #endif
 
       long old_w;
-      if( (spt_v = sptGetVertex( spt, v->label )) ) {        //get the SPT Vertex corresponding to 'v'
-        dv = (State*)spt_v->state;                     //and its State 'dv'
+      
+      // get the SPT Vertex corresponding to 'v'
+      if( (spt_v = sptGetVertex( spt, v->label )) ) {        
+        // and its State 'dv'
+        dv = (State*)spt_v->state;
         old_w = dv->weight;
       } else {
-        dv = NULL;                                       //which may not exist yet
+        // which may not exist yet
+        dv = NULL;                      
         old_w = INFINITY;
       }
 
@@ -101,13 +105,13 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
       State *new_dv = eWalkBack( edge, du, options );
 #endif
 
-      // When an edge leads nowhere (as indicated by returning NULL), the iteration is over.
+      // when an edge leads nowhere (as indicated by returning NULL), the iteration is over.
       if(!new_dv) {
         edges = edges->next;
         continue;
       }
 
-      // States cannot have weights lower than their parent State.
+      // states cannot have weights lower than their parent State.
       if(new_dv->weight < du->weight) {
         fprintf(stderr, "Negative weight (%s(%ld) -> %s(%ld))\n",edge->from->label, du->weight, edge->to->label, new_dv->weight);
         edges = edges->next;
@@ -116,11 +120,12 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
       }
 
       long new_w = new_dv->weight;
-      // If the new way of getting there is better,
+      // if the new way of getting there is better,
       if( new_w < old_w ) {
-        // If this is the first time v has been reached
+        // if this is the first time v has been reached
         if( !spt_v ) {
-          spt_v = sptAddVertex( spt, v, spt_u->hop+1 );        //Copy v over to the SPT
+          // copy v over to the SPT
+          spt_v = sptAddVertex( spt, v, spt_u->hop+1 );        
 
           spt_v->fibnode = fibheap_insert( q, new_w, (void*)v );
           count++;
@@ -130,11 +135,15 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
 
         if(spt_v->state)
             stateDestroy(spt_v->state);
-        spt_v->state = new_dv;                      //Set the State of v in the SPT to the current winner
 
-        sptvSetParent( spt_v, spt_u, edge->payload );      //Make u the parent of v in the SPT
+        // set the State of v in the SPT to the current winner
+        spt_v->state = new_dv;                      
+
+        // make u the parent of v in the SPT
+        sptvSetParent( spt_v, spt_u, edge->payload );      
       } else {
-        stateDestroy(new_dv); //new_dv will never be used; merge it with the infinite.
+        // new_dv will never be used; merge it with the infinite.
+        stateDestroy(new_dv); 
       }
       edges = edges->next;
     }
