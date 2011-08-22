@@ -120,11 +120,6 @@ gGetVertexByIndex( Graph* this, long index ) {
   return &(this->vertices_store[index]);
 }
 
-void
-gFreeVertexArray( Vertex** ary ) {
-  free(ary);
-}
-
 #undef RETRO
 #include "router.c"
 #define RETRO

@@ -87,7 +87,6 @@ declarations = [\
     (libgs.gAddVertices, None, [LGSTypes.Graph, POINTER(c_char_p), c_int]),
     (libgs.gAddEdge, LGSTypes.Edge, [LGSTypes.Graph, c_char_p, c_char_p, LGSTypes.EdgePayload]),
     (libgs.gGetVertexByIndex, LGSTypes.Vertex, [LGSTypes.Graph, c_long]),
-    (libgs.gFreeVertexArray, None, [POINTER(LGSTypes.Vertex)]),
     (libgs.gShortestPathTree, LGSTypes.ShortestPathTree, [LGSTypes.Graph, c_char_p, c_char_p, LGSTypes.State, LGSTypes.WalkOptions, c_long, c_int, c_long]),
     (libgs.gShortestPathTreeRetro, LGSTypes.ShortestPathTree, [LGSTypes.Graph, c_char_p, c_char_p, LGSTypes.State, LGSTypes.WalkOptions, c_long, c_int, c_long]),
     (libgs.gShortestPath, LGSTypes.State, [LGSTypes.Graph, c_char_p, c_char_p, LGSTypes.State, c_int, POINTER(c_long), LGSTypes.WalkOptions, c_long, c_int, c_long]),
