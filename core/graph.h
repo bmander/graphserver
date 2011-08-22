@@ -51,6 +51,7 @@ struct SPTVertex {
    State* state;
    int hop;
    Vertex *mirror;
+   fibnode_t fibnode;
 } ;
 
 struct Edge {

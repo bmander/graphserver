@@ -1,8 +1,8 @@
 #include "graphserver.h"
 
-#include "graph.h"
 #include "fibheap/fibheap.h"
 #include "fibheap/dirfibheap.h"
+#include "graph.h"
 
 #include <stddef.h>
 #include <string.h>
@@ -478,6 +478,7 @@ void
 sptvInit( SPTVertex* this, Vertex* mirror, int hop ) {
     vInit( (Vertex*)this, mirror->label );
     this->state = NULL;
+    this->fibnode = NULL;
     this->hop = hop;
     this->mirror = mirror;
 }

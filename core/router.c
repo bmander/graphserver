@@ -31,23 +31,28 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
     
   //Return Tree
   ShortestPathTree* spt = sptNew();
-  sptAddVertex( spt, origin_v, 0 )->state = init_state;
+  spt_u = sptAddVertex( spt, origin_v, 0 );
+  spt_u->state = init_state;
   //Priority Queue
-  dirfibheap_t q = dirfibheap_new( 1 );
-  dirfibheap_insert_or_dec_key( q, gGetVertex( this, origin ), 0 );
+  fibheap_t q = fibheap_new();
+  spt_u->fibnode = fibheap_insert( q, 0, (void*)origin_v );
 
 /*
  *  CENTRAL ITERATION
  *
  */
 
-  while( !dirfibheap_empty( q ) ) {                  //Until the priority queue is empty:
-    u = dirfibheap_extract_min( q );                 //get the lowest-weight Vertex 'u',
+  // until the priority queue is empty:
+  while( !fibheap_empty( q ) ) {
+    // get the closest vertex not yet reached
+    u = (Vertex*)fibheap_extract_min( q );
 
-    if( !strcmp( u->label, target ) )                //(end search if reached destination vertex)
+    // end search if reached destination vertex
+    if( !strcmp( u->label, target ) )                
       break;
 
-    spt_u = sptGetVertex( spt, u->label );             //get corresponding SPT Vertex,
+    // get corresponding SPT Vertex
+    spt_u = sptGetVertex( spt, u->label );             
     
     if( spt_u->hop >= hoplimit ) {
       break;
@@ -56,8 +61,8 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
     if( spt_u->state->weight > weightlimit ) {
       break;
     }
-    
-    du = (State*)spt_u->state;                     //and get State of u 'du'.
+
+    du = (State*)spt_u->state;                     
     
 #ifndef RETRO
     if( du->time > maxtime )
@@ -72,10 +77,11 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
 #else
     ListNode* edges = vGetIncomingEdgeList( u );
 #endif
-    while( edges ) {                                 //For each Edge 'edge' connecting u
+    // for each u -- edge --> v 
+    while( edges ) {                                 
       Edge* edge = edges->data;
 #ifndef RETRO
-      v = edge->to;                                  //to Vertex v:
+      v = edge->to;
 #else
       v = edge->from;
 #endif
@@ -112,16 +118,15 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
       long new_w = new_dv->weight;
       // If the new way of getting there is better,
       if( new_w < old_w ) {
-        dirfibheap_insert_or_dec_key( q, v, new_w );    // rekey v in the priority queue
-
         // If this is the first time v has been reached
         if( !spt_v ) {
           spt_v = sptAddVertex( spt, v, spt_u->hop+1 );        //Copy v over to the SPT
-          count++;
-          }
 
-        //if((count%10000) == 0)
-        //  fprintf(stdout, "Shortest path tree size: %d\n",count);
+          spt_v->fibnode = fibheap_insert( q, new_w, (void*)v );
+          count++;
+        } else {
+          fibheap_replace_key( q, spt_v->fibnode, new_w );
+        }
 
         if(spt_v->state)
             stateDestroy(spt_v->state);
@@ -135,8 +140,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
     }
   }
 
-  dirfibheap_delete( q );
+  fibheap_delete( q );
 
-  //fprintf(stdout, "Final shortest path tree size: %d\n",count);
   return spt;
 }
