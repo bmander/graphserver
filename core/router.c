@@ -8,13 +8,14 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
 /*
  *  VARIABLE SETUP
  */
-  //Iteration Variables
+
+  // iteration Variables
   Vertex *u, *v;
   SPTVertex *spt_u, *spt_v;
   State *du, *dv;
   int count = 1;
 
-  //Goal Variables
+  // goal Variables
 #ifndef RETRO
   char* origin = from;
   char* target = to;
@@ -23,17 +24,17 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
   char* target = from;
 #endif
 
-  //Get origin vertex to make sure it exists
+  // get origin vertex to make sure it exists
   Vertex* origin_v = gGetVertex( this, origin );
   if( origin_v == NULL ) {
     return NULL;
   }
     
-  //Return Tree
+  // return Tree
   ShortestPathTree* spt = sptNew();
   spt_u = sptAddVertex( spt, origin_v, 0 );
   spt_u->state = init_state;
-  //Priority Queue
+  // priority Queue
   fibheap_t q = fibheap_new();
   spt_u->fibnode = fibheap_insert( q, 0, (void*)origin_v );
 
@@ -48,8 +49,9 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
     u = (Vertex*)fibheap_extract_min( q );
 
     // end search if reached destination vertex
-    if( !strcmp( u->label, target ) )                
+    if( !strcmp( u->label, target ) ) {
       break;
+    }
 
     // get corresponding SPT Vertex
     spt_u = sptGetVertex( spt, u->label );             
@@ -65,11 +67,13 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
     du = (State*)spt_u->state;                     
     
 #ifndef RETRO
-    if( du->time > maxtime )
+    if( du->time > maxtime ) {
       break;
+    }
 #else
-    if( du->time < mintime )
+    if( du->time < mintime ) {
       break;
+    }
 #endif
 
 #ifndef RETRO
@@ -133,8 +137,9 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
           fibheap_replace_key( q, spt_v->fibnode, new_w );
         }
 
-        if(spt_v->state)
-            stateDestroy(spt_v->state);
+        if(spt_v->state) {
+          stateDestroy(spt_v->state);
+        }
 
         // set the State of v in the SPT to the current winner
         spt_v->state = new_dv;                      
