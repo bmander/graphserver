@@ -1,5 +1,6 @@
 /* Copyright (C) 2002, 2004 Christopher Clark  <firstname.lastname@cl.cam.ac.uk> */
 
+#include <stdint.h>
 #include "hashtable.h"
 #include "hashtable_private.h"
 #include "hashtable_itr.h"
@@ -42,7 +43,7 @@ void *
 hashtable_iterator_key(struct hashtable_itr *i)
 { return i->e->k; }
 
-void *
+uint32_t
 hashtable_iterator_value(struct hashtable_itr *i)
 { return i->e->v; }
 

@@ -44,8 +44,10 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
  *
  */
 
+
   // until the priority queue is empty:
   while( !fibheap_empty( q ) ) {
+
     // get the closest vertex not yet reached
     spt_u = (SPTVertex*)fibheap_extract_min( q );
     u = spt_u->mirror;
@@ -90,6 +92,8 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
 #endif
 
       long old_w;
+
+      spt_v = sptGetVertex( spt, v->label );
       
       // get the SPT Vertex corresponding to 'v'
       if( (spt_v = sptGetVertex( spt, v->label )) ) {        
@@ -123,6 +127,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
       }
 
       long new_w = new_dv->weight;
+
       // if the new way of getting there is better,
       if( new_w < old_w ) {
         // if this is the first time v has been reached

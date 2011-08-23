@@ -3,6 +3,8 @@
 #ifndef __HASHTABLE_CWC22_H__
 #define __HASHTABLE_CWC22_H__
 
+#define HASHTABLE_NOT_FOUND UINT32_MAX
+
 struct hashtable;
 
 /* Example of use:
@@ -96,7 +98,7 @@ create_hashtable(unsigned int minsize,
  */
 
 int 
-hashtable_insert(struct hashtable *h, void *k, void *v);
+hashtable_insert(struct hashtable *h, void *k, uint32_t v);
 
 #define DEFINE_HASHTABLE_INSERT(fnname, keytype, valuetype) \
 int fnname (struct hashtable *h, keytype *k, valuetype *v) \
@@ -113,7 +115,7 @@ int fnname (struct hashtable *h, keytype *k, valuetype *v) \
  * @return      the value associated with the key, or NULL if none found
  */
 
-void *
+uint32_t
 hashtable_search(struct hashtable *h, void *k);
 
 #define DEFINE_HASHTABLE_SEARCH(fnname, keytype, valuetype) \
@@ -131,7 +133,7 @@ valuetype * fnname (struct hashtable *h, keytype *k) \
  * @return      the value associated with the key, or NULL if none found
  */
 
-void * /* returns value */
+uint32_t /* returns value */
 hashtable_remove(struct hashtable *h, void *k);
 
 #define DEFINE_HASHTABLE_REMOVE(fnname, keytype, valuetype) \

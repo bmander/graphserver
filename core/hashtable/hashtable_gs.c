@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "hashtable_gs.h"
 #include <string.h>
 #include <stdio.h>
@@ -30,25 +31,11 @@ create_hashtable_string(unsigned int minsize) {
   return ret;
 }
 
-int hashtable_insert_string(struct hashtable *h, const char *key, void *v) {
+int hashtable_insert_string(struct hashtable *h, const char *key, uint32_t v) {
   size_t length = strlen(key)+1;
 
   char* permakey = (char*)malloc(length*sizeof(char));
   memcpy( permakey, key, length );
 
   return hashtable_insert(h, permakey, v);
-}
-
-int hashtable_insert_str_long(struct hashtable *h, const char *key, long v) {
-  long* permaval = (long*)malloc(sizeof(long));
-  *permaval = v;
-
-  return hashtable_insert_string(h, key, permaval); 
-}
-
-int hashtable_change_str_long(struct hashtable *h, char *key, long v) {
-  long *permaval = (long*)malloc(sizeof(long));
-  *permaval = v;
-
-  return hashtable_change(h, key, permaval, 1);
 }

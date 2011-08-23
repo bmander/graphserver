@@ -58,13 +58,13 @@ gAddVertex( Graph* this, char *label ) {
   if( !exists ) {
     exists = &(this->vertices_store[this->n]);
     vInit( exists, label );
-    this->n++;
 
+    hashtable_insert_string( this->vertices, label, this->n );
+
+    this->n++;
     if(this->n >= this->cap) {
         gExpand(this);
     }
-
-    hashtable_insert_string( this->vertices, label, exists );
   }
 
   return exists;
@@ -97,7 +97,8 @@ gAddVertices( Graph* this, char **labels, int n ) {
 
 Vertex*
 gGetVertex( Graph* this, char *label ) {
-  return hashtable_search( this->vertices, label );
+  uint32_t i =  hashtable_search( this->vertices, label );
+  return gGetVertexByIndex( this, i );
 }
 
 Edge*
@@ -112,7 +113,7 @@ gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload ) {
 }
 
 Vertex*
-gGetVertexByIndex( Graph* this, long index ) {
+gGetVertexByIndex( Graph* this, uint32_t index ) {
   if( index < 0 || index >= this->n ) {
     return NULL;
   }
@@ -210,22 +211,21 @@ gShortestPath( Graph* this, char *from, char *to, State* init_state, int directi
 }
 
 Path *
-sptPathRetro(Graph* g, char* origin_label) {
-  Vertex* curr = gGetVertex(g, origin_label);
+sptPathRetro(ShortestPathTree* spt, char* origin_label) {
+  SPTVertex* curr = sptGetVertex(spt, origin_label);
   ListNode* incoming = NULL;
   Edge* edge = NULL;
     
   if (!curr) return NULL;
 
-  Path *path = pathNew(curr, 50, 50);
-	
+  Path *path = pathNew((Vertex*)curr, 50, 50);
+
   // trace backwards up the tree until the current vertex has no parents
-  while ((incoming = vGetIncomingEdgeList(curr))) {
-        
+  while ((incoming = vGetIncomingEdgeList((Vertex*)curr))) {
     edge = liGetData(incoming);
-    curr = eGetFrom(edge);
+    curr = (SPTVertex*)eGetFrom(edge);
         
-    pathAddSegment( path, curr, edge );
+    pathAddSegment( path, (Vertex*)curr, edge );
   }
 
   return path;	
@@ -267,16 +267,11 @@ sptNew() {
 void
 sptDestroy( ShortestPathTree *this ) {
   //destroy each vertex contained within
-  struct hashtable_itr *itr = hashtable_iterator(this->vertices);
-  int next_exists = hashtable_count(this->vertices);
-
-  while(itr && next_exists) {
-    SPTVertex* vtx = hashtable_iterator_value( itr );
-    sptvGut( vtx );
-    next_exists = hashtable_iterator_advance( itr );
+  uint32_t i = 0;
+  for(i=0; i<this->n; i++) {
+    sptvGut( &(this->vertices_store[i]) );
   }
 
-  free(itr);
   //destroy the table
   hashtable_destroy( this->vertices, 0 );
   //destroy the graph object itself
@@ -290,13 +285,13 @@ sptAddVertex( ShortestPathTree *this, Vertex *mirror, int hop ) {
   if( !exists ) {
     exists = &(this->vertices_store[this->n]);
     sptvInit( exists, mirror, hop );
-    this->n++;
 
+    hashtable_insert_string( this->vertices, mirror->label, this->n );
+
+    this->n++;
     if(this->n >= this->cap) {
         sptExpand(this);
     }
-
-    hashtable_insert_string( this->vertices, mirror->label, exists );
   }
 
   return exists;
@@ -320,8 +315,18 @@ sptRemoveVertex( ShortestPathTree *this, char *label ) {
 }
 
 SPTVertex*
+sptGetVertexByIndex( ShortestPathTree* this, uint32_t index ) {
+  if( index < 0 || index >= this->n ) {
+    return NULL;
+  }
+  
+  return &(this->vertices_store[index]);
+}
+
+SPTVertex*
 sptGetVertex( ShortestPathTree *this, char *label ) {
-    return (SPTVertex*)gGetVertex( (Graph*)this, label );
+    uint32_t i =  hashtable_search( this->vertices, label );
+    return sptGetVertexByIndex( this, i );
 }
 
 Edge*
@@ -333,15 +338,6 @@ sptAddEdge( ShortestPathTree *this, char *from, char *to, EdgePayload *payload )
     return NULL;
 
   return sptvLink( vtx_from, vtx_to, payload );
-}
-
-SPTVertex*
-sptGetVertexByIndex( ShortestPathTree* this, long index ) {
-  if( index < 0 || index >= this->n ) {
-    return NULL;
-  }
-  
-  return &(this->vertices_store[index]);
 }
 
 long

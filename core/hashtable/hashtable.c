@@ -1,5 +1,6 @@
 /* Copyright (C) 2004 Christopher Clark <firstname.lastname@cl.cam.ac.uk> */
 
+#include <stdint.h>
 #include "hashtable.h"
 #include "hashtable_private.h"
 #include <stdlib.h>
@@ -148,7 +149,7 @@ hashtable_count(struct hashtable *h)
 
 /*****************************************************************************/
 int
-hashtable_insert(struct hashtable *h, void *k, void *v)
+hashtable_insert(struct hashtable *h, void *k, uint32_t v)
 {
     /* This method allows duplicate keys - but they shouldn't be used */
     unsigned int index;
@@ -173,7 +174,7 @@ hashtable_insert(struct hashtable *h, void *k, void *v)
 }
 
 /*****************************************************************************/
-void * /* returns value associated with key */
+uint32_t /* returns value associated with key */
 hashtable_search(struct hashtable *h, void *k)
 {
     struct entry *e;
@@ -187,11 +188,11 @@ hashtable_search(struct hashtable *h, void *k)
         if ((hashvalue == e->h) && (h->eqfn(k, e->k))) return e->v;
         e = e->next;
     }
-    return NULL;
+    return HASHTABLE_NOT_FOUND;
 }
 
 /*****************************************************************************/
-void * /* returns value associated with key */
+uint32_t /* returns value associated with key */
 hashtable_remove(struct hashtable *h, void *k)
 {
     /* TODO: consider compacting the table when the load factor drops enough,
@@ -199,7 +200,7 @@ hashtable_remove(struct hashtable *h, void *k)
 
     struct entry *e;
     struct entry **pE;
-    void *v;
+    uint32_t v;
     unsigned int hashvalue, index;
 
     hashvalue = hash(h,k);
@@ -221,7 +222,7 @@ hashtable_remove(struct hashtable *h, void *k)
         pE = &(e->next);
         e = e->next;
     }
-    return NULL;
+    return HASHTABLE_NOT_FOUND;
 }
 
 /*****************************************************************************/
@@ -241,7 +242,6 @@ hashtable_destroy(struct hashtable *h, int free_values)
             while (NULL != e)
             { f = e; e = e->next; 
               freekey(f->k); 
-              free(f->v); 
               free(f); }
         }
     }

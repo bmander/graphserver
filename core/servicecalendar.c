@@ -10,7 +10,6 @@ scNew( ) {
     ServiceCalendar* ret = (ServiceCalendar*)malloc(sizeof(ServiceCalendar));
     ret->head = NULL;
     ret->num_sids = 0;
-    ret->sid_str_to_int = create_hashtable_string(16);
     ret->sid_int_to_str = (char**)malloc(1024*sizeof(char*));
     
     return ret;
@@ -20,7 +19,6 @@ int
 scAddServiceId( ServiceCalendar* this, char* service_id ) {
     int* sid_int_payload = (int*)malloc(sizeof(int));
     *sid_int_payload = this->num_sids;
-    hashtable_insert_string( this->sid_str_to_int, service_id, sid_int_payload );
     
     size_t labelsize = strlen(service_id)+1;
     char* sid_str_payload = (char*)malloc(labelsize*sizeof(char));
@@ -42,12 +40,14 @@ scGetServiceIdString( ServiceCalendar* this, int service_id ) {
 
 int
 scGetServiceIdInt( ServiceCalendar* this, char* service_id ) {
-    int *ret = (int*)hashtable_search( this->sid_str_to_int, service_id );
-    if( ret==NULL ){
-        return scAddServiceId(this, service_id );
-    } else {
-        return *ret;
+    int i;
+    for(i=0; i<this->num_sids; i++) {
+      if( strcmp( this->sid_int_to_str[i], service_id ) == 0 ) {
+        return i;
+      }
     }
+
+    return scAddServiceId(this, service_id );
 }
 
 void
@@ -120,7 +120,6 @@ scDestroy( ServiceCalendar* this ) {
       curs = next;
     }
     
-    hashtable_destroy( this->sid_str_to_int, 1 ); //destroy sid directory, and sid strings themselves
     int i;
     for(i=0; i<this->num_sids; i++) {
         free(this->sid_int_to_str[i]);

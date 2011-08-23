@@ -23,7 +23,7 @@
 //#define DESTRUCTIVE
 
 int
-hashtable_change(struct hashtable *h, void *k, void *v, int destructive);
+hashtable_change(struct hashtable *h, void *k, uint32_t v, int destructive);
 
 #endif /* __HASHTABLE_CWC22_H__ */
 

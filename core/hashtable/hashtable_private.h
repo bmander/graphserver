@@ -8,7 +8,8 @@
 /*****************************************************************************/
 struct entry
 {
-    void *k, *v;
+    void *k;
+    uint32_t v;
     unsigned int h;
     struct entry *next;
 };

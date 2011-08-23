@@ -14,7 +14,6 @@ struct ServiceCalendar {
     ServicePeriod* head;
     
     int num_sids;
-    struct hashtable* sid_str_to_int;
     char** sid_int_to_str;
 } ; 
 

@@ -91,7 +91,7 @@ Edge*
 gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload );
 
 Vertex*
-gGetVertexByIndex( Graph* this, long index );
+gGetVertexByIndex( Graph* this, uint32_t index );
 
 ShortestPathTree*
 gShortestPathTree( Graph* this, char *from, char *to, State* init_state, WalkOptions* options, long maxtime, int hoplimit, long weightlimit );
@@ -139,7 +139,7 @@ long
 sptSize( ShortestPathTree* this );
 
 Path *
-sptPathRetro(Graph* g, char* origin_label);
+sptPathRetro(ShortestPathTree* g, char* origin_label);
 
 //VERTEX FUNCTIONS
 

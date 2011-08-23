@@ -1,5 +1,6 @@
 /* Copyright (C) 2002 Christopher Clark <firstname.lastname@cl.cam.ac.uk> */
 
+#include <stdint.h>
 #include "hashtable.h"
 #include "hashtable_private.h"
 #include "hashtable_utility.h"
@@ -16,7 +17,7 @@
  * 
  *  */
 int
-hashtable_change(struct hashtable *h, void *k, void *v, int destructive)
+hashtable_change(struct hashtable *h, void *k, uint32_t v, int destructive)
 {
    struct entry *e;
    unsigned int hashvalue, index;
@@ -28,8 +29,6 @@ hashtable_change(struct hashtable *h, void *k, void *v, int destructive)
         /* Check hash value to short circuit heavier comparison */
         if ((hashvalue == e->h) && (h->eqfn(k, e->k)))
         {
-            if( destructive )
-              free(e->v);
             e->v = v;
             return -1;
         }
