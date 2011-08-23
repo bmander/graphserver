@@ -5,7 +5,7 @@ import time
 
 class TestGraph(unittest.TestCase):
     
-    def test_basic(self):
+    def test_really_basic(self):
         g = Graph()
         assert g
         
