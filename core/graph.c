@@ -541,7 +541,16 @@ sptvLink(SPTVertex* this, SPTVertex* to, EdgePayload* payload) {
 
 Edge*
 sptvSetParent( SPTVertex* this, SPTVertex* parent, EdgePayload* payload ) {
-    return vSetParent( (Vertex*)this, (Vertex*)parent, payload );
+    //delete all incoming edges
+    ListNode* edges = sptvGetIncomingEdgeList( this );
+    while(edges) {
+      ListNode* nextnode = edges->next;
+      eDestroy( edges->data, 0 );
+      edges = nextnode;
+    }
+
+    //add incoming edge
+    return sptvLink( parent, this, payload );
 }
 
 inline ListNode*
