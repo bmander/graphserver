@@ -46,7 +46,6 @@ struct SPTVertex {
    int degree_in;
    ListNode* outgoing;
    ListNode* incoming;
-   char label[256];
 
    State* state;
    int hop;

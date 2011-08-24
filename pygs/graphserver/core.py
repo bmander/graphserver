@@ -664,7 +664,6 @@ class Vertex(CShadow):
         
 class SPTVertex(CShadow):
     
-    label = cproperty(libgs.sptvGetLabel, c_char_p)
     degree_in = cproperty(libgs.sptvDegreeIn, c_int)
     degree_out = cproperty(libgs.sptvDegreeOut, c_int)
     hop = cproperty(libgs.sptvHop, c_int)
@@ -684,7 +683,7 @@ class SPTVertex(CShadow):
     
     def to_xml(self):
         self.check_destroyed()
-        return "<SPTVertex degree_out='%s' degree_in='%s' label='%s'/>" % (self.degree_out, self.degree_in, self.label)
+        return "<SPTVertex degree_out='%s' degree_in='%s' mirror.label='%s'/>" % (self.degree_out, self.degree_in, self.mirror.label)
     
     def __str__(self):
         self.check_destroyed()

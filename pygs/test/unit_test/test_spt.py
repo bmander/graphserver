@@ -16,8 +16,8 @@ class TestShortestPathTree(unittest.TestCase):
         
         vertices, edges = self.spt.path_retro( "B" )
 
-        self.assertEqual( vertices[0].label , self.B.label )
-        self.assertEqual( vertices[1].label , self.A.label )
+        self.assertEqual( vertices[0].mirror.label , self.B.label )
+        self.assertEqual( vertices[1].mirror.label , self.A.label )
         self.assertEqual( edges[0].payload.name , self.a.payload.name )
         
     def test_basic(self):
@@ -35,14 +35,14 @@ class TestShortestPathTree(unittest.TestCase):
     def test_add_vertex(self):
         spt = ShortestPathTree()
         v = spt.add_vertex( Vertex("home") )
-        assert v.label == "home"
+        assert v.mirror.label == "home"
         
         spt.destroy()
         
     def test_remove_vertex(self):
         spt = ShortestPathTree()
         spt.add_vertex( Vertex("A") )
-        spt.get_vertex( "A" ).label == "A"
+        spt.get_vertex( "A" ).mirror.label == "A"
         spt.remove_vertex( "A" )
         assert spt.get_vertex( "A" ) == None
         
@@ -53,16 +53,16 @@ class TestShortestPathTree(unittest.TestCase):
         spt.remove_vertex( "A" )
         assert pl.name == "AB"
         assert spt.get_vertex( "A" ) == None
-        assert spt.get_vertex( "B" ).label == "B"
+        assert spt.get_vertex( "B" ).mirror.label == "B"
         
     def test_double_add_vertex(self):
         spt = ShortestPathTree()
         v = spt.add_vertex( Vertex("double") )
-        assert v.label == "double"
+        assert v.mirror.label == "double"
         assert spt.size == 1
         v = spt.add_vertex( Vertex("double") )
         assert spt.size == 1
-        assert v.label == "double"
+        assert v.mirror.label == "double"
         
         spt.destroy()
         
@@ -71,7 +71,7 @@ class TestShortestPathTree(unittest.TestCase):
         
         spt.add_vertex( Vertex("home") )
         v = spt.get_vertex("home")
-        assert v.label == "home"
+        assert v.mirror.label == "home"
         v = spt.get_vertex("bogus")
         assert v == None
         
@@ -85,8 +85,8 @@ class TestShortestPathTree(unittest.TestCase):
         s = Street( "helloworld", 1 )
         e = spt.add_edge("home", "work", s)
         assert e
-        self.assertEqual( e.from_v.label, "home" )
-        self.assertEqual( e.to_v.label, "work" )
+        self.assertEqual( e.from_v.soul, fromv.soul )
+        self.assertEqual( e.to_v.soul, tov.soul )
         self.assertEqual( str(e), "<Edge><Street name='helloworld' length='1.000000' rise='0.000000' fall='0.000000' way='0' reverse='False'/></Edge>" )
         
         spt.destroy()
@@ -112,7 +112,7 @@ class TestShortestPathTree(unittest.TestCase):
         
         assert spt.vertices
         assert len(spt.vertices)==2
-        assert spt.vertices[0].label == 'home'
+        assert spt.vertices[0].mirror.label == 'home'
         
         spt.destroy()
 

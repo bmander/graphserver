@@ -1,22 +1,22 @@
-from graphserver.core import Vertex, Edge, Link, Street, Path
+from graphserver.core import Vertex, Edge, Link, Street, Path, SPTVertex
 import unittest
 
 class TestPathCreate(unittest.TestCase):
     def test_path_new(self):
         """Create a path object without crashing"""
-        path = Path( Vertex("A") )
+        path = Path( SPTVertex(Vertex("A")) )
         
         self.assertTrue( path )
         
     def test_path_empty(self):
         """Path is empty right after first created"""
-        pp = Path( Vertex("A") )
+        pp = Path( SPTVertex(Vertex("A")) )
         
         self.assertEqual( pp.num_elements, 0 )
         
 class TestPathSize(unittest.TestCase):
     def setUp(self):
-        self.aa = Vertex("AA")
+        self.aa = SPTVertex(Vertex("AA"))
         self.path = Path( self.aa )
         
     def test_zero(self):
@@ -26,7 +26,7 @@ class TestPathSize(unittest.TestCase):
     def test_one(self):
         """getSize returns one after one entry"""
         
-        bb = Vertex("BB")
+        bb = SPTVertex(Vertex("BB"))
         ee = Edge(self.aa, bb, Link())
         
         self.path.addSegment( bb, ee )
@@ -37,8 +37,8 @@ class TestPathSize(unittest.TestCase):
         """getSize returns ten after ten entries"""
         
         for i in range(10):
-            aa = Vertex("AA")
-            bb = Vertex("BB")
+            aa = SPTVertex(Vertex("AA"))
+            bb = SPTVertex(Vertex("BB"))
             payload = Link()
             self.path.addSegment( bb, Edge(aa, bb, payload) )
             
@@ -46,8 +46,8 @@ class TestPathSize(unittest.TestCase):
         
 class TestAddAndGetSegments(unittest.TestCase):
     def setUp(self):
-        self.aa = Vertex("A")
-        self.bb = Vertex("B")
+        self.aa = SPTVertex(Vertex("A"))
+        self.bb = SPTVertex(Vertex("B"))
         self.ep = Link()
         self.path = Path(self.aa)
         
@@ -122,7 +122,7 @@ class TestAddAndGetSegments(unittest.TestCase):
         # make a bunch of fake segments
         segments = []
         for i in range(pathlen):
-            vv = Vertex(str(i))
+            vv = SPTVertex(Vertex(str(i)))
             ee = Edge( vv, vv, Link() )
             segments.append( (vv, ee) )
         
@@ -132,11 +132,11 @@ class TestAddAndGetSegments(unittest.TestCase):
             
         # check that they're alright
         # check the odd-duck vertex
-        self.assertEqual( self.path.getVertex(0).label, "A" )
+        self.assertEqual( self.path.getVertex(0).mirror.label, "A" )
         
         # check the bunch of fake segments added
         for i in range(1, pathlen+1):
-            self.assertEqual( i-1, int(self.path.getVertex(i).label) )
+            self.assertEqual( i-1, int(self.path.getVertex(i).mirror.label) )
             
         #
         # getting towards the real test - add a segment after the vectors have
@@ -144,12 +144,12 @@ class TestAddAndGetSegments(unittest.TestCase):
         #
         
         # add it
-        vv = Vertex("B")
+        vv = SPTVertex(Vertex("B"))
         ee = Edge(vv, vv, Link())
         self.path.addSegment( vv, ee )
         
         # get it
-        self.assertEqual( self.path.getVertex( 51 ).label, "B" )
+        self.assertEqual( self.path.getVertex( 51 ).mirror.label, "B" )
         
         
 if __name__ == '__main__':

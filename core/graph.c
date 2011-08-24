@@ -476,8 +476,6 @@ sptvInit( SPTVertex* this, Vertex* mirror, int hop ) {
     this->outgoing = liNew( NULL ) ;
     this->incoming = liNew( NULL ) ;
     
-    strcpy(this->label, mirror->label);
-
     this->state = NULL;
     this->fibnode = NULL;
     this->hop = hop;
@@ -575,11 +573,6 @@ sptvRemoveInEdgeRef( SPTVertex* this, Edge* todie ) {
     liRemoveRef( this->incoming, todie );
 }
     
-char*
-sptvGetLabel( SPTVertex* this ) {
-    return this->label;
-}
-
 int
 sptvDegreeOut( SPTVertex* this ) {
     return this->degree_out;
