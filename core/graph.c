@@ -555,37 +555,39 @@ sptvSetParent( SPTVertex* this, SPTVertex* parent, EdgePayload* payload ) {
 
 inline ListNode*
 sptvGetOutgoingEdgeList( SPTVertex* this ) {
-    return vGetOutgoingEdgeList( (Vertex*)this );
+    return this->outgoing->next; //the first node is a dummy
 }
 
 inline ListNode*
 sptvGetIncomingEdgeList( SPTVertex* this ) {
-    return vGetIncomingEdgeList( (Vertex*)this );
+    return this->incoming->next; //the first node is a dummy
 }
 
 void
 sptvRemoveOutEdgeRef( SPTVertex* this, Edge* todie ) {
-    vRemoveOutEdgeRef( (Vertex*)this, todie );
+    this->degree_out -= 1;
+    liRemoveRef( this->outgoing, todie );
 }
 
 void
 sptvRemoveInEdgeRef( SPTVertex* this, Edge* todie ) {
-    vRemoveInEdgeRef( (Vertex*)this, todie );
+    this->degree_in -= 1;
+    liRemoveRef( this->incoming, todie );
 }
     
 char*
 sptvGetLabel( SPTVertex* this ) {
-    return vGetLabel( (Vertex*)this );
+    return this->label;
 }
 
 int
 sptvDegreeOut( SPTVertex* this ) {
-    return vDegreeOut( (Vertex*)this );
+    return this->degree_out;
 }
 
 int
 sptvDegreeIn( SPTVertex* this ) {
-    return vDegreeIn( (Vertex*)this );
+    return this->degree_in;
 }
 
 State*
