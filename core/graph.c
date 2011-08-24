@@ -495,7 +495,21 @@ sptvNew( Vertex* mirror, int hop ) {
 
 void
 sptvGut( SPTVertex* this ) {
-    vGut( (Vertex*)this, 0 );
+    //delete incoming edges
+    while(this->incoming->next != NULL) {
+      eDestroy( this->incoming->next->data, 0 );
+    }
+    //delete outgoing edges
+    while(this->outgoing->next != NULL) {
+      eDestroy( this->outgoing->next->data, 0 );
+    }
+    //free the list dummy-heads that remain
+    free(this->outgoing);
+    free(this->incoming);
+
+    //set incoming and outgoing to NULL to signify that this has been gutted
+    this->outgoing = NULL;
+    this->incoming = NULL;
 }
 
 void
