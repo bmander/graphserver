@@ -525,7 +525,18 @@ sptvDestroy(SPTVertex* this) {
 
 Edge*
 sptvLink(SPTVertex* this, SPTVertex* to, EdgePayload* payload) {
-    return vLink( (Vertex*)this, (Vertex*)to, payload );
+    //create edge object
+    Edge* link = eNew((Vertex*)this, (Vertex*)to, payload);
+
+    ListNode* outlistnode = liNew( link );
+    liInsertAfter( this->outgoing, outlistnode );
+    this->degree_out++;
+
+    ListNode* inlistnode = liNew( link );
+    liInsertAfter( to->incoming, inlistnode );
+    to->degree_in++;
+
+    return link;
 }
 
 Edge*
