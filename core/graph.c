@@ -471,7 +471,13 @@ vDegreeIn( Vertex* this ) {
 
 void
 sptvInit( SPTVertex* this, Vertex* mirror, int hop ) {
-    vInit( (Vertex*)this, mirror->label );
+    this->degree_in = 0;
+    this->degree_out = 0;
+    this->outgoing = liNew( NULL ) ;
+    this->incoming = liNew( NULL ) ;
+    
+    strcpy(this->label, mirror->label);
+
     this->state = NULL;
     this->fibnode = NULL;
     this->hop = hop;
