@@ -108,9 +108,7 @@ class TestGraph(unittest.TestCase):
         assert spt
         assert spt.__class__ == ShortestPathTree
         assert spt.get_vertex("home").degree_out==1
-        assert spt.get_vertex("home").degree_in==0
         assert spt.get_vertex("home").state.weight==0
-        assert spt.get_vertex("work").degree_in==1
         assert spt.get_vertex("work").degree_out==0
         self.assertTrue( spt.get_vertex("work").state.weight > 0 )
         
@@ -148,9 +146,7 @@ class TestGraph(unittest.TestCase):
         assert spt
         assert spt.__class__ == ShortestPathTree
         self.assertEqual( spt.get_vertex("home").degree_out , 0 )
-        self.assertEqual( spt.get_vertex("home").degree_in , 1 )
         self.assertTrue( spt.get_vertex("home").state.weight > 0 )
-        self.assertEqual( spt.get_vertex("work").degree_in , 0 )
         self.assertEqual( spt.get_vertex("work").degree_out , 1 )
         self.assertEqual( spt.get_vertex("work").state.weight , 0 )
         
@@ -188,10 +184,8 @@ class TestGraph(unittest.TestCase):
         assert spt
         assert spt.__class__ == ShortestPathTree
         assert spt.get_vertex("home").outgoing[0].payload.__class__ == Link
-        assert spt.get_vertex("work").incoming[0].payload.__class__ == Link
+        assert spt.get_vertex("work").parent.payload.__class__ == Link
         assert spt.get_vertex("home").degree_out==1
-        assert spt.get_vertex("home").degree_in==0
-        assert spt.get_vertex("work").degree_in==1
         assert spt.get_vertex("work").degree_out==0
         
         spt.destroy()
@@ -208,11 +202,9 @@ class TestGraph(unittest.TestCase):
         spt = g.shortest_path_tree_retro("home", "work", State(g.numagencies,0), WalkOptions())
         assert spt
         assert spt.__class__ == ShortestPathTree
-        assert spt.get_vertex("home").incoming[0].payload.__class__ == Link
+        assert spt.get_vertex("home").parent.payload.__class__ == Link
         assert spt.get_vertex("work").outgoing[0].payload.__class__ == Link
         assert spt.get_vertex("home").degree_out==0
-        assert spt.get_vertex("home").degree_in==1
-        assert spt.get_vertex("work").degree_in==0
         assert spt.get_vertex("work").degree_out==1
         
         spt.destroy()
@@ -264,8 +256,6 @@ class TestGraph(unittest.TestCase):
         assert spt
         assert spt.__class__ == ShortestPathTree
         assert spt.get_vertex("home").degree_out==0
-        assert spt.get_vertex("home").degree_in==1
-        assert spt.get_vertex("work").degree_in==0
         assert spt.get_vertex("work").degree_out==1
         
         spt.destroy()

@@ -664,10 +664,10 @@ class Vertex(CShadow):
         
 class SPTVertex(CShadow):
     
-    degree_in = cproperty(libgs.sptvDegreeIn, c_int)
     degree_out = cproperty(libgs.sptvDegreeOut, c_int)
     hop = cproperty(libgs.sptvHop, c_int)
     mirror = cproperty(libgs.sptvMirror, c_void_p, Vertex )
+    parent = cproperty(libgs.sptvGetParent, c_void_p, Edge )
     edgeclass = SPTEdge
     
     def __init__(self,mirror,hop=0):
@@ -683,7 +683,7 @@ class SPTVertex(CShadow):
     
     def to_xml(self):
         self.check_destroyed()
-        return "<SPTVertex degree_out='%s' degree_in='%s' mirror.label='%s'/>" % (self.degree_out, self.degree_in, self.mirror.label)
+        return "<SPTVertex degree_out='%s' mirror.label='%s'/>" % (self.degree_out, self.mirror.label)
     
     def __str__(self):
         self.check_destroyed()
@@ -693,11 +693,6 @@ class SPTVertex(CShadow):
     def outgoing(self):
         self.check_destroyed()
         return self._edges(self._coutgoing_edges)
-        
-    @property
-    def incoming(self):
-        self.check_destroyed()
-        return self._edges(self._cincoming_edges)
     
     @property
     def state(self):
@@ -1688,7 +1683,6 @@ Vertex._cincoming_edges = ccast(libgs.vGetIncomingEdgeList, ListNode)
 SPTVertex._cnew = libgs.sptvNew
 SPTVertex._cdel = libgs.sptvDestroy
 SPTVertex._coutgoing_edges = ccast(libgs.sptvGetOutgoingEdgeList, ListNode)
-SPTVertex._cincoming_edges = ccast(libgs.sptvGetIncomingEdgeList, ListNode)
 SPTVertex._cstate = ccast(libgs.sptvState, State)
 
 Edge._cnew = libgs.eNew

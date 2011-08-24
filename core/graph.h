@@ -43,9 +43,8 @@ struct Vertex {
 
 struct SPTVertex {
    int degree_out;
-   int degree_in;
    ListNode* outgoing;
-   ListNode* incoming;
+   Edge* parentedge;
 
    State* state;
    int hop;
@@ -208,9 +207,6 @@ sptvSetParent( SPTVertex* this, SPTVertex* parent, EdgePayload* payload );
 inline ListNode*
 sptvGetOutgoingEdgeList( SPTVertex* this );
 
-inline ListNode*
-sptvGetIncomingEdgeList( SPTVertex* this );
-
 void
 sptvRemoveOutEdgeRef( SPTVertex* this, Edge* todie );
 
@@ -222,9 +218,6 @@ sptvGetLabel( SPTVertex* this );
 
 int
 sptvDegreeOut( SPTVertex* this );
-
-int
-sptvDegreeIn( SPTVertex* this );
 
 State*
 sptvState( SPTVertex* this );

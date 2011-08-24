@@ -94,9 +94,9 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
       long old_w;
 
       spt_v = sptGetVertex( spt, v->label );
-      
+
       // get the SPT Vertex corresponding to 'v'
-      if( (spt_v = sptGetVertex( spt, v->label )) ) {        
+      if( spt_v ) {        
         // and its State 'dv'
         dv = (State*)spt_v->state;
         old_w = dv->weight;
@@ -130,6 +130,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
 
       // if the new way of getting there is better,
       if( new_w < old_w ) {
+
         // if this is the first time v has been reached
         if( !spt_v ) {
           // copy v over to the SPT
