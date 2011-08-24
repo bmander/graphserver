@@ -517,7 +517,10 @@ sptvDestroy(SPTVertex* this) {
     if( this->state ) {
         stateDestroy( this->state );
     }
-    vDestroy( (Vertex*)this, 0 );
+
+    sptvGut( this );
+
+    free( this );
 }
 
 Edge*
