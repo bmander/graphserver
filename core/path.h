@@ -6,16 +6,16 @@ struct Path {
 // PATH FUNCTIONS
 
 Path *
-pathNew( Vertex* origin, int init_size, int expand_delta );
+pathNew( SPTVertex* origin, int init_size, int expand_delta );
 
 void
 pathDestroy(Path *this);
 
-Vertex *
+SPTVertex *
 pathGetVertex( Path *this, int i );
 
 Edge *
 pathGetEdge( Path *this, int i );
 
 void
-pathAddSegment( Path *this, Vertex *vertex, Edge *edge );
+pathAddSegment( Path *this, SPTVertex *vertex, Edge *edge );

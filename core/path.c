@@ -4,7 +4,7 @@
 // PATH FUNCTIONS
 
 Path *
-pathNew( Vertex* origin, int init_size, int expand_delta ) {
+pathNew( SPTVertex* origin, int init_size, int expand_delta ) {
     Path *this = (Path*)malloc(sizeof(Path));
     
     this->vertices = vecNew( init_size, expand_delta );
@@ -28,9 +28,9 @@ pathDestroy(Path *this) {
     free(this);
 }
 
-Vertex *
+SPTVertex *
 pathGetVertex( Path *this, int i ) {
-    return (Vertex*)vecGet( this->vertices, i );
+    return (SPTVertex*)vecGet( this->vertices, i );
 }
 
 Edge *
@@ -39,7 +39,7 @@ pathGetEdge( Path *this, int i ) {
 }
 
 void
-pathAddSegment( Path *this, Vertex *vertex, Edge *edge ) {
+pathAddSegment( Path *this, SPTVertex *vertex, Edge *edge ) {
     vecAdd( this->vertices, vertex );
     vecAdd( this->edges, edge );
 }

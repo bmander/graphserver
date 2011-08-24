@@ -218,14 +218,14 @@ sptPathRetro(ShortestPathTree* spt, char* origin_label) {
     
   if (!curr) return NULL;
 
-  Path *path = pathNew((Vertex*)curr, 50, 50);
+  Path *path = pathNew(curr, 50, 50);
 
   // trace backwards up the tree until the current vertex has no parents
   while ((incoming = vGetIncomingEdgeList((Vertex*)curr))) {
     edge = liGetData(incoming);
     curr = (SPTVertex*)eGetFrom(edge);
         
-    pathAddSegment( path, (Vertex*)curr, edge );
+    pathAddSegment( path, curr, edge );
   }
 
   return path;	
