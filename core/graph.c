@@ -647,3 +647,36 @@ void
 eSetEnabled(Edge *this, int enabled) {
     this->enabled = enabled;
 }
+
+// SPTEDGE FUNCTIONS
+
+SPTEdge*
+spteNew(SPTVertex* from, SPTVertex* to, EdgePayload* payload) {
+    SPTEdge *this = (SPTEdge *)malloc(sizeof(SPTEdge));
+    this->from = from;
+    this->to = to;
+    this->payload = payload;
+    return this;
+}
+
+void
+spteDestroy(SPTEdge *this) {
+    this->from->degree_out -= 1;
+    liRemoveRef( this->from->outgoing, (Edge*)this );
+    free(this);
+}
+
+SPTVertex*
+spteGetFrom(SPTEdge *this) {
+  return this->from;
+}
+
+SPTVertex*
+spteGetTo(SPTEdge *this) {
+  return this->to;
+}
+
+EdgePayload*
+spteGetPayload(SPTEdge *this) {
+  return this->payload;
+}
