@@ -523,10 +523,12 @@ sptvLink(SPTVertex* this, SPTVertex* to, EdgePayload* payload) {
     //create edge object
     Edge* link = eNew((Vertex*)this, (Vertex*)to, payload);
 
+    //add it to the outgoing list of the parent
     ListNode* outlistnode = liNew( link );
     liInsertAfter( this->outgoing, outlistnode );
     this->degree_out++;
 
+    //set it as the parent of the child
     to->parentedge = link;
 
     return link;
@@ -534,9 +536,10 @@ sptvLink(SPTVertex* this, SPTVertex* to, EdgePayload* payload) {
 
 Edge*
 sptvSetParent( SPTVertex* this, SPTVertex* parent, EdgePayload* payload ) {
-    //delete all incoming edges
+    //disconnect parent edge from parent
     if( this->parentedge ) {
-        eDestroy( this->parentedge, 0 );
+        vRemoveOutEdgeRef( this->parentedge->from, this->parentedge );
+        free(this->parentedge);
     }
 
     //add incoming edge
