@@ -44,7 +44,7 @@ struct Vertex {
 struct SPTVertex {
    int degree_out;
    ListNode* outgoing;
-   Edge* parentedge;
+   SPTEdge* parentedge;
 
    State* state;
    int hop;
@@ -133,7 +133,7 @@ sptRemoveVertex( ShortestPathTree *this, char *label );
 SPTVertex*
 sptGetVertex( ShortestPathTree *this, char *label );
 
-Edge*
+SPTEdge*
 sptAddEdge( ShortestPathTree *this, char *from, char *to, EdgePayload *payload );
 
 SPTVertex**
@@ -204,17 +204,17 @@ sptvGut( SPTVertex* this ) ;
 void
 sptvDestroy(SPTVertex* this) ;
 
-Edge*
+SPTEdge*
 sptvLink(SPTVertex* this, SPTVertex* to, EdgePayload* payload) ;
 
-Edge*
+SPTEdge*
 sptvSetParent( SPTVertex* this, SPTVertex* parent, EdgePayload* payload );
 
 inline ListNode*
 sptvGetOutgoingEdgeList( SPTVertex* this );
 
 void
-sptvRemoveOutEdgeRef( SPTVertex* this, Edge* todie );
+sptvRemoveOutEdgeRef( SPTVertex* this, SPTEdge* todie );
 
 char*
 sptvGetLabel( SPTVertex* this );
@@ -228,7 +228,7 @@ sptvState( SPTVertex* this );
 int
 sptvHop( SPTVertex* this );
 
-Edge*
+SPTEdge*
 sptvGetParent( SPTVertex* this );
 
 Vertex*

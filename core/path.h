@@ -14,8 +14,8 @@ pathDestroy(Path *this);
 SPTVertex *
 pathGetVertex( Path *this, int i );
 
-Edge *
+SPTEdge *
 pathGetEdge( Path *this, int i );
 
 void
-pathAddSegment( Path *this, SPTVertex *vertex, Edge *edge );
+pathAddSegment( Path *this, SPTVertex *vertex, SPTEdge *edge );

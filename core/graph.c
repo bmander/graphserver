@@ -214,7 +214,7 @@ Path *
 sptPathRetro(ShortestPathTree* spt, char* origin_label) {
   SPTVertex* curr = sptGetVertex(spt, origin_label);
   ListNode* incoming = NULL;
-  Edge* edge = NULL;
+  SPTEdge* edge = NULL;
     
   if (!curr) return NULL;
 
@@ -223,7 +223,7 @@ sptPathRetro(ShortestPathTree* spt, char* origin_label) {
   // trace backwards up the tree until the current vertex has no parents
   while (curr->parentedge) {
     edge = curr->parentedge;
-    curr = (SPTVertex*)eGetFrom(edge);
+    curr = spteGetFrom(edge);
         
     pathAddSegment( path, curr, edge );
   }
@@ -330,7 +330,7 @@ sptGetVertex( ShortestPathTree *this, char *label ) {
     return sptGetVertexByIndex( this, i );
 }
 
-Edge*
+SPTEdge*
 sptAddEdge( ShortestPathTree *this, char *from, char *to, EdgePayload *payload ) {
   SPTVertex* vtx_from = sptGetVertex( this, from );
   SPTVertex* vtx_to   = sptGetVertex( this, to );
@@ -495,10 +495,9 @@ void
 sptvGut( SPTVertex* this ) {
     //delete outgoing edges
     while(this->outgoing->next != NULL) {
-      Edge *edge = this->outgoing->next->data;
-      sptvRemoveOutEdgeRef( this, edge );
-      free(edge);
+      spteDestroy( (SPTEdge*)this->outgoing->next->data );
     }
+
     //free the list dummy-heads that remain
     free(this->outgoing);
 
@@ -518,13 +517,13 @@ sptvDestroy(SPTVertex* this) {
     free( this );
 }
 
-Edge*
+SPTEdge*
 sptvLink(SPTVertex* this, SPTVertex* to, EdgePayload* payload) {
     //create edge object
-    Edge* link = eNew((Vertex*)this, (Vertex*)to, payload);
+    SPTEdge* link = spteNew(this, to, payload);
 
     //add it to the outgoing list of the parent
-    ListNode* outlistnode = liNew( link );
+    ListNode* outlistnode = liNew( (Edge*)link );
     liInsertAfter( this->outgoing, outlistnode );
     this->degree_out++;
 
@@ -534,11 +533,11 @@ sptvLink(SPTVertex* this, SPTVertex* to, EdgePayload* payload) {
     return link;
 }
 
-Edge*
+SPTEdge*
 sptvSetParent( SPTVertex* this, SPTVertex* parent, EdgePayload* payload ) {
     //disconnect parent edge from parent
     if( this->parentedge ) {
-        vRemoveOutEdgeRef( this->parentedge->from, this->parentedge );
+        sptvRemoveOutEdgeRef( this->parentedge->from, this->parentedge );
         free(this->parentedge);
     }
 
@@ -552,9 +551,9 @@ sptvGetOutgoingEdgeList( SPTVertex* this ) {
 }
 
 void
-sptvRemoveOutEdgeRef( SPTVertex* this, Edge* todie ) {
+sptvRemoveOutEdgeRef( SPTVertex* this, SPTEdge* todie ) {
     this->degree_out -= 1;
-    liRemoveRef( this->outgoing, todie );
+    liRemoveRef( this->outgoing, (Edge*)todie );
 }
 
 int
@@ -572,7 +571,7 @@ sptvHop( SPTVertex* this ) {
     return this->hop;
 }
 
-Edge*
+SPTEdge*
 sptvGetParent( SPTVertex* this ) {
     return this->parentedge;
 }

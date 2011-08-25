@@ -33,13 +33,13 @@ pathGetVertex( Path *this, int i ) {
     return (SPTVertex*)vecGet( this->vertices, i );
 }
 
-Edge *
+SPTEdge *
 pathGetEdge( Path *this, int i ) {
-    return (Edge*)vecGet( this->edges, i );
+    return (SPTEdge*)vecGet( this->edges, i );
 }
 
 void
-pathAddSegment( Path *this, SPTVertex *vertex, Edge *edge ) {
+pathAddSegment( Path *this, SPTVertex *vertex, SPTEdge *edge ) {
     vecAdd( this->vertices, vertex );
     vecAdd( this->edges, edge );
 }
