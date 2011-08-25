@@ -159,15 +159,8 @@ vGut(Vertex *this, int free_edge_payloads);
 void
 vDestroy(Vertex* this, int free_edge_payloads) ;
 
-// TODO
-//void
-//vMark(Vertex* this) ;
-
 Edge*
 vLink(Vertex* this, Vertex* to, EdgePayload* payload) ;
-
-Edge*
-vSetParent( Vertex* this, Vertex* parent, EdgePayload* payload );
 
 inline ListNode*
 vGetOutgoingEdgeList( Vertex* this );

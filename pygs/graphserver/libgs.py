@@ -104,7 +104,6 @@ declarations = [\
     (libgs.vNew, LGSTypes.Vertex, [c_char_p]),
     (libgs.vDestroy, None, [LGSTypes.Vertex, c_int]),
     (libgs.vLink, LGSTypes.Edge, [LGSTypes.Vertex, LGSTypes.Vertex, LGSTypes.EdgePayload]),
-    (libgs.vSetParent, LGSTypes.Edge, [LGSTypes.Vertex, LGSTypes.Vertex, LGSTypes.EdgePayload]),
     (libgs.vGetOutgoingEdgeList, LGSTypes.ListNode, [LGSTypes.Vertex]),
     (libgs.vGetIncomingEdgeList, LGSTypes.ListNode, [LGSTypes.Vertex]),
     (libgs.vRemoveOutEdgeRef, None, [LGSTypes.Vertex, LGSTypes.Edge]),

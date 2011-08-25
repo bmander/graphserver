@@ -416,21 +416,6 @@ vLink(Vertex* this, Vertex* to, EdgePayload* payload) {
     return link;
 }
 
-//the comments say it all
-Edge*
-vSetParent( Vertex* this, Vertex* parent, EdgePayload* payload ) {
-    //delete all incoming edges
-    ListNode* edges = vGetIncomingEdgeList( this );
-    while(edges) {
-      ListNode* nextnode = edges->next;
-      eDestroy( edges->data, 0 );
-      edges = nextnode;
-    }
-
-    //add incoming edge
-    return vLink( parent, this, payload );
-}
-
 ListNode*
 vGetOutgoingEdgeList( Vertex* this ) {
     return this->outgoing->next; //the first node is a dummy
