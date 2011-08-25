@@ -3,7 +3,7 @@
 // LIST FUNCTIONS
 
 ListNode*
-liNew(Edge *data) {
+liNew(void *data) {
     ListNode *ret = (ListNode*)malloc(sizeof(ListNode));
     ret->data = data;
     ret->next = NULL;
@@ -26,7 +26,7 @@ liRemoveAfter( ListNode *this ) {
 }
 
 void
-liRemoveRef( ListNode *dummyhead, Edge *data ) {
+liRemoveRef( ListNode *dummyhead, void *data ) {
     ListNode* prev = dummyhead;
     ListNode* curr = dummyhead->next;
 
@@ -40,7 +40,7 @@ liRemoveRef( ListNode *dummyhead, Edge *data ) {
     }
 }
 
-Edge*
+void*
 liGetData( ListNode *this ) {
 	return this->data;
 }

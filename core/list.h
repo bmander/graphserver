@@ -2,7 +2,7 @@
 #define _LIST_H_
 
 struct ListNode {
-   Edge* data;
+   void* data;
    ListNode* next;
 } ;
 
@@ -12,7 +12,7 @@ struct ListNode {
  * create a new list
  */
 ListNode*
-liNew(Edge *data);
+liNew(void *data);
 
 /*
  * append an existing list node after the given list node
@@ -24,9 +24,9 @@ void
 liRemoveAfter( ListNode *this ) ;
 
 void
-liRemoveRef( ListNode *dummyhead, Edge* data );
+liRemoveRef( ListNode *dummyhead, void* data );
 
-Edge*
+void*
 liGetData( ListNode *this );
 
 ListNode*
