@@ -502,10 +502,6 @@ sptvGut( SPTVertex* this ) {
     //free the list dummy-heads that remain
     free(this->outgoing);
 
-    //if(this->parentedge) {
-    //    free( this->parentedge );
-    //}
-
     //set incoming and outgoing to NULL to signify that this has been gutted
     this->outgoing = NULL;
     this->parentedge = NULL;

@@ -210,9 +210,6 @@ sptvGetOutgoingEdgeList( SPTVertex* this );
 void
 sptvRemoveOutEdgeRef( SPTVertex* this, Edge* todie );
 
-void
-sptvRemoveInEdgeRef( SPTVertex* this, Edge* todie );
-
 char*
 sptvGetLabel( SPTVertex* this );
 
