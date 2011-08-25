@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../graphserver.h"
+#include "../fibheap/fibheap.h"
 #include "../graph.h"
 #include <valgrind/callgrind.h>
 
