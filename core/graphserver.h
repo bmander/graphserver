@@ -16,6 +16,7 @@ typedef struct State State;
 typedef struct WalkOptions WalkOptions;
 typedef struct Vertex Vertex;
 typedef struct Edge Edge;
+typedef struct SPTEdge SPTEdge;
 typedef struct ListNode ListNode;
 typedef struct Graph Graph;
 typedef struct Path Path;

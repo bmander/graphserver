@@ -59,6 +59,12 @@ struct Edge {
   int enabled;
 } ;
 
+struct SPTEdge {
+  SPTVertex* from;
+  SPTVertex* to;
+  EdgePayload* payload;
+} ;
+
 //GRAPH FUNCTIONS
 
 Graph*
@@ -236,10 +242,6 @@ eNew(Vertex* from, Vertex* to, EdgePayload* payload);
 void
 eDestroy(Edge *this, int destroy_payload) ;
 
-// TODO
-//void
-//eMark(Edge *this) ;
-
 State*
 eWalk(Edge *this, State* state, WalkOptions* options) ;
 
@@ -260,5 +262,22 @@ eGetEnabled(Edge *this);
 
 void
 eSetEnabled(Edge *this, int enabled);
+
+//SPTEDGE FUNCTIONS
+
+SPTEdge*
+spteNew(SPTVertex* from, SPTVertex* to, EdgePayload* payload);
+
+void
+spteDestroy(SPTEdge *this) ;
+
+SPTVertex*
+spteGetFrom(SPTEdge *this);
+
+SPTVertex*
+spteGetTo(SPTEdge *this);
+
+EdgePayload*
+spteGetPayload(SPTEdge *this);
 
 #endif
