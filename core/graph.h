@@ -198,7 +198,7 @@ SPTEdge*
 sptvLink(SPTVertex* this, SPTVertex* to, EdgePayload* payload) ;
 
 SPTEdge*
-sptvSetParent( SPTVertex* this, SPTVertex* parent, EdgePayload* payload );
+sptvSetParent( ShortestPathTree* spt, SPTVertex* this, SPTVertex* parent, EdgePayload* payload );
 
 inline ListNode*
 sptvGetOutgoingEdgeList( SPTVertex* this );
@@ -257,6 +257,9 @@ void
 eSetEnabled(Edge *this, int enabled);
 
 //SPTEDGE FUNCTIONS
+
+void
+spteInit(SPTEdge *this, SPTVertex *from, SPTVertex *to, EdgePayload *payload);
 
 SPTEdge*
 spteNew(SPTVertex* from, SPTVertex* to, EdgePayload* payload);

@@ -381,7 +381,7 @@ sptSetParent( ShortestPathTree *this, char *from, char *to, EdgePayload *payload
   if(!(vtx_from && vtx_to))
     return NULL;
 
-  return sptvSetParent( vtx_to, vtx_from, payload );
+  return sptvSetParent( this, vtx_to, vtx_from, payload );
 }
 
 long
@@ -531,31 +531,31 @@ sptvDestroy(SPTVertex* this) {
 }
 
 SPTEdge*
-sptvLink(SPTVertex* this, SPTVertex* to, EdgePayload* payload) {
-    //create edge object
-    SPTEdge* link = spteNew(this, to, payload);
-
-    //add it to the outgoing list of the parent
-    ListNode* outlistnode = liNew( (Edge*)link );
-    liInsertAfter( this->outgoing, outlistnode );
-    this->degree_out++;
-
-    //set it as the parent of the child
-    to->parentedge = link;
-
-    return link;
-}
-
-SPTEdge*
-sptvSetParent( SPTVertex* this, SPTVertex* parent, EdgePayload* payload ) {
+sptvSetParent( ShortestPathTree *spt, SPTVertex* this, SPTVertex* parent, EdgePayload* payload ) {
     //disconnect parent edge from parent
     if( this->parentedge ) {
         sptvRemoveOutEdgeRef( this->parentedge->from, this->parentedge );
-        free(this->parentedge);
     }
 
-    //add incoming edge
-    return sptvLink( parent, this, payload );
+    //create edge object
+    SPTEdge* link = &(spt->edge_store[spt->edge_n]);
+    spteInit( link, parent, this, payload );
+
+    //expand edge vector if necessary
+    spt->edge_n++;
+    if(spt->edge_n >= spt->edge_cap) {
+      sptEdgesExpand(spt);
+    }
+
+    //add it to the outgoing list of the parent
+    ListNode* outlistnode = liNew( (Edge*)link );
+    liInsertAfter( parent->outgoing, outlistnode );
+    parent->degree_out++;
+
+    //set it as the parent of the child
+    this->parentedge = link;
+
+    return link;
 }
 
 inline ListNode*
@@ -669,12 +669,17 @@ eSetEnabled(Edge *this, int enabled) {
 
 // SPTEDGE FUNCTIONS
 
-SPTEdge*
-spteNew(SPTVertex* from, SPTVertex* to, EdgePayload* payload) {
-    SPTEdge *this = (SPTEdge *)malloc(sizeof(SPTEdge));
+void
+spteInit(SPTEdge *this, SPTVertex *from, SPTVertex *to, EdgePayload *payload) {
     this->from = from;
     this->to = to;
     this->payload = payload;
+}
+
+SPTEdge*
+spteNew(SPTVertex* from, SPTVertex* to, EdgePayload* payload) {
+    SPTEdge *this = (SPTEdge *)malloc(sizeof(SPTEdge));
+    spteInit( this, from, to, payload );
     return this;
 }
 
@@ -682,7 +687,6 @@ void
 spteDestroy(SPTEdge *this) {
     this->from->degree_out -= 1;
     liRemoveRef( this->from->outgoing, (Edge*)this );
-    free(this);
 }
 
 SPTVertex*

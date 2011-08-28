@@ -150,7 +150,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
         spt_v->state = new_dv;                      
 
         // make u the parent of v in the SPT
-        sptvSetParent( spt_v, spt_u, edge->payload );      
+        sptvSetParent( spt, spt_v, spt_u, edge->payload );      
       } else {
         // new_dv will never be used; merge it with the infinite.
         stateDestroy(new_dv); 
