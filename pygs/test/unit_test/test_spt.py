@@ -84,10 +84,11 @@ class TestShortestPathTree(unittest.TestCase):
         tov = spt.add_vertex( Vertex("work") )
         s = Street( "helloworld", 1 )
         e = spt.add_edge("home", "work", s)
+
         assert e
-        self.assertEqual( e.from_v.soul, fromv.soul )
-        self.assertEqual( e.to_v.soul, tov.soul )
-        self.assertEqual( str(e), "<Edge><Street name='helloworld' length='1.000000' rise='0.000000' fall='0.000000' way='0' reverse='False'/></Edge>" )
+        self.assertEqual( e.from_v.mirror.label, fromv.mirror.label )
+        self.assertEqual( e.to_v.mirror.label, tov.mirror.label )
+        self.assertEqual( str(e), "<SPTEdge 'home' -> 'work' via <Street name='helloworld' length='1.000000' rise='0.000000' fall='0.000000' way='0' reverse='False'/>>" )
         
         spt.destroy()
     
@@ -115,23 +116,6 @@ class TestShortestPathTree(unittest.TestCase):
         
         spt.destroy()
 
-        
-    def test_walk_longstreet(self):
-        spt = ShortestPathTree()
-        
-        fromv = spt.add_vertex( Vertex("home") )
-        tov = spt.add_vertex( Vertex("work") )
-        s = Street( "helloworld", 24000 )
-        e = spt.add_edge("home", "work", s)
-        
-        wo = WalkOptions()
-        sprime = e.walk(State(spt.numagencies,0), wo)
-        wo.destroy()
-        print str(sprime)
-        assert str(sprime)=="<state time='3953' weight='5538153' dist_walked='24000.0' num_transfers='0' trip_id='None' stop_sequence='-1'></state>"
-
-        spt.destroy()
-    
         
     def test_add_link(self):
         spt = ShortestPathTree()

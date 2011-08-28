@@ -33,7 +33,7 @@ gDestroyBasic( Graph* this, int free_edge_payloads ) {
 
   long i;
   for(i=0; i<this->n; i++) {
-    vGut( &(this->vertices_store[i]), 1 );
+    vGut( &(this->vertices_store[i]), this, 1 );
   }
 
   //destroy the table
@@ -84,7 +84,7 @@ gRemoveVertex( Graph* this, char *label, int free_edge_payloads ) {
     }
     
     hashtable_remove( this->vertices, label );
-    vGut( exists, free_edge_payloads );
+    vGut( exists, this, free_edge_payloads );
 }
 
 void 
@@ -103,13 +103,27 @@ gGetVertex( Graph* this, char *label ) {
 
 Edge*
 gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload ) {
-  Vertex* vtx_from = gGetVertex( this, from );
-  Vertex* vtx_to   = gGetVertex( this, to );
+  uint32_t ix_from =  hashtable_search( this->vertices, from );
+  Vertex* vtx_from = gGetVertexByIndex( this, ix_from );
+
+  uint32_t ix_to = hashtable_search( this->vertices, to );
+  Vertex* vtx_to = gGetVertexByIndex( this, ix_to );
 
   if(!(vtx_from && vtx_to))
     return NULL;
 
-  return vLink( vtx_from, vtx_to, payload );
+  //create edge object
+  Edge* link = eNew(ix_from, ix_to, payload);
+
+  ListNode* outlistnode = liNew( link );
+  liInsertAfter( vtx_from->outgoing, outlistnode );
+  vtx_from->degree_out++;
+
+  ListNode* inlistnode = liNew( link );
+  liInsertAfter( vtx_to->incoming, inlistnode );
+  vtx_to->degree_in++;
+
+  return link;
 }
 
 Vertex*
@@ -371,14 +385,16 @@ vNew( char* label ) {
 }
 
 void
-vGut(Vertex *this, int free_edge_payloads) {
-    //delete incoming edges
-    while(this->incoming->next != NULL) {
-      eDestroy( this->incoming->next->data, free_edge_payloads );
-    }
-    //delete outgoing edges
-    while(this->outgoing->next != NULL) {
-      eDestroy( this->outgoing->next->data, free_edge_payloads );
+vGut(Vertex *this, Graph* gg, int free_edge_payloads) {
+    if( gg ) {
+      //delete incoming edges
+      while(this->incoming->next != NULL) {
+        eDestroy( this->incoming->next->data, gg, free_edge_payloads );
+      }
+      //delete outgoing edges
+      while(this->outgoing->next != NULL) {
+        eDestroy( this->outgoing->next->data, gg, free_edge_payloads );
+      }
     }
     //free the list dummy-heads that remain
     free(this->outgoing);
@@ -393,27 +409,10 @@ vGut(Vertex *this, int free_edge_payloads) {
 void
 vDestroy(Vertex *this, int free_edge_payloads) {
 
-    vGut( this, free_edge_payloads );
+    vGut( this, NULL, free_edge_payloads );
 
     //and finally, sweet release*/
     free( this );
-}
-
-
-Edge*
-vLink(Vertex* this, Vertex* to, EdgePayload* payload) {
-    //create edge object
-    Edge* link = eNew(this, to, payload);
-
-    ListNode* outlistnode = liNew( link );
-    liInsertAfter( this->outgoing, outlistnode );
-    this->degree_out++;
-
-    ListNode* inlistnode = liNew( link );
-    liInsertAfter( to->incoming, inlistnode );
-    to->degree_in++;
-
-    return link;
 }
 
 ListNode*
@@ -569,7 +568,7 @@ sptvMirror( SPTVertex* this ) {
 // EDGE FUNCTIONS
 
 Edge*
-eNew(Vertex* from, Vertex* to, EdgePayload* payload) {
+eNew(uint32_t from, uint32_t to, EdgePayload* payload) {
     Edge *this = (Edge *)malloc(sizeof(Edge));
     this->from = from;
     this->to = to;
@@ -579,13 +578,16 @@ eNew(Vertex* from, Vertex* to, EdgePayload* payload) {
 }
 
 void
-eDestroy(Edge *this, int destroy_payload) {
+eDestroy(Edge *this, Graph* gg, int destroy_payload) {
     //free payload
     if(destroy_payload)
       epDestroy( this->payload ); //destroy payload object and contents
 
-    vRemoveOutEdgeRef( this->from, this );
-    vRemoveInEdgeRef( this->to, this );
+    Vertex* fromv = gGetVertexByIndex( gg, this->from );
+    Vertex* tov = gGetVertexByIndex( gg, this->to );
+
+    vRemoveOutEdgeRef( fromv, this );
+    vRemoveInEdgeRef( tov, this );
     free(this);
 }
 
@@ -607,12 +609,12 @@ eWalkBack(Edge *this, State* state, WalkOptions* options) {
   }
 }
 
-Vertex*
+uint32_t
 eGetFrom(Edge *this) {
   return this->from;
 }
 
-Vertex*
+uint32_t
 eGetTo(Edge *this) {
   return this->to;
 }

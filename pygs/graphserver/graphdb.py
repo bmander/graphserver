@@ -71,7 +71,7 @@ class GraphDatabase:
             for ee in vv.outgoing:
                 epid = self.put_edge_payload( ee.payload, c )
 
-                c.execute( "INSERT INTO edges VALUES (?, ?, ?)", (ee.from_v.label, ee.to_v.label, epid) )
+                c.execute( "INSERT INTO edges VALUES (?, ?, ?)", (graph.get_vertex_by_index(ee.from_v).label, graph.get_vertex_by_index(ee.to_v).label, epid) )
 
                 if hasattr(ee.payload, "__resources__"):
                     for name, resource in ee.payload.__resources__():

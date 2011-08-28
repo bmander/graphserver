@@ -236,6 +236,10 @@ class Graph(CShadow):
         self.check_destroyed()
         
         return self._cget_vertex(self.soul, label)
+
+    def get_vertex_by_index( self, index ):
+        libgs.gGetVertexByIndex.restype = c_void_p
+        return Vertex.from_pointer( libgs.gGetVertexByIndex( self.soul, index ) )
         
     def add_edge( self, fromv, tov, payload ):
         #Edge* gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload );
@@ -344,8 +348,9 @@ class ShortestPathTree(CShadow):
     def add_vertex(self, shadow, hop=0):
         #Vertex* sptAddVertex( ShortestPathTree* this, char *label );
         self.check_destroyed()
-        
-        return self._cadd_vertex(self.soul, shadow.soul, hop)
+       
+        return SPTVertex.from_pointer( libgs.sptAddVertex( self.soul, shadow.soul, hop ) )
+        #return self._cadd_vertex(self.soul, shadow.soul, hop)
         
     def remove_vertex(self, label):
         #void sptRemoveVertex( ShortestPathTree* this, char *label, int free_vertex_payload, int free_edge_payloads );
@@ -576,11 +581,13 @@ class Edge(CShadow, Walkable):
         
     @property
     def from_v(self):
-        return self._cfrom_v(self.soul)
+        libgs.eGetFrom.restype = c_long
+        return libgs.eGetFrom( self.soul )
         
     @property
     def to_v(self):
-        return self._cto_v(self.soul)
+        libgs.eGetTo.restype = c_long
+        return libgs.eGetTo( self.soul )
         
     @property
     def payload(self):
@@ -590,11 +597,26 @@ class Edge(CShadow, Walkable):
         return self._cwalk(self.soul, state.soul, walk_options.soul)
         
     enabled = cproperty(libgs.eGetEnabled, c_int, setter=libgs.eSetEnabled)
-    
-class SPTEdge(Edge):
-    def to_xml(self):
-        return "<SPTEdge>%s</SPTEdge>" % (self.payload)
 
+class SPTEdge(CShadow, Walkable):
+    def __init__(self, from_v, to_v, payload):
+        self.soul = self._cnew(from_v.soul, to_v.soul, payload.soul)
+    
+    @property
+    def from_v(self):
+        return SPTVertex.from_pointer( libgs.spteGetFrom( self.soul ) )
+        
+    @property
+    def to_v(self):
+        return SPTVertex.from_pointer( libgs.spteGetTo( self.soul ) )
+        
+    @property
+    def payload(self):
+        return self._cpayload(self.soul)
+
+    def __repr__(self):
+        return "<SPTEdge '%s' -> '%s' via %s>"%(self.from_v.mirror.label, self.to_v.mirror.label, self.payload)
+    
 class Vertex(CShadow):
     
     label = cproperty(libgs.vGetLabel, c_char_p)
@@ -729,7 +751,6 @@ class SPTVertex(CShadow):
         
     def __hash__(self):
         return int(self.soul)
-
 
 
 class ListNode(CShadow):
@@ -1673,7 +1694,7 @@ ShortestPathTree._cdel = libgs.sptDestroy
 ShortestPathTree._cadd_vertex = ccast(libgs.sptAddVertex, SPTVertex)
 ShortestPathTree._cremove_vertex = libgs.sptRemoveVertex
 ShortestPathTree._cget_vertex = ccast(libgs.sptGetVertex, SPTVertex)
-ShortestPathTree._cadd_edge = ccast(libgs.sptAddEdge, Edge)
+ShortestPathTree._cadd_edge = ccast(libgs.sptAddEdge, SPTEdge)
 
 Vertex._cnew = libgs.vNew
 Vertex._cdel = libgs.vDestroy

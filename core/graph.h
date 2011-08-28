@@ -53,8 +53,8 @@ struct SPTVertex {
 } ;
 
 struct Edge {
-  Vertex* from;
-  Vertex* to;
+  uint32_t from;
+  uint32_t to;
   EdgePayload* payload;
   int enabled;
 } ;
@@ -154,13 +154,10 @@ void
 vInit( Vertex *this, char *label );
 
 void
-vGut(Vertex *this, int free_edge_payloads);
+vGut(Vertex *this, Graph *gg, int free_edge_payloads);
 
 void
 vDestroy(Vertex* this, int free_edge_payloads) ;
-
-Edge*
-vLink(Vertex* this, Vertex* to, EdgePayload* payload) ;
 
 inline ListNode*
 vGetOutgoingEdgeList( Vertex* this );
@@ -230,10 +227,10 @@ sptvMirror( SPTVertex* this );
 //EDGE FUNCTIONS
 
 Edge*
-eNew(Vertex* from, Vertex* to, EdgePayload* payload);
+eNew(uint32_t from, uint32_t to, EdgePayload* payload);
 
 void
-eDestroy(Edge *this, int destroy_payload) ;
+eDestroy(Edge *this, Graph *gg, int destroy_payload) ;
 
 State*
 eWalk(Edge *this, State* state, WalkOptions* options) ;
@@ -241,10 +238,10 @@ eWalk(Edge *this, State* state, WalkOptions* options) ;
 State*
 eWalkBack(Edge *this, State *state, WalkOptions* options) ;
 
-Vertex*
+uint32_t
 eGetFrom(Edge *this);
 
-Vertex*
+uint32_t
 eGetTo(Edge *this);
 
 EdgePayload*

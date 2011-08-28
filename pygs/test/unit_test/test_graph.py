@@ -60,9 +60,8 @@ class TestGraph(unittest.TestCase):
         tov = g.add_vertex("work")
         s = Street( "helloworld", 1 )
         e = g.add_edge("home", "work", s)
+
         assert e
-        assert e.from_v.label == "home"
-        assert e.to_v.label == "work"
         assert str(e)=="<Edge><Street name='helloworld' length='1.000000' rise='0.000000' fall='0.000000' way='0' reverse='False'/></Edge>"
         
         g.destroy()

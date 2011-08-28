@@ -86,9 +86,9 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
     while( edges ) {                                 
       Edge* edge = edges->data;
 #ifndef RETRO
-      v = edge->to;
+      v = gGetVertexByIndex( this, edge->to );
 #else
-      v = edge->from;
+      v = gGetVertexByIndex( this, edge->from );
 #endif
 
       long old_w;
@@ -120,7 +120,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
 
       // states cannot have weights lower than their parent State.
       if(new_dv->weight < du->weight) {
-        fprintf(stderr, "Negative weight (%s(%ld) -> %s(%ld))\n",edge->from->label, du->weight, edge->to->label, new_dv->weight);
+        fprintf(stderr, "Negative weight (%s(%ld) -> %s(%ld))\n",gGetVertexByIndex( this, edge->from )->label, du->weight, gGetVertexByIndex( this, edge->to )->label, new_dv->weight);
         edges = edges->next;
 	stateDestroy( new_dv );
         continue;
