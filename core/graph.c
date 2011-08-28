@@ -25,6 +25,10 @@ gNew() {
   this->vertices_store = (Vertex*)malloc( this->cap*sizeof(Vertex) );
   this->vertices = create_hashtable_string(16); //TODO: find a better number.
 
+  this->edge_n = 0;
+  this->edge_cap = INITIAL_GRAPH_EDGE_CAP;
+  this->edge_store = (Edge*)malloc( this->edge_cap*sizeof(Edge) );
+
   return this;
 }
 
@@ -40,6 +44,8 @@ gDestroyBasic( Graph* this, int free_edge_payloads ) {
   hashtable_destroy( this->vertices, 0 );
   //destory vertex store
   free( this->vertices_store );
+  //free edge store
+  free( this->edge_store );
   //destroy the graph object itself
   free( this );
 
@@ -74,6 +80,12 @@ void
 gExpand(Graph *this) {
     this->cap = this->cap*EXPAND_RATIO;
     this->vertices_store = realloc( this->vertices_store, this->cap*sizeof(Vertex) );
+}
+
+void
+gEdgesExpand(Graph *this) {
+    this->edge_cap = this->edge_cap*EXPAND_RATIO;
+    this->edge_store = realloc( this->edge_store, this->cap*sizeof(Edge) );
 }
 
 void
@@ -113,7 +125,14 @@ gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload ) {
     return NULL;
 
   //create edge object
-  Edge* link = eNew(ix_from, ix_to, payload);
+  Edge* link = &(this->edge_store[this->edge_n]);
+  eInit( link, ix_from, ix_to, payload );
+
+  //expand edge vector if necessary
+  this->edge_n++;
+  if(this->edge_n >= this->edge_cap) {
+      gEdgesExpand(this);
+  }
 
   ListNode* outlistnode = liNew( link );
   liInsertAfter( vtx_from->outgoing, outlistnode );
@@ -289,6 +308,10 @@ sptDestroy( ShortestPathTree *this ) {
 
   //destroy the table
   hashtable_destroy( this->vertices, 0 );
+  //destory vertex store
+  free( this->vertices_store );
+  //free edge store
+  free( this->edge_store );
   //destroy the graph object itself
   free( this );
 }
@@ -316,6 +339,12 @@ void
 sptExpand(ShortestPathTree *this) {
     this->cap = this->cap*EXPAND_RATIO;
     this->vertices_store = realloc( this->vertices_store, this->cap*sizeof(SPTVertex) );
+}
+
+void
+sptEdgesExpand(ShortestPathTree *this) {
+    this->edge_cap = this->edge_cap*EXPAND_RATIO;
+    this->edge_store = realloc( this->edge_store, this->cap*sizeof(Edge) );
 }
 
 void
@@ -567,13 +596,18 @@ sptvMirror( SPTVertex* this ) {
 
 // EDGE FUNCTIONS
 
-Edge*
-eNew(uint32_t from, uint32_t to, EdgePayload* payload) {
-    Edge *this = (Edge *)malloc(sizeof(Edge));
+void
+eInit(Edge *this, uint32_t from, uint32_t to, EdgePayload *payload) {
     this->from = from;
     this->to = to;
     this->payload = payload;
     this->enabled = 1;
+}
+
+Edge*
+eNew(uint32_t from, uint32_t to, EdgePayload* payload) {
+    Edge *this = (Edge *)malloc(sizeof(Edge));
+    eInit( this, from, to, payload );
     return this;
 }
 
@@ -588,7 +622,6 @@ eDestroy(Edge *this, Graph* gg, int destroy_payload) {
 
     vRemoveOutEdgeRef( fromv, this );
     vRemoveInEdgeRef( tov, this );
-    free(this);
 }
 
 State*

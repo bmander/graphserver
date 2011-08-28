@@ -2,12 +2,17 @@
 #define GRAPH_H
 
 #define INITIAL_GRAPH_CAP 2048
+#define INITIAL_GRAPH_EDGE_CAP 2048
 #define EXPAND_RATIO 1.5
 
 struct Graph {
     uint32_t n;
     uint32_t cap;
     Vertex* vertices_store;
+
+    uint32_t edge_n;
+    uint32_t edge_cap;
+    Edge* edge_store;
 
     struct hashtable* vertices;
 };
@@ -16,6 +21,10 @@ struct ShortestPathTree {
     long int n;
     long int cap;
     SPTVertex* vertices_store;
+
+    uint32_t edge_n;
+    uint32_t edge_cap;
+    SPTEdge* edge_store;
 
     struct hashtable* vertices;
 };
@@ -46,6 +55,8 @@ struct Edge {
   uint32_t to;
   EdgePayload* payload;
   int enabled;
+
+  uint32_t next;
 } ;
 
 struct SPTEdge {
@@ -214,6 +225,9 @@ Vertex*
 sptvMirror( SPTVertex* this );
 
 //EDGE FUNCTIONS
+
+void
+eInit(Edge* this, uint32_t from, uint32_t to, EdgePayload *payload) ;
 
 Edge*
 eNew(uint32_t from, uint32_t to, EdgePayload* payload);
