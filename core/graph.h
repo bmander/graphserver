@@ -20,17 +20,6 @@ struct ShortestPathTree {
     struct hashtable* vertices;
 };
 
-//for shortest path trees
-struct prev_entry {
-  char* from;
-  char* to;
-  char* desc;
-  edgepayload_t type;
-  long delta_weight; //DEBUG; not really necessary for anything else
-  long weight;
-  long end_time;
-};
-
 struct Vertex {
    int degree_out;
    int degree_in;
