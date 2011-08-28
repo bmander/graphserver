@@ -374,14 +374,14 @@ sptGetVertex( ShortestPathTree *this, char *label ) {
 }
 
 SPTEdge*
-sptAddEdge( ShortestPathTree *this, char *from, char *to, EdgePayload *payload ) {
+sptSetParent( ShortestPathTree *this, char *from, char *to, EdgePayload *payload ) {
   SPTVertex* vtx_from = sptGetVertex( this, from );
   SPTVertex* vtx_to   = sptGetVertex( this, to );
 
   if(!(vtx_from && vtx_to))
     return NULL;
 
-  return sptvLink( vtx_from, vtx_to, payload );
+  return sptvSetParent( vtx_to, vtx_from, payload );
 }
 
 long

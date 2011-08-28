@@ -134,7 +134,7 @@ SPTVertex*
 sptGetVertex( ShortestPathTree *this, char *label );
 
 SPTEdge*
-sptAddEdge( ShortestPathTree *this, char *from, char *to, EdgePayload *payload );
+sptSetParent( ShortestPathTree *this, char *from, char *to, EdgePayload *payload );
 
 SPTVertex**
 sptVertices( ShortestPathTree *this, long* num_vertices );

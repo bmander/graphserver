@@ -49,7 +49,7 @@ class TestShortestPathTree(unittest.TestCase):
         spt.add_vertex( Vertex("A") )
         spt.add_vertex( Vertex("B") )
         pl = Street( "AB", 1 )
-        spt.add_edge( "A", "B", pl )
+        spt.set_parent( "A", "B", pl )
         spt.remove_vertex( "A" )
         assert pl.name == "AB"
         assert spt.get_vertex( "A" ) == None
@@ -83,7 +83,7 @@ class TestShortestPathTree(unittest.TestCase):
         fromv = spt.add_vertex( Vertex("home") )
         tov = spt.add_vertex( Vertex("work") )
         s = Street( "helloworld", 1 )
-        e = spt.add_edge("home", "work", s)
+        e = spt.set_parent("home", "work", s)
 
         assert e
         self.assertEqual( e.from_v.mirror.label, fromv.mirror.label )
@@ -98,7 +98,7 @@ class TestShortestPathTree(unittest.TestCase):
         fromv = spt.add_vertex( Vertex("home") )
         tov = spt.add_vertex( Vertex("work") )
         s = Street( "helloworld", 1 )
-        e = spt.add_edge("home", "work", s)
+        e = spt.set_parent("home", "work", s)
         
         assert fromv.degree_out==1
         
@@ -123,12 +123,12 @@ class TestShortestPathTree(unittest.TestCase):
         fromv = spt.add_vertex( Vertex("home") )
         tov = spt.add_vertex( Vertex("work") )
         s = Street( "helloworld", 1 )
-        e = spt.add_edge("home", "work", s)
+        e = spt.set_parent("home", "work", s)
         
         assert e.payload
         assert e.payload.__class__ == Street
         
-        x = spt.add_edge("work", "home", Link())
+        x = spt.set_parent("work", "home", Link())
         assert x.payload
         assert x.payload.name == "LINK"
         
@@ -138,7 +138,7 @@ class TestShortestPathTree(unittest.TestCase):
         spt = ShortestPathTree()
         spt.add_vertex( Vertex("A") )
         spt.add_vertex( Vertex("B") )
-        spt.add_edge( "A", "B", Street("AB", 1) )
+        spt.set_parent( "A", "B", Street("AB", 1) )
         
         vv = spt.get_vertex( "A" )
         assert vv.__class__ == SPTVertex

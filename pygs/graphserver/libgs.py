@@ -97,7 +97,7 @@ declarations = [\
     (libgs.sptAddVertex, LGSTypes.SPTVertex, [LGSTypes.ShortestPathTree, LGSTypes.Vertex, c_int]),
     (libgs.sptRemoveVertex, None, [LGSTypes.ShortestPathTree, c_char_p]),
     (libgs.sptGetVertex, LGSTypes.SPTVertex, [LGSTypes.ShortestPathTree, c_char_p]),
-    (libgs.sptAddEdge, LGSTypes.Edge, [LGSTypes.ShortestPathTree, c_char_p, c_char_p, LGSTypes.EdgePayload]),
+    (libgs.sptSetParent, LGSTypes.Edge, [LGSTypes.ShortestPathTree, c_char_p, c_char_p, LGSTypes.EdgePayload]),
     (libgs.sptGetVertexByIndex, LGSTypes.SPTVertex, [LGSTypes.ShortestPathTree, c_long]),
     (libgs.sptSize, c_long, [LGSTypes.ShortestPathTree]),
     (libgs.sptPathRetro, LGSTypes.Path, [LGSTypes.Graph, c_char_p]),

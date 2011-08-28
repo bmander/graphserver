@@ -363,11 +363,10 @@ class ShortestPathTree(CShadow):
         
         return self._cget_vertex(self.soul, label)
         
-    def add_edge( self, fromv, tov, payload ):
-        #Edge* sptAddEdge( ShortestPathTree* this, char *from, char *to, EdgePayload *payload );
+    def set_parent( self, fromv, tov, payload ):
         self.check_destroyed()
         
-        e = self._cadd_edge( self.soul, fromv, tov, payload.soul )
+        e = self._cset_parent( self.soul, fromv, tov, payload.soul )
         
         if e != None: return e
 
@@ -1694,7 +1693,7 @@ ShortestPathTree._cdel = libgs.sptDestroy
 ShortestPathTree._cadd_vertex = ccast(libgs.sptAddVertex, SPTVertex)
 ShortestPathTree._cremove_vertex = libgs.sptRemoveVertex
 ShortestPathTree._cget_vertex = ccast(libgs.sptGetVertex, SPTVertex)
-ShortestPathTree._cadd_edge = ccast(libgs.sptAddEdge, SPTEdge)
+ShortestPathTree._cset_parent = ccast(libgs.sptSetParent, SPTEdge)
 
 Vertex._cnew = libgs.vNew
 Vertex._cdel = libgs.vDestroy
