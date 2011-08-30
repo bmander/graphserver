@@ -62,7 +62,7 @@ class TestGraph(unittest.TestCase):
         e = g.add_edge("home", "work", s)
 
         assert e
-        assert str(e)=="<Edge><Street name='helloworld' length='1.000000' rise='0.000000' fall='0.000000' way='0' reverse='False'/></Edge>"
+        self.assertEquals( str(e), "<Edge 0->1 payload:<Street name='helloworld' length=1.000000 rise=0.000000 fall=0.000000 way=0 reverse=False>>" )
         
         g.destroy()
     

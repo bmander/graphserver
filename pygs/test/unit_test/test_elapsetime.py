@@ -5,7 +5,7 @@ class TestElapseTime(unittest.TestCase):
     def test_new(self):
         s = ElapseTime(120)
         assert s.seconds == 120
-        assert s.to_xml() == "<ElapseTime seconds='120' />"
+        assert str(s) == "<ElapseTime seconds=120>"
         
     def test_destroy(self):
         s = ElapseTime(1)
@@ -17,7 +17,7 @@ class TestElapseTime(unittest.TestCase):
         s = ElapseTime(240000)
         assert s.seconds == 240000
 
-        assert s.to_xml() == "<ElapseTime seconds='240000' />"
+        assert str(s) == "<ElapseTime seconds=240000>"
         
     def test_walk(self):
         s = ElapseTime(2)

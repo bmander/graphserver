@@ -159,7 +159,7 @@ class TestServiceCalendar(unittest.TestCase):
         c.add_period( 16,20,["D","E","F"] )
         c.add_period( 11,15,["C","D","E"] )
         
-        assert c.to_xml() == "<ServiceCalendar><ServicePeriod begin_time='0' end_time='10' service_ids='A,B,C'/><ServicePeriod begin_time='11' end_time='15' service_ids='C,D,E'/><ServicePeriod begin_time='16' end_time='20' service_ids='D,E,F'/></ServiceCalendar>"
+        self.assertEqual( str(c) , "<ServiceCalendar periods=[([0, 1, 2] 0->10), ([2, 3, 4] 11->15), ([3, 4, 5] 16->20)]>" )
 
     def test_pickle(self):
         cc = ServiceCalendar()

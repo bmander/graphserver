@@ -6,7 +6,7 @@ class TestEgress(unittest.TestCase):
         s = Egress("mystreet", 1.1)
         assert s.name == "mystreet"
         assert s.length == 1.1
-        assert s.to_xml() == "<Egress name='mystreet' length='1.100000' />"
+        self.assertEquals( str(s) , "<Egress name='mystreet' length=1.100000>" )
         
     def test_destroy(self):
         s = Egress("mystreet", 1.1)
@@ -19,7 +19,7 @@ class TestEgress(unittest.TestCase):
         assert s.name == "longstreet"
         assert s.length == 240000
 
-        assert s.to_xml() == "<Egress name='longstreet' length='240000.000000' />"
+        self.assertEquals( str(s) , "<Egress name='longstreet' length=240000.000000>" )
         
     def test_walk(self):
         s = Egress("longstreet", 10)

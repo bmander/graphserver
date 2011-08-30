@@ -9,7 +9,7 @@ class TestWait(unittest.TestCase):
         w = Wait(waitend, tz)
         assert w.end == waitend
         assert w.timezone.soul == tz.soul
-        assert w.to_xml() == "<Wait end='100' />"
+        self.assertEquals( str(w) , "<Wait end=100>" )
 
         s = State(1,0)
         sprime = w.walk(s, WalkOptions())

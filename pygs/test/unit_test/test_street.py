@@ -10,8 +10,8 @@ class TestStreet(unittest.TestCase):
         assert s.fall == 0
         assert s.slog == 1
         assert s.way == 0
-	assert s.external_id == 0
-        assert s.to_xml() == "<Street name='mystreet' length='1.100000' rise='0.000000' fall='0.000000' way='0' reverse='False'/>"
+        assert s.external_id == 0
+        self.assertEqual( str(s) , "<Street name='mystreet' length=1.100000 rise=0.000000 fall=0.000000 way=0 reverse=False>" )
 
 	s.external_id = 15
 	assert Street.from_pointer( s.soul ).external_id == 15
@@ -27,7 +27,7 @@ class TestStreet(unittest.TestCase):
         assert s.length == 1.1
         assert round(s.rise,3) == 24.5
         assert round(s.fall,3) == 31.2
-        assert s.to_xml() == "<Street name='mystreet' length='1.100000' rise='24.500000' fall='31.200001' way='0' reverse='False'/>"
+        self.assertEqual( str(s) , "<Street name='mystreet' length=1.100000 rise=24.500000 fall=31.200001 way=0 reverse=False>" )
         
     def test_destroy(self):
         s = Street("mystreet", 1.1)
@@ -40,7 +40,7 @@ class TestStreet(unittest.TestCase):
         assert s.name == "longstreet"
         assert s.length == 240000
 
-        assert s.to_xml() == "<Street name='longstreet' length='240000.000000' rise='0.000000' fall='0.000000' way='0' reverse='False'/>"
+        self.assertEqual( str(s) , "<Street name='longstreet' length=240000.000000 rise=0.000000 fall=0.000000 way=0 reverse=False>" )
         
     def test_walk(self):
         s = Street("longstreet", 2)

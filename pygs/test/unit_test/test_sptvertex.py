@@ -42,7 +42,7 @@ class TestSPTVertex(unittest.TestCase):
         
     def test_prettyprint(self):
         v = SPTVertex( Vertex("home") )
-        self.assertEqual( v.to_xml() , "<SPTVertex degree_out='0' mirror.label='home'/>" )
+        self.assertEqual( str(v) , "<SPTVertex degree_out=0 mirror.label=home>" )
 
 
 if __name__ == '__main__':

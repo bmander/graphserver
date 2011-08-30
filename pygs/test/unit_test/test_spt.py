@@ -88,7 +88,7 @@ class TestShortestPathTree(unittest.TestCase):
         assert e
         self.assertEqual( e.from_v.mirror.label, fromv.mirror.label )
         self.assertEqual( e.to_v.mirror.label, tov.mirror.label )
-        self.assertEqual( str(e), "<SPTEdge 'home' -> 'work' via <Street name='helloworld' length='1.000000' rise='0.000000' fall='0.000000' way='0' reverse='False'/>>" )
+        self.assertEqual( str(e), "<SPTEdge 'home' -> 'work' via <Street name='helloworld' length=1.000000 rise=0.000000 fall=0.000000 way=0 reverse=False>>" )
         
         spt.destroy()
     

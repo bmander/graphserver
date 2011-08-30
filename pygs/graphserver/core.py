@@ -451,12 +451,9 @@ class EdgePayload(CShadow, Walkable):
         self._cdel(self.soul)
         self.soul = None
         
-    def __str__(self):
-        return self.to_xml()
-
-    def to_xml(self):
+    def __repr__(self):
         self.check_destroyed()
-        return "<abstractedgepayload type='%s'/>" % self.type
+        return "<abstractedgepayload type=%s>" % self.type
     
     type = cproperty(libgs.epGetType, c_int)
     external_id = cproperty(libgs.epGetExternalId, c_long, setter=libgs.epSetExternalId)
@@ -510,26 +507,17 @@ class State(CShadow):
         
         return self.__copy__()
     
-    def __str__(self):
-        self.check_destroyed()
-        
-        return self.to_xml()
-
-    def to_xml(self):
+    def __repr__(self):
         self.check_destroyed()  
         
-        ret = "<state time='%d' weight='%s' dist_walked='%s' " \
-              "num_transfers='%s' trip_id='%s' stop_sequence='%s'>" % \
+        ret = "<state time=%d weight=%s dist_walked=%s " \
+              "num_transfers=%s trip_id=%s stop_sequence=%s>" % \
                (self.time,
                self.weight,
                self.dist_walked,
               self.num_transfers,
                self.trip_id,
                self.stop_sequence)
-        for i in range(self.num_agencies):
-            if self.service_period(i) is not None:
-                ret += self.service_period(i).to_xml()
-        return ret + "</state>"
     
     # the state does not keep ownership of the trip_id, so the state
     # may not live longer than whatever object set its trip_id
@@ -580,11 +568,8 @@ class Edge(CShadow, Walkable):
         #Edge* eNew(Vertex* from, Vertex* to, EdgePayload* payload);
         self.soul = self._cnew(from_v.soul, to_v.soul, payload.soul)
     
-    def __str__(self):
-        return self.to_xml()
-        
-    def to_xml(self):
-        return "<Edge>%s</Edge>" % (self.payload)
+    def __repr__(self):
+        return "<Edge %s->%s payload:%s>" % (self.from_v, self.to_v, self.payload)
         
     @property
     def from_v(self):
@@ -642,13 +627,9 @@ class Vertex(CShadow):
         self._cdel(self.soul, 1, 1)
         self.soul = None
     
-    def to_xml(self):
+    def __repr__(self):
         self.check_destroyed()
-        return "<Vertex degree_out='%s' degree_in='%s' label='%s'/>" % (self.degree_out, self.degree_in, self.label)
-    
-    def __str__(self):
-        self.check_destroyed()
-        return self.to_xml()
+        return "<Vertex degree_out=%s degree_in=%s label=%s>" % (self.degree_out, self.degree_in, self.label)
 
     def outgoing(self, graph):
         self.check_destroyed()
@@ -709,14 +690,10 @@ class SPTVertex(CShadow):
         self._cdel(self.soul, 1, 1)
         self.soul = None
     
-    def to_xml(self):
+    def __repr__(self):
         self.check_destroyed()
-        return "<SPTVertex degree_out='%s' mirror.label='%s'/>" % (self.degree_out, self.mirror.label)
+        return "<SPTVertex degree_out=%s mirror.label=%s>" % (self.degree_out, self.mirror.label)
     
-    def __str__(self):
-        self.check_destroyed()
-        return self.to_xml()
-
     def outgoing(self, spt):
         self.check_destroyed()
         return self._edges(self._coutgoing_edges, spt)
@@ -805,8 +782,8 @@ class GenericPyPayload(EdgePayload):
         # required to keep this object around in the C world
         Py_INCREF(self)
 
-    def to_xml(self):
-        return "<pypayload type='%s' class='%s'/>" % (self.type, self.__class__.__name__)
+    def __repr__(self):
+        return "<pypayload type=%s class=%s>" % (self.type, self.__class__.__name__)
 
     """ These methods are the public interface, BUT should not be overridden by subclasses 
         - subclasses should override the *_impl methods instead.""" 
@@ -864,8 +841,8 @@ class NoOpPyPayload(GenericPyPayload):
         print "%s walking back..." % self
         
         
-    def to_xml(self):
-        return "<NoOpPyPayload type='%s' num='%s'/>" % (self.type, self.num)
+    def __repr__(self):
+        return "<NoOpPyPayload type=%s num=%s>" % (self.type, self.num)
     
 #=============================================================================#
 # Edge Type Support Classes                                                   #
@@ -903,17 +880,6 @@ class ServicePeriod(CShadow):
         
     def fast_forward(self):
         return self._cfast_forward(self.soul)
-    
-    def __str__(self):
-        return self.to_xml()
-    
-    def to_xml(self, cal=None):
-        if cal is not None:
-            sids = [cal.get_service_id_string(x) for x in self.service_ids]
-        else:
-            sids = [str(x) for x in self.service_ids]
-
-        return "<ServicePeriod begin_time='%d' end_time='%d' service_ids='%s'/>" %( self.begin_time, self.end_time, ",".join(sids))
     
     def datum_midnight(self, timezone_offset):
         return libgs.spDatumMidnight( self.soul, timezone_offset )
@@ -985,13 +951,6 @@ class ServiceCalendar(CShadow):
             yield curr
             curr = curr.next
             
-    def to_xml(self):
-        ret = ["<ServiceCalendar>"]
-        for period in self.periods:
-            ret.append( period.to_xml(self) )
-        ret.append( "</ServiceCalendar>" )
-        return "".join(ret)
-        
     def __getstate__(self):
         ret = []
         max_sid = -1
@@ -1152,11 +1111,6 @@ class Street(EdgePayload):
     def __init__(self,name,length,rise=0,fall=0,reverse_of_source=False):
         self.soul = self._cnew(name, length, rise, fall,reverse_of_source)
             
-    def to_xml(self):
-        self.check_destroyed()
-        
-        return "<Street name='%s' length='%f' rise='%f' fall='%f' way='%ld' reverse='%s'/>" % (self.name, self.length, self.rise, self.fall, self.way,self.reverse_of_source)
-        
     def __getstate__(self):
         return (self.name, self.length, self.rise, self.fall, self.slog, self.way, self.reverse_of_source)
         
@@ -1188,11 +1142,6 @@ class Egress(EdgePayload):
     def __init__(self,name,length):
         self.soul = self._cnew(name, length)
             
-    def to_xml(self):
-        self.check_destroyed()
-        
-        return "<Egress name='%s' length='%f' />" % (self.name, self.length)
-        
     def __getstate__(self):
         return (self.name, self.length)
         
@@ -1214,13 +1163,11 @@ class Wait(EdgePayload):
     def __init__(self, end, timezone):
         self.soul = self._cnew( end, timezone.soul )
         
-    def to_xml(self):
-        self.check_destroyed()
-        
-        return "<Wait end='%ld' />"%(self.end)
-        
     def __getstate__(self):
         return (self.end, self.timezone.soul)
+
+    def __repr__(self):
+        return "<Wait end=%ld>"%(self.end)
 
 class ElapseTime(EdgePayload):
     seconds = cproperty(libgs.elapseTimeGetSeconds, c_long)
@@ -1228,10 +1175,10 @@ class ElapseTime(EdgePayload):
     def __init__(self, seconds):
         self.soul = self._cnew( seconds )
         
-    def to_xml(self):
+    def __repr__(self):
         self.check_destroyed()
         
-        return "<ElapseTime seconds='%ld' />"%(self.seconds)
+        return "<ElapseTime seconds=%ld>"%(self.seconds)
         
     def __getstate__(self):
         return self.seconds
@@ -1266,8 +1213,8 @@ class Headway(EdgePayload):
     def service_id(self):
         return self.calendar.get_service_id_string( self.int_service_id )
         
-    def to_xml(self):
-        return "<Headway begin_time='%d' end_time='%d' wait_period='%d' transit='%d' trip_id='%s' agency='%d' int_service_id='%d' />"% \
+    def __repr__(self):
+        return "<Headway begin_time=%d end_time=%d wait_period=%d transit=%d trip_id=%s agency=%d int_service_id=%d>"% \
                        (self.begin_time,
                         self.end_time,
                         self.wait_period,
@@ -1331,9 +1278,6 @@ class TripBoard(EdgePayload):
         else:
             return self.get_boarding( i )
             
-    def to_xml(self):
-        return "<TripBoard />"
-        
     def __repr__(self):
         return "<TripBoard int_sid=%d sid=%s agency=%d calendar=%s timezone=%s boardings=%s>"%(self.int_service_id, self.calendar.get_service_id_string(self.int_service_id), self.agency, hex(self.calendar.soul),hex(self.timezone.soul),[self.get_boarding(i) for i in range(self.num_boardings)])
         
@@ -1538,9 +1482,6 @@ class Crossing(EdgePayload):
         for i in range(self.size):
             yield self.get_crossing( i )
         
-    def to_xml(self):
-        return "<Crossing size=\"%d\"/>"%self.size
-        
     def __getstate__(self):
         return list(self.get_all_crossings())
         
@@ -1619,9 +1560,6 @@ class TripAlight(EdgePayload):
             return None
         
         return self.get_alighting( alighting_index )
-        
-    def to_xml(self):
-        return "<TripAlight/>"
         
     def __repr__(self):
         return "<TripAlight int_sid=%d agency=%d calendar=%s timezone=%s alightings=%s>"%(self.int_service_id, self.agency, hex(self.calendar.soul),hex(self.timezone.soul),[self.get_alighting(i) for i in range(self.num_alightings)])

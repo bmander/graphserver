@@ -36,7 +36,7 @@ class TestVertex(unittest.TestCase):
     def test_prettyprint(self):
         """vertex can output itself to xml"""
         v = Vertex("home")
-        assert v.to_xml() == "<Vertex degree_out='0' degree_in='0' label='home'/>"
+        self.assertEquals( str(v) , "<Vertex degree_out=0 degree_in=0 label=home>" )
         
 if __name__ == '__main__':
     tl = unittest.TestLoader()

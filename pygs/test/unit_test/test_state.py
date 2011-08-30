@@ -77,7 +77,7 @@ class TestState(unittest.TestCase):
         assert s2.num_transfers == 0
         assert s2.prev_edge == None
         assert s2.num_agencies == 1
-        assert s2.service_period(0).to_xml() == "<ServicePeriod begin_time='0' end_time='86400' service_ids='1,2'/>"
+        self.assertEqual( str( s2.service_period(0) ) , "([1, 2] 0->86400)" )
         assert s2.stop_sequence == -1
         
 if __name__ == '__main__':
