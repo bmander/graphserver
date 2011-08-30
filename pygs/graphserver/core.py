@@ -465,11 +465,6 @@ class EdgePayload(CShadow, Walkable):
             return None
         
         payloadtype = EdgePayload._subtypes[EdgePayload._cget_type(ptr)]
-        if payloadtype is GenericPyPayload:
-            p = libgs.cpSoul(ptr)
-            # this is required to prevent garbage collection of the object
-            Py_INCREF(p)
-            return p
         ret = instantiate(payloadtype)
         ret.soul = ptr
         return ret
@@ -768,81 +763,6 @@ class PayloadMethodTypes:
     destroy = CFUNCTYPE(c_void_p, py_object)
     walk = CFUNCTYPE(c_void_p, py_object, c_void_p, c_void_p)
     walk_back = CFUNCTYPE(c_void_p, py_object, c_void_p, c_void_p)
-
-class GenericPyPayload(EdgePayload):
-    """ This class is the base type for custom payloads created in Python.  
-        Subclasses can override the *_impl methods, which will be invoked through
-        C callbacks. """
-        
-    def __init__(self):
-        """ Children MUST call this method to properly 
-            register themselves in C world. """
-        self.soul = self._cnew(py_object(self),self._cmethods)
-        self.name = self.__class__.__name__
-        # required to keep this object around in the C world
-        Py_INCREF(self)
-
-    def __repr__(self):
-        return "<pypayload type=%s class=%s>" % (self.type, self.__class__.__name__)
-
-    """ These methods are the public interface, BUT should not be overridden by subclasses 
-        - subclasses should override the *_impl methods instead.""" 
-    @failsafe(1)
-    def walk(self, state, walkoptions):
-        s = state.clone()
-        s.prev_edge_name = self.name
-        return self.walk_impl(s, walkoptions)
-    
-    @failsafe(1)
-    def walk_back(self, state, walkoptions):
-        s = state.clone()
-        s.prev_edge_name = self.name
-        return self.walk_back_impl(s, walkoptions)
-     
-    """ These methods should be overridden by subclasses as deemed fit. """
-    def walk_impl(self, state, walkoptions):
-        return state
-
-    def walk_back_impl(self, state, walkoptions):
-        return state
-
-    """ These methods provide the interface from the C world to py method implementation. """
-    def _cwalk(self, stateptr, walkoptionsptr):
-        return self.walk(State.from_pointer(stateptr), WalkOptions.from_pointer(walkoptionsptr)).soul
-
-    def _cwalk_back(self, stateptr, walkoptionsptr):
-        return self.walk_back(State.from_pointer(stateptr), WalkOptions.from_pointer(walkoptionsptr)).soul
-
-    def _cfree(self):
-        #print "Freeing %s..." % self
-        # After this is freed in the C world, this can be freed
-        Py_DECREF(self)
-        self.soul = None
-        
-        
-        
-    _cmethodptrs = [PayloadMethodTypes.destroy(_cfree),
-                    PayloadMethodTypes.walk(_cwalk),
-                    PayloadMethodTypes.walk_back(_cwalk_back)]
-
-    _cmethods = libgs.defineCustomPayloadType(*_cmethodptrs)
-
- 
-class NoOpPyPayload(GenericPyPayload):
-    def __init__(self, num):
-        self.num = num
-        super(NoOpPyPayload,self).__init__()
-    
-    """ Dummy class."""
-    def walk_impl(self, state, walkopts):
-        print "%s walking..." % self
-        
-    def walk_back_impl(self, state, walkopts):
-        print "%s walking back..." % self
-        
-        
-    def __repr__(self):
-        return "<NoOpPyPayload type=%s num=%s>" % (self.type, self.num)
     
 #=============================================================================#
 # Edge Type Support Classes                                                   #
@@ -1186,8 +1106,6 @@ class ElapseTime(EdgePayload):
     @classmethod
     def reconstitute(cls, state, resolver):
         return cls(state)
-
-
 
 class Headway(EdgePayload):
     
@@ -1659,7 +1577,7 @@ SPTEdge._cpayload = ccast(libgs.eGetPayload, EdgePayload)
 SPTEdge._cwalk = ccast(libgs.eWalk, State)
 SPTEdge._cwalk_back = libgs.eWalkBack
 
-EdgePayload._subtypes = {0:Street,1:None,2:None,3:Link,4:GenericPyPayload,5:None,
+EdgePayload._subtypes = {0:Street,1:None,2:None,3:Link,5:None,
                          6:Wait,7:Headway,8:TripBoard,9:Crossing,10:TripAlight,
                          11:HeadwayBoard,12:Egress,13:HeadwayAlight,14:ElapseTime}
 EdgePayload._cget_type = libgs.epGetType
@@ -1733,5 +1651,3 @@ HeadwayAlight._cwalk = libgs.epWalk
 WalkOptions._cnew = libgs.woNew
 WalkOptions._cdel = libgs.woDestroy
 
-GenericPyPayload._cnew = libgs.cpNew
-GenericPyPayload._cdel = libgs.cpDestroy
