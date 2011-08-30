@@ -1125,16 +1125,9 @@ class Timezone(CShadow):
 #=============================================================================#
     
 class Link(EdgePayload):
-    name = cproperty(libgs.linkGetName, c_char_p)
-    
     def __init__(self):
         self.soul = self._cnew()
 
-    def to_xml(self):
-        self.check_destroyed()
-        
-        return "<Link name='%s'/>" % (self.name)
-        
     def __getstate__(self):
         return tuple([])
         
@@ -1144,6 +1137,9 @@ class Link(EdgePayload):
     @classmethod
     def reconstitute(self, state, resolver):
         return Link()
+
+    def __str__(self):
+        return "<Link 0x%x>"%self.soul
     
 class Street(EdgePayload):
     length = cproperty(libgs.streetGetLength, c_double)

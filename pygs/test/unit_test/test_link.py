@@ -5,17 +5,13 @@ class TestLink(unittest.TestCase):
     def link_test(self):
         l = Link()
         assert l
-        assert str(l)=="<Link name='LINK'/>"
+        assert str(l)
         
     def test_destroy(self):
         l = Link()
         l.destroy()
         
         assert l.soul==None
-        
-    def test_name(self):
-        l = Link()
-        assert l.name == "LINK"
         
     def test_walk(self):
         l = Link()
@@ -26,7 +22,6 @@ class TestLink(unittest.TestCase):
         assert after.weight==0
         assert after.dist_walked==0
         assert after.prev_edge.type == 3
-        assert after.prev_edge.name == "LINK"
         assert after.num_agencies == 1
         
     def test_walk_back(self):
@@ -38,7 +33,6 @@ class TestLink(unittest.TestCase):
         assert before.weight == 0
         assert before.dist_walked == 0.0
         assert before.prev_edge.type == 3
-        assert before.prev_edge.name == "LINK"
         assert before.num_agencies == 1
         
     def test_getstate(self):

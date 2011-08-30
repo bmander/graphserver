@@ -8,8 +8,6 @@ struct Link {
   long external_id;
   State* (*walk)(struct EdgePayload*, struct State*, struct WalkOptions*);
   State* (*walkBack)(struct EdgePayload*, struct State*, struct WalkOptions*);
-    
-  char* name;
 };
 
 Link*
@@ -23,8 +21,5 @@ linkWalk(EdgePayload* this, State* param, WalkOptions* options);
 
 inline State*
 linkWalkBack(EdgePayload* this, State* param, WalkOptions* options);
-
-char*
-linkGetName(Link* this);
 
 #endif

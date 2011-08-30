@@ -307,7 +307,6 @@ declarations = [\
     (libgs.linkDestroy, None, [LGSTypes.Link]),
     (libgs.linkWalk, LGSTypes.State, [LGSTypes.EdgePayload, LGSTypes.State, LGSTypes.WalkOptions]),
     (libgs.linkWalkBack, LGSTypes.State, [LGSTypes.EdgePayload, LGSTypes.State, LGSTypes.WalkOptions]),
-    (libgs.linkGetName, c_char_p, [LGSTypes.Link]),
     (libgs.streetNew, LGSTypes.Street, [c_char_p, c_double, c_int]),
     (libgs.streetNewElev, LGSTypes.Street, [c_char_p, c_double, c_float, c_float, c_int]),
     (libgs.streetDestroy, None, [LGSTypes.Street]),

@@ -7,8 +7,6 @@ linkNew() {
   Link* ret = (Link*)malloc(sizeof(Link));
   ret->external_id = 0;
   ret->type = PL_LINK;
-  ret->name = (char*)malloc(5*sizeof(char));
-  strcpy(ret->name, "LINK");
     
   //bind functions to methods
   ret->walk = &linkWalk;
@@ -19,18 +17,7 @@ linkNew() {
 
 void
 linkDestroy(Link* tokill) {
-  free( tokill->name );
   free( tokill );
-}
-
-char*
-linkGetName(Link* this) {
-    return this->name;
-}
-
-int
-linkReturnOne(Link* this) {
-    return 1;
 }
 
 inline State*

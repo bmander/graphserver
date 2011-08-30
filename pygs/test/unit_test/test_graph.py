@@ -297,7 +297,6 @@ class TestGraph(unittest.TestCase):
         
         x = g.add_edge("work", "home", Link())
         assert x.payload
-        assert x.payload.name == "LINK"
         
         g.destroy()
         

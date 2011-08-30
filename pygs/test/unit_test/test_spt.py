@@ -130,7 +130,6 @@ class TestShortestPathTree(unittest.TestCase):
         
         x = spt.set_parent("work", "home", Link())
         assert x.payload
-        assert x.payload.name == "LINK"
         
         spt.destroy()
         
