@@ -1,7 +1,7 @@
 #ifndef _LIST_H_
 #define _LIST_H_
 
-#define LIST_NULL UINT32_MAX
+#define LI_NO_DATA UINT32_MAX
 
 struct ListNode {
    uint32_t data;

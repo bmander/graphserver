@@ -218,7 +218,7 @@ gShortestPath( Graph* this, char *from, char *to, State* init_state, int directi
     temppath[i] = *((State*)(curr->state));
     i++;
 
-    if( curr->parentedge == LIST_NULL )
+    if( curr->parentedge == LI_NO_DATA )
       break;
     else {
       uint32_t parent_ix = curr->parentedge;
@@ -268,7 +268,7 @@ sptPathRetro(ShortestPathTree* spt, char* origin_label) {
   Path *path = pathNew(curr, 50, 50);
 
   // trace backwards up the tree until the current vertex has no parents
-  while (curr->parentedge != LIST_NULL) {
+  while (curr->parentedge != LI_NO_DATA) {
     edge = sptGetEdgeByIndex( spt, curr->parentedge );
     curr = spteGetFrom(edge);
         
@@ -418,8 +418,8 @@ sptSize( ShortestPathTree* this ) {
 void vInit( Vertex *this, char *label ) {
     this->degree_in = 0;
     this->degree_out = 0;
-    this->outgoing = liNew( LIST_NULL ) ;
-    this->incoming = liNew( LIST_NULL ) ;
+    this->outgoing = liNew( LI_NO_DATA ) ;
+    this->incoming = liNew( LI_NO_DATA ) ;
     
     this->deleted_neighbors = 0;
 
@@ -509,8 +509,8 @@ vDegreeIn( Vertex* this ) {
 void
 sptvInit( SPTVertex* this, Vertex* mirror, int hop ) {
     this->degree_out = 0;
-    this->outgoing = liNew( LIST_NULL ) ;
-    this->parentedge = LIST_NULL;
+    this->outgoing = liNew( LI_NO_DATA ) ;
+    this->parentedge = LI_NO_DATA;
     
     this->state = NULL;
     this->fibnode = NULL;
@@ -541,7 +541,7 @@ sptvGut( SPTVertex* this, ShortestPathTree *spt ) {
 
     //set incoming and outgoing to NULL to signify that this has been gutted
     this->outgoing = NULL;
-    this->parentedge = LIST_NULL;
+    this->parentedge = LI_NO_DATA;
 }
 
 void
@@ -558,7 +558,7 @@ sptvDestroy(SPTVertex* this, ShortestPathTree *spt) {
 SPTEdge*
 sptvSetParent( ShortestPathTree *spt, SPTVertex* this, SPTVertex* parent, EdgePayload* payload ) {
     //disconnect parent edge from parent
-    if( this->parentedge != LIST_NULL ) {
+    if( this->parentedge != LI_NO_DATA ) {
         sptvRemoveOutEdgeRef( sptGetEdgeByIndex(spt, this->parentedge)->from, this->parentedge );
     }
 
