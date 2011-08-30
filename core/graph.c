@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "graphserver.h"
 
 #include "fibheap/fibheap.h"
@@ -125,7 +126,8 @@ gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload ) {
     return NULL;
 
   //create edge object
-  Edge* link = &(this->edge_store[this->edge_n]);
+  uint32_t link_ix = this->edge_n;
+  Edge* link = &(this->edge_store[link_ix]);
   eInit( link, ix_from, ix_to, payload );
 
   //expand edge vector if necessary
@@ -134,11 +136,11 @@ gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload ) {
       gEdgesExpand(this);
   }
 
-  ListNode* outlistnode = liNew( link );
+  ListNode* outlistnode = liNew( link_ix );
   liInsertAfter( vtx_from->outgoing, outlistnode );
   vtx_from->degree_out++;
 
-  ListNode* inlistnode = liNew( link );
+  ListNode* inlistnode = liNew( link_ix );
   liInsertAfter( vtx_to->incoming, inlistnode );
   vtx_to->degree_in++;
 
@@ -152,6 +154,15 @@ gGetVertexByIndex( Graph* this, uint32_t index ) {
   }
   
   return &(this->vertices_store[index]);
+}
+
+Edge*
+gGetEdgeByIndex( Graph *this, uint32_t index ) {
+  if( index < 0 || index >= this->edge_n ) {
+    return NULL;
+  }
+
+  return &(this->edge_store[index]);
 }
 
 #undef RETRO
@@ -207,10 +218,13 @@ gShortestPath( Graph* this, char *from, char *to, State* init_state, int directi
     temppath[i] = *((State*)(curr->state));
     i++;
 
-    if( curr->parentedge == NULL )
+    if( curr->parentedge == LIST_NULL )
       break;
-    else
-      curr = (SPTVertex*)curr->parentedge->from;
+    else {
+      uint32_t parent_ix = curr->parentedge;
+      SPTEdge *parent = sptGetEdgeByIndex( raw_tree, parent_ix );
+      curr = parent->from;
+    }
   }
 
   int n = i;
@@ -254,8 +268,8 @@ sptPathRetro(ShortestPathTree* spt, char* origin_label) {
   Path *path = pathNew(curr, 50, 50);
 
   // trace backwards up the tree until the current vertex has no parents
-  while (curr->parentedge) {
-    edge = curr->parentedge;
+  while (curr->parentedge != LIST_NULL) {
+    edge = sptGetEdgeByIndex( spt, curr->parentedge );
     curr = spteGetFrom(edge);
         
     pathAddSegment( path, curr, edge );
@@ -277,14 +291,14 @@ gSetVertexEnabled( Graph *this, char *label, int enabled ) {
     ListNode* outgoing_edge_node = vGetOutgoingEdgeList( vv );
 
     while(outgoing_edge_node) {
-        eSetEnabled( outgoing_edge_node->data, enabled );
+        eSetEnabled( gGetEdgeByIndex( this, outgoing_edge_node->data ), enabled );
         outgoing_edge_node = outgoing_edge_node->next;
     }
 
     ListNode* incoming_edge_node = vGetIncomingEdgeList( vv );
 
     while(incoming_edge_node) {
-        eSetEnabled( incoming_edge_node->data, enabled );
+        eSetEnabled( gGetEdgeByIndex( this, incoming_edge_node->data ), enabled );
         incoming_edge_node = incoming_edge_node->next;
     }
     
@@ -303,7 +317,7 @@ sptDestroy( ShortestPathTree *this ) {
   //destroy each vertex contained within
   uint32_t i = 0;
   for(i=0; i<this->n; i++) {
-    sptvGut( &(this->vertices_store[i]) );
+    sptvGut( &(this->vertices_store[i]), this );
   }
 
   //destroy the table
@@ -355,7 +369,7 @@ sptRemoveVertex( ShortestPathTree *this, char *label ) {
     }
     
     hashtable_remove( this->vertices, label );
-    sptvGut( exists );
+    sptvGut( exists, this );
 }
 
 SPTVertex*
@@ -365,6 +379,15 @@ sptGetVertexByIndex( ShortestPathTree* this, uint32_t index ) {
   }
   
   return &(this->vertices_store[index]);
+}
+
+SPTEdge*
+sptGetEdgeByIndex( ShortestPathTree *this, uint32_t index ) {
+  if( index < 0 || index >= this->edge_n ) {
+    return NULL;
+  }
+
+  return &(this->edge_store[index]);
 }
 
 SPTVertex*
@@ -395,8 +418,8 @@ sptSize( ShortestPathTree* this ) {
 void vInit( Vertex *this, char *label ) {
     this->degree_in = 0;
     this->degree_out = 0;
-    this->outgoing = liNew( NULL ) ;
-    this->incoming = liNew( NULL ) ;
+    this->outgoing = liNew( LIST_NULL ) ;
+    this->incoming = liNew( LIST_NULL ) ;
     
     this->deleted_neighbors = 0;
 
@@ -418,11 +441,11 @@ vGut(Vertex *this, Graph* gg, int free_edge_payloads) {
     if( gg ) {
       //delete incoming edges
       while(this->incoming->next != NULL) {
-        eDestroy( this->incoming->next->data, gg, free_edge_payloads );
+        eDestroy( gGetEdgeByIndex( gg, this->incoming->next->data ), gg, this->incoming->next->data, free_edge_payloads );
       }
       //delete outgoing edges
       while(this->outgoing->next != NULL) {
-        eDestroy( this->outgoing->next->data, gg, free_edge_payloads );
+        eDestroy( gGetEdgeByIndex( gg, this->outgoing->next->data ), gg, this->outgoing->next->data, free_edge_payloads );
       }
     }
     //free the list dummy-heads that remain
@@ -455,13 +478,13 @@ vGetIncomingEdgeList( Vertex* this ) {
 }
 
 void
-vRemoveOutEdgeRef( Vertex* this, Edge* todie ) {
+vRemoveOutEdgeRef( Vertex* this, uint32_t todie ) {
     this->degree_out -= 1;
     liRemoveRef( this->outgoing, todie );
 }
 
 void
-vRemoveInEdgeRef( Vertex* this, Edge* todie ) {
+vRemoveInEdgeRef( Vertex* this, uint32_t todie ) {
     this->degree_in -= 1;
     liRemoveRef( this->incoming, todie );
 }
@@ -486,8 +509,8 @@ vDegreeIn( Vertex* this ) {
 void
 sptvInit( SPTVertex* this, Vertex* mirror, int hop ) {
     this->degree_out = 0;
-    this->outgoing = liNew( NULL ) ;
-    this->parentedge = NULL;
+    this->outgoing = liNew( LIST_NULL ) ;
+    this->parentedge = LIST_NULL;
     
     this->state = NULL;
     this->fibnode = NULL;
@@ -505,10 +528,12 @@ sptvNew( Vertex* mirror, int hop ) {
 }
 
 void
-sptvGut( SPTVertex* this ) {
+sptvGut( SPTVertex* this, ShortestPathTree *spt ) {
     //delete outgoing edges
     while(this->outgoing->next != NULL) {
-      spteDestroy( (SPTEdge*)this->outgoing->next->data );
+      uint32_t next_edge_ix = this->outgoing->next->data;
+      SPTEdge *next_edge = sptGetEdgeByIndex( spt, next_edge_ix );
+      spteDestroy( next_edge, next_edge_ix );
     }
 
     //free the list dummy-heads that remain
@@ -516,16 +541,16 @@ sptvGut( SPTVertex* this ) {
 
     //set incoming and outgoing to NULL to signify that this has been gutted
     this->outgoing = NULL;
-    this->parentedge = NULL;
+    this->parentedge = LIST_NULL;
 }
 
 void
-sptvDestroy(SPTVertex* this) {
+sptvDestroy(SPTVertex* this, ShortestPathTree *spt) {
     if( this->state ) {
         stateDestroy( this->state );
     }
 
-    sptvGut( this );
+    sptvGut( this, spt );
 
     free( this );
 }
@@ -533,12 +558,13 @@ sptvDestroy(SPTVertex* this) {
 SPTEdge*
 sptvSetParent( ShortestPathTree *spt, SPTVertex* this, SPTVertex* parent, EdgePayload* payload ) {
     //disconnect parent edge from parent
-    if( this->parentedge ) {
-        sptvRemoveOutEdgeRef( this->parentedge->from, this->parentedge );
+    if( this->parentedge != LIST_NULL ) {
+        sptvRemoveOutEdgeRef( sptGetEdgeByIndex(spt, this->parentedge)->from, this->parentedge );
     }
 
     //create edge object
-    SPTEdge* link = &(spt->edge_store[spt->edge_n]);
+    uint32_t link_ix = spt->edge_n;
+    SPTEdge* link = &(spt->edge_store[link_ix]);
     spteInit( link, parent, this, payload );
 
     //expand edge vector if necessary
@@ -548,12 +574,12 @@ sptvSetParent( ShortestPathTree *spt, SPTVertex* this, SPTVertex* parent, EdgePa
     }
 
     //add it to the outgoing list of the parent
-    ListNode* outlistnode = liNew( (Edge*)link );
+    ListNode* outlistnode = liNew( link_ix );
     liInsertAfter( parent->outgoing, outlistnode );
     parent->degree_out++;
 
     //set it as the parent of the child
-    this->parentedge = link;
+    this->parentedge = link_ix;
 
     return link;
 }
@@ -564,9 +590,9 @@ sptvGetOutgoingEdgeList( SPTVertex* this ) {
 }
 
 void
-sptvRemoveOutEdgeRef( SPTVertex* this, SPTEdge* todie ) {
+sptvRemoveOutEdgeRef( SPTVertex* this, uint32_t todie ) {
     this->degree_out -= 1;
-    liRemoveRef( this->outgoing, (Edge*)todie );
+    liRemoveRef( this->outgoing, todie );
 }
 
 int
@@ -584,7 +610,7 @@ sptvHop( SPTVertex* this ) {
     return this->hop;
 }
 
-SPTEdge*
+uint32_t
 sptvGetParent( SPTVertex* this ) {
     return this->parentedge;
 }
@@ -612,7 +638,7 @@ eNew(uint32_t from, uint32_t to, EdgePayload* payload) {
 }
 
 void
-eDestroy(Edge *this, Graph* gg, int destroy_payload) {
+eDestroy(Edge *this, Graph* gg, uint32_t index, int destroy_payload) {
     //free payload
     if(destroy_payload)
       epDestroy( this->payload ); //destroy payload object and contents
@@ -620,8 +646,8 @@ eDestroy(Edge *this, Graph* gg, int destroy_payload) {
     Vertex* fromv = gGetVertexByIndex( gg, this->from );
     Vertex* tov = gGetVertexByIndex( gg, this->to );
 
-    vRemoveOutEdgeRef( fromv, this );
-    vRemoveInEdgeRef( tov, this );
+    vRemoveOutEdgeRef( fromv, index );
+    vRemoveInEdgeRef( tov, index );
 }
 
 State*
@@ -684,9 +710,9 @@ spteNew(SPTVertex* from, SPTVertex* to, EdgePayload* payload) {
 }
 
 void
-spteDestroy(SPTEdge *this) {
+spteDestroy(SPTEdge *this, uint32_t this_ix) {
     this->from->degree_out -= 1;
-    liRemoveRef( this->from->outgoing, (Edge*)this );
+    liRemoveRef( this->from->outgoing, this_ix );
 }
 
 SPTVertex*

@@ -84,7 +84,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
 #endif
     // for each u -- edge --> v 
     while( edges ) {                                 
-      Edge* edge = edges->data;
+      Edge* edge = gGetEdgeByIndex( this, edges->data );
 #ifndef RETRO
       v = gGetVertexByIndex( this, edge->to );
 #else

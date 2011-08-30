@@ -42,7 +42,7 @@ struct Vertex {
 struct SPTVertex {
    int degree_out;
    ListNode* outgoing;
-   SPTEdge* parentedge;
+   uint32_t parentedge;
 
    State* state;
    int hop;
@@ -134,6 +134,9 @@ SPTVertex*
 sptGetVertex( ShortestPathTree *this, char *label );
 
 SPTEdge*
+sptGetEdgeByIndex( ShortestPathTree *this, uint32_t index );
+
+SPTEdge*
 sptSetParent( ShortestPathTree *this, char *from, char *to, EdgePayload *payload );
 
 SPTVertex**
@@ -166,10 +169,10 @@ inline ListNode*
 vGetIncomingEdgeList( Vertex* this );
 
 void
-vRemoveOutEdgeRef( Vertex* this, Edge* todie );
+vRemoveOutEdgeRef( Vertex* this, uint32_t todie );
 
 void
-vRemoveInEdgeRef( Vertex* this, Edge* todie );
+vRemoveInEdgeRef( Vertex* this, uint32_t todie );
 
 char*
 vGetLabel( Vertex* this );
@@ -189,10 +192,10 @@ SPTVertex *
 sptvNew( Vertex* mirror, int hop ) ;
 
 void
-sptvGut( SPTVertex* this ) ;
+sptvGut( SPTVertex* this, ShortestPathTree *spt ) ;
 
 void
-sptvDestroy(SPTVertex* this) ;
+sptvDestroy(SPTVertex* this, ShortestPathTree *spt) ;
 
 SPTEdge*
 sptvLink(SPTVertex* this, SPTVertex* to, EdgePayload* payload) ;
@@ -204,7 +207,7 @@ inline ListNode*
 sptvGetOutgoingEdgeList( SPTVertex* this );
 
 void
-sptvRemoveOutEdgeRef( SPTVertex* this, SPTEdge* todie );
+sptvRemoveOutEdgeRef( SPTVertex* this, uint32_t todie );
 
 char*
 sptvGetLabel( SPTVertex* this );
@@ -218,7 +221,7 @@ sptvState( SPTVertex* this );
 int
 sptvHop( SPTVertex* this );
 
-SPTEdge*
+uint32_t
 sptvGetParent( SPTVertex* this );
 
 Vertex*
@@ -233,7 +236,7 @@ Edge*
 eNew(uint32_t from, uint32_t to, EdgePayload* payload);
 
 void
-eDestroy(Edge *this, Graph *gg, int destroy_payload) ;
+eDestroy(Edge *this, Graph* gg, uint32_t index, int destroy_payload) ;
 
 State*
 eWalk(Edge *this, State* state, WalkOptions* options) ;
@@ -265,7 +268,7 @@ SPTEdge*
 spteNew(SPTVertex* from, SPTVertex* to, EdgePayload* payload);
 
 void
-spteDestroy(SPTEdge *this) ;
+spteDestroy(SPTEdge *this, uint32_t this_ix) ;
 
 SPTVertex*
 spteGetFrom(SPTEdge *this);

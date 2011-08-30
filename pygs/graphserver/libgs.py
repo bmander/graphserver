@@ -1,5 +1,5 @@
 from ctypes import cdll, PyDLL
-from ctypes import c_int, c_long, c_float, c_size_t, c_char_p, c_double, c_void_p, py_object
+from ctypes import c_int, c_long, c_float, c_size_t, c_char_p, c_double, c_void_p, py_object, c_ulong
 from ctypes import c_int8, c_int16, c_int32, c_int64, sizeof
 from ctypes import POINTER
 
@@ -118,7 +118,7 @@ declarations = [\
     (libgs.sptvDegreeOut, c_int, [LGSTypes.SPTVertex]),
     (libgs.sptvState, LGSTypes.State, [LGSTypes.SPTVertex]),
     (libgs.sptvHop, c_int, [LGSTypes.SPTVertex]),
-    (libgs.sptvGetParent, LGSTypes.Edge, [LGSTypes.SPTVertex]),
+    (libgs.sptvGetParent, c_ulong, [LGSTypes.SPTVertex]),
     (libgs.sptvMirror, LGSTypes.Vertex, [LGSTypes.SPTVertex]),
     (libgs.eNew, LGSTypes.Edge, [LGSTypes.Vertex, LGSTypes.Vertex, LGSTypes.EdgePayload]),
     (libgs.eDestroy, None, [LGSTypes.Edge, c_int]),
@@ -139,7 +139,7 @@ declarations = [\
     (libgs.liInsertAfter, None, [LGSTypes.ListNode, LGSTypes.ListNode]),
     (libgs.liRemoveAfter, None, [LGSTypes.ListNode]),
     (libgs.liRemoveRef, None, [LGSTypes.ListNode, LGSTypes.Edge]),
-    (libgs.liGetData, LGSTypes.Edge, [LGSTypes.ListNode]),
+    (libgs.liGetData, c_ulong, [LGSTypes.ListNode]),
     (libgs.liGetNext, LGSTypes.ListNode, [LGSTypes.ListNode]),
     (libgs.pathNew, LGSTypes.Path, [LGSTypes.SPTVertex, c_int, c_int]),
     (libgs.pathDestroy, None, [LGSTypes.Path]),

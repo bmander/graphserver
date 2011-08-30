@@ -26,13 +26,11 @@ class TestVertex(unittest.TestCase):
     def test_incoming(self):
         """new vertex has no incoming edges"""
         v=Vertex("home")
-        assert v.incoming == []
         assert v.degree_in == 0
         
     def test_outgoing(self):
         """new vertex has no outgoing edges"""
         v=Vertex("home")
-        assert v.outgoing == []
         assert v.degree_out == 0
         
     def test_prettyprint(self):

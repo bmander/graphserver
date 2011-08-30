@@ -68,6 +68,11 @@ typedef enum {
   PL_ELAPSE_TIME,
 } edgepayload_t;
 
+// things that everyone needs
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
+
 #include "state.h"
 #include "walkoptions.h"
 #include "edgetypes/elapsehelpers.h"
@@ -92,9 +97,5 @@ typedef enum {
 #include "vector.h"
 #include "heap.h"
 
-// things that everyone needs
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
 
 #endif

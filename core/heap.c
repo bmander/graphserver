@@ -1,6 +1,7 @@
 //#include <stdlib.h>
 //#include <string.h>
 //#include "heap.h"
+#include <stdint.h>
 #include "graphserver.h"
 
 Heap* heapNew( int init_capacity ) {

@@ -171,7 +171,7 @@ class TestGraph(unittest.TestCase):
         spt.destroy()
         
         
-    def test_shortst_path_tree_link(self):
+    def test_shortest_path_tree_link(self):
         g = Graph()
         
         g.add_vertex("home")
@@ -182,8 +182,9 @@ class TestGraph(unittest.TestCase):
         spt = g.shortest_path_tree("home", "work", State(g.numagencies,0), WalkOptions())
         assert spt
         assert spt.__class__ == ShortestPathTree
-        assert spt.get_vertex("home").outgoing[0].payload.__class__ == Link
-        assert spt.get_vertex("work").parent.payload.__class__ == Link
+        assert spt.get_vertex("home").outgoing(g)[0].payload.__class__ == Link
+
+        assert spt.get_vertex("work").parent(g).payload.__class__ == Link
         assert spt.get_vertex("home").degree_out==1
         assert spt.get_vertex("work").degree_out==0
         
@@ -201,8 +202,8 @@ class TestGraph(unittest.TestCase):
         spt = g.shortest_path_tree_retro("home", "work", State(g.numagencies,0), WalkOptions())
         assert spt
         assert spt.__class__ == ShortestPathTree
-        assert spt.get_vertex("home").parent.payload.__class__ == Link
-        assert spt.get_vertex("work").outgoing[0].payload.__class__ == Link
+        assert spt.get_vertex("home").parent(g).payload.__class__ == Link
+        assert spt.get_vertex("work").outgoing(g)[0].payload.__class__ == Link
         assert spt.get_vertex("home").degree_out==0
         assert spt.get_vertex("work").degree_out==1
         
@@ -357,7 +358,7 @@ class TestGraph(unittest.TestCase):
         gg.add_edge( "A", "C", Street("AC", 1) )
         
         vv = gg.get_vertex( "A" )
-        assert [ee.payload.name for ee in vv.outgoing] == ["AC", "AB"]
+        self.assertEquals( [ee.payload.name for ee in vv.outgoing(gg)] , ["AC", "AB"] )
 
 if __name__ == '__main__':    
     unittest.main()

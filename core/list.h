@@ -1,8 +1,10 @@
 #ifndef _LIST_H_
 #define _LIST_H_
 
+#define LIST_NULL UINT32_MAX
+
 struct ListNode {
-   void* data;
+   uint32_t data;
    ListNode* next;
 } ;
 
@@ -12,7 +14,7 @@ struct ListNode {
  * create a new list
  */
 ListNode*
-liNew(void *data);
+liNew(uint32_t data);
 
 /*
  * append an existing list node after the given list node
@@ -24,9 +26,9 @@ void
 liRemoveAfter( ListNode *this ) ;
 
 void
-liRemoveRef( ListNode *dummyhead, void* data );
+liRemoveRef( ListNode *dummyhead, uint32_t data );
 
-void*
+uint32_t
 liGetData( ListNode *this );
 
 ListNode*

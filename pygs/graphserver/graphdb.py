@@ -68,7 +68,7 @@ class GraphDatabase:
             if reporter and i%(nseg//100)==0: reporter.write( "%d/%d vertices dumped\n"%(i,n) )
             
             c.execute( "INSERT INTO vertices VALUES (?)", (vv.label,) )
-            for ee in vv.outgoing:
+            for ee in vv.outgoing(graph):
                 epid = self.put_edge_payload( ee.payload, c )
 
                 c.execute( "INSERT INTO edges VALUES (?, ?, ?)", (graph.get_vertex_by_index(ee.from_v).label, graph.get_vertex_by_index(ee.to_v).label, epid) )

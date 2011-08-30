@@ -142,7 +142,10 @@ class TestShortestPathTree(unittest.TestCase):
         
         vv = spt.get_vertex( "A" )
         assert vv.__class__ == SPTVertex
-        assert vv.outgoing[0].__class__ == SPTEdge
-        assert vv.outgoing[0].to_v.__class__ == SPTVertex
+
+        print vv.outgoing(spt)
+
+        assert vv.outgoing(spt)[0].__class__ == SPTEdge
+        assert vv.outgoing(spt)[0].to_v.__class__ == SPTVertex
 if __name__ == '__main__':
     unittest.main()

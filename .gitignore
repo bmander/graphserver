@@ -3,6 +3,7 @@
 *.o
 *.so
 pygs/build/*
+*.swo
 
 .metadata
 apps/heatmap/*.surface

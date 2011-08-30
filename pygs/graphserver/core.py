@@ -1,5 +1,5 @@
 from libgs import libgs
-from ctypes import string_at, byref, c_int, c_long, c_size_t, c_char_p, c_double, c_void_p, py_object, c_float
+from ctypes import string_at, byref, c_int, c_long, c_size_t, c_char_p, c_double, c_void_p, py_object, c_float, c_ulong
 from ctypes import Structure, pointer, cast, POINTER, addressof, CFUNCTYPE
 from _ctypes import Py_INCREF, Py_DECREF
 from time import asctime, gmtime
@@ -240,6 +240,10 @@ class Graph(CShadow):
     def get_vertex_by_index( self, index ):
         libgs.gGetVertexByIndex.restype = c_void_p
         return Vertex.from_pointer( libgs.gGetVertexByIndex( self.soul, index ) )
+
+    def get_edge_by_index( self, index ):
+        libgs.gGetEdgeByIndex.restype = c_void_p
+        return Edge.from_pointer( libgs.gGetEdgeByIndex( self.soul, index ) )
         
     def add_edge( self, fromv, tov, payload ):
         #Edge* gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload );
@@ -383,6 +387,10 @@ class ShortestPathTree(CShadow):
             ret.append( SPTVertex.from_pointer( libgs.sptGetVertexByIndex( self.soul, i ) ) )
 
         return ret;
+
+    def get_edge_by_index( self, index ):
+        libgs.sptGetEdgeByIndex.restype = c_void_p
+        return SPTEdge.from_pointer( libgs.sptGetEdgeByIndex( self.soul, index ) )
 
     @property
     def edges(self):
@@ -642,20 +650,19 @@ class Vertex(CShadow):
         self.check_destroyed()
         return self.to_xml()
 
-    @property
-    def outgoing(self):
+    def outgoing(self, graph):
         self.check_destroyed()
-        return self._edges(self._coutgoing_edges)
+        return self._edges(self._coutgoing_edges, graph)
         
-    @property
-    def incoming(self):
+    def incoming(self, graph):
         self.check_destroyed()
-        return self._edges(self._cincoming_edges)
+        return self._edges(self._cincoming_edges, graph)
 
-    def _edges(self, method, index = -1):
+    def _edges(self, method, graph, index = -1):
         self.check_destroyed()
         e = []
         node = method(self.soul)
+
         if not node: 
             if index == -1:
                 return e
@@ -664,21 +671,22 @@ class Vertex(CShadow):
         i = 0
         while node:
             if index != -1 and i == index:
-                return node.data(edgeclass=self.edgeclass)
-            e.append(node.data(edgeclass=self.edgeclass))
+                return graph.get_edge_by_index( node.data() )
+            e.append( graph.get_edge_by_index( node.data() ) )
             node = node.next
             i = i+1
         if index == -1:
             return e
+
         return None
 
-    def get_outgoing_edge(self,i):
+    def get_outgoing_edge(self, graph, i):
         self.check_destroyed()
-        return self._edges(self._coutgoing_edges, i)
+        return self._edges(self._coutgoing_edges, graph, i)
         
-    def get_incoming_edge(self,i):
+    def get_incoming_edge(self,graph, i):
         self.check_destroyed()
-        return self._edges(self._cincoming_edges, i)
+        return self._edges(self._cincoming_edges, graph, i)
         
     def __hash__(self):
         return int(self.soul)
@@ -688,7 +696,6 @@ class SPTVertex(CShadow):
     degree_out = cproperty(libgs.sptvDegreeOut, c_int)
     hop = cproperty(libgs.sptvHop, c_int)
     mirror = cproperty(libgs.sptvMirror, c_void_p, Vertex )
-    parent = cproperty(libgs.sptvGetParent, c_void_p, Edge )
     edgeclass = SPTEdge
     
     def __init__(self,mirror,hop=0):
@@ -710,17 +717,19 @@ class SPTVertex(CShadow):
         self.check_destroyed()
         return self.to_xml()
 
-    @property
-    def outgoing(self):
+    def outgoing(self, spt):
         self.check_destroyed()
-        return self._edges(self._coutgoing_edges)
+        return self._edges(self._coutgoing_edges, spt)
     
+    def parent(self, spt):
+        return spt.get_edge_by_index( libgs.sptvGetParent( self.soul ) )
+
     @property
     def state(self):
         self.check_destroyed()
         return self._cstate(self.soul)
 
-    def _edges(self, method, index = -1):
+    def _edges(self, method, spt, index = -1):
         self.check_destroyed()
         e = []
         node = method(self.soul)
@@ -732,8 +741,8 @@ class SPTVertex(CShadow):
         i = 0
         while node:
             if index != -1 and i == index:
-                return node.data(edgeclass=self.edgeclass)
-            e.append(node.data(edgeclass=self.edgeclass))
+                return spt.get_edge_by_index( node.data() )
+            e.append( spt.get_edge_by_index( node.data() ) )
             node = node.next
             i = i+1
         if index == -1:
@@ -742,11 +751,7 @@ class SPTVertex(CShadow):
 
     def get_outgoing_edge(self,i):
         self.check_destroyed()
-        return self._edges(self._coutgoing_edges, i)
-        
-    def get_incoming_edge(self,i):
-        self.check_destroyed()
-        return self._edges(self._cincoming_edges, i)
+        return self._edges(self._coutgoing_edges, spt, i)
         
     def __hash__(self):
         return int(self.soul)
@@ -754,8 +759,9 @@ class SPTVertex(CShadow):
 
 class ListNode(CShadow):
     
-    def data(self, edgeclass=Edge):
-        return edgeclass.from_pointer( libgs.liGetData(self.soul) )
+    def data(self):
+        libgs.liGetData.restype = c_ulong
+        return libgs.liGetData(self.soul)
     
     @property
     def next(self):

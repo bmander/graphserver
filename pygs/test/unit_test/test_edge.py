@@ -37,7 +37,8 @@ class TestEdge(unittest.TestCase):
         e1.enabled = False
         
         assert e1.walk( State(0,0), WalkOptions() ) == None
-        
+       
+    def test_disable_spt( self ):
         gg = Graph()
         gg.add_vertex( "A" )
         gg.add_vertex( "B" )
@@ -45,10 +46,13 @@ class TestEdge(unittest.TestCase):
         light = Street( "Light", 1 )
         gg.add_edge( "A", "B", heavy )
         gg.add_edge( "A", "B", light )
+
+        spt = gg.shortest_path_tree( "A", "B", State(0,0), WalkOptions() )
+        path = spt.path("B")
+
+        assert spt.path("B")[1][0].payload.name == "Light"
         
-        assert gg.shortest_path_tree( "A", "B", State(0,0), WalkOptions() ).path("B")[1][0].payload.name == "Light"
-        
-        lightedge = gg.get_vertex("A").outgoing[0]
+        lightedge = gg.get_vertex("A").outgoing(gg)[0]
         lightedge.enabled = False
         
         assert gg.shortest_path_tree( "A", "B", State(0,0), WalkOptions() ).path("B")[1][0].payload.name == "Heavy"
@@ -64,28 +68,28 @@ class TestEdge(unittest.TestCase):
         gg.add_edge( "A", "C", Street( "atoc", 1 ) )
         gg.add_edge( "C", "D", Street( "ctod", 1 ) )
         
-        for edge in gg.get_vertex("B").outgoing:
+        for edge in gg.get_vertex("B").outgoing(gg):
             assert edge.enabled == True
-        for edge in gg.get_vertex("B").incoming:
+        for edge in gg.get_vertex("B").incoming(gg):
             assert edge.enabled == True
             
         gg.set_vertex_enabled( "B", False )
         
-        for edge in gg.get_vertex("B").outgoing:
+        for edge in gg.get_vertex("B").outgoing(gg):
             assert edge.enabled == False
-        for edge in gg.get_vertex("B").incoming:
+        for edge in gg.get_vertex("B").incoming(gg):
             assert edge.enabled == False
             
-        for edge in gg.get_vertex("C").outgoing:
+        for edge in gg.get_vertex("C").outgoing(gg):
             assert edge.enabled == True
-        for edge in gg.get_vertex("C").incoming:
+        for edge in gg.get_vertex("C").incoming(gg):
             assert edge.enabled == True
             
         gg.set_vertex_enabled( "B", True )
         
-        for edge in gg.get_vertex("B").outgoing:
+        for edge in gg.get_vertex("B").outgoing(gg):
             assert edge.enabled == True
-        for edge in gg.get_vertex("B").incoming:
+        for edge in gg.get_vertex("B").incoming(gg):
             assert edge.enabled == True
             
 if __name__ == '__main__':

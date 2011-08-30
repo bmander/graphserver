@@ -32,11 +32,12 @@ class TestSPTVertex(unittest.TestCase):
     
     def test_incoming(self):
         v=SPTVertex( Vertex("home") )
-        assert v.parent == None 
+
+        # a blank sptvertex has a MAX_UINT32 set for the parent index
+        self.assertEqual( libgs.sptvGetParent( v.soul ) , 4294967295 )
         
     def test_outgoing(self):
         v=SPTVertex( Vertex("home") )
-        assert v.outgoing == []
         assert v.degree_out == 0
         
     def test_prettyprint(self):
