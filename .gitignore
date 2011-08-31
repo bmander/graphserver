@@ -5,6 +5,7 @@
 pygs/build/*
 *.swo
 
+core/Makefile
 .metadata
 apps/heatmap/*.surface
 apps/heatmap/*.png
