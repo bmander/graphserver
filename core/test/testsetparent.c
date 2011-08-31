@@ -7,16 +7,24 @@
 #include <valgrind/callgrind.h>
 
 int main() {
-    Vertex* v1 = vNew("A");
-    Vertex* v2 = vNew("B");
+    Graph *gg = gNew();
+    Vertex* v1 = vNew(gg, "A");
+    Vertex* v2 = vNew(gg, "B");
+
+    ShortestPathTree *spt = sptNew();
+    sptAddVertex( spt, v1, 0 );
+    sptAddVertex( spt, v2, 1 );
     
     Link* origlink = linkNew();
-    vLink(v1, v2, (EdgePayload*)origlink);
-    vSetParent(v2, v1, (EdgePayload*)linkNew()); //results in invalid write
+    
+    sptSetParent( spt, "A", "B", (EdgePayload*)origlink );
     
     vDestroy(v1, 1);
     vDestroy(v2, 1);
     linkDestroy(origlink);
+
+    sptDestroy( spt );
+    gDestroy( gg );
     
     return 1;
 }

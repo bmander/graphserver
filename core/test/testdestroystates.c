@@ -16,7 +16,7 @@ int main() {
     
     State* initstate = stateNew(1, 0);
     ShortestPathTree* spt = gShortestPathTree( gg, "A", "B", initstate, wo, 1000001, 100000, 100000 );
-    
+
     woDestroy(wo);
     sptDestroy(spt);
     gDestroy(gg);
