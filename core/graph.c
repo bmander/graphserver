@@ -30,6 +30,10 @@ gNew() {
   this->edge_cap = INITIAL_GRAPH_EDGE_CAP;
   this->edge_store = (Edge*)malloc( this->edge_cap*sizeof(Edge) );
 
+  this->listnode_n = 0;
+  this->listnode_cap = INITIAL_GRAPH_LISTNODE_CAP;
+  this->listnode_store = (ListNode*)malloc( this->listnode_cap*sizeof(ListNode) );
+
   return this;
 }
 
@@ -47,6 +51,8 @@ gDestroyBasic( Graph* this, int free_edge_payloads ) {
   free( this->vertices_store );
   //free edge store
   free( this->edge_store );
+  //free listnode stroe
+  free( this->listnode_store );
   //destroy the graph object itself
   free( this );
 
@@ -86,7 +92,7 @@ gExpand(Graph *this) {
 void
 gEdgesExpand(Graph *this) {
     this->edge_cap = this->edge_cap*EXPAND_RATIO;
-    this->edge_store = realloc( this->edge_store, this->cap*sizeof(Edge) );
+    this->edge_store = realloc( this->edge_store, this->edge_cap*sizeof(Edge) );
 }
 
 void
@@ -112,6 +118,22 @@ Vertex*
 gGetVertex( Graph* this, char *label ) {
   uint32_t i =  hashtable_search( this->vertices, label );
   return gGetVertexByIndex( this, i );
+}
+
+ListNode*
+gAllocateListNode( Graph *this, uint32_t data ) {
+
+  //create edge object
+  uint32_t ix = this->listnode_n;
+  ListNode* ret = &(this->listnode_store[ix]);
+  ret->data = data;
+
+  //expand edge vector if necessary
+  this->listnode_n++;
+  if(this->listnode_n >= this->listnode_cap) {
+    this->listnode_cap = this->edge_cap*EXPAND_RATIO;
+    this->listnode_store = realloc( this->listnode_store, this->listnode_cap*sizeof(ListNode) );
+  }
 }
 
 Edge*
@@ -358,7 +380,7 @@ sptExpand(ShortestPathTree *this) {
 void
 sptEdgesExpand(ShortestPathTree *this) {
     this->edge_cap = this->edge_cap*EXPAND_RATIO;
-    this->edge_store = realloc( this->edge_store, this->cap*sizeof(Edge) );
+    this->edge_store = realloc( this->edge_store, this->edge_cap*sizeof(Edge) );
 }
 
 void
