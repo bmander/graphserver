@@ -134,6 +134,8 @@ gAllocateListNode( Graph *this, uint32_t data ) {
     this->listnode_cap = this->edge_cap*EXPAND_RATIO;
     this->listnode_store = realloc( this->listnode_store, this->listnode_cap*sizeof(ListNode) );
   }
+
+  return ret;
 }
 
 Edge*
@@ -354,7 +356,7 @@ sptDestroy( ShortestPathTree *this ) {
 
 ListNode*
 sptAllocateListNode( ShortestPathTree *this, uint32_t data ) {
-    gAllocateListNode( (Graph*)this, data );
+    return gAllocateListNode( (Graph*)this, data );
 }
 
 SPTVertex*
