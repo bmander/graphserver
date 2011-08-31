@@ -110,7 +110,7 @@ declarations = [\
     (libgs.vGetLabel, c_char_p, [LGSTypes.Vertex]),
     (libgs.vDegreeOut, c_int, [LGSTypes.Vertex]),
     (libgs.vDegreeIn, c_int, [LGSTypes.Vertex]),
-    (libgs.sptvNew, LGSTypes.SPTVertex, [LGSTypes.Vertex, c_int]),
+    (libgs.sptvNew, LGSTypes.SPTVertex, [LGSTypes.ShortestPathTree, LGSTypes.Vertex, c_int]),
     (libgs.sptvDestroy, None, [LGSTypes.SPTVertex]),
     (libgs.sptvSetParent, LGSTypes.Edge, [LGSTypes.SPTVertex, LGSTypes.SPTVertex, LGSTypes.EdgePayload]),
     (libgs.sptvGetOutgoingEdgeList, LGSTypes.ListNode, [LGSTypes.SPTVertex]),

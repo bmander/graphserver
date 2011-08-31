@@ -363,7 +363,7 @@ sptAddVertex( ShortestPathTree *this, Vertex *mirror, int hop ) {
 
   if( !exists ) {
     exists = &(this->vertices_store[this->n]);
-    sptvInit( exists, mirror, hop );
+    sptvInit( exists, this, mirror, hop );
 
     hashtable_insert_string( this->vertices, mirror->label, this->n );
 
@@ -534,7 +534,7 @@ vDegreeIn( Vertex* this ) {
 //SPTVERTEX METHODS
 
 void
-sptvInit( SPTVertex* this, Vertex* mirror, int hop ) {
+sptvInit( SPTVertex* this, ShortestPathTree *spt, Vertex* mirror, int hop ) {
     this->degree_out = 0;
     this->outgoing = liNew( LI_NO_DATA ) ;
     this->parentedge = LI_NO_DATA;
@@ -546,10 +546,10 @@ sptvInit( SPTVertex* this, Vertex* mirror, int hop ) {
 }
 
 SPTVertex *
-sptvNew( Vertex* mirror, int hop ) {
+sptvNew( ShortestPathTree *spt, Vertex* mirror, int hop ) {
     SPTVertex *this = (SPTVertex *)malloc(sizeof(SPTVertex));
 
-    sptvInit( this, mirror, hop );
+    sptvInit( this, spt, mirror, hop );
     
     return this;
 }

@@ -1,25 +1,28 @@
-from graphserver.core import Vertex, Edge, Link, Street, Path, SPTVertex, Graph
+from graphserver.core import Vertex, Edge, Link, Street, Path, SPTVertex, Graph, ShortestPathTree
 import unittest
 
 class TestPathCreate(unittest.TestCase):
     def test_path_new(self):
         """Create a path object without crashing"""
         gg = Graph()
-        path = Path( SPTVertex(Vertex(gg, "A")) )
+        spt = ShortestPathTree()
+        path = Path( SPTVertex(spt, Vertex(gg, "A")) )
         
         self.assertTrue( path )
         
     def test_path_empty(self):
         """Path is empty right after first created"""
         gg = Graph()
-        pp = Path( SPTVertex(Vertex(gg, "A")) )
+        spt = ShortestPathTree()
+        pp = Path( SPTVertex(spt, Vertex(gg, "A")) )
         
         self.assertEqual( pp.num_elements, 0 )
         
 class TestPathSize(unittest.TestCase):
     def setUp(self):
         gg = Graph()
-        self.aa = SPTVertex(Vertex(gg, "AA"))
+        spt = ShortestPathTree()
+        self.aa = SPTVertex(spt, Vertex(gg, "AA"))
         self.path = Path( self.aa )
         
     def test_zero(self):
@@ -29,8 +32,9 @@ class TestPathSize(unittest.TestCase):
     def test_one(self):
         """getSize returns one after one entry"""
         gg = Graph()
+        spt = ShortestPathTree()
         
-        bb = SPTVertex(Vertex(gg, "BB"))
+        bb = SPTVertex(spt, Vertex(gg, "BB"))
         ee = Edge(self.aa, bb, Link())
         
         self.path.addSegment( bb, ee )
@@ -40,10 +44,11 @@ class TestPathSize(unittest.TestCase):
     def test_ten(self):
         """getSize returns ten after ten entries"""
         gg = Graph()
+        spt = ShortestPathTree()
         
         for i in range(10):
-            aa = SPTVertex(Vertex(gg, "AA"))
-            bb = SPTVertex(Vertex(gg, "BB"))
+            aa = SPTVertex(spt, Vertex(gg, "AA"))
+            bb = SPTVertex(spt, Vertex(gg, "BB"))
             payload = Link()
             self.path.addSegment( bb, Edge(aa, bb, payload) )
             
@@ -52,9 +57,10 @@ class TestPathSize(unittest.TestCase):
 class TestAddAndGetSegments(unittest.TestCase):
     def setUp(self):
         gg = Graph()
+        spt = ShortestPathTree()
 
-        self.aa = SPTVertex(Vertex(gg, "A"))
-        self.bb = SPTVertex(Vertex(gg, "B"))
+        self.aa = SPTVertex(spt, Vertex(gg, "A"))
+        self.bb = SPTVertex(spt, Vertex(gg, "B"))
         self.ep = Link()
         self.path = Path(self.aa)
         
@@ -123,6 +129,7 @@ class TestAddAndGetSegments(unittest.TestCase):
     def test_expand(self):
         """vertices gettable after resizing"""
         gg = Graph()
+        spt = ShortestPathTree()
         
         # the path length right before a vector expansion
         pathlen = 50
@@ -130,7 +137,7 @@ class TestAddAndGetSegments(unittest.TestCase):
         # make a bunch of fake segments
         segments = []
         for i in range(pathlen):
-            vv = SPTVertex(Vertex(gg, str(i)))
+            vv = SPTVertex(spt, Vertex(gg, str(i)))
             ee = Edge( vv, vv, Link() )
             segments.append( (vv, ee) )
         
@@ -152,7 +159,7 @@ class TestAddAndGetSegments(unittest.TestCase):
         #
         
         # add it
-        vv = SPTVertex(Vertex(gg, "B"))
+        vv = SPTVertex(spt, Vertex(gg, "B"))
         ee = Edge(vv, vv, Link())
         self.path.addSegment( vv, ee )
         

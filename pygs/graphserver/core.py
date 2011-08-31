@@ -674,8 +674,8 @@ class SPTVertex(CShadow):
     mirror = cproperty(libgs.sptvMirror, c_void_p, Vertex )
     edgeclass = SPTEdge
     
-    def __init__(self,mirror,hop=0):
-        self.soul = self._cnew(mirror.soul,hop)
+    def __init__(self,spt,mirror,hop=0):
+        self.soul = self._cnew(spt.soul,mirror.soul,hop)
         
     def destroy(self):
         #void vDestroy(Vertex* this, int free_vertex_payload, int free_edge_payloads) ;

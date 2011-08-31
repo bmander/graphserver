@@ -201,10 +201,10 @@ vDegreeIn( Vertex* this );
 //SPTVERTEX FUNCTIONS
 
 void
-sptvInit( SPTVertex* this, Vertex* mirror, int hop );
+sptvInit( SPTVertex* this, ShortestPathTree *spt, Vertex* mirror, int hop );
 
 SPTVertex *
-sptvNew( Vertex* mirror, int hop ) ;
+sptvNew( ShortestPathTree *spt, Vertex* mirror, int hop ) ;
 
 void
 sptvGut( SPTVertex* this, ShortestPathTree *spt ) ;
