@@ -166,10 +166,10 @@ sptPathRetro(ShortestPathTree* g, char* origin_label);
 //VERTEX FUNCTIONS
 
 Vertex *
-vNew( char* label ) ;
+vNew( Graph *gg, char* label ) ;
 
 void
-vInit( Vertex *this, char *label );
+vInit( Vertex *this, Graph *gg, char *label );
 
 void
 vGut(Vertex *this, Graph *gg, int free_edge_payloads);

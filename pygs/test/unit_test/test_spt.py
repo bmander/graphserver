@@ -34,20 +34,22 @@ class TestShortestPathTree(unittest.TestCase):
         
     def test_add_vertex(self):
         spt = ShortestPathTree()
-        v = spt.add_vertex( Vertex("home") )
+        gg = Graph()
+        v = spt.add_vertex( Vertex(gg, "home") )
         assert v.mirror.label == "home"
         
         spt.destroy()
         
     def test_remove_vertex(self):
         spt = ShortestPathTree()
-        spt.add_vertex( Vertex("A") )
+        gg = Graph()
+        spt.add_vertex( Vertex(gg, "A") )
         spt.get_vertex( "A" ).mirror.label == "A"
         spt.remove_vertex( "A" )
         assert spt.get_vertex( "A" ) == None
         
-        spt.add_vertex( Vertex("A") )
-        spt.add_vertex( Vertex("B") )
+        spt.add_vertex( Vertex(gg, "A") )
+        spt.add_vertex( Vertex(gg, "B") )
         pl = Street( "AB", 1 )
         spt.set_parent( "A", "B", pl )
         spt.remove_vertex( "A" )
@@ -57,10 +59,11 @@ class TestShortestPathTree(unittest.TestCase):
         
     def test_double_add_vertex(self):
         spt = ShortestPathTree()
-        v = spt.add_vertex( Vertex("double") )
+        gg = Graph()
+        v = spt.add_vertex( Vertex(gg, "double") )
         assert v.mirror.label == "double"
         assert spt.size == 1
-        v = spt.add_vertex( Vertex("double") )
+        v = spt.add_vertex( Vertex(gg, "double") )
         assert spt.size == 1
         assert v.mirror.label == "double"
         
@@ -68,8 +71,9 @@ class TestShortestPathTree(unittest.TestCase):
         
     def test_get_vertex(self):
         spt = ShortestPathTree()
+        gg = Graph()
         
-        spt.add_vertex( Vertex("home") )
+        spt.add_vertex( Vertex(gg, "home") )
         v = spt.get_vertex("home")
         assert v.mirror.label == "home"
         v = spt.get_vertex("bogus")
@@ -79,9 +83,10 @@ class TestShortestPathTree(unittest.TestCase):
         
     def test_add_edge(self):
         spt = ShortestPathTree()
+        gg = Graph()
         
-        fromv = spt.add_vertex( Vertex("home") )
-        tov = spt.add_vertex( Vertex("work") )
+        fromv = spt.add_vertex( Vertex(gg, "home") )
+        tov = spt.add_vertex( Vertex(gg, "work") )
         s = Street( "helloworld", 1 )
         e = spt.set_parent("home", "work", s)
 
@@ -94,9 +99,10 @@ class TestShortestPathTree(unittest.TestCase):
     
     def test_add_edge_effects_vertices(self):
         spt = ShortestPathTree()
+        gg = Graph()
         
-        fromv = spt.add_vertex( Vertex("home") )
-        tov = spt.add_vertex( Vertex("work") )
+        fromv = spt.add_vertex( Vertex(gg, "home") )
+        tov = spt.add_vertex( Vertex(gg, "work") )
         s = Street( "helloworld", 1 )
         e = spt.set_parent("home", "work", s)
         
@@ -105,10 +111,11 @@ class TestShortestPathTree(unittest.TestCase):
         spt.destroy()
     
     def test_vertices(self):
+        gg = Graph()
         spt = ShortestPathTree()
         
-        fromv = spt.add_vertex( Vertex("home") )
-        tov = spt.add_vertex( Vertex("work") )
+        fromv = spt.add_vertex( Vertex(gg, "home") )
+        tov = spt.add_vertex( Vertex(gg, "work") )
         
         assert spt.vertices
         assert len(spt.vertices)==2
@@ -118,10 +125,11 @@ class TestShortestPathTree(unittest.TestCase):
 
         
     def test_add_link(self):
+        gg = Graph()
         spt = ShortestPathTree()
         
-        fromv = spt.add_vertex( Vertex("home") )
-        tov = spt.add_vertex( Vertex("work") )
+        fromv = spt.add_vertex( Vertex(gg, "home") )
+        tov = spt.add_vertex( Vertex(gg, "work") )
         s = Street( "helloworld", 1 )
         e = spt.set_parent("home", "work", s)
         
@@ -135,8 +143,9 @@ class TestShortestPathTree(unittest.TestCase):
         
     def test_edgeclass(self):
         spt = ShortestPathTree()
-        spt.add_vertex( Vertex("A") )
-        spt.add_vertex( Vertex("B") )
+        gg = Graph()
+        spt.add_vertex( Vertex(gg, "A") )
+        spt.add_vertex( Vertex(gg, "B") )
         spt.set_parent( "A", "B", Street("AB", 1) )
         
         vv = spt.get_vertex( "A" )

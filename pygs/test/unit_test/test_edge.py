@@ -3,8 +3,9 @@ from graphserver.core import *
 
 class TestEdge(unittest.TestCase):
     def test_basic(self):
-        v1 = Vertex( "A" )
-        v2 = Vertex( "B" )
+        gg = Graph()
+        v1 = Vertex( gg, "A" )
+        v2 = Vertex( gg, "B" )
         e1 = Edge( v1, v2, Street( "atob", 10.0 ) )
         
         assert e1.enabled == True
@@ -13,8 +14,9 @@ class TestEdge(unittest.TestCase):
         assert e1.enabled == False
         
     def test_walk(self):
-        v1 = Vertex( "A" )
-        v2 = Vertex( "B" )
+        gg = Graph()
+        v1 = Vertex( gg, "A" )
+        v2 = Vertex( gg, "B" )
         e1 = Edge( v1, v2, Street( "atob", 10.0 ) )
         
         wo = WalkOptions()
@@ -24,8 +26,9 @@ class TestEdge(unittest.TestCase):
         assert e1.walk( State(0,0), wo ).weight == 10
         
     def test_disable(self):
-        v1 = Vertex( "A" )
-        v2 = Vertex( "B" )
+        gg = Graph()
+        v1 = Vertex( gg, "A" )
+        v2 = Vertex( gg, "B" )
         e1 = Edge( v1, v2, Street( "atob", 10.0 ) )
         
         wo = WalkOptions()

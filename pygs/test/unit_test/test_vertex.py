@@ -4,12 +4,14 @@ import unittest
 class TestVertex(unittest.TestCase):
     def test_basic(self):
         """create a vertex"""
-        v=Vertex("home")
+        gg = Graph()
+        v=Vertex(gg, "home")
         assert v
         
     def test_destroy(self): #mostly just check that it doesn't segfault. the stress test will check if it works or not.
         """destroy a vertex"""
-        v=Vertex("home")
+        gg = Graph()
+        v=Vertex(gg, "home")
         v.destroy()
         
         try:
@@ -20,22 +22,26 @@ class TestVertex(unittest.TestCase):
         
     def test_label(self):
         """set the vertex label"""
-        v=Vertex("home")
+        gg = Graph()
+        v=Vertex(gg, "home")
         assert v.label == "home"
     
     def test_incoming(self):
         """new vertex has no incoming edges"""
-        v=Vertex("home")
+        gg = Graph()
+        v=Vertex(gg, "home")
         assert v.degree_in == 0
         
     def test_outgoing(self):
         """new vertex has no outgoing edges"""
-        v=Vertex("home")
+        gg = Graph()
+        v=Vertex(gg, "home")
         assert v.degree_out == 0
         
     def test_prettyprint(self):
         """vertex can output itself to xml"""
-        v = Vertex("home")
+        gg = Graph()
+        v = Vertex(gg, "home")
         self.assertEquals( str(v) , "<Vertex degree_out=0 degree_in=0 label=home>" )
         
 if __name__ == '__main__':

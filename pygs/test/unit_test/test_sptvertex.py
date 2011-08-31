@@ -3,21 +3,24 @@ from graphserver.core import *
 
 class TestSPTVertex(unittest.TestCase):
     def test_basic(self):
-        vv = Vertex("home")
+        gg = Graph()
+        vv = Vertex(gg, "home")
         v=SPTVertex( vv )
 
 	assert v.mirror.soul == vv.soul
         assert v
 
     def test_init_hop(self):
-        v = SPTVertex( Vertex("A") )
+        gg = Graph()
+        v = SPTVertex( Vertex(gg, "A") )
 	assert v.hop == 0
 
-	v = SPTVertex( Vertex("B"), 1 )
+	v = SPTVertex( Vertex(gg, "B"), 1 )
 	assert v.hop == 1
         
     def test_destroy(self): #mostly just check that it doesn't segfault. the stress test will check if it works or not.
-        v=SPTVertex( Vertex("home") )
+        gg = Graph()
+        v=SPTVertex( Vertex(gg, "home") )
         v.destroy()
         
         try:
@@ -27,21 +30,25 @@ class TestSPTVertex(unittest.TestCase):
             pass
         
     def test_label(self):
-        v=SPTVertex( Vertex("home") )
+        gg = Graph()
+        v=SPTVertex( Vertex(gg, "home") )
         self.assertEqual( v.mirror.label , "home" )
     
     def test_incoming(self):
-        v=SPTVertex( Vertex("home") )
+        gg = Graph()
+        v=SPTVertex( Vertex(gg, "home") )
 
         # a blank sptvertex has a MAX_UINT32 set for the parent index
         self.assertEqual( libgs.sptvGetParent( v.soul ) , 4294967295 )
         
     def test_outgoing(self):
-        v=SPTVertex( Vertex("home") )
+        gg = Graph()
+        v=SPTVertex( Vertex(gg, "home") )
         assert v.degree_out == 0
         
     def test_prettyprint(self):
-        v = SPTVertex( Vertex("home") )
+        gg = Graph()
+        v = SPTVertex( Vertex(gg, "home") )
         self.assertEqual( str(v) , "<SPTVertex degree_out=0 mirror.label=home>" )
 
 

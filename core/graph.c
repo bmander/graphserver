@@ -70,7 +70,7 @@ gAddVertex( Graph* this, char *label ) {
 
   if( !exists ) {
     exists = &(this->vertices_store[this->n]);
-    vInit( exists, label );
+    vInit( exists, this, label );
 
     hashtable_insert_string( this->vertices, label, this->n );
 
@@ -442,7 +442,7 @@ sptSize( ShortestPathTree* this ) {
 
 // VERTEX FUNCTIONS
 
-void vInit( Vertex *this, char *label ) {
+void vInit( Vertex *this, Graph *gg, char *label ) {
     this->degree_in = 0;
     this->degree_out = 0;
     this->outgoing = liNew( LI_NO_DATA ) ;
@@ -454,10 +454,10 @@ void vInit( Vertex *this, char *label ) {
 }
 
 Vertex *
-vNew( char* label ) {
+vNew( Graph *gg, char* label ) {
     Vertex *this = (Vertex *)malloc(sizeof(Vertex)) ;
 
-    vInit( this, label );
+    vInit( this, gg, label );
 
 
     return this ;

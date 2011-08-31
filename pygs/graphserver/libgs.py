@@ -101,7 +101,7 @@ declarations = [\
     (libgs.sptGetVertexByIndex, LGSTypes.SPTVertex, [LGSTypes.ShortestPathTree, c_long]),
     (libgs.sptSize, c_long, [LGSTypes.ShortestPathTree]),
     (libgs.sptPathRetro, LGSTypes.Path, [LGSTypes.Graph, c_char_p]),
-    (libgs.vNew, LGSTypes.Vertex, [c_char_p]),
+    (libgs.vNew, LGSTypes.Vertex, [LGSTypes.Graph, c_char_p]),
     (libgs.vDestroy, None, [LGSTypes.Vertex, c_int]),
     (libgs.vGetOutgoingEdgeList, LGSTypes.ListNode, [LGSTypes.Vertex]),
     (libgs.vGetIncomingEdgeList, LGSTypes.ListNode, [LGSTypes.Vertex]),

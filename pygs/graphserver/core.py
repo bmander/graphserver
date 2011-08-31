@@ -611,8 +611,8 @@ class Vertex(CShadow):
     degree_out = cproperty(libgs.vDegreeOut, c_int)
     edgeclass = Edge
     
-    def __init__(self,label):
-        self.soul = self._cnew(label)
+    def __init__(self,graph,label):
+        self.soul = self._cnew(graph.soul, label)
         
     def destroy(self):
         #void vDestroy(Vertex* this, int free_vertex_payload, int free_edge_payloads) ;
