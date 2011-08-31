@@ -15,6 +15,10 @@ struct Graph {
     uint32_t edge_cap;
     Edge* edge_store;
 
+    uint32_t listnode_n;
+    uint32_t listnode_cap;
+    ListNode *listnode_store;
+
     struct hashtable* vertices;
 };
 
@@ -26,6 +30,10 @@ struct ShortestPathTree {
     uint32_t edge_n;
     uint32_t edge_cap;
     SPTEdge* edge_store;
+
+    uint32_t listnode_n;
+    uint32_t listnode_cap;
+    ListNode *listnode_store;
 
     struct hashtable* vertices;
 };
