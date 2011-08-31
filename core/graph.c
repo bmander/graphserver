@@ -352,6 +352,11 @@ sptDestroy( ShortestPathTree *this ) {
   free( this );
 }
 
+ListNode*
+sptAllocateListNode( ShortestPathTree *this, uint32_t data ) {
+    gAllocateListNode( (Graph*)this, data );
+}
+
 SPTVertex*
 sptAddVertex( ShortestPathTree *this, Vertex *mirror, int hop ) {
   SPTVertex* exists = sptGetVertex( this, mirror->label );

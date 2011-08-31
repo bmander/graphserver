@@ -88,6 +88,9 @@ gDestroy( Graph* this );
 void
 gExpand( Graph *this );
 
+ListNode*
+gAllocateListNode( Graph *this, uint32_t data ) ;
+
 Vertex*
 gAddVertex( Graph* this, char *label );
 
@@ -132,6 +135,9 @@ sptDestroy( ShortestPathTree *this );
 
 void
 sptExpand(ShortestPathTree *this); 
+
+ListNode*
+sptAllocateListNode( ShortestPathTree *this, uint32_t data ) ;
 
 SPTVertex*
 sptAddVertex( ShortestPathTree *this, Vertex *mirror, int hop );
