@@ -43,7 +43,7 @@ struct Vertex {
    int degree_in;
    ListNode* outgoing;
    ListNode* incoming;
-   char label[256];
+   char label[50];
     
    int deleted_neighbors;
 } ;
