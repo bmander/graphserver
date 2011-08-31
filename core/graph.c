@@ -350,6 +350,8 @@ sptDestroy( ShortestPathTree *this ) {
   free( this->vertices_store );
   //free edge store
   free( this->edge_store );
+  //free listnode store
+  free( this->listnode_store );
   //destroy the graph object itself
   free( this );
 }
@@ -568,6 +570,11 @@ sptvGut( SPTVertex* this, ShortestPathTree *spt ) {
     //free the list dummy-heads that remain
     free(this->outgoing);
 
+    //free state
+    if( this->state ) {
+        stateDestroy( this->state );
+    }
+
     //set incoming and outgoing to NULL to signify that this has been gutted
     this->outgoing = NULL;
     this->parentedge = LI_NO_DATA;
@@ -575,10 +582,6 @@ sptvGut( SPTVertex* this, ShortestPathTree *spt ) {
 
 void
 sptvDestroy(SPTVertex* this, ShortestPathTree *spt) {
-    if( this->state ) {
-        stateDestroy( this->state );
-    }
-
     sptvGut( this, spt );
 
     free( this );
