@@ -97,6 +97,9 @@ gAddVertex( Graph* this, char *label );
 void
 gRemoveVertex( Graph* this, char *label, int free_edge_payloads );
 
+uint32_t
+gGetVertexIndex( Graph *this, char *label );
+
 Vertex*
 gGetVertex( Graph* this, char *label );
 
@@ -144,6 +147,9 @@ sptAddVertex( ShortestPathTree *this, Vertex *mirror, int hop );
 
 void
 sptRemoveVertex( ShortestPathTree *this, char *label );
+
+uint32_t
+sptGetVertexIndex( ShortestPathTree *this, char *label );
 
 SPTVertex*
 sptGetVertex( ShortestPathTree *this, char *label );

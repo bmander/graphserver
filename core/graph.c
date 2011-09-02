@@ -114,6 +114,11 @@ gAddVertices( Graph* this, char **labels, int n ) {
   }
 }
 
+uint32_t
+gGetVertexIndex( Graph *this, char *label ) {
+    return hashtable_search( this->vertices, label );
+}
+
 Vertex*
 gGetVertex( Graph* this, char *label ) {
   uint32_t i =  hashtable_search( this->vertices, label );
@@ -419,6 +424,11 @@ sptGetEdgeByIndex( ShortestPathTree *this, uint32_t index ) {
   }
 
   return &(this->edge_store[index]);
+}
+
+uint32_t
+sptGetVertexIndex( ShortestPathTree *this, char *label ) {
+    return hashtable_search( this->vertices, label );
 }
 
 SPTVertex*
