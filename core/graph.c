@@ -385,6 +385,28 @@ sptAddVertex( ShortestPathTree *this, Vertex *mirror, int hop ) {
   return exists;
 }
 
+uint32_t
+sptAddVertexIndex( ShortestPathTree *this, Vertex *mirror, int hop ) {
+
+  uint32_t exists = sptGetVertexIndex( this, mirror->label );
+
+  if( exists != LI_NO_DATA ) {
+    exists = this->n;
+
+    SPTVertex *vv = &(this->vertices_store[exists]);
+    sptvInit( vv, this, mirror, hop );
+
+    hashtable_insert_string( this->vertices, mirror->label, exists );
+
+    this->n++;
+    if(this->n >= this->cap) {
+        sptExpand(this);
+    }
+  }
+
+  return exists;
+}
+
 void
 sptExpand(ShortestPathTree *this) {
     this->cap = this->cap*EXPAND_RATIO;
