@@ -21,7 +21,6 @@ liRemoveAfter( ListNode *this ) {
     if( this->next ) {
       ListNode* condemned = this->next;
       this->next = this->next->next;
-      free( condemned );
     }
 }
 

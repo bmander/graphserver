@@ -132,6 +132,7 @@ gAllocateListNode( Graph *this, uint32_t data ) {
   uint32_t ix = this->listnode_n;
   ListNode* ret = &(this->listnode_store[ix]);
   ret->data = data;
+  ret->next = NULL;
 
   //expand edge vector if necessary
   this->listnode_n++;
@@ -165,11 +166,11 @@ gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload ) {
       gEdgesExpand(this);
   }
 
-  ListNode* outlistnode = liNew( link_ix );
+  ListNode* outlistnode = gAllocateListNode( this, link_ix );
   liInsertAfter( vtx_from->outgoing, outlistnode );
   vtx_from->degree_out++;
 
-  ListNode* inlistnode = liNew( link_ix );
+  ListNode* inlistnode = gAllocateListNode( this, link_ix );
   liInsertAfter( vtx_to->incoming, inlistnode );
   vtx_to->degree_in++;
 
@@ -468,8 +469,8 @@ sptSize( ShortestPathTree* this ) {
 void vInit( Vertex *this, Graph *gg, char *label ) {
     this->degree_in = 0;
     this->degree_out = 0;
-    this->outgoing = liNew( LI_NO_DATA ) ;
-    this->incoming = liNew( LI_NO_DATA ) ;
+    this->outgoing = gAllocateListNode( gg, LI_NO_DATA ) ;
+    this->incoming = gAllocateListNode( gg, LI_NO_DATA ) ;
     
     this->deleted_neighbors = 0;
 
@@ -498,9 +499,6 @@ vGut(Vertex *this, Graph* gg, int free_edge_payloads) {
         eDestroy( gGetEdgeByIndex( gg, this->outgoing->next->data ), gg, this->outgoing->next->data, free_edge_payloads );
       }
     }
-    //free the list dummy-heads that remain
-    free(this->outgoing);
-    free(this->incoming);
 
     //set incoming and outgoing to NULL to signify that this has been gutted
     this->outgoing = NULL;
@@ -559,7 +557,7 @@ vDegreeIn( Vertex* this ) {
 void
 sptvInit( SPTVertex* this, ShortestPathTree *spt, Vertex* mirror, int hop ) {
     this->degree_out = 0;
-    this->outgoing = liNew( LI_NO_DATA ) ;
+    this->outgoing = sptAllocateListNode( spt, LI_NO_DATA ) ;
     this->parentedge = LI_NO_DATA;
     
     this->state = NULL;
@@ -585,9 +583,6 @@ sptvGut( SPTVertex* this, ShortestPathTree *spt ) {
       SPTEdge *next_edge = sptGetEdgeByIndex( spt, next_edge_ix );
       spteDestroy( next_edge, next_edge_ix );
     }
-
-    //free the list dummy-heads that remain
-    free(this->outgoing);
 
     //free state
     if( this->state ) {
@@ -625,7 +620,7 @@ sptvSetParent( ShortestPathTree *spt, SPTVertex* this, SPTVertex* parent, EdgePa
     }
 
     //add it to the outgoing list of the parent
-    ListNode* outlistnode = liNew( link_ix );
+    ListNode* outlistnode = sptAllocateListNode( spt, link_ix );
     liInsertAfter( parent->outgoing, outlistnode );
     parent->degree_out++;
 
