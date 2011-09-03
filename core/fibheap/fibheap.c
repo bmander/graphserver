@@ -35,6 +35,7 @@ Boston, MA 02110-1301, USA.  */
 
 #include "../graphserver.h"
 #include "../graph.h"
+#include "../list.h"
 
 #define FIBHEAPKEY_MIN	LONG_MIN
 
@@ -46,7 +47,7 @@ static void fibheap_cut (fibheap_t, fibnode_t, fibnode_t);
 static void fibheap_cascading_cut (fibheap_t, fibnode_t);
 static fibnode_t fibheap_extr_min_node (fibheap_t);
 static int fibheap_compare (fibheap_t, fibnode_t, fibnode_t);
-static int fibheap_comp_data (fibheap_t, fibheapkey_t, void *, fibnode_t);
+static int fibheap_comp_data (fibheap_t, fibheapkey_t, uint32_t, fibnode_t);
 static fibnode_t fibnode_new (void);
 static void fibnode_insert_after (fibnode_t, fibnode_t);
 #define fibnode_insert_before(a, b) fibnode_insert_after (a->left, b)
@@ -84,7 +85,7 @@ fibheap_compare (fibheap_t heap, fibnode_t a, fibnode_t b)
 }
 
 static inline int
-fibheap_comp_data (fibheap_t heap, fibheapkey_t key, void *data, fibnode_t b)
+fibheap_comp_data (fibheap_t heap, fibheapkey_t key, uint32_t data, fibnode_t b)
 {
   struct fibnode a;
 
@@ -96,7 +97,7 @@ fibheap_comp_data (fibheap_t heap, fibheapkey_t key, void *data, fibnode_t b)
 
 /* Insert DATA, with priority KEY, into HEAP.  */
 fibnode_t
-fibheap_insert (fibheap_t heap, fibheapkey_t key, void *data)
+fibheap_insert (fibheap_t heap, fibheapkey_t key, uint32_t data)
 {
   fibnode_t node;
 
@@ -121,12 +122,12 @@ fibheap_insert (fibheap_t heap, fibheapkey_t key, void *data)
 }
 
 /* Return the data of the minimum node (if we know it).  */
-void *
+uint32_t
 fibheap_min (fibheap_t heap)
 {
   /* If there is no min, we can't easily return it.  */
   if (heap->min == NULL)
-    return NULL;
+    return LI_NO_DATA;
   return heap->min->data;
 }
 
@@ -175,11 +176,11 @@ fibheap_union (fibheap_t heapa, fibheap_t heapb)
 }
 
 /* Extract the data of the minimum node from HEAP.  */
-void *
+uint32_t
 fibheap_extract_min (fibheap_t heap)
 {
   fibnode_t z;
-  void *ret = NULL;
+  uint32_t ret = LI_NO_DATA;
 
   /* If we don't have a min set, it means we have no nodes.  */
   if (heap->min != NULL)
@@ -195,11 +196,11 @@ fibheap_extract_min (fibheap_t heap)
 }
 
 /* Replace both the KEY and the DATA associated with NODE.  */
-void *
+uint32_t
 fibheap_replace_key_data (fibheap_t heap, fibnode_t node,
-                          fibheapkey_t key, void *data)
+                          fibheapkey_t key, uint32_t data)
 {
-  void *odata;
+  uint32_t odata;
   fibheapkey_t okey;
   fibnode_t y;
 
@@ -208,7 +209,7 @@ fibheap_replace_key_data (fibheap_t heap, fibnode_t node,
      for now.  */
   if (fibheap_comp_data (heap, key, data, node) > 0) {
     fprintf( stderr, "Unhandled case of fibheap key increase: bailing\n");
-    return NULL;
+    return LI_NO_DATA;
   }
 
   odata = node->data;
@@ -236,8 +237,8 @@ fibheap_replace_key_data (fibheap_t heap, fibnode_t node,
 }
 
 /* Replace the DATA associated with NODE.  */
-void *
-fibheap_replace_data (fibheap_t heap, fibnode_t node, void *data)
+uint32_t
+fibheap_replace_data (fibheap_t heap, fibnode_t node, uint32_t data)
 {
   return fibheap_replace_key_data (heap, node, node->key, data);
 }
@@ -252,10 +253,10 @@ fibheap_replace_key (fibheap_t heap, fibnode_t node, fibheapkey_t key)
 }
 
 /* Delete NODE from HEAP.  */
-void *
+uint32_t
 fibheap_delete_node (fibheap_t heap, fibnode_t node)
 {
-  void *ret = node->data;
+  uint32_t ret = node->data;
 
   /* To perform delete, we just make it the min key, and extract.  */
   fibheap_replace_key (heap, node, FIBHEAPKEY_MIN);

@@ -41,6 +41,7 @@ Boston, MA 02110-1301, USA.  */
 #define _FIBHEAP_H_
 
 #include "stdio.h"
+#include <stdint.h>
 
 typedef long fibheapkey_t;
 //typedef double fibheapkey_t;
@@ -59,7 +60,7 @@ typedef struct fibnode
   struct fibnode *left;
   struct fibnode *right;
   fibheapkey_t key;
-  void *data;
+  uint32_t data;
 #if defined (__GNUC__) && (!defined (SIZEOF_INT) || SIZEOF_INT < 4)
   __extension__ unsigned long int degree : 31;
   __extension__ unsigned long int mark : 1;
@@ -70,17 +71,17 @@ typedef struct fibnode
 } *fibnode_t;
 
 extern fibheap_t fibheap_new (void);
-extern fibnode_t fibheap_insert (fibheap_t, fibheapkey_t, void *);
+extern fibnode_t fibheap_insert (fibheap_t, fibheapkey_t, uint32_t);
 extern int fibheap_empty (fibheap_t);
 extern fibheapkey_t fibheap_min_key (fibheap_t);
 extern fibheapkey_t fibheap_replace_key (fibheap_t, fibnode_t,
                                          fibheapkey_t);
-extern void *fibheap_replace_key_data (fibheap_t, fibnode_t,
-                                       fibheapkey_t, void *);
-extern void *fibheap_extract_min (fibheap_t);
-extern void *fibheap_min (fibheap_t);
-extern void *fibheap_replace_data (fibheap_t, fibnode_t, void *);
-extern void *fibheap_delete_node (fibheap_t, fibnode_t);
+extern uint32_t fibheap_replace_key_data (fibheap_t, fibnode_t,
+                                       fibheapkey_t, uint32_t);
+extern uint32_t fibheap_extract_min (fibheap_t);
+extern uint32_t fibheap_min (fibheap_t);
+extern uint32_t fibheap_replace_data (fibheap_t, fibnode_t, uint32_t);
+extern uint32_t fibheap_delete_node (fibheap_t, fibnode_t);
 extern void fibheap_delete (fibheap_t);
 extern fibheap_t fibheap_union (fibheap_t, fibheap_t);
 

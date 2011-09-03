@@ -12,6 +12,7 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
   // iteration Variables
   Vertex *u, *v;
   SPTVertex *spt_u, *spt_v;
+  uint32_t spt_u_ix, spt_v_ix;
   State *du, *dv;
   int count = 1;
 
@@ -32,12 +33,13 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
     
   // return Tree
   ShortestPathTree* spt = sptNew();
-  spt_u = sptAddVertex( spt, origin_v, 0 );
+  spt_u_ix = sptAddVertexIndex( spt, origin_v, 0);
+  spt_u = sptGetVertexByIndex( spt, spt_u_ix );
   spt_u->state = init_state;
   spt_u->mirror = origin_v;
   // priority Queue
   fibheap_t q = fibheap_new();
-  spt_u->fibnode = fibheap_insert( q, 0, (void*)spt_u );
+  spt_u->fibnode = fibheap_insert( q, 0, spt_u_ix );
 
 /*
  *  CENTRAL ITERATION
@@ -49,7 +51,8 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
   while( !fibheap_empty( q ) ) {
 
     // get the closest vertex not yet reached
-    spt_u = (SPTVertex*)fibheap_extract_min( q );
+    spt_u_ix = fibheap_extract_min( q );
+    spt_u = sptGetVertexByIndex( spt, spt_u_ix );
     u = spt_u->mirror;
 
     // end search if reached destination vertex
@@ -134,9 +137,10 @@ gShortestPathTreeRetro( Graph* this, char *from, char *to, State* init_state, Wa
         // if this is the first time v has been reached
         if( !spt_v ) {
           // copy v over to the SPT
-          spt_v = sptAddVertex( spt, v, spt_u->hop+1 );        
+          spt_v_ix = sptAddVertexIndex( spt, v, spt_u->hop+1 );
+          spt_v = sptGetVertexByIndex( spt, spt_v_ix );        
 
-          spt_v->fibnode = fibheap_insert( q, new_w, (void*)spt_v );
+          spt_v->fibnode = fibheap_insert( q, new_w, spt_v_ix );
           count++;
         } else {
           fibheap_replace_key( q, spt_v->fibnode, new_w );
