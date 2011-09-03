@@ -1,5 +1,5 @@
 
-SRCS = testsetparent.c deadend.c hops.c streetprofile.c testdestroystates.c test_crossing.c testheap.c testrealloc.c testbasic.c
+SRCS = testsetparent.c deadend.c hops.c streetprofile.c testdestroystates.c test_crossing.c testheap.c testrealloc.c testbasic.c testaddedge.c
 TESTS = $(SRCS:.c=)
 BUILDDIR = build
 
