@@ -142,6 +142,9 @@ sptExpand(ShortestPathTree *this);
 ListNode*
 sptAllocateListNode( ShortestPathTree *this, uint32_t data ) ;
 
+SPTVertex*
+sptGetVertexByIndex( ShortestPathTree* this, uint32_t index ) ;
+
 uint32_t
 sptAddVertexIndex( ShortestPathTree *this, Vertex *mirror, int hop );
 

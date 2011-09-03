@@ -366,31 +366,12 @@ sptAllocateListNode( ShortestPathTree *this, uint32_t data ) {
     return gAllocateListNode( (Graph*)this, data );
 }
 
-SPTVertex*
-sptAddVertex( ShortestPathTree *this, Vertex *mirror, int hop ) {
-  SPTVertex* exists = sptGetVertex( this, mirror->label );
-
-  if( !exists ) {
-    exists = &(this->vertices_store[this->n]);
-    sptvInit( exists, this, mirror, hop );
-
-    hashtable_insert_string( this->vertices, mirror->label, this->n );
-
-    this->n++;
-    if(this->n >= this->cap) {
-        sptExpand(this);
-    }
-  }
-
-  return exists;
-}
-
 uint32_t
 sptAddVertexIndex( ShortestPathTree *this, Vertex *mirror, int hop ) {
 
   uint32_t exists = sptGetVertexIndex( this, mirror->label );
 
-  if( exists != LI_NO_DATA ) {
+  if( exists == LI_NO_DATA ) {
     exists = this->n;
 
     SPTVertex *vv = &(this->vertices_store[exists]);
@@ -405,6 +386,12 @@ sptAddVertexIndex( ShortestPathTree *this, Vertex *mirror, int hop ) {
   }
 
   return exists;
+}
+
+SPTVertex*
+sptAddVertex( ShortestPathTree *this, Vertex *mirror, int hop ) {
+  uint32_t ix = sptAddVertexIndex( this, mirror, hop );
+  return sptGetVertexByIndex( this, ix );
 }
 
 void
