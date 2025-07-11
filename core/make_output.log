@@ -1,0 +1,94 @@
+cc graph.c -c -o graph.o -g -fno-strict-aliasing -O2 -fPIC -Wall
+In file included from graphserver.h:91,
+                 from graph.c:1:
+servicecalendar.h:83:1: warning: inline function ‘spNormalizeTime’ declared but never defined
+   83 | spNormalizeTime( ServicePeriod* this, int timezone_offset, long time ) ;
+      | ^~~~~~~~~~~~~~~
+In file included from graphserver.h:88:
+edgetypes/combination.h:39:1: warning: inline function ‘comboWalkBack’ declared but never defined
+   39 | comboWalkBack(EdgePayload* superthis, State* param, WalkOptions* options) ;
+      | ^~~~~~~~~~~~~
+edgetypes/combination.h:36:1: warning: inline function ‘comboWalk’ declared but never defined
+   36 | comboWalk(EdgePayload* superthis, State* param, WalkOptions* options) ;
+      | ^~~~~~~~~
+In file included from graphserver.h:86:
+edgetypes/tripalight.h:74:1: warning: inline function ‘alWalkBack’ declared but never defined
+   74 | alWalkBack(EdgePayload* this, State* state, WalkOptions* options);
+      | ^~~~~~~~~~
+edgetypes/tripalight.h:71:1: warning: inline function ‘alWalk’ declared but never defined
+   71 | alWalk(EdgePayload* this, State* state, WalkOptions* options);
+      | ^~~~~~
+In file included from graphserver.h:85:
+edgetypes/crossing.h:42:1: warning: inline function ‘crWalkBack’ declared but never defined
+   42 | crWalkBack( EdgePayload* superthis, State* state, WalkOptions* options );
+      | ^~~~~~~~~~
+edgetypes/crossing.h:39:1: warning: inline function ‘crWalk’ declared but never defined
+   39 | crWalk( EdgePayload* superthis, State* state, WalkOptions* options );
+      | ^~~~~~
+In file included from graphserver.h:84:
+edgetypes/headwayalight.h:57:1: warning: inline function ‘haWalkBack’ declared but never defined
+   57 | haWalkBack( EdgePayload* superthis, State* state, WalkOptions* options );
+      | ^~~~~~~~~~
+edgetypes/headwayalight.h:54:1: warning: inline function ‘haWalk’ declared but never defined
+   54 | haWalk( EdgePayload* superthis, State* state, WalkOptions* options );
+      | ^~~~~~
+In file included from graphserver.h:83:
+edgetypes/headwayboard.h:57:1: warning: inline function ‘hbWalkBack’ declared but never defined
+   57 | hbWalkBack( EdgePayload* superthis, State* state, WalkOptions* options );
+      | ^~~~~~~~~~
+edgetypes/headwayboard.h:54:1: warning: inline function ‘hbWalk’ declared but never defined
+   54 | hbWalk( EdgePayload* superthis, State* state, WalkOptions* options );
+      | ^~~~~~
+In file included from graphserver.h:82:
+edgetypes/tripboard.h:73:1: warning: inline function ‘tbWalkBack’ declared but never defined
+   73 | tbWalkBack( EdgePayload* superthis, State* state, WalkOptions* options );
+      | ^~~~~~~~~~
+edgetypes/tripboard.h:70:1: warning: inline function ‘tbWalk’ declared but never defined
+   70 | tbWalk( EdgePayload* superthis, State* state, WalkOptions* options );
+      | ^~~~~~
+In file included from graphserver.h:81:
+edgetypes/headway.h:33:1: warning: inline function ‘headwayWalkBack’ declared but never defined
+   33 | headwayWalkBack(EdgePayload* this, State* param, WalkOptions* options);
+      | ^~~~~~~~~~~~~~~
+edgetypes/headway.h:30:1: warning: inline function ‘headwayWalk’ declared but never defined
+   30 | headwayWalk(EdgePayload* this, State* param, WalkOptions* options);
+      | ^~~~~~~~~~~
+In file included from graphserver.h:80:
+edgetypes/elapsetime.h:25:1: warning: inline function ‘elapseTimeWalkBack’ declared but never defined
+   25 | elapseTimeWalkBack(EdgePayload* superthis, State* param, WalkOptions* options);
+      | ^~~~~~~~~~~~~~~~~~
+edgetypes/elapsetime.h:22:1: warning: inline function ‘elapseTimeWalk’ declared but never defined
+   22 | elapseTimeWalk(EdgePayload* superthis, State* param, WalkOptions* options);
+      | ^~~~~~~~~~~~~~
+In file included from graphserver.h:79:
+edgetypes/wait.h:24:1: warning: inline function ‘waitWalkBack’ declared but never defined
+   24 | waitWalkBack(EdgePayload* superthis, State* param, WalkOptions* options);
+      | ^~~~~~~~~~~~
+edgetypes/wait.h:21:1: warning: inline function ‘waitWalk’ declared but never defined
+   21 | waitWalk(EdgePayload* superthis, State* param, WalkOptions* options);
+      | ^~~~~~~~
+In file included from graphserver.h:78:
+edgetypes/egress.h:26:1: warning: inline function ‘egressWalkBack’ declared but never defined
+   26 | egressWalkBack(EdgePayload* superthis, State* state, WalkOptions* options);
+      | ^~~~~~~~~~~~~~
+edgetypes/egress.h:23:1: warning: inline function ‘egressWalk’ declared but never defined
+   23 | egressWalk(EdgePayload* superthis, State* state, WalkOptions* options);
+      | ^~~~~~~~~~
+In file included from graphserver.h:77:
+edgetypes/street.h:35:1: warning: inline function ‘streetWalkBack’ declared but never defined
+   35 | streetWalkBack(EdgePayload* superthis, State* state, WalkOptions* options);
+      | ^~~~~~~~~~~~~~
+edgetypes/street.h:32:1: warning: inline function ‘streetWalk’ declared but never defined
+   32 | streetWalk(EdgePayload* superthis, State* state, WalkOptions* options);
+      | ^~~~~~~~~~
+In file included from graphserver.h:76:
+edgetypes/link.h:25:1: warning: inline function ‘linkWalkBack’ declared but never defined
+   25 | linkWalkBack(EdgePayload* this, State* param, WalkOptions* options);
+      | ^~~~~~~~~~~~
+edgetypes/link.h:22:1: warning: inline function ‘linkWalk’ declared but never defined
+   22 | linkWalk(EdgePayload* this, State* param, WalkOptions* options);
+      | ^~~~~~~~
+cc graph.c -MM -g -fno-strict-aliasing -O2 -fPIC -Wall > graph.d
+cc hashtable/hashtable_itr.c -c -o hashtable/hashtable_itr.o -g -fno-strict-aliasing -O2 -fPIC -Wall
+cc hashtable/hashtable_itr.c -MM -g -fno-strict-aliasing -O2 -fPIC -Wall > hashtable/hashtable_itr.d
+cc -shared -o libgraphserver.so fibheap/dirfibheap.o fibheap/fibheap.o graph.o hashtable/hashtable.o hashtable/hashtable_gs.o hashtable/hashtable_itr.o hashtable/hashtable_utility.o state.o walkoptions.o edgetypes/elapsehelpers.o edgetypes/link.o edgetypes/street.o edgetypes/egress.o edgetypes/wait.o edgetypes/elapsetime.o edgetypes/headway.o edgetypes/tripboard.o edgetypes/headwayboard.o edgetypes/headwayalight.o edgetypes/crossing.o edgetypes/tripalight.o edgetypes/custompayload.o edgetypes/combination.o edgepayload.o list.o servicecalendar.o timezone.o path.o vector.o contraction.o heap.o -L. -Bsymbolic-functions -Wall -ldl -lm -lc -shared

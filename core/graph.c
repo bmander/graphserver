@@ -408,12 +408,12 @@ vSetParent( Vertex* this, Vertex* parent, EdgePayload* payload ) {
     return vLink( parent, this, payload );
 }
 
-ListNode*
+inline ListNode*
 vGetOutgoingEdgeList( Vertex* this ) {
     return this->outgoing->next; //the first node is a dummy
 }
 
-ListNode*
+inline ListNode*
 vGetIncomingEdgeList( Vertex* this ) {
     return this->incoming->next; //the first node is a dummy
 }
