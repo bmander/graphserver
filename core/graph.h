@@ -140,10 +140,10 @@ vLink(Vertex* this, Vertex* to, EdgePayload* payload) ;
 Edge*
 vSetParent( Vertex* this, Vertex* parent, EdgePayload* payload );
 
-inline ListNode*
+ListNode*
 vGetOutgoingEdgeList( Vertex* this );
 
-inline ListNode*
+ListNode*
 vGetIncomingEdgeList( Vertex* this );
 
 void
@@ -175,10 +175,10 @@ sptvLink(SPTVertex* this, SPTVertex* to, EdgePayload* payload) ;
 Edge*
 sptvSetParent( SPTVertex* this, SPTVertex* parent, EdgePayload* payload );
 
-inline ListNode*
+ListNode*
 sptvGetOutgoingEdgeList( SPTVertex* this );
 
-inline ListNode*
+ListNode*
 sptvGetIncomingEdgeList( SPTVertex* this );
 
 void

@@ -408,12 +408,12 @@ vSetParent( Vertex* this, Vertex* parent, EdgePayload* payload ) {
     return vLink( parent, this, payload );
 }
 
-inline ListNode*
+ListNode*
 vGetOutgoingEdgeList( Vertex* this ) {
     return this->outgoing->next; //the first node is a dummy
 }
 
-inline ListNode*
+ListNode*
 vGetIncomingEdgeList( Vertex* this ) {
     return this->incoming->next; //the first node is a dummy
 }
@@ -477,12 +477,12 @@ sptvSetParent( SPTVertex* this, SPTVertex* parent, EdgePayload* payload ) {
     return vSetParent( (Vertex*)this, (Vertex*)parent, payload );
 }
 
-inline ListNode*
+ListNode*
 sptvGetOutgoingEdgeList( SPTVertex* this ) {
     return vGetOutgoingEdgeList( (Vertex*)this );
 }
 
-inline ListNode*
+ListNode*
 sptvGetIncomingEdgeList( SPTVertex* this ) {
     return vGetIncomingEdgeList( (Vertex*)this );
 }
