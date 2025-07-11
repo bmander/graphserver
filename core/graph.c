@@ -477,12 +477,12 @@ sptvSetParent( SPTVertex* this, SPTVertex* parent, EdgePayload* payload ) {
     return vSetParent( (Vertex*)this, (Vertex*)parent, payload );
 }
 
-inline ListNode*
+ListNode*
 sptvGetOutgoingEdgeList( SPTVertex* this ) {
     return vGetOutgoingEdgeList( (Vertex*)this );
 }
 
-inline ListNode*
+ListNode*
 sptvGetIncomingEdgeList( SPTVertex* this ) {
     return vGetIncomingEdgeList( (Vertex*)this );
 }
