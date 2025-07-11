@@ -137,7 +137,7 @@ class RouteServer(Servable):
        
         try:
           vertices, edges = spt.path( dest )
-	except Exception, e:
+	except Exception as e:
 	  return json.dumps( {'error':str(e)} )
 
         performance['path_query_time'] = time.time()-t0

@@ -209,28 +209,28 @@ class GraphDatabase:
 
 def main():
     if len(argv) < 2:
-        print "usage: python graphdb.py [vertex1, [vertex2]]"
+        print("usage: python graphdb.py [vertex1, [vertex2]]")
         return
     
     graphdb_filename = argv[1]
     graphdb = GraphDatabase( graphdb_filename )
     
     if len(argv) == 2:
-        print "vertices:"
+        print("vertices:")
         for vertex_label in sorted( graphdb.all_vertex_labels() ):
-            print vertex_label
-        print "resources:"
+            print(vertex_label)
+        print("resources:")
         for name, resource in graphdb.resources():
-            print name, resource
+            print(name, resource)
         return
     
     vertex1 = argv[2]
     for vertex1, vertex2, edgetype in graphdb.all_outgoing( vertex1 ):
-        print "%s -> %s\n\t%s"%(vertex1, vertex2, repr(edgetype))
+        print("%s -> %s\n\t%s"%(vertex1, vertex2, repr(edgetype)))
         
         if len(argv) == 4:
             s0 = State(1,int(argv[3]))
-            print "\t"+str(edgetype.walk( s0 ))
+            print("\t"+str(edgetype.walk( s0 )))
 
 if __name__=='__main__':
     main()

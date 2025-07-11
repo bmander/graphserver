@@ -13,22 +13,22 @@ Learn more about Graphserver at [http://graphserver.github.com/graphserver/](htt
 ## INSTALLATION
 
 ### Prerequisites
-Python 2.6+ (or 2.5+ for only graphserver.core)
+Python 3.6+ 
 
 ### Build
 
     $ cd pygs
-    $ sudo python2.6 setup.py install
+    $ sudo python3 setup.py install
 
 setup.py installs several executables.  On debian these go into /usr/local/bin/*.
 On Mac OS X, these go into
-/Library/Frameworks/Python.framework/Versions/2.6/bin/*
+/Library/Frameworks/Python.framework/Versions/3.x/bin/*
 
 ### Test a successful installation:
-    $ python2.6 -c "import graphserver.core; graphserver.core.Graph(); print 'Graphserver can be imported'"
+    $ python3 -c "import graphserver.core; graphserver.core.Graph(); print('Graphserver can be imported')"
 
 ### Run the test harness (in verbose mode):
-    $ python2.6 setup.py nosetests -v
+    $ python3 setup.py nosetests -v
 
 ## TOOLS
 

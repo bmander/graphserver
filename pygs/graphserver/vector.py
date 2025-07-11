@@ -1,4 +1,4 @@
-from gsdll import CShadow, lgs
+from .gsdll import CShadow, lgs
 
 from ctypes import Structure, c_int, c_void_p, pointer, addressof, byref
 

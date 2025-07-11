@@ -10,8 +10,8 @@ from time import asctime, gmtime
 from time import time as now
 import pytz
 import calendar
-from util import TimeHelpers
-from vector import Vector
+from .util import TimeHelpers
+from .vector import Vector
 
 
 def indent( a, n ):
@@ -19,7 +19,7 @@ def indent( a, n ):
         
 #TODO this is probably defined somewhere else, too
 def unparse_secs(secs):
-    return "%02d:%02d:%02d"%(secs/3600, (secs%3600)/60, secs%60)
+    return "%02d:%02d:%02d"%(secs//3600, (secs%3600)//60, secs%60)
     
 """
 
@@ -201,9 +201,9 @@ class Graph(CShadow):
             ret = self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(maxtime), c_int(hoplimit), c_long(weightlimit) )
         
         if ret is None:
-	  raise Exception( "Could not create shortest path tree" ) # this shouldn't happen; TODO: more descriptive error
+          raise Exception( "Could not create shortest path tree" ) # this shouldn't happen; TODO: more descriptive error
 
-	return ret
+        return ret
 
     def shortest_path_tree_retro(self, fromv, tov, finalstate, walk_options=None, mintime=0, hoplimit=1000000, weightlimit=2000000000):
         #Graph* gShortestPathTree( Graph* this, char *from, char *to, State* init_state )
@@ -219,7 +219,7 @@ class Graph(CShadow):
             ret = self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime), c_int(hoplimit), c_long(weightlimit) )
 
         if ret is None:
-	  raise Exception( "Could not create shortest path tree" ) # this shouldn't happen; TODO: more descriptive error
+          raise Exception( "Could not create shortest path tree" ) # this shouldn't happen; TODO: more descriptive error
 
         return ret
 
@@ -362,7 +362,7 @@ class ShortestPathTree(CShadow):
         path_pointer = lgs.sptPathRetro( self.soul, origin )
         
         if path_pointer is None:
-	    raise Exception( "A path to %s could not be found"%origin )
+            raise Exception( "A path to %s could not be found"%origin )
             
         path = Path.from_address( path_pointer )
         
@@ -755,7 +755,7 @@ class GenericPyPayload(EdgePayload):
         return self.walk_back(State.from_pointer(stateptr), WalkOptions.from_pointer(walkoptionsptr)).soul
 
     def _cfree(self):
-        #print "Freeing %s..." % self
+        #print("Freeing %s..." % self)
         # After this is freed in the C world, this can be freed
         Py_DECREF(self)
         self.soul = None
@@ -776,10 +776,10 @@ class NoOpPyPayload(GenericPyPayload):
     
     """ Dummy class."""
     def walk_impl(self, state, walkopts):
-        print "%s walking..." % self
+        print("%s walking..." % self)
         
     def walk_back_impl(self, state, walkopts):
-        print "%s walking back..." % self
+        print("%s walking back..." % self)
         
         
     def to_xml(self):

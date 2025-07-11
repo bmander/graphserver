@@ -247,9 +247,9 @@ class OSM:
 
     def find_nearest_node(self, lng, lat):
         """ Brute force effort to find the nearest start or end node based on lat/lng distances."""
-        best = self.nodes[self.ways[self.ways.keys()[0]].nd_ids[0]]
+        best = self.nodes[self.ways[list(self.ways.keys())[0]].nd_ids[0]]
         bdist = dist(best.lon, best.lat, lng, lat)
-        for id, way in self.ways.iteritems():
+        for id, way in self.ways.items():
             for i in (0,-1):
                 nd = self.nodes[way.nd_ids[i]]
                 d = dist(lng, lat, nd.lon, nd.lat)

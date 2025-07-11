@@ -9,7 +9,7 @@ fp.close()
 
 fp = open("map.csv", "w")
 
-for wayid, way in osm.ways.iteritems():
+for wayid, way in osm.ways.items():
     if 'highway' in way.tags:
         fp.write("%s,%s,%s,%f\n"%(wayid, way.fromv, way.tov, way.length(osm.nodes)))
         
