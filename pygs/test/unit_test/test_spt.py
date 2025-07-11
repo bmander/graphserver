@@ -128,7 +128,7 @@ class TestShortestPathTree(unittest.TestCase):
         wo = WalkOptions()
         sprime = e.walk(State(spt.numagencies,0), wo)
         wo.destroy()
-        print str(sprime)
+        print(str(sprime))
         assert str(sprime)=="<state time='3953' weight='5538153' dist_walked='24000.0' num_transfers='0' trip_id='None' stop_sequence='-1'></state>"
 
         spt.destroy()

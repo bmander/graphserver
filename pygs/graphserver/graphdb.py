@@ -63,7 +63,7 @@ class GraphDatabase:
         c = self.conn.cursor()
         
         n = len(graph.vertices)
-	nseg = max(n,100)
+        nseg = max(n,100)
         for i, vv in enumerate( graph.vertices ):
             if reporter and i%(nseg//100)==0: reporter.write( "%d/%d vertices dumped\n"%(i,n) )
             

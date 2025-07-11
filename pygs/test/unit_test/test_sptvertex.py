@@ -28,7 +28,7 @@ class TestSPTVertex(unittest.TestCase):
         
     def test_label(self):
         v=SPTVertex( Vertex("home") )
-        print v.label
+        print(v.label)
         assert v.label == "home"
     
     def test_incoming(self):

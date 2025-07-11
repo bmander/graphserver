@@ -79,7 +79,7 @@ class Way:
         def slice_array(ar, dividers):
             for i in range(1,len(ar)-1):
                 if dividers[ar[i]]>1:
-                    #print "slice at %s"%ar[i]
+                    #print("slice at %s"%ar[i])
                     left = ar[:i+1]
                     right = ar[i:]
 

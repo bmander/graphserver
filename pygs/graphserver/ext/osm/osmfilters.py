@@ -39,7 +39,7 @@ class CalculateWayLengthFilter(OSMDBFilter):
 
     def filter(self, db):
         way_length = {}
-        print "Calculating length."
+        print("Calculating length.")
         for way in db.ways():
             g = way.geom
             l = 0
@@ -47,13 +47,13 @@ class CalculateWayLengthFilter(OSMDBFilter):
                 l += dist_earth(g[i][1], g[i][0], g[i+1][1], g[i+1][0])
             way_length[way.id] = l
 
-        print "Updating %s ways" % len(way_length)
+        print("Updating %s ways" % len(way_length))
         c = db.cursor()
         for w,l in way_length.items():
             c.execute("UPDATE ways set length = ? where id = ?", (l,w))
         db.conn.commit()
         c.close()
-        print "Done"
+        print("Done")
 
 class AddFromToColumnsFilter(OSMDBFilter):
     def setup(self, db, *args):
@@ -70,17 +70,17 @@ class AddFromToColumnsFilter(OSMDBFilter):
         for way in db.ways():
             add_list.append((way.nds[0], way.nds[-1], way.id))
 
-        print "Updating %s ways" % len(add_list)
+        print("Updating %s ways" % len(add_list))
         c = db.cursor()
         for a in add_list:
             c.execute("UPDATE ways set from_v = ?, to_v = ? where id = ?", a)
         db.conn.commit()
         c.close()
-        print "Done"
+        print("Done")
 
 class DeleteHighwayTypesFilter(OSMDBFilter):
     def run(self, db, *types):
-        print "Types",types
+        print("Types",types)
         purge_list = []
         for way in db.ways():
             if 'highway' in way.tags and way.tags['highway'] in types:
@@ -92,7 +92,7 @@ class DeleteHighwayTypesFilter(OSMDBFilter):
             c.execute(query)
         db.conn.commit()
         c.close()
-        print "Deleted all %s highway types (%s ways)" % (", ".join(types), len(purge_list))
+        print("Deleted all %s highway types (%s ways)" % (", ".join(types), len(purge_list)))
         DeleteOrphanNodesFilter().run(db,None)
         
 class DeleteOrphanNodesFilter(OSMDBFilter):
@@ -115,7 +115,7 @@ class DeleteOrphanNodesFilter(OSMDBFilter):
             c.execute(query)
         db.conn.commit()
         c.close()
-        print "Deleted %s nodes of %d" % (len(purge_list), len(node_ids))
+        print("Deleted %s nodes of %d" % (len(purge_list), len(node_ids)))
         
 
 class PurgeDisjunctGraphsFilter(OSMDBFilter):
@@ -152,7 +152,7 @@ class PurgeDisjunctGraphsFilter(OSMDBFilter):
             c.execute(query)
         db.conn.commit()
         c.close()
-        print "Deleted %s ways" % (len(purge_list))
+        print("Deleted %s ways" % (len(purge_list)))
         DeleteOrphanNodesFilter().run(db,*[])
                 
         f.teardown(db)
@@ -200,18 +200,18 @@ class FindDisjunctGraphsFilter(OSMDBFilter):
         t0 = time.time()
         
         vertices = {}
-        print "load vertices into memory"
+        print("load vertices into memory")
         for row in osmdb.execute("SELECT id from nodes"):
             g.add_vertex(str(row[0]))
             vertices[str(row[0])] = 0
 
-        print "load ways into memory"
+        print("load ways into memory")
         for way in osmdb.ways():
             g.add_edge(way.nds[0], way.nds[-1], Link())
             g.add_edge(way.nds[-1], way.nds[0], Link())
 
         t1 = time.time()
-        print "populating graph took: %f"%(t1-t0)
+        print("populating graph took: %f"%(t1-t0))
         t0 = t1
         
         iteration = 1
@@ -229,7 +229,7 @@ class FindDisjunctGraphsFilter(OSMDBFilter):
             spt.destroy()
             
             t1 = time.time()
-            print "pass %s took: %f"%(iteration, t1-t0)
+            print("pass %s took: %f"%(iteration, t1-t0))
             t0 = t1
             iteration += 1
         c.close()
@@ -238,7 +238,7 @@ class FindDisjunctGraphsFilter(OSMDBFilter):
         g.destroy()
         # audit
         for gnum, count in osmdb.execute("SELECT graph_num, count(*) FROM graph_nodes GROUP BY graph_num"):
-            print "FOUND: %s=%s" % (gnum, count)
+            print("FOUND: %s=%s" % (gnum, count))
         
     def visualize(self, db, out_filename, renderer="/usr/local/bin/prender/renderer"):
         
@@ -280,7 +280,7 @@ class FindDisjunctGraphsFilter(OSMDBFilter):
         width = float(r-l)/WIDTH
     
         for i, w in enumerate(db.ways()):
-            if i%1000==0: print "way %d"%i
+            if i%1000==0: print("way %d"%i)
             
             g = w.geom
             group = node_group[w.nds[0]]
@@ -297,7 +297,7 @@ class FindDisjunctGraphsFilter(OSMDBFilter):
 
         mr.saveLocal(out_filename)
         mr.stop()
-        print "Done"
+        print("Done")
         
 class StitchDisjunctGraphs(OSMDBFilter):
     
@@ -309,7 +309,7 @@ class StitchDisjunctGraphs(OSMDBFilter):
             
             # get all the nodes that appear at that location
             #ids = map(lambda x:x[0], osmdb.execute("SELECT id FROM nodes WHERE lat=? AND lon=?", (lat,lon)))
-            #print nds
+            #print(nds)
             nds = nds.split(",")
             first = nds.pop(0)
             alias[nds] = nds
@@ -320,27 +320,27 @@ class StitchDisjunctGraphs(OSMDBFilter):
                     
         # delete all duplicate nodes
         dupes = alias.keys()
-        print "%d dupe nodes"%len(dupes)
-        print "Deleting dupe nodes"
+        print("%d dupe nodes"%len(dupes))
+        print("Deleting dupe nodes")
         query = "DELETE FROM nodes WHERE id IN (%s)"%(",".join(dupes),)
         c = osmdb.cursor()
         c.execute(query)
         osmdb.conn.commit()
         c.close()
         
-        print "Replacing references to dupe nodes"
+        print("Replacing references to dupe nodes")
         c = osmdb.cursor()
         # replace reference in nd lists
         for i, (id, nds_str) in enumerate( osmdb.execute("SELECT id, nds FROM ways") ):
-            if i%1000==0: print "way %d"%i
+            if i%1000==0: print("way %d"%i)
             
             nds = json.loads(nds_str)
             if nds[0] in alias:
                 nds[0] = alias[nds[0]]
-                print "replace header"
+                print("replace header")
             if nds[-1] in alias:
                 nds[-1] = alias[nds[-1]]
-                print "replace footer"
+                print("replace footer")
             
             
             c.execute( "UPDATE ways SET nds=? WHERE id=?", (json.dumps(nds), id) )
@@ -359,18 +359,18 @@ def stitch_and_visualize(dbname,mapname):
 def main():
     from sys import argv
     if len(argv) < 4:
-        print "%s <Filter Name> <run|rerun|visualize> <osmdb_file> [<filter args> ...]" % argv[0]
-        print "Filters:"
+        print("%s <Filter Name> <run|rerun|visualize> <osmdb_file> [<filter args> ...]" % argv[0])
+        print("Filters:")
         for k,v in globals().items():
             if type(v) == type and issubclass(v,OSMDBFilter):
-                print " -- %s" % k
+                print(" -- %s" % k)
         exit()
     
     filter_cls, mode, osmdb_file = argv[1:4]
     
     try:
         f = globals()[filter_cls]()
-    except KeyError, e:
+    except KeyError as e:
         raise Exception("Filter not found.")
     
     db = OSMDB(osmdb_file)

@@ -1131,7 +1131,7 @@ class Server(object):
         is passed at initialization time, this must be implemented by
         a subclass.
         """
-        raise NotImplementedError, self.__class__.__name__ + '.handler'
+        raise NotImplementedError(self.__class__.__name__ + '.handler')
 
     def error(self, req):
         """
@@ -1240,7 +1240,7 @@ class WSGIServer(Server):
                 try:
                     if headers_sent:
                         # Re-raise if too late
-                        raise exc_info[0], exc_info[1], exc_info[2]
+                        raise exc_info[1].with_traceback(exc_info[2])
                 finally:
                     exc_info = None # avoid dangling circular ref
             else:
@@ -1314,7 +1314,7 @@ if __name__ == '__main__':
         names.sort()
         for name in names:
             yield '<tr><td>%s</td><td>%s</td></tr>\n' % (
-                name, cgi.escape(`environ[name]`))
+                name, cgi.escape(repr(environ[name])))
 
         form = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ,
                                 keep_blank_values=1)

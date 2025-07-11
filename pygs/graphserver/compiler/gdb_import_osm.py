@@ -51,11 +51,11 @@ def edges_from_osmdb(osmdb, vertex_namespace, slogs, profiledb=None):
             s1.slog = s2.slog = slog
         
         # Add the forward edge and the return edge if the edge is not oneway
-	yield vertex1_label, vertex2_label, s1
+        yield vertex1_label, vertex2_label, s1
 
         oneway = tags.get("oneway")
         if oneway != "true" and oneway != "yes":
-	    yield vertex2_label, vertex1_label, s2
+            yield vertex2_label, vertex1_label, s2
 
 def gdb_import_osm(gdb, osmdb, vertex_namespace, slogs, profiledb=None):
     cursor = gdb.get_cursor()
@@ -74,7 +74,7 @@ def gdb_import_osm(gdb, osmdb, vertex_namespace, slogs, profiledb=None):
             
     gdb.commit()
     
-    print "indexing vertices..."
+    print("indexing vertices...")
     gdb.index()
 
 def main():
@@ -98,12 +98,12 @@ def main():
     for slog_string in options.slog_strings:
         highway_type,slog_penalty = slog_string.split(":")
         slogs[highway_type] = float(slog_penalty)
-    print "slog values: %s"%slogs
+    print("slog values: %s"%slogs)
         
     graphdb_filename = args[0]
     osmdb_filename = args[1]
     
-    print "importing osmdb '%s' into graphdb '%s'"%(osmdb_filename, graphdb_filename)
+    print("importing osmdb '%s' into graphdb '%s'"%(osmdb_filename, graphdb_filename))
     
     profiledb = ProfileDB( options.profiledb_filename ) if options.profiledb_filename else None
     osmdb = OSMDB( osmdb_filename )
@@ -111,7 +111,7 @@ def main():
     
     gdb_import_osm(gdb, osmdb, options.namespace, slogs, profiledb);
     
-    print "done"
+    print("done")
 
 if __name__ == '__main__':
     main()

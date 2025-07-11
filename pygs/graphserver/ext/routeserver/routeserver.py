@@ -137,8 +137,8 @@ class RouteServer(Servable):
        
         try:
           vertices, edges = spt.path( dest )
-	except Exception as e:
-	  return json.dumps( {'error':str(e)} )
+        except Exception as e:
+          return json.dumps( {'error':str(e)} )
 
         performance['path_query_time'] = time.time()-t0
         
@@ -297,22 +297,22 @@ def main():
     vertex_reverse_geocoders = list(get_handler_instances( handler_definitions, 'vertex_reverse_geocoders' ) )
     
     # explain to the nice people which handlers were loaded
-    print "edge event handlers:"
+    print("edge event handlers:")
     for edge_event in edge_events:
-        print "   %s"%edge_event
-    print "vertex event handlers:"
+        print("   %s"%edge_event)
+    print("vertex event handlers:")
     for vertex_event in vertex_events:
-        print "   %s"%vertex_event
-    print "vertex reverse geocoders:"
+        print("   %s"%vertex_event)
+    print("vertex reverse geocoders:")
     for vertex_reverse_geocoder in vertex_reverse_geocoders:
-        print "   %s"%vertex_reverse_geocoder
+        print("   %s"%vertex_reverse_geocoder)
     
     # start up the routeserver
     gc = RouteServer(graphdb_filename, vertex_events, edge_events, vertex_reverse_geocoders)
     
     # serve as either an HTTP server or an fastCGI backend
     if options.socket:
-        print "Starting fastCGI backend serving at %s"%options.socket
+        print("Starting fastCGI backend serving at %s"%options.socket)
         WSGIServer(gc.wsgi_app(), bindAddress = options.socket).run()
     else:
         gc.run_test_server(port=int(options.port))

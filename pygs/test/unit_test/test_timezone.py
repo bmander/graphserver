@@ -46,7 +46,7 @@ class TestTimezone(unittest.TestCase):
         try:
             tz.utc_offset( -1 )
             raise Exception("never make it this far")
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "-1 lands within no timezone period"
             
         assert tz.utc_offset(0) == -8*3600
@@ -56,7 +56,7 @@ class TestTimezone(unittest.TestCase):
         try:
             tz.utc_offset( 101 )
             raise Exception("never make it this far")
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "101 lands within no timezone period"
             
     def test_add_multiple(self):
@@ -112,7 +112,7 @@ class TestTimezone(unittest.TestCase):
         try:
             tz.utc_offset(-1)
             raise Exception( "next make it this far" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "-1 lands within no timezone period"
             
         assert tz.utc_offset(0) == -8*3600
@@ -121,7 +121,7 @@ class TestTimezone(unittest.TestCase):
         try:
             tz.utc_offset(150)
             raise Exception( "next make it this far" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "150 lands within no timezone period"
             
         assert tz.utc_offset(550) == -8*3600
@@ -129,7 +129,7 @@ class TestTimezone(unittest.TestCase):
         try:
             tz.utc_offset(600)
             raise Exception( "next make it this far" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "600 lands within no timezone period"
             
     def test_generate(self):
@@ -139,8 +139,8 @@ class TestTimezone(unittest.TestCase):
         assert tz.utc_offset(1219863600) == -7*3600 #august 27, 2008, noon America/Los_Angeles
         assert tz.utc_offset(1199217600) == -8*3600 #january 1, 2008, noon America/Los_Angeles
         
-        print tz.utc_offset(1205056799) == -8*3600 #second before DST
-        print tz.utc_offset(1205056800) == -7*3600 #second after DST
+        print(tz.utc_offset(1205056799) == -8*3600 #second before DST)
+        print(tz.utc_offset(1205056800) == -7*3600 #second after DST)
         
     def test_pickle(self):
         tz = Timezone()

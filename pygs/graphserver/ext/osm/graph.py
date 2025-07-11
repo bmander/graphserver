@@ -21,25 +21,25 @@ class OSMGraph(Graph):
             self.osm = filename_osmobject_or_stream
             osm = self.osm
         else:
-            print "parsing OSM file"
+            print("parsing OSM file")
             osm = OSM(filename_osmobject_or_stream)
             self.osm = osm
             t1 = time.time()
-            print "parsing took: %f"%(t1-t0)
+            print("parsing took: %f"%(t1-t0))
             t0 = t1
 
-        print "load vertices into memory"
+        print("load vertices into memory")
         for nodeid in osm.nodes.keys():
             self.add_vertex( str(nodeid) )
 
-        print "load edges into memory"
+        print("load edges into memory")
         for way in osm.ways.values():
             if self.is_valid_way(way):
                 # need two copies of the payload
                 self.add_edge( str(way.fromv), str(way.tov), self.create_edgepayload(way) )
                 self.add_edge( str(way.tov), str(way.fromv), self.create_edgepayload(way) )
         t1 = time.time()
-        print "populating graph took: %f"%(t1-t0)
+        print("populating graph took: %f"%(t1-t0))
     
     def is_valid_way(self, way):
         return 'highway' in way.tags
@@ -52,7 +52,7 @@ class OSMGraph(Graph):
         t0 = time.time()
         spt = super(OSMGraph, self).shortest_path_tree( from_v, to_v, state)
         t1 = time.time()
-        print "shortest_path_tree took: %f"%(t1-t0)
+        print("shortest_path_tree took: %f"%(t1-t0))
         return spt
     
     def write_graph(self, fp, format="%(from)s:%(to)s:%(points)s\n", reproject=True, point_delim=","):

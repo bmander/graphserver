@@ -153,9 +153,9 @@ class StreetEvent:
         geometry_chunk = self.osmdb.edge( edge.payload.name )[5]
       
         if edge.payload.reverse_of_source:
-	    context['streetgeom'].extend( reversed( geometry_chunk ) )
-	else:
-	    context['streetgeom'].extend( geometry_chunk )
+            context['streetgeom'].extend( reversed( geometry_chunk ) )
+        else:
+            context['streetgeom'].extend( geometry_chunk )
             
         context['sumlength'] += edge.payload.length
         context['sumrise'] += edge.payload.rise

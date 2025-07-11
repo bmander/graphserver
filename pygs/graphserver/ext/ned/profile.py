@@ -55,10 +55,10 @@ def populate_profile_db( osmdb_name, profiledb_name, dem_basenames, resolution )
     pdb = ProfileDB( profiledb_name, overwrite=True )
 
     n = ddb.count_edges()
-    print "Profiling %d way segments"%n
+    print("Profiling %d way segments"%n)
     
     for i, (id, parent_id, node1, node2, dist, geom, tags) in enumerate( ddb.edges() ):
-        if i%1000==0: print "%d/%d"%(i,n)
+        if i%1000==0: print("%d/%d"%(i,n))
         
         raw_profile = elevs.profile( geom, resolution )
         profile = []
@@ -84,7 +84,7 @@ from sys import argv
 def main():
     usage = "python profile.py osmdb_name profiledb_name resolution dem_basename "
     if len(argv) < 5:
-        print usage
+        print(usage)
         exit()
 
     osmdb_name = argv[1]
@@ -92,10 +92,10 @@ def main():
     resolution = int(argv[3])
     dem_basenames = argv[4:]
 
-    print "osmdb name:", osmdb_name
-    print "profiledb name:", profiledb_name
-    print "resolution:", resolution
-    print "dem_basenames:", dem_basenames
+    print("osmdb name:", osmdb_name)
+    print("profiledb name:", profiledb_name)
+    print("resolution:", resolution)
+    print("dem_basenames:", dem_basenames)
     
     populate_profile_db(osmdb_name, profiledb_name, dem_basenames, resolution)
 

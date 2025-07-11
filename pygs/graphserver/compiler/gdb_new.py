@@ -18,11 +18,11 @@ def main():
     graphdb_filename = args[0]
     
     if not os.path.exists(graphdb_filename) or options.overwrite:
-        print "Creating graph database '%s'"%graphdb_filename
+        print("Creating graph database '%s'"%graphdb_filename)
         
         graphdb = GraphDatabase( graphdb_filename, overwrite=options.overwrite )
     else:
-        print "Graph database '%s' already exists. Use -o to overwrite"%graphdb_filename
+        print("Graph database '%s' already exists. Use -o to overwrite"%graphdb_filename)
 
 if __name__=='__main__':
     main()
