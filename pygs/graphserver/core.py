@@ -123,7 +123,6 @@ class Graph(CShadow):
         #Vertex* gAddVertex( Graph* this, char *label );
         self.check_destroyed()
         
-        # Encode string to bytes for ctypes compatibility in Python 3
         if isinstance(label, str):
             label = label.encode('utf-8')
         
@@ -132,7 +131,6 @@ class Graph(CShadow):
     def remove_vertex(self, label, free_edge_payloads=True):
         #void gRemoveVertex( Graph* this, char *label, int free_vertex_payload, int free_edge_payloads );
         
-        # Encode string to bytes for ctypes compatibility in Python 3
         if isinstance(label, str):
             label = label.encode('utf-8')
         
@@ -142,7 +140,6 @@ class Graph(CShadow):
         #Vertex* gGetVertex( Graph* this, char *label );
         self.check_destroyed()
         
-        # Encode string to bytes for ctypes compatibility in Python 3
         if isinstance(label, str):
             label = label.encode('utf-8')
         
@@ -152,7 +149,6 @@ class Graph(CShadow):
         #Edge* gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload );
         self.check_destroyed()
         
-        # Encode strings to bytes for ctypes compatibility in Python 3
         if isinstance(fromv, str):
             fromv = fromv.encode('utf-8')
         if isinstance(tov, str):
@@ -211,7 +207,6 @@ class Graph(CShadow):
         if not tov:
             tov = "*bogus^*^vertex*"
         
-        # Encode strings to bytes for ctypes compatibility in Python 3
         if isinstance(fromv, str):
             fromv = fromv.encode('utf-8')
         if isinstance(tov, str):
@@ -235,7 +230,6 @@ class Graph(CShadow):
         if not fromv:
             fromv = "*bogus^*^vertex*"
             
-        # Encode strings to bytes for ctypes compatibility in Python 3
         if isinstance(fromv, str):
             fromv = fromv.encode('utf-8')
         if isinstance(tov, str):
@@ -322,7 +316,6 @@ class ShortestPathTree(CShadow):
     def remove_vertex(self, label):
         #void sptRemoveVertex( ShortestPathTree* this, char *label, int free_vertex_payload, int free_edge_payloads );
         
-        # Encode string to bytes for ctypes compatibility in Python 3
         if isinstance(label, str):
             label = label.encode('utf-8')
         
@@ -332,7 +325,6 @@ class ShortestPathTree(CShadow):
         #Vertex* sptGetVertex( ShortestPathTree* this, char *label );
         self.check_destroyed()
         
-        # Encode string to bytes for ctypes compatibility in Python 3
         if isinstance(label, str):
             label = label.encode('utf-8')
         
@@ -397,7 +389,6 @@ class ShortestPathTree(CShadow):
     def path_retro(self,origin):
         self.check_destroyed()
         
-        # Encode string to bytes for ctypes compatibility in Python 3
         if isinstance(origin, str):
             origin = origin.encode('utf-8')
         
@@ -584,7 +575,6 @@ class SPTEdge(Edge):
 
 class Vertex(CShadow):
     
-    # Use custom property to decode bytes to string for Python 3 compatibility
     @property
     def label(self):
         self.check_destroyed()
@@ -600,7 +590,6 @@ class Vertex(CShadow):
     edgeclass = Edge
     
     def __init__(self,label):
-        # Encode string to bytes for ctypes compatibility in Python 3
         if isinstance(label, str):
             label = label.encode('utf-8')
         self.soul = self._cnew(label)
@@ -664,7 +653,6 @@ class Vertex(CShadow):
         
 class SPTVertex(CShadow):
     
-    # Use custom property to decode bytes to string for Python 3 compatibility
     @property
     def label(self):
         self.check_destroyed()
@@ -940,7 +928,6 @@ class ServiceCalendar(CShadow):
         if type(service_id)!=type("string"):
             raise TypeError("service_id is supposed to be a string")
         
-        # Encode string to bytes for ctypes compatibility in Python 3
         if isinstance(service_id, str):
             service_id = service_id.encode('utf-8')
         
@@ -1117,7 +1104,6 @@ class Timezone(CShadow):
 #=============================================================================#
     
 class Link(EdgePayload):
-    # Use custom property to decode bytes to string for Python 3 compatibility
     @property  
     def name(self):
         self.check_destroyed()
@@ -1149,7 +1135,6 @@ class Link(EdgePayload):
 class Street(EdgePayload):
     length = cproperty(lgs.streetGetLength, c_double)
     
-    # Use custom property to decode bytes to string for Python 3 compatibility
     @property  
     def name(self):
         self.check_destroyed()
@@ -1203,7 +1188,6 @@ class Street(EdgePayload):
 class Egress(EdgePayload):
     length = cproperty(lgs.egressGetLength, c_double)
     
-    # Use custom property to decode bytes to string for Python 3 compatibility
     @property  
     def name(self):
         self.check_destroyed()
@@ -1281,7 +1265,6 @@ class Headway(EdgePayload):
     wait_period = cproperty( lgs.headwayWaitPeriod, c_int )
     transit = cproperty( lgs.headwayTransit, c_int )
     
-    # Use custom property to decode bytes to string for Python 3 compatibility
     @property  
     def trip_id(self):
         self.check_destroyed()
