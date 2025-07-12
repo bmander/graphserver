@@ -1,8 +1,12 @@
-To run all tests, use 'nosetests'
+To run all tests, use 'pytest'
 
-$ nosetests -v
+$ pytest -v
 
 To run a specific test file:
 
-$ nosetests -v unit_test.py
+$ pytest -v unit_test/test_serviceperiod.py
+
+To run tests in a specific directory:
+
+$ pytest -v unit_test/
 

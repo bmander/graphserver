@@ -6,15 +6,15 @@ class TestSPTVertex(unittest.TestCase):
         vv = Vertex("home")
         v=SPTVertex( vv )
 
-	assert v.mirror.soul == vv.soul
+        assert v.mirror.soul == vv.soul
         assert v
 
     def test_init_hop(self):
         v = SPTVertex( Vertex("A") )
-	assert v.hop == 0
+        assert v.hop == 0
 
-	v = SPTVertex( Vertex("B"), 1 )
-	assert v.hop == 1
+        v = SPTVertex( Vertex("B"), 1 )
+        assert v.hop == 1
         
     def test_destroy(self): #mostly just check that it doesn't segfault. the stress test will check if it works or not.
         v=SPTVertex( Vertex("home") )

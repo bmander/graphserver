@@ -1,6 +1,9 @@
 import os
 import sqlite3
-import cPickle
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 from graphserver.core import State, Graph, Combination
 from graphserver import core
 from sys import argv
@@ -39,7 +42,7 @@ class GraphDatabase:
             for component in edgepayload.components:
                 self.put_edge_payload( component, cc )
         
-        cc.execute( "INSERT INTO payloads VALUES (?, ?, ?)", ( str(edgepayload.soul), cPickle.dumps( edgepayload.__class__ ), cPickle.dumps( edgepayload.__getstate__() ) ) )
+        cc.execute( "INSERT INTO payloads VALUES (?, ?, ?)", ( str(edgepayload.soul), pickle.dumps( edgepayload.__class__ ), pickle.dumps( edgepayload.__getstate__() ) ) )
         
         return str(edgepayload.soul)
         
@@ -53,8 +56,8 @@ class GraphDatabase:
         if id in self.payloads_cache:
             return self.payloads_cache[id]
         
-        typeclass = cPickle.loads( str(type) )
-        ret = typeclass.reconstitute( cPickle.loads( str(state) ), self )
+        typeclass = pickle.loads( str(type) )
+        ret = typeclass.reconstitute( pickle.loads( str(state) ), self )
         ret.external_id = int(id)
         self.payloads_cache[id] = ret
         return ret
@@ -154,7 +157,7 @@ class GraphDatabase:
         cc = self.conn.cursor() if c is None else c
         resource_count = list(cc.execute( "SELECT count(*) FROM resources WHERE name = ?", (name,) ))[0][0]
         if resource_count == 0:
-            cc.execute( "INSERT INTO resources VALUES (?, ?)", (name, cPickle.dumps( obj )) )
+            cc.execute( "INSERT INTO resources VALUES (?, ?)", (name, pickle.dumps( obj )) )
             if not c: self.conn.commit()
         if not c: cc.close()
         
@@ -163,13 +166,13 @@ class GraphDatabase:
             return self.resources_cache[name]
         else:
             image = list(self.execute( "SELECT image FROM resources WHERE name = ?", (str(name),) ))[0][0]
-            resource = cPickle.loads( str(image) )
+            resource = pickle.loads( str(image) )
             self.resources_cache[name] = resource
             return resource
         
     def resources(self):
         for name, image in self.execute( "SELECT name, image from resources" ):
-            yield name, cPickle.loads( str(image) )
+            yield name, pickle.loads( str(image) )
             
     def index(self):
         c = self.conn.cursor()

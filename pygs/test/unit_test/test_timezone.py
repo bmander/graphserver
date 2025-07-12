@@ -139,8 +139,8 @@ class TestTimezone(unittest.TestCase):
         assert tz.utc_offset(1219863600) == -7*3600 #august 27, 2008, noon America/Los_Angeles
         assert tz.utc_offset(1199217600) == -8*3600 #january 1, 2008, noon America/Los_Angeles
         
-        print(tz.utc_offset(1205056799) == -8*3600 #second before DST)
-        print(tz.utc_offset(1205056800) == -7*3600 #second after DST)
+        print(tz.utc_offset(1205056799) == -8*3600) #second before DST
+        print(tz.utc_offset(1205056800) == -7*3600) #second after DST
         
     def test_pickle(self):
         tz = Timezone()
