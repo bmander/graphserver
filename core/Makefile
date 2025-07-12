@@ -66,7 +66,7 @@ endif
 libgraphserver.so: $(OBJECTS)
 	cc -shared -o $@ $(OBJECTS) $(LDFLAGS)
 
-install:
+install: libgraphserver.so
 	cp libgraphserver.so $(PREFIX)/lib
 	mkdir -p $(PREFIX)/include/graphserver
 	cp fibheap/fibheap.h $(PREFIX)/include/graphserver
