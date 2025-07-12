@@ -937,13 +937,22 @@ class ServiceCalendar(CShadow):
         if type(service_id)!=type("string"):
             raise TypeError("service_id is supposed to be a string")
         
+        # Encode string to bytes for ctypes compatibility in Python 3
+        if isinstance(service_id, str):
+            service_id = service_id.encode('utf-8')
+        
         return lgs.scGetServiceIdInt( self.soul, service_id );
         
     def get_service_id_string( self, service_id ):
         if type(service_id)!=type(1):
             raise TypeError("service_id is supposed to be an int, in this case")
         
-        return lgs.scGetServiceIdString( self.soul, service_id )
+        raw_result = lgs.scGetServiceIdString( self.soul, service_id )
+        if raw_result:
+            if isinstance(raw_result, bytes):
+                return raw_result.decode('utf-8')
+            return raw_result
+        return None
         
     def add_period(self, begin_time, end_time, service_ids):
         sp = ServicePeriod( begin_time, end_time, [self.get_service_id_int(x) for x in service_ids] )
@@ -1190,9 +1199,22 @@ class Street(EdgePayload):
 
 class Egress(EdgePayload):
     length = cproperty(lgs.egressGetLength, c_double)
-    name   = cproperty(lgs.egressGetName, c_char_p)
+    
+    # Use custom property to decode bytes to string for Python 3 compatibility
+    @property  
+    def name(self):
+        self.check_destroyed()
+        raw_name = lgs.egressGetName(c_void_p(self.soul))
+        if raw_name:
+            if isinstance(raw_name, bytes):
+                return raw_name.decode('utf-8')
+            return raw_name
+        return None
     
     def __init__(self,name,length):
+        # Encode string to bytes for ctypes compatibility in Python 3
+        if isinstance(name, str):
+            name = name.encode('utf-8')
         self.soul = self._cnew(name, length)
             
     def to_xml(self):
@@ -1255,7 +1277,18 @@ class Headway(EdgePayload):
     end_time = cproperty( lgs.headwayEndTime, c_int )
     wait_period = cproperty( lgs.headwayWaitPeriod, c_int )
     transit = cproperty( lgs.headwayTransit, c_int )
-    trip_id = cproperty( lgs.headwayTripId, c_char_p )
+    
+    # Use custom property to decode bytes to string for Python 3 compatibility
+    @property  
+    def trip_id(self):
+        self.check_destroyed()
+        raw_trip_id = lgs.headwayTripId(c_void_p(self.soul))
+        if raw_trip_id:
+            if isinstance(raw_trip_id, bytes):
+                return raw_trip_id.decode('utf-8')
+            return raw_trip_id
+        return None
+    
     calendar = cproperty( lgs.headwayCalendar, c_void_p, ServiceCalendar )
     timezone = cproperty( lgs.headwayTimezone, c_void_p, Timezone )
     agency = cproperty( lgs.headwayAgency, c_int )
