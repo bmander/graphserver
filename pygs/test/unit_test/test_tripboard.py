@@ -502,7 +502,7 @@ class TestTripBoard(unittest.TestCase):
 
         # it should be one second until the next boarding
         s1 = tb.walk(s0, WalkOptions())
-        self.assertEquals(s1.time, 86401)
+        self.assertEqual(s1.time, 86401)
 
     def test_check_today(self):
         """given a schedule that runs two consecutive days, find a departure
@@ -530,7 +530,7 @@ class TestTripBoard(unittest.TestCase):
         # it should be early morning on the second day
         s1 = tb.walk(s0, WalkOptions())
 
-        self.assertEquals(s1.time, 26340 + 86400)
+        self.assertEqual(s1.time, 26340 + 86400)
 
 
 if __name__ == "__main__":

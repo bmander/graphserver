@@ -476,7 +476,7 @@ class TestTripAlight(unittest.TestCase):
 
         # it should be one second after the last alighting
         s1 = al.walk_back(s0, WalkOptions())
-        self.assertEquals(s1.time, 86399)
+        self.assertEqual(s1.time, 86399)
 
     def test_check_today(self):
         # the service calendar has two weekdays, back to back
@@ -501,7 +501,7 @@ class TestTripAlight(unittest.TestCase):
         # this should put us in noon the previous day
         s1 = al.walk_back(s0, WalkOptions())
 
-        self.assertEquals(s1.time, 43200)
+        self.assertEqual(s1.time, 43200)
 
 
 if __name__ == "__main__":

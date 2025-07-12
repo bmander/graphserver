@@ -23,7 +23,7 @@ class TestPathSize(unittest.TestCase):
 
     def test_zero(self):
         """getSize returns zero on an empty path"""
-        self.assertEquals(self.path.num_elements, 0)
+        self.assertEqual(self.path.num_elements, 0)
 
     def test_one(self):
         """getSize returns one after one entry"""
@@ -44,7 +44,7 @@ class TestPathSize(unittest.TestCase):
             payload = Link()
             self.path.addSegment(bb, Edge(aa, bb, payload))
 
-        self.assertEquals(self.path.num_elements, 10)
+        self.assertEqual(self.path.num_elements, 10)
 
 
 class TestAddAndGetSegments(unittest.TestCase):
@@ -68,7 +68,7 @@ class TestAddAndGetSegments(unittest.TestCase):
         self.assertRaises(IndexError, self.path.getEdge, 10)
 
         # if you don't add any segments, there's still a single vertex in the path
-        self.assertEquals(self.path.getVertex(0).soul, self.aa.soul)
+        self.assertEqual(self.path.getVertex(0).soul, self.aa.soul)
 
     def test_one(self):
         """get a vertex, edge after adding a single segment"""

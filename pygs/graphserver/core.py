@@ -202,6 +202,8 @@ class Graph(CShadow):
         # void gSetVertexEnabled( Graph *this, char *label, int enabled );
         self.check_destroyed()
 
+        if isinstance(vertex_label, str):
+            vertex_label = vertex_label.encode("utf-8")
         lgs.gSetVertexEnabled(self.soul, vertex_label, enabled)
 
     @property
@@ -607,6 +609,8 @@ class State(CShadow):
     # the state does not keep ownership of the trip_id, so the state
     # may not live longer than whatever object set its trip_id
     def dangerous_set_trip_id(self, trip_id):
+        if isinstance(trip_id, str):
+            trip_id = trip_id.encode("utf-8")
         lgs.stateDangerousSetTripId(self.soul, trip_id)
 
     time = cproperty(lgs.stateGetTime, c_long, setter=lgs.stateSetTime)
@@ -1571,6 +1575,8 @@ class TripBoard(EdgePayload):
         return self.calendar.get_service_id_string(self.int_service_id)
 
     def add_boarding(self, trip_id, depart, stop_sequence):
+        if isinstance(trip_id, str):
+            trip_id = trip_id.encode("utf-8")
         self._cadd_boarding(self.soul, trip_id, depart, stop_sequence)
 
     def get_boarding(self, i):
@@ -1580,6 +1586,9 @@ class TripBoard(EdgePayload):
 
         if trip_id is None:
             raise IndexError("Index %d out of bounds" % i)
+
+        if isinstance(trip_id, bytes):
+            trip_id = trip_id.decode("utf-8")
 
         return (trip_id, depart, stop_sequence)
 
@@ -1687,10 +1696,17 @@ class HeadwayBoard(EdgePayload):
     timezone = cproperty(lgs.hbGetTimezone, c_void_p, Timezone)
     agency = cproperty(lgs.hbGetAgency, c_int)
     int_service_id = cproperty(lgs.hbGetServiceId, c_int)
-    trip_id = cproperty(lgs.hbGetTripId, c_char_p)
+    _trip_id = cproperty(lgs.hbGetTripId, c_char_p)
     start_time = cproperty(lgs.hbGetStartTime, c_int)
     end_time = cproperty(lgs.hbGetEndTime, c_int)
     headway_secs = cproperty(lgs.hbGetHeadwaySecs, c_int)
+
+    @property
+    def trip_id(self):
+        raw_trip_id = self._trip_id
+        if isinstance(raw_trip_id, bytes):
+            return raw_trip_id.decode("utf-8")
+        return raw_trip_id
 
     def __init__(
         self,
@@ -1708,6 +1724,9 @@ class HeadwayBoard(EdgePayload):
             if isinstance(service_id, int)
             else calendar.get_service_id_int(service_id)
         )
+
+        if isinstance(trip_id, str):
+            trip_id = trip_id.encode("utf-8")
 
         self.soul = self._cnew(
             service_id,
@@ -1883,9 +1902,13 @@ class Crossing(EdgePayload):
         self.soul = self._cnew()
 
     def add_crossing_time(self, trip_id, crossing_time):
+        if isinstance(trip_id, str):
+            trip_id = trip_id.encode("utf-8")
         lgs.crAddCrossingTime(self.soul, trip_id, crossing_time)
 
     def get_crossing_time(self, trip_id):
+        if isinstance(trip_id, str):
+            trip_id = trip_id.encode("utf-8")
         ret = lgs.crGetCrossingTime(self.soul, trip_id)
         if ret == -1:
             return None
@@ -1897,6 +1920,9 @@ class Crossing(EdgePayload):
 
         if crossing_time == -1:
             return None
+
+        if isinstance(trip_id, bytes):
+            trip_id = trip_id.decode("utf-8")
 
         return (trip_id, crossing_time)
 
@@ -2003,6 +2029,8 @@ class TripAlight(EdgePayload):
         self.soul = self._cnew(service_id, calendar.soul, timezone.soul, agency)
 
     def add_alighting(self, trip_id, arrival, stop_sequence):
+        if isinstance(trip_id, str):
+            trip_id = trip_id.encode("utf-8")
         lgs.alAddAlighting(self.soul, trip_id, arrival, stop_sequence)
 
     def get_alighting(self, i):
@@ -2012,6 +2040,9 @@ class TripAlight(EdgePayload):
 
         if trip_id is None:
             raise IndexError("Index %d out of bounds" % i)
+
+        if isinstance(trip_id, bytes):
+            trip_id = trip_id.decode("utf-8")
 
         return (trip_id, arrival, stop_sequence)
 
