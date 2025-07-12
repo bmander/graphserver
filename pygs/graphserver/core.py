@@ -202,6 +202,8 @@ class Graph(CShadow):
         # void gSetVertexEnabled( Graph *this, char *label, int enabled );
         self.check_destroyed()
 
+        if isinstance(vertex_label, str):
+            vertex_label = vertex_label.encode("utf-8")
         lgs.gSetVertexEnabled(self.soul, vertex_label, enabled)
 
     @property
@@ -607,6 +609,8 @@ class State(CShadow):
     # the state does not keep ownership of the trip_id, so the state
     # may not live longer than whatever object set its trip_id
     def dangerous_set_trip_id(self, trip_id):
+        if isinstance(trip_id, str):
+            trip_id = trip_id.encode("utf-8")
         lgs.stateDangerousSetTripId(self.soul, trip_id)
 
     time = cproperty(lgs.stateGetTime, c_long, setter=lgs.stateSetTime)
@@ -1571,6 +1575,8 @@ class TripBoard(EdgePayload):
         return self.calendar.get_service_id_string(self.int_service_id)
 
     def add_boarding(self, trip_id, depart, stop_sequence):
+        if isinstance(trip_id, str):
+            trip_id = trip_id.encode("utf-8")
         self._cadd_boarding(self.soul, trip_id, depart, stop_sequence)
 
     def get_boarding(self, i):
@@ -1580,6 +1586,10 @@ class TripBoard(EdgePayload):
 
         if trip_id is None:
             raise IndexError("Index %d out of bounds" % i)
+
+        # Decode bytes to string for Python 3 compatibility
+        if isinstance(trip_id, bytes):
+            trip_id = trip_id.decode("utf-8")
 
         return (trip_id, depart, stop_sequence)
 
@@ -1883,9 +1893,13 @@ class Crossing(EdgePayload):
         self.soul = self._cnew()
 
     def add_crossing_time(self, trip_id, crossing_time):
+        if isinstance(trip_id, str):
+            trip_id = trip_id.encode("utf-8")
         lgs.crAddCrossingTime(self.soul, trip_id, crossing_time)
 
     def get_crossing_time(self, trip_id):
+        if isinstance(trip_id, str):
+            trip_id = trip_id.encode("utf-8")
         ret = lgs.crGetCrossingTime(self.soul, trip_id)
         if ret == -1:
             return None
@@ -1897,6 +1911,10 @@ class Crossing(EdgePayload):
 
         if crossing_time == -1:
             return None
+
+        # Decode bytes to string for Python 3 compatibility
+        if isinstance(trip_id, bytes):
+            trip_id = trip_id.decode("utf-8")
 
         return (trip_id, crossing_time)
 
