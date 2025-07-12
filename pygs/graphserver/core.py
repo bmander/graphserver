@@ -123,10 +123,18 @@ class Graph(CShadow):
         #Vertex* gAddVertex( Graph* this, char *label );
         self.check_destroyed()
         
+        # Encode string to bytes for ctypes compatibility in Python 3
+        if isinstance(label, str):
+            label = label.encode('utf-8')
+        
         return self._cadd_vertex(self.soul, label)
         
     def remove_vertex(self, label, free_edge_payloads=True):
         #void gRemoveVertex( Graph* this, char *label, int free_vertex_payload, int free_edge_payloads );
+        
+        # Encode string to bytes for ctypes compatibility in Python 3
+        if isinstance(label, str):
+            label = label.encode('utf-8')
         
         return self._cremove_vertex(self.soul, label, free_edge_payloads)
         
@@ -134,11 +142,21 @@ class Graph(CShadow):
         #Vertex* gGetVertex( Graph* this, char *label );
         self.check_destroyed()
         
+        # Encode string to bytes for ctypes compatibility in Python 3
+        if isinstance(label, str):
+            label = label.encode('utf-8')
+        
         return self._cget_vertex(self.soul, label)
         
     def add_edge( self, fromv, tov, payload ):
         #Edge* gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload );
         self.check_destroyed()
+        
+        # Encode strings to bytes for ctypes compatibility in Python 3
+        if isinstance(fromv, str):
+            fromv = fromv.encode('utf-8')
+        if isinstance(tov, str):
+            tov = tov.encode('utf-8')
         
         e = self._cadd_edge( self.soul, fromv, tov, payload.soul )
         
@@ -193,12 +211,18 @@ class Graph(CShadow):
         if not tov:
             tov = "*bogus^*^vertex*"
         
+        # Encode strings to bytes for ctypes compatibility in Python 3
+        if isinstance(fromv, str):
+            fromv = fromv.encode('utf-8')
+        if isinstance(tov, str):
+            tov = tov.encode('utf-8')
+        
         if walk_options is None:
             walk_options = WalkOptions()
-            ret = self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(maxtime), c_int(hoplimit), c_long(weightlimit) )
+            ret = self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(int(maxtime)), c_int(hoplimit), c_long(int(weightlimit)) )
             walk_options.destroy()
         else:
-            ret = self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(maxtime), c_int(hoplimit), c_long(weightlimit) )
+            ret = self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(int(maxtime)), c_int(hoplimit), c_long(int(weightlimit)) )
         
         if ret is None:
           raise Exception( "Could not create shortest path tree" ) # this shouldn't happen; TODO: more descriptive error
@@ -211,12 +235,18 @@ class Graph(CShadow):
         if not fromv:
             fromv = "*bogus^*^vertex*"
             
+        # Encode strings to bytes for ctypes compatibility in Python 3
+        if isinstance(fromv, str):
+            fromv = fromv.encode('utf-8')
+        if isinstance(tov, str):
+            tov = tov.encode('utf-8')
+            
         if walk_options is None:
             walk_options = WalkOptions()
-            ret = self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime), c_int(hoplimit), c_long(weightlimit) )
+            ret = self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(int(mintime)), c_int(hoplimit), c_long(int(weightlimit)) )
             walk_options.destroy()
         else:
-            ret = self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime), c_int(hoplimit), c_long(weightlimit) )
+            ret = self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(int(mintime)), c_int(hoplimit), c_long(int(weightlimit)) )
 
         if ret is None:
           raise Exception( "Could not create shortest path tree" ) # this shouldn't happen; TODO: more descriptive error
@@ -415,7 +445,7 @@ class State(CShadow):
     def __init__(self, n_agencies, time=None):
         if time is None:
             time = now()
-        self.soul = self._cnew(n_agencies, long(time))
+        self.soul = self._cnew(n_agencies, int(time))
         
     def service_period(self, agency):
         soul = lgs.stateServicePeriod( self.soul, agency )
@@ -542,7 +572,17 @@ class SPTEdge(Edge):
 
 class Vertex(CShadow):
     
-    label = cproperty(lgs.vGetLabel, c_char_p)
+    # Use custom property to decode bytes to string for Python 3 compatibility
+    @property
+    def label(self):
+        self.check_destroyed()
+        raw_label = lgs.vGetLabel(c_void_p(self.soul))
+        if raw_label:
+            if isinstance(raw_label, bytes):
+                return raw_label.decode('utf-8')
+            return raw_label
+        return None
+    
     degree_in = cproperty(lgs.vDegreeIn, c_int)
     degree_out = cproperty(lgs.vDegreeOut, c_int)
     edgeclass = Edge
@@ -609,7 +649,17 @@ class Vertex(CShadow):
         
 class SPTVertex(CShadow):
     
-    label = cproperty(lgs.sptvGetLabel, c_char_p)
+    # Use custom property to decode bytes to string for Python 3 compatibility
+    @property
+    def label(self):
+        self.check_destroyed()
+        raw_label = lgs.sptvGetLabel(c_void_p(self.soul))
+        if raw_label:
+            if isinstance(raw_label, bytes):
+                return raw_label.decode('utf-8')
+            return raw_label
+        return None
+    
     degree_in = cproperty(lgs.sptvDegreeIn, c_int)
     degree_out = cproperty(lgs.sptvDegreeOut, c_int)
     hop = cproperty(lgs.sptvHop, c_int)
@@ -961,7 +1011,7 @@ class TimezonePeriod(CShadow):
         return TimezonePeriod.from_pointer( lgs.tzpNextPeriod( self.soul ) )
         
     def time_since_midnight(self, time):
-        return lgs.tzpTimeSinceMidnight( self.soul, c_long(time) )
+        return lgs.tzpTimeSinceMidnight( self.soul, c_long(int(time)) )
         
     def __getstate__(self):
         return (self.begin_time, self.end_time, self.utc_offset)
@@ -998,7 +1048,7 @@ class Timezone(CShadow):
         return ret
         
     def time_since_midnight(self, time):
-        ret = lgs.tzTimeSinceMidnight( self.soul, c_long(time) )
+        ret = lgs.tzTimeSinceMidnight( self.soul, c_long(int(time)) )
         
         if ret==-1:
             raise IndexError( "%d lands within no timezone period"%time )
@@ -1065,13 +1115,27 @@ class Link(EdgePayload):
     
 class Street(EdgePayload):
     length = cproperty(lgs.streetGetLength, c_double)
-    name   = cproperty(lgs.streetGetName, c_char_p)
+    
+    # Use custom property to decode bytes to string for Python 3 compatibility
+    @property  
+    def name(self):
+        self.check_destroyed()
+        raw_name = lgs.streetGetName(c_void_p(self.soul))
+        if raw_name:
+            if isinstance(raw_name, bytes):
+                return raw_name.decode('utf-8')
+            return raw_name
+        return None
+    
     rise = cproperty(lgs.streetGetRise, c_float, setter=lgs.streetSetRise)
     fall = cproperty(lgs.streetGetFall, c_float, setter=lgs.streetSetFall)
     slog = cproperty(lgs.streetGetSlog, c_float, setter=lgs.streetSetSlog)
     way = cproperty(lgs.streetGetWay, c_long, setter=lgs.streetSetWay)
     
     def __init__(self,name,length,rise=0,fall=0,reverse_of_source=False):
+        # Encode string to bytes for ctypes compatibility in Python 3
+        if isinstance(name, str):
+            name = name.encode('utf-8')
         self.soul = self._cnew(name, length, rise, fall,reverse_of_source)
             
     def to_xml(self):
