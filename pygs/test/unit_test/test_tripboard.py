@@ -1,5 +1,12 @@
 import unittest
-from graphserver.core import *
+from graphserver.core import (
+    ServiceCalendar,
+    Timezone,
+    TimezonePeriod,
+    TripBoard,
+    State,
+    WalkOptions,
+)
 from random import randint
 
 
@@ -26,7 +33,7 @@ class TestTripBoard(unittest.TestCase):
         try:
             print(tb)
             raise Exception("should have failed by now")
-        except:
+        except Exception:
             pass
 
     def test_get_boarding_by_trip_id(self):
@@ -131,7 +138,7 @@ class TestTripBoard(unittest.TestCase):
 
         s0 = State(1, 3 * 3600 * 24)  # midnight sunday
         s1 = tb.walk(s0, WalkOptions())
-        assert s1 == None
+        assert s1 is None
 
     def test_add_single_trip(self):
         sc = ServiceCalendar()

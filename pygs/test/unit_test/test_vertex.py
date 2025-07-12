@@ -1,4 +1,4 @@
-from graphserver.core import *
+from graphserver.core import Vertex
 import unittest
 
 
@@ -18,7 +18,7 @@ class TestVertex(unittest.TestCase):
         try:
             v.label
             assert False  # pop exception by now
-        except:
+        except Exception:
             pass
 
     def test_label(self):

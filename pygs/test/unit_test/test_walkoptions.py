@@ -1,5 +1,5 @@
 import unittest
-from graphserver.core import *
+from graphserver.core import WalkOptions
 
 
 class TestWalkOptions(unittest.TestCase):
@@ -43,7 +43,7 @@ class TestWalkOptions(unittest.TestCase):
         assert round(wo.hill_reluctance, 3) == 1.4
 
         wo.destroy()
-        assert wo.soul == None
+        assert wo.soul is None
 
     def test_from_ptr(self):
         wo = WalkOptions()
