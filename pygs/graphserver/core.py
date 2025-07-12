@@ -600,6 +600,9 @@ class Vertex(CShadow):
     edgeclass = Edge
     
     def __init__(self,label):
+        # Encode string to bytes for ctypes compatibility in Python 3
+        if isinstance(label, str):
+            label = label.encode('utf-8')
         self.soul = self._cnew(label)
         
     def destroy(self):
