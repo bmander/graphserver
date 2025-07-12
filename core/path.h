@@ -12,10 +12,10 @@ void
 pathDestroy(Path *this);
 
 Vertex *
-pathGetVertex( Path *this, int i );
+pathGetVertex( const Path *this, int i );
 
 Edge *
-pathGetEdge( Path *this, int i );
+pathGetEdge( const Path *this, int i );
 
 void
 pathAddSegment( Path *this, Vertex *vertex, Edge *edge );

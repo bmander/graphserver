@@ -34,7 +34,7 @@ int
 scAddServiceId( ServiceCalendar* this, char* service_id );
 
 char*
-scGetServiceIdString( ServiceCalendar* this, int service_id );
+scGetServiceIdString( const ServiceCalendar* this, int service_id );
 
 int
 scGetServiceIdInt( ServiceCalendar* this, char* service_id );
@@ -47,13 +47,13 @@ void
 scAddPeriod( ServiceCalendar* this, ServicePeriod* period );
 
 ServicePeriod*
-scPeriodOfOrAfter( ServiceCalendar* this, long time );
+scPeriodOfOrAfter( const ServiceCalendar* this, long time );
 
 ServicePeriod*
-scPeriodOfOrBefore( ServiceCalendar* this, long time );
+scPeriodOfOrBefore( const ServiceCalendar* this, long time );
 
 ServicePeriod*
-scHead( ServiceCalendar* this );
+scHead( const ServiceCalendar* this );
 
 void
 scDestroy( ServiceCalendar* this );
@@ -65,21 +65,21 @@ void
 spDestroyPeriod( ServicePeriod* this );
 
 int
-spPeriodHasServiceId( ServicePeriod* this, ServiceId service_id);
+spPeriodHasServiceId( const ServicePeriod* this, ServiceId service_id);
 
 ServicePeriod*
-spRewind( ServicePeriod* this );
+spRewind( const ServicePeriod* this );
 
 ServicePeriod*
-spFastForward( ServicePeriod* this );
+spFastForward( const ServicePeriod* this );
 
 void
-spPrint( ServicePeriod* this ) ;
+spPrint( const ServicePeriod* this ) ;
 
 void
-spPrintPeriod( ServicePeriod* this ) ;
+spPrintPeriod( const ServicePeriod* this ) ;
 
 long
-spNormalizeTime( ServicePeriod* this, int timezone_offset, long time ) ;
+spNormalizeTime( const ServicePeriod* this, int timezone_offset, long time ) ;
 
 #endif

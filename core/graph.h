@@ -60,22 +60,22 @@ void
 gDestroy( Graph* this );
 
 Vertex*
-gAddVertex( Graph* this, char *label );
+gAddVertex( Graph* this, const char *label );
 
 void
-gRemoveVertex( Graph* this, char *label, int free_edge_payloads );
+gRemoveVertex( Graph* this, const char *label, int free_edge_payloads );
 
 Vertex*
-gGetVertex( Graph* this, char *label );
+gGetVertex( const Graph* this, const char *label );
 
 void
-gAddVertices( Graph* this, char **labels, int n );
+gAddVertices( Graph* this, const char **labels, int n );
 
 Edge*
-gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload );
+gAddEdge( Graph* this, const char *from, const char *to, EdgePayload *payload );
 
 Vertex**
-gVertices( Graph* this, long* num_vertices );
+gVertices( const Graph* this, long* num_vertices );
 
 ShortestPathTree*
 gShortestPathTree( Graph* this, char *from, char *to, State* init_state, WalkOptions* options, long maxtime, int hoplimit, long weightlimit );
@@ -141,10 +141,10 @@ Edge*
 vSetParent( Vertex* this, Vertex* parent, EdgePayload* payload );
 
 ListNode*
-vGetOutgoingEdgeList( Vertex* this );
+vGetOutgoingEdgeList( const Vertex* this );
 
 ListNode*
-vGetIncomingEdgeList( Vertex* this );
+vGetIncomingEdgeList( const Vertex* this );
 
 void
 vRemoveOutEdgeRef( Vertex* this, Edge* todie );
@@ -153,13 +153,13 @@ void
 vRemoveInEdgeRef( Vertex* this, Edge* todie );
 
 char*
-vGetLabel( Vertex* this );
+vGetLabel( const Vertex* this );
 
 int
-vDegreeOut( Vertex* this );
+vDegreeOut( const Vertex* this );
 
 int
-vDegreeIn( Vertex* this );
+vDegreeIn( const Vertex* this );
 
 //SPTVERTEX FUNCTIONS
 
@@ -176,10 +176,10 @@ Edge*
 sptvSetParent( SPTVertex* this, SPTVertex* parent, EdgePayload* payload );
 
 ListNode*
-sptvGetOutgoingEdgeList( SPTVertex* this );
+sptvGetOutgoingEdgeList( const SPTVertex* this );
 
 ListNode*
-sptvGetIncomingEdgeList( SPTVertex* this );
+sptvGetIncomingEdgeList( const SPTVertex* this );
 
 void
 sptvRemoveOutEdgeRef( SPTVertex* this, Edge* todie );
@@ -188,25 +188,25 @@ void
 sptvRemoveInEdgeRef( SPTVertex* this, Edge* todie );
 
 char*
-sptvGetLabel( SPTVertex* this );
+sptvGetLabel( const SPTVertex* this );
 
 int
-sptvDegreeOut( SPTVertex* this );
+sptvDegreeOut( const SPTVertex* this );
 
 int
-sptvDegreeIn( SPTVertex* this );
+sptvDegreeIn( const SPTVertex* this );
 
 State*
-sptvState( SPTVertex* this );
+sptvState( const SPTVertex* this );
 
 int
-sptvHop( SPTVertex* this );
+sptvHop( const SPTVertex* this );
 
 Edge*
-sptvGetParent( SPTVertex* this );
+sptvGetParent( const SPTVertex* this );
 
 Vertex*
-sptvMirror( SPTVertex* this );
+sptvMirror( const SPTVertex* this );
 
 //EDGE FUNCTIONS
 
@@ -221,22 +221,22 @@ eDestroy(Edge *this, int destroy_payload) ;
 //eMark(Edge *this) ;
 
 State*
-eWalk(Edge *this, State* state, WalkOptions* options) ;
+eWalk(const Edge *this, State* state, WalkOptions* options) ;
 
 State*
-eWalkBack(Edge *this, State *state, WalkOptions* options) ;
+eWalkBack(const Edge *this, State *state, WalkOptions* options) ;
 
 Vertex*
-eGetFrom(Edge *this);
+eGetFrom(const Edge *this);
 
 Vertex*
-eGetTo(Edge *this);
+eGetTo(const Edge *this);
 
 EdgePayload*
-eGetPayload(Edge *this);
+eGetPayload(const Edge *this);
 
 int
-eGetEnabled(Edge *this);
+eGetEnabled(const Edge *this);
 
 void
 eSetEnabled(Edge *this, int enabled);

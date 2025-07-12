@@ -24,7 +24,7 @@ stateNew(int n_agencies, long time) {
 }
 
 State*
-stateDup( State* this ) {
+stateDup( const State* this ) {
   State* ret = (State*)malloc( sizeof(State) );
   memcpy( ret, this, sizeof( State ) );
 
@@ -42,31 +42,31 @@ stateDestroy(State* this) {
 }
 
 long
-stateGetTime( State* this ) { return this->time; }
+stateGetTime( const State* this ) { return this->time; }
 
 long
-stateGetWeight( State* this) { return this->weight; }
+stateGetWeight( const State* this) { return this->weight; }
 
 double
-stateGetDistWalked( State* this ) { return this->dist_walked; }
+stateGetDistWalked( const State* this ) { return this->dist_walked; }
 
 int
-stateGetNumTransfers( State* this ) { return this->num_transfers; }
+stateGetNumTransfers( const State* this ) { return this->num_transfers; }
 
 EdgePayload*
-stateGetPrevEdge( State* this ) { return this->prev_edge; }
+stateGetPrevEdge( const State* this ) { return this->prev_edge; }
 
 char*
-stateGetTripId( State* this ) { return this->trip_id; }
+stateGetTripId( const State* this ) { return this->trip_id; }
 
 int
-stateGetStopSequence( State* this ) { return this->stop_sequence; }
+stateGetStopSequence( const State* this ) { return this->stop_sequence; }
 
 int
-stateGetNumAgencies( State* this ) { return this->n_agencies; }
+stateGetNumAgencies( const State* this ) { return this->n_agencies; }
 
 ServicePeriod*
-stateServicePeriod( State* this, int agency ) { return this->service_periods[agency]; }
+stateServicePeriod( const State* this, int agency ) { return this->service_periods[agency]; }
 
 void
 stateSetTime( State* this, long time ) { this->time = time; }
