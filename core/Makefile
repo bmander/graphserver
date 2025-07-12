@@ -79,4 +79,4 @@ install: libgraphserver.so
 	cp hashtable/hashtable_private.h $(PREFIX)/include/graphserver
 
 clean:
-	rm -f *.{o,so,~,d} */*.{o,so,~,d} 
+	rm -f *.o *.so *~ *.d */*.o */*.so */*~ */*.d 
