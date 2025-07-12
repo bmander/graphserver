@@ -30,7 +30,7 @@ vecAdd(Vector *this, void *element) {
 }
 
 void *
-vecGet(Vector *this, int index) {
+vecGet(const Vector *this, int index) {
     if( index < 0 || index >= this->num_elements ) {
         return NULL;
     }

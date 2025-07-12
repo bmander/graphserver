@@ -18,7 +18,7 @@ void
 vecAdd(Vector *this, void *element);
 
 void *
-vecGet(Vector *this, int index);
+vecGet(const Vector *this, int index);
 
 void
 vecExpand(Vector *this, int amount);

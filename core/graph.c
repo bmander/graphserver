@@ -52,7 +52,7 @@ gDestroy( Graph* this ) {
 }
 
 Vertex*
-gAddVertex( Graph* this, char *label ) {
+gAddVertex( Graph* this, const char *label ) {
   Vertex* exists = gGetVertex( this, label );
   if( !exists ) {
     exists = vNew( label );
@@ -63,7 +63,7 @@ gAddVertex( Graph* this, char *label ) {
 }
 
 void
-gRemoveVertex( Graph* this, char *label, int free_edge_payloads ) {
+gRemoveVertex( Graph* this, const char *label, int free_edge_payloads ) {
     Vertex *exists = gGetVertex( this, label );
     if(!exists) {
         return;
@@ -73,8 +73,8 @@ gRemoveVertex( Graph* this, char *label, int free_edge_payloads ) {
     vDestroy( exists, free_edge_payloads );
 }
 
-void 
-gAddVertices( Graph* this, char **labels, int n ) {
+void
+gAddVertices( Graph* this, const char **labels, int n ) {
   int i;
   for (i = 0; i < n; i++) {
   	gAddVertex(this, labels[i]);
@@ -82,12 +82,12 @@ gAddVertices( Graph* this, char **labels, int n ) {
 }
 
 Vertex*
-gGetVertex( Graph* this, char *label ) {
+gGetVertex( const Graph* this, const char *label ) {
   return hashtable_search( this->vertices, label );
 }
 
 Edge*
-gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload ) {
+gAddEdge( Graph* this, const char *from, const char *to, EdgePayload *payload ) {
   Vertex* vtx_from = gGetVertex( this, from );
   Vertex* vtx_to   = gGetVertex( this, to );
 
@@ -98,7 +98,7 @@ gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload ) {
 }
 
 Vertex**
-gVertices( Graph* this, long* num_vertices ) {
+gVertices( const Graph* this, long* num_vertices ) {
   unsigned int nn = hashtable_count(this->vertices);
   Vertex** ret = (Vertex**)malloc(nn*sizeof(Vertex*));
 
@@ -409,12 +409,12 @@ vSetParent( Vertex* this, Vertex* parent, EdgePayload* payload ) {
 }
 
 ListNode*
-vGetOutgoingEdgeList( Vertex* this ) {
+vGetOutgoingEdgeList( const Vertex* this ) {
     return this->outgoing->next; //the first node is a dummy
 }
 
 ListNode*
-vGetIncomingEdgeList( Vertex* this ) {
+vGetIncomingEdgeList( const Vertex* this ) {
     return this->incoming->next; //the first node is a dummy
 }
 
@@ -431,17 +431,17 @@ vRemoveInEdgeRef( Vertex* this, Edge* todie ) {
 }
 
 char*
-vGetLabel( Vertex* this ) {
+vGetLabel( const Vertex* this ) {
     return this->label;
 }
 
 int
-vDegreeOut( Vertex* this ) {
+vDegreeOut( const Vertex* this ) {
     return this->degree_out;
 }
 
 int
-vDegreeIn( Vertex* this ) {
+vDegreeIn( const Vertex* this ) {
     return this->degree_in;
 }
 
@@ -478,12 +478,12 @@ sptvSetParent( SPTVertex* this, SPTVertex* parent, EdgePayload* payload ) {
 }
 
 ListNode*
-sptvGetOutgoingEdgeList( SPTVertex* this ) {
+sptvGetOutgoingEdgeList( const SPTVertex* this ) {
     return vGetOutgoingEdgeList( (Vertex*)this );
 }
 
 ListNode*
-sptvGetIncomingEdgeList( SPTVertex* this ) {
+sptvGetIncomingEdgeList( const SPTVertex* this ) {
     return vGetIncomingEdgeList( (Vertex*)this );
 }
 
@@ -498,32 +498,32 @@ sptvRemoveInEdgeRef( SPTVertex* this, Edge* todie ) {
 }
     
 char*
-sptvGetLabel( SPTVertex* this ) {
+sptvGetLabel( const SPTVertex* this ) {
     return vGetLabel( (Vertex*)this );
 }
 
 int
-sptvDegreeOut( SPTVertex* this ) {
+sptvDegreeOut( const SPTVertex* this ) {
     return vDegreeOut( (Vertex*)this );
 }
 
 int
-sptvDegreeIn( SPTVertex* this ) {
+sptvDegreeIn( const SPTVertex* this ) {
     return vDegreeIn( (Vertex*)this );
 }
 
 State*
-sptvState( SPTVertex* this ) {
+sptvState( const SPTVertex* this ) {
     return this->state;
 }
 
 int
-sptvHop( SPTVertex* this ) {
+sptvHop( const SPTVertex* this ) {
     return this->hop;
 }
 
 Edge*
-sptvGetParent( SPTVertex* this ) {
+sptvGetParent( const SPTVertex* this ) {
     ListNode* first_node = vGetIncomingEdgeList( (Vertex*)this );
     if( first_node )
         return first_node->data;
@@ -532,7 +532,7 @@ sptvGetParent( SPTVertex* this ) {
 }
 
 Vertex*
-sptvMirror( SPTVertex* this ) {
+sptvMirror( const SPTVertex* this ) {
     return this->mirror;
 }
 
@@ -560,7 +560,7 @@ eDestroy(Edge *this, int destroy_payload) {
 }
 
 State*
-eWalk(Edge *this, State* state, WalkOptions* options) {
+eWalk(const Edge *this, State* state, WalkOptions* options) {
   if( this->enabled ) {
     return epWalk( this->payload, state, options );
   } else {
@@ -569,7 +569,7 @@ eWalk(Edge *this, State* state, WalkOptions* options) {
 }
 
 State*
-eWalkBack(Edge *this, State* state, WalkOptions* options) {
+eWalkBack(const Edge *this, State* state, WalkOptions* options) {
   if( this->enabled ) {
     return epWalkBack( this->payload, state, options );
   } else {
@@ -578,22 +578,22 @@ eWalkBack(Edge *this, State* state, WalkOptions* options) {
 }
 
 Vertex*
-eGetFrom(Edge *this) {
+eGetFrom(const Edge *this) {
   return this->from;
 }
 
 Vertex*
-eGetTo(Edge *this) {
+eGetTo(const Edge *this) {
   return this->to;
 }
 
 EdgePayload*
-eGetPayload(Edge *this) {
+eGetPayload(const Edge *this) {
   return this->payload;
 }
 
 int
-eGetEnabled(Edge *this) {
+eGetEnabled(const Edge *this) {
     return this->enabled;
 }
 

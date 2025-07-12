@@ -1,5 +1,5 @@
-#ifndef _TIMEZONE_H_
-#define _TIMEZONE_H_
+#ifndef TIMEZONE_H
+#define TIMEZONE_H
 
 struct TimezonePeriod {
   long begin_time; //the first second on which the service_period is valid
@@ -19,16 +19,16 @@ void
 tzAddPeriod( Timezone* this, TimezonePeriod* period );
 
 TimezonePeriod*
-tzPeriodOf( Timezone* this, long time);
+tzPeriodOf( const Timezone* this, long time);
 
 int
-tzUtcOffset( Timezone* this, long time);
+tzUtcOffset( const Timezone* this, long time);
 
 int
-tzTimeSinceMidnight( Timezone* this, long time );
+tzTimeSinceMidnight( const Timezone* this, long time );
 
 TimezonePeriod*
-tzHead( Timezone* this );
+tzHead( const Timezone* this );
 
 void
 tzDestroy( Timezone* this );
@@ -40,18 +40,18 @@ void
 tzpDestroy( TimezonePeriod* this );
 
 int
-tzpUtcOffset( TimezonePeriod* this );
+tzpUtcOffset( const TimezonePeriod* this );
 
 int
-tzpTimeSinceMidnight( TimezonePeriod* this, long time );
+tzpTimeSinceMidnight( const TimezonePeriod* this, long time );
 
 long
-tzpBeginTime( TimezonePeriod* this );
+tzpBeginTime( const TimezonePeriod* this );
 
 long
-tzpEndTime( TimezonePeriod* this );
+tzpEndTime( const TimezonePeriod* this );
 
 TimezonePeriod*
-tzpNextPeriod(TimezonePeriod* this);
+tzpNextPeriod(const TimezonePeriod* this);
 
 #endif

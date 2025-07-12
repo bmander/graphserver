@@ -1,5 +1,5 @@
-#ifndef _STATE_H_
-#define _STATE_H_
+#ifndef STATE_H
+#define STATE_H
 
 //---------------DECLARATIONS FOR STATE CLASS---------------------
 
@@ -22,34 +22,34 @@ void
 stateDestroy( State* this);
 
 State*
-stateDup( State* this );
+stateDup( const State* this );
 
 long
-stateGetTime( State* this );
+stateGetTime( const State* this );
 
 long
-stateGetWeight( State* this);
+stateGetWeight( const State* this);
 
 double
-stateGetDistWalked( State* this );
+stateGetDistWalked( const State* this );
 
 int
-stateGetNumTransfers( State* this );
+stateGetNumTransfers( const State* this );
 
 EdgePayload*
-stateGetPrevEdge( State* this );
+stateGetPrevEdge( const State* this );
 
 char*
-stateGetTripId( State* this );
+stateGetTripId( const State* this );
 
 int
-stateGetStopSequence( State* this );
+stateGetStopSequence( const State* this );
 
 int
-stateGetNumAgencies( State* this );
+stateGetNumAgencies( const State* this );
 
 ServicePeriod*
-stateServicePeriod( State* this, int agency );
+stateServicePeriod( const State* this, int agency );
 
 void
 stateSetServicePeriod( State* this,  int agency, ServicePeriod* cal );

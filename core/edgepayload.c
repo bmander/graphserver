@@ -53,12 +53,12 @@ epDestroy( EdgePayload* this ) {
 }
 
 edgepayload_t
-epGetType( EdgePayload* this ) {
+epGetType( const EdgePayload* this ) {
     return this->type;
 }
 
 long
-epGetExternalId( EdgePayload *this ) {
+epGetExternalId( const EdgePayload *this ) {
     return this->external_id;
 }
 
@@ -68,7 +68,7 @@ epSetExternalId( EdgePayload *this, long external_id ) {
 }
 
 State*
-epWalk( EdgePayload* this, State* state, WalkOptions* options ) {
+epWalk( const EdgePayload* this, State* state, WalkOptions* options ) {
   if( !this )
     return NULL;
 
@@ -81,7 +81,7 @@ epWalk( EdgePayload* this, State* state, WalkOptions* options ) {
 }
 
 State*
-epWalkBack( EdgePayload* this, State* state, WalkOptions* options ) {
+epWalkBack( const EdgePayload* this, State* state, WalkOptions* options ) {
   if(!this)
     return NULL;
 

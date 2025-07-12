@@ -41,11 +41,11 @@ liRemoveRef( ListNode *dummyhead, Edge *data ) {
 }
 
 Edge*
-liGetData( ListNode *this ) {
+liGetData( const ListNode *this ) {
 	return this->data;
 }
 
 ListNode*
-liGetNext( ListNode *this ) {
+liGetNext( const ListNode *this ) {
 	return this->next;
 }

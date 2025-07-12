@@ -1,5 +1,5 @@
-#ifndef _LIST_H_
-#define _LIST_H_
+#ifndef LIST_H
+#define LIST_H
 
 struct ListNode {
    Edge* data;
@@ -27,9 +27,9 @@ void
 liRemoveRef( ListNode *dummyhead, Edge* data );
 
 Edge*
-liGetData( ListNode *this );
+liGetData( const ListNode *this );
 
 ListNode*
-liGetNext( ListNode *this );
+liGetNext( const ListNode *this );
 
 #endif

@@ -1,5 +1,5 @@
-#ifndef _WALKOPTIONS_H_
-#define _WALKOPTIONS_H_
+#ifndef WALKOPTIONS_H
+#define WALKOPTIONS_H
 
 //---------------DECLARATIONS FOR WALKOPTIONS CLASS---------------
 
@@ -60,4 +60,4 @@ woGetTurnPenalty( WalkOptions* this );
 void
 woSetTurnPenalty( WalkOptions* this, int turn_penalty );
 
-#endif
+#endif // WALKOPTIONS_H
