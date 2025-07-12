@@ -573,10 +573,10 @@ declarations = [
         LGSTypes.HeadwayAlight,
         [
             LGSTypes.ServiceId,
+            c_char_p,
             LGSTypes.ServiceCalendar,
             LGSTypes.Timezone,
             c_int,
-            c_char_p,
             c_int,
             c_int,
             c_int,
@@ -606,10 +606,10 @@ declarations = [
         LGSTypes.HeadwayBoard,
         [
             LGSTypes.ServiceId,
+            c_char_p,
             LGSTypes.ServiceCalendar,
             LGSTypes.Timezone,
             c_int,
-            c_char_p,
             c_int,
             c_int,
             c_int,
