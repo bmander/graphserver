@@ -5,8 +5,10 @@
 #define MAX_LONG 2147483647
 #define INFINITY MAX_LONG
 #define SECS_IN_DAY 86400
-#define TRUE 1
-#define FALSE 0
+typedef enum {
+    FALSE = 0,
+    TRUE = 1
+} bool_t;
 
 typedef int ServiceId;
 
