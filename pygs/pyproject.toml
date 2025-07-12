@@ -29,7 +29,7 @@ classifiers = [
 dependencies = [
     "pytz>=2008b",
     "servable>=2009b",
-    "nose>=0.10.4"
+    "pytest>=6.0"
 ]
 
 [project.urls]
