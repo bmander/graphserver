@@ -25,17 +25,17 @@ Learn more about Graphserver at [http://graphserver.github.com/graphserver/](htt
 
 #### Step 2: Install Python bindings
 ```bash
-    $ cd pygs && python3 setup.py install
+cd pygs
+pip install .
 ```
 
-**For system-wide installation (requires sudo):**
+**For development installation (editable):**
 ```bash
-    $ sudo python3 setup.py install
+cd pygs
+pip install -e .
 ```
 
-setup.py installs several executables.  On debian these go into /usr/local/bin/*.
-On Mac OS X, these go into
-/Library/Frameworks/Python.framework/Versions/3.x/bin/*
+This installs the Python package and command-line tools. The tools are installed to your Python environment's bin directory.
 
 ### Verification
 

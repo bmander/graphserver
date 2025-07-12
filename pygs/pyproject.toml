@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "graphserver"
+version = "1.0.0"
+description = "Graphserver routing engine."
+# readme = {file = "../README.markdown", content-type = "text/markdown"}
+requires-python = ">=3.7"
+license = {text = "BSD"}
+authors = [
+    {name = "Brandon Martin-Anderson", email = "badhill@gmail.com"}
+]
+keywords = ["OSM", "OpenStreetMap", "GTFS", "routing", "transit"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: GIS",
+]
+dependencies = [
+    "pytz>=2008b",
+    "servable>=2009b",
+    "nose>=0.10.4"
+]
+
+[project.urls]
+Homepage = "http://github.com/bmander/graphserver/tree/master"
+Repository = "http://github.com/bmander/graphserver.git"
+
+[project.scripts]
+gs_osmfilter = "graphserver.ext.osm.osmfilters:main"
+gs_osmdb_compile = "graphserver.ext.osm.osmdb:main"
+gs_gtfsdb_compile = "graphserver.ext.gtfs.gtfsdb:main_compile_gtfsdb"
+gs_gtfsdb_inspect = "graphserver.ext.gtfs.gtfsdb:main_inspect_gtfsdb"
+gs_crawl = "graphserver.ext.graphcrawler:main"
+gs_new = "graphserver.compiler.gdb_new:main"
+gs_import_osm = "graphserver.compiler.gdb_import_osm:main"
+gs_import_gtfs = "graphserver.compiler.gdb_import_gtfs:main"
+gs_import_ned = "graphserver.compiler.gdb_import_ned:main"
+gs_link_osm_gtfs = "graphserver.compiler.gdb_link_osm_gtfs:main"
+gs_link_gtfs_gtfs = "graphserver.compiler.gdb_link_gtfs_gtfs:main"
+gs_gdb_inspect = "graphserver.graphdb:main"
+gs_routeserver = "graphserver.ext.routeserver.routeserver:main"
+gs_profile = "graphserver.ext.ned.profile:main"
+gs_profiledb = "graphserver.ext.osm.profiledb:main"
+
+[tool.setuptools]
+zip-safe = false
+
+[tool.setuptools.packages.find]
+exclude = ["examples*", "test*"]
+
+[tool.setuptools.package-data]
+graphserver = ["libgraphserver.so"]
