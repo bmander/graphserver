@@ -1,3 +1,4 @@
+from sys import argv
 from graphserver.ext.osm.osmdb import OSMDB
 from elevation.elevation import ElevationPile
 from graphserver.ext.osm.profiledb import ProfileDB
@@ -86,9 +87,6 @@ def populate_profile_db(osmdb_name, profiledb_name, dem_basenames, resolution):
         pdb.store(id, profile)
 
     pdb.conn.commit()
-
-
-from sys import argv
 
 
 def main():

@@ -1,3 +1,4 @@
+from sys import argv
 from graphserver.graphdb import GraphDatabase
 from graphserver.ext.osm.profiledb import ProfileDB
 from graphserver.core import Street
@@ -21,9 +22,6 @@ def get_rise_and_fall(profile):
                 fall -= diff
 
     return rise, fall
-
-
-from sys import argv
 
 
 def main():

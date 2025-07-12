@@ -13,7 +13,7 @@ class OSMLoadable:
         preferential weighting of a kind of edge. For example, {'cycleway':0.333} makes cycleways three
         times easier to traverse"""
 
-        if type(osm_filename_or_object) == str:
+        if isinstance(osm_filename_or_object, str):
             osm = OSM(osm_filename_or_object)
         else:
             osm = osm_filename_or_object

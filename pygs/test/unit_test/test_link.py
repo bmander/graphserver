@@ -4,24 +4,24 @@ import unittest
 
 class TestLink(unittest.TestCase):
     def link_test(self):
-        l = Link()
-        assert l
-        assert str(l) == "<Link name='LINK'/>"
+        ln = Link()
+        assert ln
+        assert str(ln) == "<Link name='LINK'/>"
 
     def test_destroy(self):
-        l = Link()
-        l.destroy()
+        ln = Link()
+        ln.destroy()
 
-        assert l.soul is None
+        assert ln.soul is None
 
     def test_name(self):
-        l = Link()
-        assert l.name == "LINK"
+        ln = Link()
+        assert ln.name == "LINK"
 
     def test_walk(self):
-        l = Link()
+        ln = Link()
 
-        after = l.walk(State(1, 0), WalkOptions())
+        after = ln.walk(State(1, 0), WalkOptions())
 
         assert after.time == 0
         assert after.weight == 0
@@ -31,9 +31,9 @@ class TestLink(unittest.TestCase):
         assert after.num_agencies == 1
 
     def test_walk_back(self):
-        l = Link()
+        ln = Link()
 
-        before = l.walk_back(State(1, 0), WalkOptions())
+        before = ln.walk_back(State(1, 0), WalkOptions())
 
         assert before.time == 0
         assert before.weight == 0
@@ -43,8 +43,8 @@ class TestLink(unittest.TestCase):
         assert before.num_agencies == 1
 
     def test_getstate(self):
-        l = Link()
-        assert l.__getstate__() == tuple([])
+        ln = Link()
+        assert ln.__getstate__() == tuple([])
 
 
 if __name__ == "__main__":

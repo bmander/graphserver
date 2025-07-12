@@ -5,6 +5,7 @@ import os
 from zipfile import ZipFile
 from codecs import iterdecode
 import datetime
+from optparse import OptionParser
 from graphserver.util import withProgress
 
 
@@ -692,9 +693,6 @@ def main_inspect_gtfsdb():
     #    sys.stdout.flush()
 
     pass
-
-
-from optparse import OptionParser
 
 
 def main_compile_gtfsdb():

@@ -3,6 +3,7 @@ from graphserver.graphdb import GraphDatabase
 from graphserver.core import State, WalkOptions
 import time
 import sys
+from optparse import OptionParser
 
 try:
     import json
@@ -74,19 +75,19 @@ class RouteServer(Servable):
     def bounds(self, jsoncallback=None):
         """returns bounding box that encompases the bounding box from all member reverse geocoders"""
 
-        l, b, r, t = None, None, None, None
+        ll, bb, rr, tt = None, None, None, None
 
         for reverse_geocoder in self.vertex_reverse_geocoders:
             gl, gb, gr, gt = reverse_geocoder.bounds()
-            l = min(l, gl) if l else gl
-            b = min(b, gb) if b else gb
-            r = max(r, gr) if r else gr
-            t = max(t, gt) if t else gt
+            ll = min(ll, gl) if ll else gl
+            bb = min(bb, gb) if bb else gb
+            rr = max(rr, gr) if rr else gr
+            tt = max(tt, gt) if tt else gt
 
         if jsoncallback is None:
-            return json.dumps([l, b, r, t])
+            return json.dumps([ll, bb, rr, tt])
         else:
-            return "%s(%s)" % (jsoncallback, json.dumps([l, b, r, t]))
+            return "%s(%s)" % (jsoncallback, json.dumps([ll, bb, rr, tt]))
 
     def vertices(self):
         return "\n".join([vv.label for vv in self.graph.vertices])
@@ -297,9 +298,6 @@ def get_handler_instances(handler_definitions, handler_type):
         handler_instance = handler_class(**handler.get("args", {}))
 
         yield handler_instance
-
-
-from optparse import OptionParser
 
 
 def main():

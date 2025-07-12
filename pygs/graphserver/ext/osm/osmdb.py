@@ -8,6 +8,7 @@ except ImportError:
 import sys
 import xml.sax
 import binascii
+from optparse import OptionParser
 from graphserver.vincenty import vincenty
 from struct import pack, unpack
 from rtree import Rtree
@@ -61,14 +62,14 @@ class WayRecord:
     def __init__(self, id, tags, nds):
         self.id = id
 
-        if type(tags) == unicode:
+        if isinstance(tags, str):
             self.tags_str = tags
             self.tags_cache = None
         else:
             self.tags_cache = tags
             self.tags_str = None
 
-        if type(nds) == unicode:
+        if isinstance(nds, str):
             self.nds_str = nds
             self.nds_cache = None
         else:
@@ -571,7 +572,7 @@ def test_wayrecord():
 def osm_to_osmdb(osm_filenames, osmdb_filename, tolerant=False, skipload=False):
     osmdb = OSMDB(osmdb_filename, overwrite=True)
 
-    if isinstance(osm_filenames, basestring):
+    if isinstance(osm_filenames, str):
         osm_filenames = [osm_filenames]
 
     for osm_filename in osm_filenames:
@@ -592,9 +593,6 @@ def osm_to_osmdb(osm_filenames, osmdb_filename, tolerant=False, skipload=False):
     osmdb.create_and_populate_edges_table(tolerant)
     if osmdb.count_edges() == 0:
         print("WARNING: osmdb has no edges!")
-
-
-from optparse import OptionParser
 
 
 def main():

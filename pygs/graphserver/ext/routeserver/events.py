@@ -3,10 +3,7 @@ import graphserver.core
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
 from graphserver.ext.osm.osmdb import OSMDB
 
-try:
-    import json
-except ImportError:
-    pass
+from math import asin, acos, degrees
 
 
 class NarrativeEvent:
@@ -251,9 +248,6 @@ class CrossingEvent:
 
     def __call__(self, v1, e, v2, context):
         return (str(v1.state), str(e), str(v2.state))
-
-
-from math import asin, acos, degrees
 
 
 def mag(vec):

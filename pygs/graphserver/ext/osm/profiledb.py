@@ -3,12 +3,11 @@
 import os
 import sqlite3
 
-try:
-    import json
-except ImportError:
-    pass
 import binascii
 from struct import pack, unpack
+
+
+from sys import argv
 
 
 def pack_coords(coords):
@@ -85,7 +84,6 @@ class ProfileDB:
         c.close()
 
 
-from sys import argv
 
 
 def main():

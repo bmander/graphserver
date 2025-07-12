@@ -6,6 +6,8 @@ from graphserver.core import (
     Vertex,
     ShortestPathTree,
     Link,
+    SPTVertex,
+    SPTEdge,
 )
 import unittest
 

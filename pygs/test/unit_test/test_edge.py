@@ -1,5 +1,5 @@
 import unittest
-from graphserver.core import Edge, Vertex, Street, State, WalkOptions
+from graphserver.core import Edge, Vertex, Street, State, WalkOptions, Graph
 
 
 class TestEdge(unittest.TestCase):

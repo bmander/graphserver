@@ -1,5 +1,7 @@
 from stress_utils import get_mem_usage
 import sys
+import unittest
+from random import randint
 
 sys.path.append("..")
 from graphserver.core import (
@@ -13,6 +15,8 @@ from graphserver.core import (
     TripAlight,
     Link,
     Wait,
+    Vertex,
+    Crossing,
 )
 
 
@@ -27,9 +31,6 @@ def grind(func, n, threshold=10):
 
     print(m0, m1)
     assert m1 <= m0 + threshold
-
-
-import unittest
 
 
 class StressTest(unittest.TestCase):
@@ -172,9 +173,6 @@ class WaitStressTest(unittest.TestCase):
             s.destroy()
 
         grind(func, 1000000)
-
-
-from random import randint
 
 
 def random_graph(nvertices, nedges):

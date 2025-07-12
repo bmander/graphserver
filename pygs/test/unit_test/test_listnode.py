@@ -4,9 +4,9 @@ import unittest
 
 class TestListNode(unittest.TestCase):
     def test_list_node(self):
-        l = ListNode()
+        ln = ListNode()
 
-        assert l
+        assert ln
 
 
 if __name__ == "__main__":

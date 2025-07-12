@@ -1,6 +1,6 @@
 import xml.sax
 import copy
-from math import *
+from math import sin, cos, atan2, sqrt, pi as PI
 from graphserver.vincenty import vincenty
 
 INFINITY = float("inf")
@@ -80,16 +80,16 @@ class Way:
 
     @property
     def bbox(self):
-        l = INFINITY
-        b = INFINITY
-        r = -INFINITY
-        t = -INFINITY
+        left = INFINITY
+        bottom = INFINITY
+        right = -INFINITY
+        top = -INFINITY
         for x, y in self.geom:
-            l = min(l, x)
-            r = max(r, x)
-            b = min(b, y)
-            t = max(t, y)
-        return (l, b, r, t)
+            left = min(left, x)
+            right = max(right, x)
+            bottom = min(bottom, y)
+            top = max(top, y)
+        return (left, bottom, right, top)
 
     def split(self, dividers):
         # slice the node-array using this nifty recursive function
@@ -287,16 +287,16 @@ class OSM:
 
     @property
     def bbox(self):
-        l = INFINITY
-        b = INFINITY
-        r = -INFINITY
-        t = -INFINITY
+        left = INFINITY
+        bottom = INFINITY
+        right = -INFINITY
+        top = -INFINITY
 
         for way in self.ways.values():
-            ll, bb, rr, tt = way.bbox
-            l = min(l, ll)
-            b = min(b, bb)
-            r = max(r, rr)
-            t = max(t, tt)
+            way_left, way_bottom, way_right, way_top = way.bbox
+            left = min(left, way_left)
+            bottom = min(bottom, way_bottom)
+            right = max(right, way_right)
+            top = max(top, way_top)
 
-        return (l, b, r, t)
+        return (left, bottom, right, top)

@@ -3,7 +3,7 @@ from graphserver.core import Graph, Street, State, WalkOptions, ShortestPathTree
 
 
 class TestGraph(unittest.TestCase):
-    def test_basic(self):
+    def test_extemely_basic(self):
         g = Graph()
         assert g
 

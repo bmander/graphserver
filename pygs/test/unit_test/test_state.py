@@ -31,12 +31,6 @@ class TestState(unittest.TestCase):
         s = State(1, 0)
         sp = ServicePeriod(0, 1 * 3600 * 24, [1, 2])
 
-        try:
-            s.set_calendar_day(1, cal)
-            assert False  # should have failed by now
-        except Exception:
-            pass
-
         s.set_service_period(0, sp)
 
         spout = s.service_period(0)

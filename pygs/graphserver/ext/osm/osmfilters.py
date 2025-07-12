@@ -46,15 +46,15 @@ class CalculateWayLengthFilter(OSMDBFilter):
         print("Calculating length.")
         for way in db.ways():
             g = way.geom
-            l = 0
+            length = 0
             for i in range(0, len(g) - 1):
-                l += dist_earth(g[i][1], g[i][0], g[i + 1][1], g[i + 1][0])
-            way_length[way.id] = l
+                length += dist_earth(g[i][1], g[i][0], g[i + 1][1], g[i + 1][0])
+            way_length[way.id] = length
 
         print("Updating %s ways" % len(way_length))
         c = db.cursor()
-        for w, l in way_length.items():
-            c.execute("UPDATE ways set length = ? where id = ?", (l, w))
+        for w, length in way_length.items():
+            c.execute("UPDATE ways set length = ? where id = ?", (length, w))
         db.conn.commit()
         c.close()
         print("Done")
@@ -308,13 +308,13 @@ class FindDisjunctGraphsFilter(OSMDBFilter):
             node_group[ni] = gn
 
         # setup the drawing
-        l, b, r, t = db.bounds()
+        left, bottom, right, top = db.bounds()
         mr = processing.MapRenderer(renderer)
         WIDTH = 3000
-        mr.start(l, b, r, t, WIDTH)  # left,bottom,right,top,width
+        mr.start(left, bottom, right, top, WIDTH)  # left,bottom,right,top,width
         mr.background(255, 255, 255)
         mr.smooth()
-        width = float(r - l) / WIDTH
+        width = float(right - left) / WIDTH
 
         for i, w in enumerate(db.ways()):
             if i % 1000 == 0:
@@ -409,7 +409,7 @@ def main():
         )
         print("Filters:")
         for k, v in globals().items():
-            if type(v) == type and issubclass(v, OSMDBFilter):
+            if isinstance(v, type) and issubclass(v, OSMDBFilter):
                 print(" -- %s" % k)
         exit()
 
