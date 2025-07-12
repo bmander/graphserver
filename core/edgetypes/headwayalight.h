@@ -21,7 +21,9 @@ struct HeadwayAlight {
 };
 
 HeadwayAlight*
-haNew(  ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int agency, char* trip_id, int start_time, int end_time, int headway_secs );
+haNew(ServiceId service_id, char* trip_id,
+      ServiceCalendar* calendar, Timezone* timezone, int agency,
+      int start_time, int end_time, int headway_secs );
 
 void
 haDestroy(HeadwayAlight* this);
