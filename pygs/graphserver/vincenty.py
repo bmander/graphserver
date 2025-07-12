@@ -39,7 +39,7 @@
 859 	};
 """
 
-from math import sin, cos, tan, atan, radians, pi, sqrt, atan2, asin
+from math import asin, atan, atan2, cos, pi, radians, sin, sqrt, tan
 
 
 def vincenty(lat1, lon1, lat2, lon2):

@@ -1,5 +1,6 @@
-from graphserver.core import ListNode
 import unittest
+
+from graphserver.core import ListNode
 
 
 class TestListNode(unittest.TestCase):

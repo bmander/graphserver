@@ -1,9 +1,9 @@
+from optparse import OptionParser
+
+from graphserver.core import Link
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
 from graphserver.ext.osm.osmdb import OSMDB
 from graphserver.graphdb import GraphDatabase
-from graphserver.core import Link
-
-from optparse import OptionParser
 
 
 def main():

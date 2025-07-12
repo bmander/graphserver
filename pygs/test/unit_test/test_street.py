@@ -1,5 +1,6 @@
-from graphserver.core import Street, State, WalkOptions
 import unittest
+
+from graphserver.core import State, Street, WalkOptions
 
 
 class TestStreet(unittest.TestCase):

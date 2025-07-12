@@ -1,40 +1,45 @@
 try:
     from graphserver.gsdll import (
-        libc,
-        lgs,
-        cproperty,
-        ccast,
         CShadow,
-        instantiate,
         PayloadMethodTypes,
+        ccast,
+        cproperty,
+        instantiate,
+        lgs,
+        libc,
     )
 except ImportError:
     # so I can run this script from the same folder
     from gsdll import (
-        libc,
-        lgs,
-        cproperty,
-        ccast,
         CShadow,
-        instantiate,
         PayloadMethodTypes,
+        ccast,
+        cproperty,
+        instantiate,
+        lgs,
+        libc,
     )
+from _ctypes import Py_DECREF, Py_INCREF
+import calendar
 from ctypes import (
+    POINTER,
+    Structure,
+    addressof,
     byref,
-    c_int,
-    c_long,
     c_char_p,
     c_double,
-    c_void_p,
-    py_object,
     c_float,
+    c_int,
+    c_long,
+    c_void_p,
+    cast,
+    py_object,
 )
-from ctypes import Structure, cast, POINTER, addressof
-from _ctypes import Py_INCREF, Py_DECREF
-from time import time as now
-import pytz
-import calendar
 from functools import reduce
+from time import time as now
+
+import pytz
+
 from .util import TimeHelpers
 from .vector import Vector
 
@@ -893,8 +898,8 @@ def failsafe(return_arg_num_on_failure):
             try:
                 return func(*args)
             except Exception:
-                import traceback
                 import sys
+                import traceback
 
                 sys.stderr.write("ERROR: Exception during callback ")
                 try:

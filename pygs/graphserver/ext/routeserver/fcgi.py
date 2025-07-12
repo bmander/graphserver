@@ -49,24 +49,26 @@ variable FCGI_FORCE_CGI to "Y" or "y".
 __author__ = "Allan Saddi <allan@saddi.com>"
 __version__ = "$Revision$"
 
-import sys
-import os
-import signal
-import struct
-import io as StringIO
-import select
-import socket
 import errno
+import io as StringIO
+import os
+import select
+import signal
+import socket
+import struct
+import sys
 import traceback
 
 try:
-    import thread
     import threading
+
+    import thread
 
     thread_available = True
 except ImportError:
-    import dummy_thread as thread
     import dummy_threading as threading
+
+    import dummy_thread as thread
 
     thread_available = False
 

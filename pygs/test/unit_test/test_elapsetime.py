@@ -1,5 +1,6 @@
-from graphserver.core import ElapseTime, State, WalkOptions
 import unittest
+
+from graphserver.core import ElapseTime, State, WalkOptions
 
 
 class TestElapseTime(unittest.TestCase):

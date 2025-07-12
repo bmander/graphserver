@@ -1,6 +1,6 @@
-from .gsdll import lgs
+from ctypes import Structure, addressof, c_int, c_void_p
 
-from ctypes import Structure, c_int, c_void_p, addressof
+from .gsdll import lgs
 
 
 class Vector(Structure):

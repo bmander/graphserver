@@ -1,6 +1,8 @@
-from graphserver.core import ServiceCalendar
+from datetime import datetime, time, timedelta
+
 import pytz
-from datetime import timedelta, datetime, time
+
+from graphserver.core import ServiceCalendar
 from graphserver.util import TimeHelpers
 
 

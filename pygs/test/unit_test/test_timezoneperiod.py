@@ -1,7 +1,8 @@
-import unittest
-from graphserver.core import TimezonePeriod
-from graphserver import util
 import pickle
+import unittest
+
+from graphserver import util
+from graphserver.core import TimezonePeriod
 
 
 class TestTimezonePeriod(unittest.TestCase):

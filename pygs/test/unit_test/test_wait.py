@@ -1,5 +1,6 @@
-from graphserver.core import Wait, Timezone, TimezonePeriod, State, WalkOptions
 import unittest
+
+from graphserver.core import State, Timezone, TimezonePeriod, Wait, WalkOptions
 
 
 class TestWait(unittest.TestCase):

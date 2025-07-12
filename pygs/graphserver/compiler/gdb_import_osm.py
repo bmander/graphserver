@@ -1,10 +1,12 @@
 from optparse import OptionParser
-from graphserver.graphdb import GraphDatabase
+import sys
+
+from gdb_import_ned import get_rise_and_fall
+
 from graphserver.core import Street
 from graphserver.ext.osm.osmdb import OSMDB
-import sys
 from graphserver.ext.osm.profiledb import ProfileDB
-from gdb_import_ned import get_rise_and_fall
+from graphserver.graphdb import GraphDatabase
 
 
 def edges_from_osmdb(osmdb, vertex_namespace, slogs, profiledb=None):

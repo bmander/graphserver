@@ -1,6 +1,7 @@
-from graphserver.core import ServiceCalendar
-import unittest
 import pickle
+import unittest
+
+from graphserver.core import ServiceCalendar
 
 
 class TestServiceCalendar(unittest.TestCase):
@@ -24,8 +25,8 @@ class TestServiceCalendar(unittest.TestCase):
 
         c.add_period(0, 1000, ["B"])
 
-        import pickle
         from io import BytesIO
+        import pickle
 
         src = BytesIO()
         p = pickle.Pickler(src)

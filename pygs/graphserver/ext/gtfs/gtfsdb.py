@@ -1,11 +1,12 @@
-import csv
-import sqlite3
-import sys
-import os
-from zipfile import ZipFile
 from codecs import iterdecode
+import csv
 import datetime
 from optparse import OptionParser
+import os
+import sqlite3
+import sys
+from zipfile import ZipFile
+
 from graphserver.util import withProgress
 
 

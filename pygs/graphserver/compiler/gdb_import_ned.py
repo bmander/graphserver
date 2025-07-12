@@ -1,7 +1,8 @@
 from sys import argv
-from graphserver.graphdb import GraphDatabase
-from graphserver.ext.osm.profiledb import ProfileDB
+
 from graphserver.core import Street
+from graphserver.ext.osm.profiledb import ProfileDB
+from graphserver.graphdb import GraphDatabase
 
 
 def cons(ary):

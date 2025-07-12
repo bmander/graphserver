@@ -1,5 +1,6 @@
 import unittest
-from graphserver.core import Graph, Street, State, WalkOptions, ShortestPathTree, Link
+
+from graphserver.core import Graph, Link, ShortestPathTree, State, Street, WalkOptions
 
 
 class TestGraph(unittest.TestCase):

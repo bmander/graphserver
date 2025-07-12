@@ -1,5 +1,6 @@
-from graphserver.core import Vertex
 import unittest
+
+from graphserver.core import Vertex
 
 
 class TestVertex(unittest.TestCase):

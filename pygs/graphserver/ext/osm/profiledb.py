@@ -1,12 +1,9 @@
 # A little encapsulated databse for storing elevation profiles of OSM ways
 
+import binascii
 import os
 import sqlite3
-
-import binascii
 from struct import pack, unpack
-
-
 from sys import argv
 
 

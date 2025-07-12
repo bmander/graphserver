@@ -1,5 +1,6 @@
-from graphserver.core import State, ServicePeriod
 import unittest
+
+from graphserver.core import ServicePeriod, State
 
 
 class TestState(unittest.TestCase):

@@ -1,9 +1,9 @@
-from graphserver.util import TimeHelpers
+from math import acos, asin, degrees
+
 import graphserver.core
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
 from graphserver.ext.osm.osmdb import OSMDB
-
-from math import asin, acos, degrees
+from graphserver.util import TimeHelpers
 
 
 class NarrativeEvent:

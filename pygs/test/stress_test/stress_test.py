@@ -1,22 +1,23 @@
-from stress_utils import get_mem_usage
+from random import randint
 import sys
 import unittest
-from random import randint
+
+from stress_utils import get_mem_usage
 
 sys.path.append("..")
 from graphserver.core import (
+    Crossing,
     Graph,
+    Link,
+    ServiceCalendar,
     State,
     Street,
-    ServiceCalendar,
     Timezone,
     TimezonePeriod,
-    TripBoard,
     TripAlight,
-    Link,
-    Wait,
+    TripBoard,
     Vertex,
-    Crossing,
+    Wait,
 )
 
 

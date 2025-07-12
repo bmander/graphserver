@@ -1,9 +1,9 @@
+from optparse import OptionParser
+
+from graphserver.core import Street
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
 from graphserver.graphdb import GraphDatabase
-from graphserver.core import Street
 from graphserver.vincenty import vincenty
-
-from optparse import OptionParser
 
 
 def main():

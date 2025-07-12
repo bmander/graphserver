@@ -1,5 +1,6 @@
-from graphserver.core import Vertex, Edge, Link, Path
 import unittest
+
+from graphserver.core import Edge, Link, Path, Vertex
 
 
 class TestPathCreate(unittest.TestCase):

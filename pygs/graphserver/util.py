@@ -1,9 +1,9 @@
-import pytz
-from datetime import datetime
-import time
-import sys
-
 import calendar
+from datetime import datetime
+import sys
+import time
+
+import pytz
 
 SECS_IN_MINUTE = 60
 SECS_IN_HOURS = 60 * SECS_IN_MINUTE

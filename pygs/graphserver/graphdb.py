@@ -5,9 +5,10 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
-from graphserver.core import State, Graph, Combination
-from sys import argv
 import sys
+from sys import argv
+
+from graphserver.core import Combination, Graph, State
 
 
 class GraphDatabase:

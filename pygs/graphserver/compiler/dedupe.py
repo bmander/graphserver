@@ -1,8 +1,8 @@
 # eliminate duplicate service periods from a GTFS database
 
-from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
-
 from optparse import OptionParser
+
+from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
 
 
 def main():

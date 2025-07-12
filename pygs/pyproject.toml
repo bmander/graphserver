@@ -68,3 +68,9 @@ graphserver = ["libgraphserver.so"]
 
 [tool.ruff]
 line-length = 88
+
+[tool.ruff.lint]
+select = ["I"]  # Enable isort import sorting
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true

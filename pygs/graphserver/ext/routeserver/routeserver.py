@@ -1,17 +1,20 @@
-from servable import Servable
-from graphserver.graphdb import GraphDatabase
-from graphserver.core import State, WalkOptions
-import time
-import sys
 from optparse import OptionParser
+import sys
+import time
+
+from servable import Servable
+
+from graphserver.core import State, WalkOptions
+from graphserver.graphdb import GraphDatabase
 
 try:
     import json
 except ImportError:
     import simplejson as json
-import yaml
 import os
+
 from fcgi import WSGIServer
+import yaml
 
 
 class SelfEncoderHelper(json.JSONEncoder):

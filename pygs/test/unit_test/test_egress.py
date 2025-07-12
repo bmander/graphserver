@@ -1,5 +1,6 @@
-from graphserver.core import Egress, Graph, State, WalkOptions, ShortestPathTree
 import unittest
+
+from graphserver.core import Egress, Graph, ShortestPathTree, State, WalkOptions
 
 
 class TestEgress(unittest.TestCase):

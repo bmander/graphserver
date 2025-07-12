@@ -1,6 +1,7 @@
 from optparse import OptionParser
-from graphserver.graphdb import GraphDatabase
 import os
+
+from graphserver.graphdb import GraphDatabase
 
 
 def main():

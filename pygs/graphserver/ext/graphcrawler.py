@@ -1,8 +1,10 @@
-from servable import Servable
-from graphserver.graphdb import GraphDatabase
 import cgi
-from graphserver.core import State, WalkOptions
 import time
+
+from servable import Servable
+
+from graphserver.core import State, WalkOptions
+from graphserver.graphdb import GraphDatabase
 
 
 def string_spt_vertex(vertex, level=0):

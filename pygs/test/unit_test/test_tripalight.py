@@ -1,13 +1,14 @@
+from random import randint
 import unittest
+
 from graphserver.core import (
-    TripAlight,
     ServiceCalendar,
+    State,
     Timezone,
     TimezonePeriod,
+    TripAlight,
     WalkOptions,
-    State,
 )
-from random import randint
 
 
 class TestTripAlight(unittest.TestCase):

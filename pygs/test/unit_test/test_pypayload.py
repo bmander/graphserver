@@ -1,14 +1,15 @@
-from graphserver.core import (
-    Graph,
-    NoOpPyPayload,
-    GenericPyPayload,
-    State,
-    WalkOptions,
-    ShortestPathTree,
-)
-import unittest
 import io
 import sys
+import unittest
+
+from graphserver.core import (
+    GenericPyPayload,
+    Graph,
+    NoOpPyPayload,
+    ShortestPathTree,
+    State,
+    WalkOptions,
+)
 
 
 class TestPyPayload(unittest.TestCase):

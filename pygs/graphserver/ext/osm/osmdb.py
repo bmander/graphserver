@@ -1,17 +1,19 @@
-import sqlite3
 import os
+import sqlite3
 
 try:
     import json
 except ImportError:
     import simplejson as json
-import sys
-import xml.sax
 import binascii
 from optparse import OptionParser
-from graphserver.vincenty import vincenty
 from struct import pack, unpack
+import sys
+import xml.sax
+
 from rtree import Rtree
+
+from graphserver.vincenty import vincenty
 
 
 def cons(ary):

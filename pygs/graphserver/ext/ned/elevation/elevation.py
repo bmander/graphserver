@@ -1,5 +1,6 @@
-import struct
 from math import floor
+import struct
+
 from graphserver.vincenty import vincenty
 
 

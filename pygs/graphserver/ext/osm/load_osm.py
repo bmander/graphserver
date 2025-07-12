@@ -1,5 +1,6 @@
-from osm import OSM
 import sys
+
+from osm import OSM
 
 sys.path.append("../../..")
 from graphserver.core import Street

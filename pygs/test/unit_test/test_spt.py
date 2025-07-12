@@ -1,15 +1,16 @@
+import unittest
+
 from graphserver.core import (
     Graph,
-    Street,
-    State,
-    WalkOptions,
-    Vertex,
-    ShortestPathTree,
     Link,
-    SPTVertex,
+    ShortestPathTree,
     SPTEdge,
+    SPTVertex,
+    State,
+    Street,
+    Vertex,
+    WalkOptions,
 )
-import unittest
 
 
 class TestShortestPathTree(unittest.TestCase):

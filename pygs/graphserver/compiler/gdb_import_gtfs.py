@@ -1,20 +1,22 @@
-from graphserver.core import (
-    Graph,
-    TripBoard,
-    HeadwayBoard,
-    HeadwayAlight,
-    Crossing,
-    TripAlight,
-    Timezone,
-    Link,
-    ElapseTime,
-)
-from optparse import OptionParser
-from graphserver.graphdb import GraphDatabase
-from graphserver.ext.gtfs.gtfsdb import GTFSDatabase, parse_gtfs_date
-import sys
-from tools import service_calendar_from_timezone
 import datetime
+from optparse import OptionParser
+import sys
+
+from tools import service_calendar_from_timezone
+
+from graphserver.core import (
+    Crossing,
+    ElapseTime,
+    Graph,
+    HeadwayAlight,
+    HeadwayBoard,
+    Link,
+    Timezone,
+    TripAlight,
+    TripBoard,
+)
+from graphserver.ext.gtfs.gtfsdb import GTFSDatabase, parse_gtfs_date
+from graphserver.graphdb import GraphDatabase
 
 
 def cons(ary):

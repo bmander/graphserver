@@ -1,5 +1,6 @@
-from graphserver.core import Link, State, WalkOptions
 import unittest
+
+from graphserver.core import Link, State, WalkOptions
 
 
 class TestLink(unittest.TestCase):

@@ -1,19 +1,23 @@
 import atexit
-from ctypes import cdll, PyDLL, CFUNCTYPE
 from ctypes import (
-    c_int,
-    c_long,
-    c_float,
-    c_size_t,
+    CFUNCTYPE,
+    POINTER,
+    PyDLL,
     c_char_p,
     c_double,
+    c_float,
+    c_int,
+    c_int8,
+    c_int16,
+    c_int32,
+    c_int64,
+    c_long,
+    c_size_t,
     c_void_p,
+    cdll,
     py_object,
 )
-from ctypes import c_int8, c_int16, c_int32, c_int64
-from ctypes import POINTER
 from ctypes.util import find_library
-
 import os
 import sys
 

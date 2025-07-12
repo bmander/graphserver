@@ -1,7 +1,8 @@
+import os
 import unittest
+
 from graphserver.core import Graph, Link, Street, WalkOptions
 from graphserver.graphdb import GraphDatabase
-import os
 
 
 def glen(gen):

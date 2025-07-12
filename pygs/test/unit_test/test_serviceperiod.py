@@ -1,6 +1,7 @@
-from graphserver.core import ServicePeriod, ServiceCalendar
-import unittest
 import pickle
+import unittest
+
+from graphserver.core import ServiceCalendar, ServicePeriod
 
 
 class TestServicePeriod(unittest.TestCase):

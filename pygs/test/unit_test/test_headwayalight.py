@@ -1,10 +1,11 @@
 import unittest
+
 from graphserver.core import (
     HeadwayAlight,
     ServiceCalendar,
+    State,
     Timezone,
     TimezonePeriod,
-    State,
     WalkOptions,
 )
 

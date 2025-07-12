@@ -1,6 +1,8 @@
-import xml.sax
 import copy
-from math import sin, cos, atan2, sqrt, pi as PI
+from math import atan2, cos, sin, sqrt
+from math import pi as PI
+import xml.sax
+
 from graphserver.vincenty import vincenty
 
 INFINITY = float("inf")
