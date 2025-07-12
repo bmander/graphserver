@@ -8,7 +8,8 @@ linkNew() {
   ret->external_id = 0;
   ret->type = PL_LINK;
   ret->name = (char*)malloc(5*sizeof(char));
-  strcpy(ret->name, "LINK");
+  strncpy(ret->name, "LINK", 4);
+  ret->name[4] = '\0';
     
   //bind functions to methods
   ret->walk = &linkWalk;

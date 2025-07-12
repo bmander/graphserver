@@ -30,7 +30,11 @@ void chDestroy( CH* this ) {
 CHPath* chpNew( int n, long length ) {
   CHPath *this = (CHPath*)malloc(sizeof(CHPath));
   this->n = n;
-  this->payloads = (EdgePayload**)malloc(n*sizeof(EdgePayload*));
+  if (n > 0) {
+    this->payloads = (EdgePayload**)malloc(n*sizeof(EdgePayload*));
+  } else {
+    this->payloads = NULL;
+  }
   this->length = length;
 
   return this;

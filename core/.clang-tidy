@@ -19,7 +19,6 @@ Checks: >
 
 WarningsAsErrors: ''
 HeaderFilterRegex: '.*'
-AnalyzeTemporaryDtors: false
 FormatStyle: 'file'
 
 CheckOptions:

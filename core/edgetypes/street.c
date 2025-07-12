@@ -7,7 +7,8 @@ streetNew(const char *name, double length, int reverse_of_source) {
   ret->external_id = 0;
   ret->type = PL_STREET;
   ret->name = (char*)malloc((strlen(name)+1)*sizeof(char));
-  strcpy(ret->name, name);
+  strncpy(ret->name, name, strlen(name));
+  ret->name[strlen(name)] = '\0';
   ret->length = length;
   ret->rise = 0;
   ret->fall = 0;

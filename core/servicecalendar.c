@@ -24,7 +24,8 @@ scAddServiceId( ServiceCalendar* this, char* service_id ) {
     
     size_t labelsize = strlen(service_id)+1;
     char* sid_str_payload = (char*)malloc(labelsize*sizeof(char));
-    strcpy(sid_str_payload, service_id);
+    strncpy(sid_str_payload, service_id, labelsize-1);
+    sid_str_payload[labelsize-1] = '\0';
     this->sid_int_to_str[this->num_sids]=sid_str_payload;
     
     int ret = this->num_sids;
