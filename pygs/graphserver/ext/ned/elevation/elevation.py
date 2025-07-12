@@ -39,7 +39,6 @@ def split_line_segment(lng1, lat1, lng2, lat2, max_section_length):
 
 
 def split_line_string(points, max_section_length):
-
     # Split each line segment in the linestring into segment smaller than max_section_length
     split_segs = []
     for (lng1, lat1), (lng2, lat2) in cons(points):

@@ -11,7 +11,6 @@ SECS_IN_DAYS = 24 * SECS_IN_HOURS
 
 
 class TimeHelpers:
-
     @classmethod
     def unix_time(cls, year, month, day, hour, minute, second, offset=0):
         """When it is midnight in London, it is 4PM in Seattle: The offset is eight hours. In order

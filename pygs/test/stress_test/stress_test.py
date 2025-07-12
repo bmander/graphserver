@@ -22,7 +22,6 @@ import unittest
 
 
 class StressTest(unittest.TestCase):
-
     def test_state_destroy(self):
         """State picks up after itself"""
 

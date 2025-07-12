@@ -37,9 +37,9 @@ class TestServiceCalendar(unittest.TestCase):
         upc = pickle.Unpickler(dst).load()
         print(c.expound("America/Los_Angeles"))
         print(upc.expound("America/Los_Angeles"))
-        assert c.expound("America/Los_Angeles") == upc.expound(
-            "America/Los_Angeles"
-        ), upc
+        assert c.expound("America/Los_Angeles") == upc.expound("America/Los_Angeles"), (
+            upc
+        )
         for _c in [c, upc]:
             assert _c.get_service_id_string(-1) == None
             assert _c.get_service_id_string(0) == "A", _c.to_xml()
@@ -73,7 +73,6 @@ class TestServiceCalendar(unittest.TestCase):
         assert c.period_of_or_after(1001) == None
 
     def test_overlap_a_little(self):
-
         c = ServiceCalendar()
         c.add_period(0, 1000, ["A"])
         c.add_period(1000, 2000, ["B"])

@@ -35,7 +35,6 @@ class BoardEvent:
         return edge is not None and isinstance(edge.payload, graphserver.core.TripBoard)
 
     def __call__(self, vertex1, edge, vertex2, context):
-
         event_time = vertex2.state.time
         trip_id = vertex2.state.trip_id
         stop_id = vertex1.label.split("-")[-1]
@@ -86,7 +85,6 @@ class DescribeCrossingAtAlightEvent:
         )
 
     def __call__(self, vertex1, edge, vertex2, context):
-
         stop_sequence_of_boarding = vertex1.state.stop_sequence
         trip_id = vertex1.state.trip_id
         alighting_trip_id, alighting_time, alighting_stop_sequences = (
@@ -466,7 +464,6 @@ class StreetTurnEvent:
         )
 
     def __call__(self, edge1, vertex, edge2, context):
-
         osm_id = vertex.label.split("-")[1]
 
         # figure out which direction to turn

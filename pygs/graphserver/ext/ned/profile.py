@@ -51,7 +51,6 @@ class Profile(object):
 
 
 def populate_profile_db(osmdb_name, profiledb_name, dem_basenames, resolution):
-
     ddb = OSMDB(osmdb_name)
     elevs = ElevationPile()
     for dem_basename in dem_basenames:

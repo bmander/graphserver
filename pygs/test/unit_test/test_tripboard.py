@@ -71,7 +71,6 @@ class TestTripBoard(unittest.TestCase):
         assert tb.overage == 3600
 
     def test_tripboard_over_midnight(self):
-
         sc = ServiceCalendar()
         sc.add_period(0, 1 * 3600 * 24, ["WKDY"])
         sc.add_period(1 * 3600 * 24, 2 * 3600 * 24, ["SAT"])
@@ -117,7 +116,6 @@ class TestTripBoard(unittest.TestCase):
         self.assertEqual(s1, None)
 
     def test_tripboard_over_midnight_without_hope(self):
-
         sc = ServiceCalendar()
         sc.add_period(0, 1 * 3600 * 24, ["WKDY"])
         sc.add_period(1 * 3600 * 24, 2 * 3600 * 24, ["SAT"])

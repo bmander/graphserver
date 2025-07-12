@@ -13,7 +13,6 @@ import os
 from fcgi import WSGIServer
 
 
-
 class SelfEncoderHelper(json.JSONEncoder):
     def default(self, obj):
         if hasattr(obj, "to_jsonable"):
@@ -119,7 +118,6 @@ class RouteServer(Servable):
         max_walk=None,
         jsoncallback=None,
     ):
-
         performance = {}
 
         if currtime is None:
@@ -256,7 +254,6 @@ class RouteServer(Servable):
         return ret
 
     def path_raw_retro(self, origin, dest, currtime):
-
         wo = WalkOptions()
         spt = self.graph.shortest_path_tree_retro(origin, dest, State(1, currtime), wo)
         wo.destroy()
@@ -306,7 +303,6 @@ from optparse import OptionParser
 
 
 def main():
-
     # get command line input
     usage = """python routeserver.py graphdb_filename config_filename"""
     parser = OptionParser(usage=usage)

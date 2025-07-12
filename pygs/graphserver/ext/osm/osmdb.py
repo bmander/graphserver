@@ -598,7 +598,6 @@ from optparse import OptionParser
 
 
 def main():
-
     parser = OptionParser(
         usage="%prog [options] osm_filename [osm_filename ...] osmdb_filename"
     )

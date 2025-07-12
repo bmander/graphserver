@@ -3,7 +3,6 @@ from graphserver.core import *
 
 
 class TestGraph(unittest.TestCase):
-
     def test_basic(self):
         g = Graph()
         assert g
@@ -149,7 +148,6 @@ class TestGraph(unittest.TestCase):
         )
 
     def test_spt_retro(self):
-
         g = Graph()
 
         # add two vertices

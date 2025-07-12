@@ -176,7 +176,6 @@ class Way:
 
 
 class OSM:
-
     def __init__(self, filename_or_stream, tolerant=False):
         """File can be either a filename or stream/file object."""
         nodes = {}

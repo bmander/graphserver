@@ -17,7 +17,6 @@ def edges_from_osmdb(osmdb, vertex_namespace, slogs, profiledb=None):
     for i, (id, parent_id, node1, node2, distance, geom, tags) in enumerate(
         osmdb.edges()
     ):
-
         # Find rise/fall of edge, if profiledb is given
         rise = 0
         fall = 0
@@ -69,7 +68,6 @@ def gdb_import_osm(gdb, osmdb, vertex_namespace, slogs, profiledb=None):
     for i, (vertex1_label, vertex2_label, edge) in enumerate(
         edges_from_osmdb(osmdb, vertex_namespace, slogs, profiledb)
     ):
-
         if i % (n_edges // 100 + 1) == 0:
             sys.stdout.write("%d/~%d edges loaded\r\n" % (i, n_edges))
 

@@ -75,7 +75,6 @@ class TestHeadwayAlight(unittest.TestCase):
         assert s1.trip_id == None
 
     def test_headwayalight_over_midnight(self):
-
         sc = ServiceCalendar()
         sc.add_period(0, 1 * 3600 * 24, ["WKDY"])
         sc.add_period(1 * 3600 * 24, 2 * 3600 * 24, ["SAT"])

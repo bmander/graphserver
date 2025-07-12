@@ -63,7 +63,6 @@ class TestState(unittest.TestCase):
             pass
 
     def test_clone(self):
-
         s = State(1, 0)
         sp = ServicePeriod(0, 1 * 3600 * 24, [1, 2])
         s.set_service_period(0, sp)

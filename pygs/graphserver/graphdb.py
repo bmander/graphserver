@@ -11,7 +11,6 @@ import sys
 
 
 class GraphDatabase:
-
     def __init__(self, sqlite_filename, overwrite=False):
         if overwrite:
             if os.path.exists(sqlite_filename):
@@ -42,7 +41,6 @@ class GraphDatabase:
         c.close()
 
     def put_edge_payload(self, edgepayload, cc):
-
         if edgepayload.__class__ == Combination:
             for component in edgepayload.components:
                 self.put_edge_payload(component, cc)
@@ -143,7 +141,6 @@ class GraphDatabase:
             c.close()
 
     def execute(self, query, args=None):
-
         c = self.conn.cursor()
 
         if args:

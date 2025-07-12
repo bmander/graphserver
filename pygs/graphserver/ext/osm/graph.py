@@ -7,7 +7,6 @@ from graphserver.core import Graph, Street
 
 
 class OSMGraph(Graph):
-
     def __init__(self, filename_osmobject_or_stream, projection):
         """Builds an OSM graph based on a filename or filehandle.  Projection is used for calculating lengths.
         Subclasses can override the is_valid_way and create_edgepayload methods to filter path types and

@@ -3,9 +3,7 @@ from graphserver.core import *
 
 
 class TestCrossing(unittest.TestCase):
-
     def test_basic(self):
-
         cr = Crossing()
 
         assert cr
@@ -51,7 +49,6 @@ class TestCrossing(unittest.TestCase):
         assert cr.get_crossing(2) == ("3", 30)
 
     def test_walk(self):
-
         cr = Crossing()
         cr.add_crossing_time("1", 10)
 
@@ -67,7 +64,6 @@ class TestCrossing(unittest.TestCase):
         assert s1.weight == 10
 
     def test_walk_back(self):
-
         cr = Crossing()
         cr.add_crossing_time("1", 10)
 

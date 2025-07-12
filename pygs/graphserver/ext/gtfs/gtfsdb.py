@@ -127,16 +127,13 @@ SELECT stop_times.* FROM stop_times, trips
         AND stop_times.stop_id = ?
         AND arrival_time NOT NULL
         AND departure_time NOT NULL
-  ORDER BY departure_time""" % (
-            ",".join(["'%s'" % x for x in self.trip_ids])
-        )
+  ORDER BY departure_time""" % (",".join(["'%s'" % x for x in self.trip_ids]))
 
         c.execute(query, (service_id, str(stop_id)))
 
         return list(c)
 
     def stop_time_bundles(self, service_id):
-
         c = self.gtfsdb.conn.cursor()
 
         query = """
@@ -152,9 +149,7 @@ SELECT stop_times.* FROM stop_times, trips
         AND trips.service_id = ?
         AND arrival_time NOT NULL
         AND departure_time NOT NULL
-        ORDER BY stop_sequence""" % (
-            ",".join(["'%s'" % x for x in self.trip_ids])
-        )
+        ORDER BY stop_sequence""" % (",".join(["'%s'" % x for x in self.trip_ids]))
 
         # bundle queries by trip_id
 
@@ -373,7 +368,6 @@ class GTFSDatabase:
         c.close()
 
     def _create_indices(self, c):
-
         c.execute("CREATE INDEX stop_times_trip_id ON stop_times (trip_id)")
         c.execute("CREATE INDEX stop_times_stop_id ON stop_times (stop_id)")
         c.execute("CREATE INDEX trips_trip_id ON trips (trip_id)")
@@ -407,7 +401,6 @@ class GTFSDatabase:
         return ret
 
     def compile_trip_bundles(self, maxtrips=None, reporter=None):
-
         c = self.get_cursor()
 
         patterns = {}
@@ -485,7 +478,6 @@ class GTFSDatabase:
         return ret
 
     def execute(self, query, args=None):
-
         c = self.get_cursor()
 
         if args:
@@ -498,7 +490,6 @@ class GTFSDatabase:
         c.close()
 
     def agency_timezone_name(self, agency_id_or_name=None):
-
         if agency_id_or_name is None:
             agency_timezone_name = list(
                 self.execute("SELECT agency_timezone FROM agency LIMIT 1")

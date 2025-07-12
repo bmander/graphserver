@@ -66,7 +66,6 @@ class TestTripAlight(unittest.TestCase):
         assert al.overage == 3600
 
     def test_alight_over_midnight(self):
-
         sc = ServiceCalendar()
         sc.add_period(0, 1 * 3600 * 24, ["WKDY"])
         sc.add_period(1 * 3600 * 24, 2 * 3600 * 24, ["SAT"])
@@ -473,7 +472,6 @@ class TestTripAlight(unittest.TestCase):
         self.assertEquals(s1.time, 86399)
 
     def test_check_today(self):
-
         # the service calendar has two weekdays, back to back
         sc = ServiceCalendar()
         sc.add_period(0, 3600 * 24, ["WKDY"])

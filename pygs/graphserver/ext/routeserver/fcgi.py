@@ -1372,7 +1372,12 @@ if __name__ == "__main__":
         import cgi
 
         start_response("200 OK", [("Content-Type", "text/html")])
-        yield "<html><head><title>Hello World!</title></head>\n" "<body>\n" "<p>Hello World!</p>\n" '<table border="1">'
+        yield (
+            "<html><head><title>Hello World!</title></head>\n"
+            "<body>\n"
+            "<p>Hello World!</p>\n"
+            '<table border="1">'
+        )
         names = environ.keys()
         names.sort()
         for name in names:
@@ -1390,6 +1395,6 @@ if __name__ == "__main__":
         for field in form.list:
             yield "<tr><td>%s</td><td>%s</td></tr>\n" % (field.name, field.value)
 
-        yield "</table>\n" "</body></html>\n"
+        yield "</table>\n</body></html>\n"
 
     WSGIServer(test_app).run()

@@ -272,7 +272,6 @@ class FindDisjunctGraphsFilter(OSMDBFilter):
             print("FOUND: %s=%s" % (gnum, count))
 
     def visualize(self, db, out_filename, renderer="/usr/local/bin/prender/renderer"):
-
         from prender import processing
 
         c = db.conn.cursor()
@@ -344,7 +343,6 @@ class FindDisjunctGraphsFilter(OSMDBFilter):
 
 
 class StitchDisjunctGraphs(OSMDBFilter):
-
     def filter(self, osmdb, *args):
         alias = {}
 
@@ -352,7 +350,6 @@ class StitchDisjunctGraphs(OSMDBFilter):
         for nds, ct, lat, lon in osmdb.execute(
             "SELECT group_concat(id), count(*) as cnt, lat, lon from nodes GROUP BY lat, lon HAVING cnt > 1"
         ):
-
             # get all the nodes that appear at that location
             # ids = map(lambda x:x[0], osmdb.execute("SELECT id FROM nodes WHERE lat=? AND lon=?", (lat,lon)))
             # print(nds)

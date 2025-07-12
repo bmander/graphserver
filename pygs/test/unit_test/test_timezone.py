@@ -134,7 +134,6 @@ class TestTimezone(unittest.TestCase):
             assert str(ex) == "600 lands within no timezone period"
 
     def test_generate(self):
-
         tz = Timezone.generate("America/Los_Angeles")
 
         assert (

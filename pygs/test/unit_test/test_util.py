@@ -3,7 +3,6 @@ from graphserver.util import TimeHelpers
 
 
 class TestUtil(unittest.TestCase):
-
     def test_basic(self):
         assert (
             TimeHelpers.localtime_to_unix(2008, 10, 12, 6, 0, 0, "Europe/Paris")

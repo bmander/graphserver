@@ -140,7 +140,6 @@ class Path(Structure):
 
 
 class Graph(CShadow):
-
     size = cproperty(lgs.gSize, c_long)
 
     def __init__(self, numagencies=1):
@@ -355,7 +354,6 @@ class Graph(CShadow):
 
 
 class ContractionHierarchy(CShadow):
-
     upgraph = cproperty(lgs.chUpGraph, c_void_p, Graph)
     downgraph = cproperty(lgs.chDownGraph, c_void_p, Graph)
 
@@ -397,7 +395,6 @@ class ContractionHierarchy(CShadow):
 
 
 class ShortestPathTree(CShadow):
-
     size = cproperty(lgs.sptSize, c_long)
 
     def __init__(self, numagencies=1):
@@ -551,7 +548,6 @@ class EdgePayload(CShadow, Walkable):
 
 
 class State(CShadow):
-
     def __init__(self, n_agencies, time=None):
         if time is None:
             time = now()
@@ -630,7 +626,6 @@ class State(CShadow):
 
 
 class WalkOptions(CShadow):
-
     def __init__(self):
         self.soul = self._cnew()
 
@@ -709,7 +704,6 @@ class SPTEdge(Edge):
 
 
 class Vertex(CShadow):
-
     @property
     def label(self):
         self.check_destroyed()
@@ -792,7 +786,6 @@ class Vertex(CShadow):
 
 
 class SPTVertex(CShadow):
-
     @property
     def label(self):
         self.check_destroyed()
@@ -880,7 +873,6 @@ class SPTVertex(CShadow):
 
 
 class ListNode(CShadow):
-
     def data(self, edgeclass=Edge):
         return edgeclass.from_pointer(lgs.liGetData(self.soul))
 
@@ -1005,7 +997,6 @@ class NoOpPyPayload(GenericPyPayload):
 
 
 class ServicePeriod(CShadow):
-
     begin_time = cproperty(lgs.spBeginTime, c_long)
     end_time = cproperty(lgs.spEndTime, c_long)
 
@@ -1477,7 +1468,6 @@ class ElapseTime(EdgePayload):
 
 
 class Headway(EdgePayload):
-
     begin_time = cproperty(lgs.headwayBeginTime, c_int)
     end_time = cproperty(lgs.headwayEndTime, c_int)
     wait_period = cproperty(lgs.headwayWaitPeriod, c_int)
@@ -1889,7 +1879,6 @@ class HeadwayAlight(EdgePayload):
 
 
 class Crossing(EdgePayload):
-
     def __init__(self):
         self.soul = self._cnew()
 
@@ -1949,7 +1938,6 @@ class Crossing(EdgePayload):
 
 
 class Combination(EdgePayload):
-
     n = cproperty(lgs.comboN, c_int)
 
     def __init__(self, cap):
