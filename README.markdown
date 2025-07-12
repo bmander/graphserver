@@ -19,8 +19,9 @@ Learn more about Graphserver at [http://graphserver.github.com/graphserver/](htt
 #### Step 1: Build the core C library
 ```bash
 cd core
-make
-sudo make install
+cmake -S . -B build
+cmake --build build
+sudo cmake --install build
 ```
 
 #### Step 2: Install Python bindings
@@ -88,9 +89,10 @@ using the Python bindings.
 
 Build:
     $ cd core
-    $ make
+    $ cmake -S . -B build
+    $ cmake --build build
 
 Install:
     $ cd core
-    $ sudo make install
+    $ sudo cmake --install build
 
