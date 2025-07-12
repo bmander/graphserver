@@ -27,7 +27,7 @@ class TestGraph(unittest.TestCase):
         g.add_vertex("A")
         g.get_vertex("A").label == "A"
         g.remove_vertex("A")
-        assert g.get_vertex("A") == None
+        assert g.get_vertex("A") is None
 
     def test_double_add_vertex(self):
         g = Graph()
@@ -47,7 +47,7 @@ class TestGraph(unittest.TestCase):
         v = g.get_vertex("home")
         assert v.label == "home"
         v = g.get_vertex("bogus")
-        assert v == None
+        assert v is None
 
         g.destroy()
 
@@ -373,16 +373,16 @@ class TestGraph(unittest.TestCase):
         spt = gg.shortest_path_tree("A", "E", State(0, 0), WalkOptions(), hoplimit=1)
         assert spt.get_vertex("A") != None
         assert spt.get_vertex("B") != None
-        assert spt.get_vertex("C") == None
-        assert spt.get_vertex("D") == None
-        assert spt.get_vertex("E") == None
+        assert spt.get_vertex("C") is None
+        assert spt.get_vertex("D") is None
+        assert spt.get_vertex("E") is None
 
         spt = gg.shortest_path_tree("A", "E", State(0, 0), WalkOptions(), hoplimit=3)
         assert spt.get_vertex("A") != None
         assert spt.get_vertex("B") != None
         assert spt.get_vertex("C") != None
         assert spt.get_vertex("D") != None
-        assert spt.get_vertex("E") == None
+        assert spt.get_vertex("E") is None
 
     def test_traverse(self):
         gg = Graph()

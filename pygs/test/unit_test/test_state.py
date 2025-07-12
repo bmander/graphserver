@@ -9,10 +9,10 @@ class TestState(unittest.TestCase):
         assert s.weight == 0
         assert s.dist_walked == 0
         assert s.num_transfers == 0
-        assert s.prev_edge == None
+        assert s.prev_edge is None
         assert s.num_agencies == 1
-        assert s.service_period(0) == None
-        assert s.trip_id == None
+        assert s.service_period(0) is None
+        assert s.trip_id is None
         assert s.stop_sequence == -1
 
     def test_basic_multiple_calendars(self):
@@ -21,10 +21,10 @@ class TestState(unittest.TestCase):
         assert s.weight == 0
         assert s.dist_walked == 0
         assert s.num_transfers == 0
-        assert s.prev_edge == None
+        assert s.prev_edge is None
         assert s.num_agencies == 2
-        assert s.service_period(0) == None
-        assert s.service_period(1) == None
+        assert s.service_period(0) is None
+        assert s.service_period(1) is None
         assert s.stop_sequence == -1
 
     def test_set_cal(self):
@@ -34,7 +34,7 @@ class TestState(unittest.TestCase):
         try:
             s.set_calendar_day(1, cal)
             assert False  # should have failed by now
-        except:
+        except Exception:
             pass
 
         s.set_service_period(0, sp)
@@ -53,13 +53,13 @@ class TestState(unittest.TestCase):
         try:
             print(s.time)
             assert False  # should have popped exception by now
-        except:
+        except Exception:
             pass
 
         try:
             s.destroy()
             assert False
-        except:
+        except Exception:
             pass
 
     def test_clone(self):
@@ -75,7 +75,7 @@ class TestState(unittest.TestCase):
         assert s2.weight == 0
         assert s2.dist_walked == 0
         assert s2.num_transfers == 0
-        assert s2.prev_edge == None
+        assert s2.prev_edge is None
         assert s2.num_agencies == 1
         assert (
             s2.service_period(0).to_xml()

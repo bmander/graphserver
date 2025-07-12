@@ -41,7 +41,7 @@ class TestHeadway(unittest.TestCase):
         # wrong day
         s = State(1, 1 * 3600 * 24)
         ret = headway.walk(s, WalkOptions())
-        assert ret == None
+        assert ret is None
 
         # before headway
         s = State(1, 0)

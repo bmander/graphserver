@@ -316,7 +316,7 @@ class GTFSDatabase:
         if overwrite:
             try:
                 os.remove(sqlite_filename)
-            except:
+            except Exception:
                 pass
 
         self.conn = sqlite3.connect(sqlite_filename)

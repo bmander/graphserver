@@ -12,7 +12,7 @@ class TestElapseTime(unittest.TestCase):
         s = ElapseTime(1)
         s.destroy()
 
-        assert s.soul == None
+        assert s.soul is None
 
     def test_big_seconds(self):
         s = ElapseTime(240000)

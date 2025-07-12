@@ -6,10 +6,10 @@ import pickle
 class TestServiceCalendar(unittest.TestCase):
     def test_basic(self):
         c = ServiceCalendar()
-        assert c.head == None
+        assert c.head is None
 
-        assert c.period_of_or_before(0) == None
-        assert c.period_of_or_after(0) == None
+        assert c.period_of_or_before(0) is None
+        assert c.period_of_or_after(0) is None
 
     def test_get_service_id_int(self):
         c = ServiceCalendar()
@@ -41,10 +41,10 @@ class TestServiceCalendar(unittest.TestCase):
             upc
         )
         for _c in [c, upc]:
-            assert _c.get_service_id_string(-1) == None
+            assert _c.get_service_id_string(-1) is None
             assert _c.get_service_id_string(0) == "A", _c.to_xml()
             assert _c.get_service_id_string(1) == "B"
-            assert _c.get_service_id_string(2) == None
+            assert _c.get_service_id_string(2) is None
             try:
                 _c.get_service_id_string("A")
                 assert False
@@ -60,7 +60,7 @@ class TestServiceCalendar(unittest.TestCase):
         assert c.head.end_time == 1000
         assert c.head.service_ids == [0, 1, 2]
 
-        assert c.period_of_or_before(-1) == None
+        assert c.period_of_or_before(-1) is None
         assert c.period_of_or_before(0).begin_time == 0
         assert c.period_of_or_before(500).begin_time == 0
         assert c.period_of_or_before(1000).begin_time == 0
@@ -69,8 +69,8 @@ class TestServiceCalendar(unittest.TestCase):
         assert c.period_of_or_after(-1).begin_time == 0
         assert c.period_of_or_after(0).begin_time == 0
         assert c.period_of_or_after(500).begin_time == 0
-        assert c.period_of_or_after(1000) == None
-        assert c.period_of_or_after(1001) == None
+        assert c.period_of_or_after(1000) is None
+        assert c.period_of_or_after(1001) is None
 
     def test_overlap_a_little(self):
         c = ServiceCalendar()
@@ -80,7 +80,7 @@ class TestServiceCalendar(unittest.TestCase):
         assert c.head.begin_time == 0
         assert c.head.end_time == 1000
 
-        assert c.period_of_or_before(-1) == None
+        assert c.period_of_or_before(-1) is None
         assert c.period_of_or_before(0).begin_time == 0
         assert c.period_of_or_before(999).begin_time == 0
         assert c.period_of_or_before(1000).begin_time == 1000
@@ -92,7 +92,7 @@ class TestServiceCalendar(unittest.TestCase):
         assert c.head.begin_time == 0
         assert c.head.end_time == 1000
 
-        assert c.period_of_or_before(-1) == None
+        assert c.period_of_or_before(-1) is None
         assert c.period_of_or_before(0).begin_time == 0
         assert c.period_of_or_before(999).begin_time == 0
         assert c.period_of_or_before(1000).begin_time == 1000
@@ -116,10 +116,10 @@ class TestServiceCalendar(unittest.TestCase):
         assert c.head.end_time == 1000
         assert c.head.service_ids == [3, 4, 0]
 
-        assert c.head.previous == None
+        assert c.head.previous is None
         assert c.head.next.begin_time == 1001
 
-        assert c.period_of_or_before(-1) == None
+        assert c.period_of_or_before(-1) is None
         assert c.period_of_or_before(0).begin_time == 0
         assert c.period_of_or_before(1000).begin_time == 0
         assert c.period_of_or_before(1001).begin_time == 1001
@@ -130,8 +130,8 @@ class TestServiceCalendar(unittest.TestCase):
         assert c.period_of_or_after(0).begin_time == 0
         assert c.period_of_or_after(1000).begin_time == 1001
         assert c.period_of_or_after(1001).begin_time == 1001
-        assert c.period_of_or_after(2000) == None
-        assert c.period_of_or_after(2001) == None
+        assert c.period_of_or_after(2000) is None
+        assert c.period_of_or_after(2001) is None
 
     def test_add_three(self):
         c = ServiceCalendar()

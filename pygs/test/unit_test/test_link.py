@@ -12,7 +12,7 @@ class TestLink(unittest.TestCase):
         l = Link()
         l.destroy()
 
-        assert l.soul == None
+        assert l.soul is None
 
     def test_name(self):
         l = Link()

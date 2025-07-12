@@ -40,7 +40,7 @@ class TestStreet(unittest.TestCase):
         s = Street("mystreet", 1.1)
         s.destroy()
 
-        assert s.soul == None
+        assert s.soul is None
 
     def test_street_big_length(self):
         s = Street("longstreet", 240000)

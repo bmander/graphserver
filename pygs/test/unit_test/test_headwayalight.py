@@ -67,7 +67,7 @@ class TestHeadwayAlight(unittest.TestCase):
         # before beginning of headway period
         s0 = State(1, 199)
         s1 = ha.walk_back(s0, WalkOptions())
-        assert s1 == None
+        assert s1 is None
 
     def test_walk(self):
         sc = ServiceCalendar()
@@ -79,7 +79,7 @@ class TestHeadwayAlight(unittest.TestCase):
 
         s0 = State(1, 0)
         s1 = ha.walk(s0, WalkOptions())
-        assert s1.trip_id == None
+        assert s1.trip_id is None
 
     def test_headwayalight_over_midnight(self):
         sc = ServiceCalendar()
@@ -124,7 +124,7 @@ class TestHeadwayAlight(unittest.TestCase):
 
         s0 = State(1, 23 * 3600 - 1)
         s1 = ha.walk_back(s0, WalkOptions())
-        assert s1 == None
+        assert s1 is None
 
 
 if __name__ == "__main__":

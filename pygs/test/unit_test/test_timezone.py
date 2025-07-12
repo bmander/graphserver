@@ -9,7 +9,7 @@ class TestTimezone(unittest.TestCase):
         tz = Timezone()
 
         assert tz
-        assert tz.head == None
+        assert tz.head is None
 
     def test_add_timezone(self):
         tz = Timezone()
@@ -25,7 +25,7 @@ class TestTimezone(unittest.TestCase):
         tzp = TimezonePeriod(0, 100, -8 * 3600)
         tz.add_period(tzp)
 
-        assert tz.period_of(-1) == None
+        assert tz.period_of(-1) is None
 
         tzpprime = tz.period_of(0)
         assert tzpprime.soul == tzp.soul
@@ -37,7 +37,7 @@ class TestTimezone(unittest.TestCase):
         assert tzpprime.soul == tzp.soul
 
         tzpprime = tz.period_of(101)
-        assert tzpprime == None
+        assert tzpprime is None
 
     def test_utc_offset(self):
         tz = Timezone()
@@ -73,14 +73,14 @@ class TestTimezone(unittest.TestCase):
         assert tz.head.next_period.soul == p2.soul
         assert tz.head.next_period.next_period.soul == p3.soul
 
-        assert tz.period_of(-1) == None
+        assert tz.period_of(-1) is None
         assert tz.period_of(0).soul == p1.soul
         assert tz.period_of(99).soul == p1.soul
         assert tz.period_of(100).soul == p2.soul
         assert tz.period_of(199).soul == p2.soul
         assert tz.period_of(200).soul == p3.soul
         assert tz.period_of(299).soul == p3.soul
-        assert tz.period_of(300) == None
+        assert tz.period_of(300) is None
 
     def test_add_multiple_gaps_and_out_of_order(self):
         tz = Timezone()
@@ -91,15 +91,15 @@ class TestTimezone(unittest.TestCase):
         tz.add_period(p1)
         tz.add_period(p3)
 
-        assert tz.period_of(-1) == None
+        assert tz.period_of(-1) is None
         assert tz.period_of(0).soul == p1.soul
         assert tz.period_of(99).soul == p1.soul
-        assert tz.period_of(100) == None
-        assert tz.period_of(150) == None
+        assert tz.period_of(100) is None
+        assert tz.period_of(150) is None
         assert tz.period_of(200).soul == p2.soul
-        assert tz.period_of(300) == None
+        assert tz.period_of(300) is None
         assert tz.period_of(550).soul == p3.soul
-        assert tz.period_of(600) == None
+        assert tz.period_of(600) is None
 
     def test_utc_offset_with_gaps(self):
         tz = Timezone()

@@ -1,5 +1,12 @@
 import unittest
-from graphserver.core import TripAlight, ServiceCalendar, Timezone, TimezonePeriod
+from graphserver.core import (
+    TripAlight,
+    ServiceCalendar,
+    Timezone,
+    TimezonePeriod,
+    WalkOptions,
+    State,
+)
 from random import randint
 
 
@@ -23,7 +30,7 @@ class TestTripAlight(unittest.TestCase):
         assert al.type == 10
         assert al.soul
         al.destroy()
-        assert al.soul == None
+        assert al.soul is None
 
     def test_get_alighting_by_trip_id(self):
         sc = ServiceCalendar()
@@ -35,13 +42,13 @@ class TestTripAlight(unittest.TestCase):
 
         al.add_alighting("trip1", 0, 0)
         al.get_alighting_by_trip_id("trip1") == ("trip1", 0, 0)
-        assert al.get_alighting_by_trip_id("bogus") == None
+        assert al.get_alighting_by_trip_id("bogus") is None
 
         al.add_alighting("trip2", 1, 1)
 
         assert al.get_alighting_by_trip_id("trip1") == ("trip1", 0, 0)
         assert al.get_alighting_by_trip_id("trip2") == ("trip2", 1, 1)
-        assert al.get_alighting_by_trip_id("bogus") == None
+        assert al.get_alighting_by_trip_id("bogus") is None
 
     def test_overage(self):
         sc = ServiceCalendar()
@@ -80,7 +87,7 @@ class TestTripAlight(unittest.TestCase):
 
         s0 = State(1, 0)
         s1 = al.walk_back(s0, WalkOptions())
-        assert s1 == None
+        assert s1 is None
 
         s0 = State(1, 23 * 3600)
         s1 = al.walk_back(s0, WalkOptions())
@@ -340,11 +347,11 @@ class TestTripAlight(unittest.TestCase):
 
         al = TripAlight("WKDY", sc, tz, 0)
 
-        assert al.get_last_alighting(0) == None
+        assert al.get_last_alighting(0) is None
 
         al.add_alighting("morning", 15, 0)
 
-        assert al.get_last_alighting(5) == None
+        assert al.get_last_alighting(5) is None
         assert al.get_last_alighting(15) == ("morning", 15, 0)
         assert al.get_last_alighting(20) == ("morning", 15, 0)
 
@@ -356,17 +363,17 @@ class TestTripAlight(unittest.TestCase):
 
         al = TripAlight("WKDY", sc, tz, 0)
 
-        assert al.get_last_alighting(0) == None
+        assert al.get_last_alighting(0) is None
 
         al.add_alighting("1", 15, 0)
 
-        assert al.get_last_alighting(5) == None
+        assert al.get_last_alighting(5) is None
         assert al.get_last_alighting(15) == ("1", 15, 0)
         assert al.get_last_alighting(20) == ("1", 15, 0)
 
         al.add_alighting("2", 25, 0)
 
-        assert al.get_last_alighting(5) == None
+        assert al.get_last_alighting(5) is None
         assert al.get_last_alighting(15) == ("1", 15, 0)
         assert al.get_last_alighting(20) == ("1", 15, 0)
         assert al.get_last_alighting(25) == ("2", 25, 0)
@@ -387,7 +394,7 @@ class TestTripAlight(unittest.TestCase):
         # wrong day
         s = State(1, 1 * 3600 * 24)
         ret = al.walk_back(s, WalkOptions())
-        assert ret == None
+        assert ret is None
 
         s = State(1, 250)
         ret = al.walk_back(s, WalkOptions())
@@ -426,7 +433,7 @@ class TestTripAlight(unittest.TestCase):
 
         s = State(1, 49)
         ret = al.walk_back(s, WalkOptions())
-        assert ret == None
+        assert ret is None
 
     def test_walk(self):
         sc = ServiceCalendar()

@@ -13,7 +13,7 @@ class TestEgress(unittest.TestCase):
         s = Egress("mystreet", 1.1)
         s.destroy()
 
-        assert s.soul == None
+        assert s.soul is None
 
     def test_street_big_length(self):
         s = Egress("longstreet", 240000)

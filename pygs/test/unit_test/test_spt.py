@@ -44,7 +44,7 @@ class TestShortestPathTree(unittest.TestCase):
         spt.add_vertex(Vertex("A"))
         spt.get_vertex("A").label == "A"
         spt.remove_vertex("A")
-        assert spt.get_vertex("A") == None
+        assert spt.get_vertex("A") is None
 
         spt.add_vertex(Vertex("A"))
         spt.add_vertex(Vertex("B"))
@@ -52,7 +52,7 @@ class TestShortestPathTree(unittest.TestCase):
         spt.add_edge("A", "B", pl)
         spt.remove_vertex("A")
         assert pl.name == "AB"
-        assert spt.get_vertex("A") == None
+        assert spt.get_vertex("A") is None
         assert spt.get_vertex("B").label == "B"
 
     def test_double_add_vertex(self):
@@ -73,7 +73,7 @@ class TestShortestPathTree(unittest.TestCase):
         v = spt.get_vertex("home")
         assert v.label == "home"
         v = spt.get_vertex("bogus")
-        assert v == None
+        assert v is None
 
         spt.destroy()
 

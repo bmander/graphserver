@@ -9,8 +9,8 @@ class TestCrossing(unittest.TestCase):
         assert cr
         assert cr.soul
         assert cr.size == 0
-        assert cr.get_crossing_time("1") == None
-        assert cr.get_crossing(0) == None
+        assert cr.get_crossing_time("1") is None
+        assert cr.get_crossing(0) is None
 
     def test_add_crossing(self):
         cr = Crossing()
@@ -56,7 +56,7 @@ class TestCrossing(unittest.TestCase):
         ret = cr.walk(s, WalkOptions())
 
         # state has no trip_id, shouldn't evaluate at all
-        assert ret == None
+        assert ret is None
 
         s.dangerous_set_trip_id("1")
         s1 = cr.walk(s, WalkOptions())
@@ -69,7 +69,7 @@ class TestCrossing(unittest.TestCase):
 
         s = State(1, 10)
         ret = cr.walk_back(s, WalkOptions())
-        assert ret == None
+        assert ret is None
 
         s.dangerous_set_trip_id("1")
         s1 = cr.walk_back(s, WalkOptions())

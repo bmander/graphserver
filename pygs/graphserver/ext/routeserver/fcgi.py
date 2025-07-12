@@ -136,7 +136,7 @@ if __debug__:
             f = open(DEBUGLOG, "a")
             f.write("%sfcgi: %s\n" % (time.ctime()[4:-4], msg))
             f.close()
-        except:
+        except Exception:
             pass
 
 
@@ -506,7 +506,7 @@ class Record(object):
         """Read and decode a Record from a socket."""
         try:
             header, length = self._recvall(sock, FCGI_HEADER_LEN)
-        except:
+        except Exception:
             raise EOFError
 
         if length < FCGI_HEADER_LEN:
@@ -531,7 +531,7 @@ class Record(object):
         if self.contentLength:
             try:
                 self.contentData, length = self._recvall(sock, self.contentLength)
-            except:
+            except Exception:
                 raise EOFError
 
             if length < self.contentLength:
@@ -540,7 +540,7 @@ class Record(object):
         if self.paddingLength:
             try:
                 self._recvall(sock, self.paddingLength)
-            except:
+            except Exception:
                 raise EOFError
 
     def _sendall(sock, data):
@@ -613,7 +613,7 @@ class Request(object):
         """Runs the handler, flushes the streams, and ends the request."""
         try:
             protocolStatus, appStatus = self.server.handler(self)
-        except:
+        except Exception:
             traceback.print_exc(file=self.stderr)
             self.stderr.flush()
             if not self.stdout.dataWritten:
@@ -686,14 +686,14 @@ class Connection(object):
         """Close the Connection's socket."""
         try:
             self._sock.shutdown(socket.SHUT_WR)
-        except:
+        except Exception:
             return
         try:
             while True:
                 r, w, e = select.select([self._sock], [], [])
                 if not r or not self._sock.recv(1024):
                     break
-        except:
+        except Exception:
             pass
         self._sock.close()
 
@@ -1284,7 +1284,7 @@ class WSGIServer(Server):
                     try:
                         if len(result) == 1:
                             responseHeaders.append(("Content-Length", str(len(data))))
-                    except:
+                    except Exception:
                         pass
                 s = "Status: %s\r\n" % status
                 for header in responseHeaders:

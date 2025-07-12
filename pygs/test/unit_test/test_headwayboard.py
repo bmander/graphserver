@@ -62,7 +62,7 @@ class TestHeadwayBoard(unittest.TestCase):
 
         s0 = State(1, 1001)
         s1 = hb.walk(s0, WalkOptions())
-        assert s1 == None
+        assert s1 is None
 
     def test_walk_back(self):
         sc = ServiceCalendar()
@@ -75,7 +75,7 @@ class TestHeadwayBoard(unittest.TestCase):
         s0 = State(1, 0)
         s1 = hb.walk(s0, WalkOptions())
         s2 = hb.walk_back(s1, WalkOptions())
-        assert s2.trip_id == None
+        assert s2.trip_id is None
 
     def test_tripboard_over_midnight(self):
         sc = ServiceCalendar()
@@ -115,7 +115,7 @@ class TestHeadwayBoard(unittest.TestCase):
 
         s0 = State(1, 26 * 3600 + 1)
         s1 = hb.walk(s0, WalkOptions())
-        assert s1 == None
+        assert s1 is None
 
 
 if __name__ == "__main__":

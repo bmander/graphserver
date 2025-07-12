@@ -37,7 +37,7 @@ class TestEdge(unittest.TestCase):
 
         e1.enabled = False
 
-        assert e1.walk(State(0, 0), WalkOptions()) == None
+        assert e1.walk(State(0, 0), WalkOptions()) is None
 
         gg = Graph()
         gg.add_vertex("A")
