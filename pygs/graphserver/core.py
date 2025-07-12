@@ -1593,6 +1593,9 @@ class TripBoard(EdgePayload):
         return (trip_id, depart, stop_sequence)
 
     def get_boarding_by_trip_id(self, trip_id):
+        # Encode string to bytes for ctypes compatibility in Python 3
+        if isinstance(trip_id, str):
+            trip_id = trip_id.encode("utf-8")
         boarding_index = lgs.tbGetBoardingIndexByTripId(self.soul, trip_id)
 
         if boarding_index == -1:
@@ -2066,6 +2069,9 @@ class TripAlight(EdgePayload):
             return self.get_alighting(i)
 
     def get_alighting_by_trip_id(self, trip_id):
+        # Encode string to bytes for ctypes compatibility in Python 3
+        if isinstance(trip_id, str):
+            trip_id = trip_id.encode("utf-8")
         alighting_index = lgs.alGetAlightingIndexByTripId(self.soul, trip_id)
 
         if alighting_index == -1:
