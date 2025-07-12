@@ -151,13 +151,13 @@ LGSTypes.edgepayload_t = {1: c_int8, 2: c_int16, 4: c_int32, 8: c_int64}[
 ]
 declarations = [
     (lgs.chpNew, LGSTypes.CHPath, [c_int, c_long]),
-    (lgs.chpLength, c_int, [LGSTypes.CHPath]),
+    (lgs.chpLength, c_long, [LGSTypes.CHPath]),
     (lgs.chpCombine, LGSTypes.CHPath, [LGSTypes.CHPath, LGSTypes.CHPath]),
     (lgs.chpDestroy, None, [LGSTypes.CHPath]),
     (
         lgs.dist,
         LGSTypes.CHPath,
-        [LGSTypes.Graph, c_char_p, c_char_p, LGSTypes.WalkOptions, c_int, c_int],
+        [LGSTypes.Graph, c_char_p, c_char_p, LGSTypes.WalkOptions, c_long, c_int],
     ),
     (
         lgs.get_shortcuts,
