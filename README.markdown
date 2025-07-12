@@ -17,15 +17,21 @@ Learn more about Graphserver at [http://graphserver.github.com/graphserver/](htt
 **Note: The build process requires two steps to resolve linking issues with inline functions.**
 
 #### Step 1: Build the core C library
+```bash
     $ cd core
-    $ make clean && make
+    $ make
+    $ sudo make install
+```
 
-#### Step 2: Install Python package
-    $ cd ../pygs
-    $ python3 setup.py install
+#### Step 2: Install Python bindings
+```bash
+    $ cd pygs && python3 setup.py install
+```
 
 **For system-wide installation (requires sudo):**
+```bash
     $ sudo python3 setup.py install
+```
 
 setup.py installs several executables.  On debian these go into /usr/local/bin/*.
 On Mac OS X, these go into
