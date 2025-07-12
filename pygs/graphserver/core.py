@@ -1587,7 +1587,6 @@ class TripBoard(EdgePayload):
         if trip_id is None:
             raise IndexError("Index %d out of bounds" % i)
 
-        # Decode bytes to string for Python 3 compatibility
         if isinstance(trip_id, bytes):
             trip_id = trip_id.decode("utf-8")
 
@@ -1922,7 +1921,6 @@ class Crossing(EdgePayload):
         if crossing_time == -1:
             return None
 
-        # Decode bytes to string for Python 3 compatibility
         if isinstance(trip_id, bytes):
             trip_id = trip_id.decode("utf-8")
 
@@ -2043,7 +2041,6 @@ class TripAlight(EdgePayload):
         if trip_id is None:
             raise IndexError("Index %d out of bounds" % i)
 
-        # Decode bytes to string for Python 3 compatibility
         if isinstance(trip_id, bytes):
             trip_id = trip_id.decode("utf-8")
 

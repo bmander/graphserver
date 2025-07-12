@@ -84,8 +84,6 @@ class ProfileDB:
         c.close()
 
 
-
-
 def main():
     if len(argv) > 1:
         pdb = ProfileDB(argv[1])
