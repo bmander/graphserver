@@ -34,7 +34,7 @@ scAddServiceId( ServiceCalendar* this, char* service_id ) {
 }
 
 char*
-scGetServiceIdString( ServiceCalendar* this, int service_id ) {
+scGetServiceIdString( const ServiceCalendar* this, int service_id ) {
     if( service_id < 0 || service_id >= this->num_sids) {
         return NULL;
     }
@@ -83,7 +83,7 @@ scAddPeriod( ServiceCalendar* this, ServicePeriod* period ) {
 }
 
 ServicePeriod*
-scPeriodOfOrAfter( ServiceCalendar* this, long time ) {
+scPeriodOfOrAfter( const ServiceCalendar* this, long time ) {
   ServicePeriod* period = this->head;
 
   while( period && period->end_time <= time ) {
@@ -94,7 +94,7 @@ scPeriodOfOrAfter( ServiceCalendar* this, long time ) {
 }
 
 ServicePeriod*
-scPeriodOfOrBefore( ServiceCalendar* this, long time ) {
+scPeriodOfOrBefore( const ServiceCalendar* this, long time ) {
   if(!this->head) {
     return NULL;
   }
@@ -108,7 +108,7 @@ scPeriodOfOrBefore( ServiceCalendar* this, long time ) {
 }
 
 ServicePeriod*
-scHead( ServiceCalendar* this ) { return this->head; }
+scHead( const ServiceCalendar* this ) { return this->head; }
 
 void
 scDestroy( ServiceCalendar* this ) {
@@ -154,7 +154,7 @@ spDestroyPeriod( ServicePeriod* this ) {
 
 
 int
-spPeriodHasServiceId( ServicePeriod* this, ServiceId service_id) {
+spPeriodHasServiceId( const ServicePeriod* this, ServiceId service_id) {
   int i;
   for(i=0; i<this->n_service_ids; i++) {
     if( this->service_ids[i] == service_id ) {
@@ -165,7 +165,7 @@ spPeriodHasServiceId( ServicePeriod* this, ServiceId service_id) {
 }
 
 ServicePeriod*
-spRewind( ServicePeriod* this ) {
+spRewind( const ServicePeriod* this ) {
   while( this->prev_period ) {
     this = this->prev_period;
   }
@@ -173,7 +173,7 @@ spRewind( ServicePeriod* this ) {
 }
 
 ServicePeriod*
-spFastForward( ServicePeriod* this ) {
+spFastForward( const ServicePeriod* this ) {
   while( this->next_period ) {
     this = this->next_period;
   }
@@ -181,7 +181,7 @@ spFastForward( ServicePeriod* this ) {
 }
 
 void
-spPrint( ServicePeriod* this ) {
+spPrint( const ServicePeriod* this ) {
   ServicePeriod* curr = spRewind( this );
   while( curr->next_period ) {
     spPrintPeriod( curr );
@@ -190,7 +190,7 @@ spPrint( ServicePeriod* this ) {
 }
 
 void
-spPrintPeriod( ServicePeriod* this ) {
+spPrintPeriod( const ServicePeriod* this ) {
   printf( "time=%ld..%ld service_ids=[", this->begin_time, this->end_time );
   int i;
   for(i=0; i<this->n_service_ids; i++) {
@@ -202,28 +202,28 @@ spPrintPeriod( ServicePeriod* this ) {
 }
 
 long
-spBeginTime( ServicePeriod* this ) {
+spBeginTime( const ServicePeriod* this ) {
 	return this->begin_time;
 }
 
 long
-spEndTime( ServicePeriod* this ) {
+spEndTime( const ServicePeriod* this ) {
 	return this->end_time;	
 }
 
 ServiceId*
-spServiceIds( ServicePeriod* this, int* count ) {
+spServiceIds( const ServicePeriod* this, int* count ) {
 	*count = this->n_service_ids;
 	return this->service_ids;
 }
 
 ServicePeriod*
-spNextPeriod(ServicePeriod* this) {
+spNextPeriod(const ServicePeriod* this) {
 	return this->next_period;
 }
 
 ServicePeriod*
-spPreviousPeriod(ServicePeriod* this) {
+spPreviousPeriod(const ServicePeriod* this) {
 	return this->prev_period;
 }
 
@@ -231,7 +231,7 @@ void
 spPrint( ServicePeriod* this );
 
 long
-spDatumMidnight( ServicePeriod* this, int timezone_offset ) {
+spDatumMidnight( const ServicePeriod* this, int timezone_offset ) {
     /*Returns the unix time corresponding to the local time of the last midnight to occur 
       before the beginning of this service peroid. Typically, triphops specify events relative
       to this datum*/
@@ -241,7 +241,7 @@ spDatumMidnight( ServicePeriod* this, int timezone_offset ) {
 }
 
 long
-spNormalizeTime( ServicePeriod* this, int timezone_offset, long time ) {
+spNormalizeTime( const ServicePeriod* this, int timezone_offset, long time ) {
     /* Normalizes unix time to seconds since the last midnight before the beginning of the service period */
     
     long midnight = spDatumMidnight( this, timezone_offset );

@@ -27,9 +27,9 @@ void
 liRemoveRef( ListNode *dummyhead, Edge* data );
 
 Edge*
-liGetData( ListNode *this );
+liGetData( const ListNode *this );
 
 ListNode*
-liGetNext( ListNode *this );
+liGetNext( const ListNode *this );
 
 #endif

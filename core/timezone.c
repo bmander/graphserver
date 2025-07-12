@@ -36,7 +36,7 @@ tzAddPeriod( Timezone* this, TimezonePeriod* period ) {
 }
 
 TimezonePeriod*
-tzPeriodOf( Timezone* this, long time) {
+tzPeriodOf( const Timezone* this, long time) {
   TimezonePeriod* period = this->head;
 
   while( period && period->end_time < time ) {
@@ -51,7 +51,7 @@ tzPeriodOf( Timezone* this, long time) {
 }
 
 int
-tzUtcOffset( Timezone* this, long time) {
+tzUtcOffset( const Timezone* this, long time) {
     //Returns seconds offset UTC for this timezone, at the given time
     
     TimezonePeriod* now = tzPeriodOf( this, time );
@@ -64,7 +64,7 @@ tzUtcOffset( Timezone* this, long time) {
 }
 
 int
-tzTimeSinceMidnight( Timezone* this, long time ) {
+tzTimeSinceMidnight( const Timezone* this, long time ) {
     TimezonePeriod* now = tzPeriodOf( this, time );
     
     if( !now ) {
@@ -75,7 +75,7 @@ tzTimeSinceMidnight( Timezone* this, long time ) {
 }
 
 TimezonePeriod*
-tzHead( Timezone* this ) {
+tzHead( const Timezone* this ) {
     return this->head;
 }
 
@@ -110,26 +110,26 @@ tzpDestroy( TimezonePeriod* this ) {
 }
 
 int
-tzpUtcOffset( TimezonePeriod* this ) {
+tzpUtcOffset( const TimezonePeriod* this ) {
     return this->utc_offset;
 }
 
 int
-tzpTimeSinceMidnight( TimezonePeriod* this, long time ) {
+tzpTimeSinceMidnight( const TimezonePeriod* this, long time ) {
     return (time+this->utc_offset)%SECS_IN_DAY;
 }
 
 long
-tzpBeginTime( TimezonePeriod* this ) {
+tzpBeginTime( const TimezonePeriod* this ) {
     return this->begin_time;
 }
 
 long
-tzpEndTime( TimezonePeriod* this ) {
+tzpEndTime( const TimezonePeriod* this ) {
     return this->end_time;
 }
 
 TimezonePeriod*
-tzpNextPeriod(TimezonePeriod* this) {
+tzpNextPeriod(const TimezonePeriod* this) {
     return this->next_period;
 }

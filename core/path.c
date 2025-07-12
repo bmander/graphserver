@@ -29,12 +29,12 @@ pathDestroy(Path *this) {
 }
 
 Vertex *
-pathGetVertex( Path *this, int i ) {
+pathGetVertex( const Path *this, int i ) {
     return (Vertex*)vecGet( this->vertices, i );
 }
 
 Edge *
-pathGetEdge( Path *this, int i ) {
+pathGetEdge( const Path *this, int i ) {
     return (Edge*)vecGet( this->edges, i );
 }
 
@@ -45,11 +45,11 @@ pathAddSegment( Path *this, Vertex *vertex, Edge *edge ) {
 }
 
 void*
-pathGetVertexPointer( Path *this ) {
+pathGetVertexPointer( const Path *this ) {
     return this->vertices;
 }
 
 void*
-pathGetEdgePointer( Path *this ) {
+pathGetEdgePointer( const Path *this ) {
     return this->edges;
 }
