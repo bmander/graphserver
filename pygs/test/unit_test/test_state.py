@@ -50,7 +50,7 @@ class TestState(unittest.TestCase):
         s.destroy() #did we segfault?
         
         try:
-            print s.time
+            print(s.time)
             assert False #should have popped exception by now
         except:
             pass

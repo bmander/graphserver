@@ -23,7 +23,7 @@ class TestTripBoard(unittest.TestCase):
         assert tb.soul
         tb.destroy()
         try:
-            print tb
+            print(tb)
             raise Exception( "should have failed by now" )
         except:
             pass
@@ -113,7 +113,7 @@ class TestTripBoard(unittest.TestCase):
         
         s0 = State(1, 26*3600+1)
         s1 = tb.walk(s0,WalkOptions())
-        print s1
+        print(s1)
         self.assertEqual( s1 , None )
         
         
@@ -147,7 +147,7 @@ class TestTripBoard(unittest.TestCase):
         try:
             tb.get_boarding( 0 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index 0 out of bounds"
     
         tb.add_boarding( "morning", 0, 0 )
@@ -159,13 +159,13 @@ class TestTripBoard(unittest.TestCase):
         try:
             tb.get_boarding( -1 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index -1 out of bounds"
             
         try:
             tb.get_boarding( 1 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index 1 out of bounds"
             
     def test_add_several_in_order(self):
@@ -179,7 +179,7 @@ class TestTripBoard(unittest.TestCase):
         try:
             tb.get_boarding( 0 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index 0 out of bounds"
     
         tb.add_boarding( "first", 0, 0 )
@@ -196,13 +196,13 @@ class TestTripBoard(unittest.TestCase):
         try:
             tb.get_boarding( -1 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index -1 out of bounds"
             
         try:
             tb.get_boarding( 2 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index 2 out of bounds"
 
         tb.add_boarding( "third", 150, 0 )
@@ -215,13 +215,13 @@ class TestTripBoard(unittest.TestCase):
         try:
             tb.get_boarding( -1 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index -1 out of bounds"
             
         try:
             tb.get_boarding( 3 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index 3 out of bounds"
             
         tb.add_boarding( "fourth", 150, 0 )
@@ -243,7 +243,7 @@ class TestTripBoard(unittest.TestCase):
         try:
             tb.get_boarding( 0 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index 0 out of bounds"
     
         tb.add_boarding( "fourth", 150, 0 )
@@ -260,13 +260,13 @@ class TestTripBoard(unittest.TestCase):
         try:
             tb.get_boarding( -1 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index -1 out of bounds"
             
         try:
             tb.get_boarding( 2 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index 2 out of bounds"
 
         tb.add_boarding( "third", 150, 0 )
@@ -279,13 +279,13 @@ class TestTripBoard(unittest.TestCase):
         try:
             tb.get_boarding( -1 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index -1 out of bounds"
             
         try:
             tb.get_boarding( 3 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index 3 out of bounds"
         
         tb.add_boarding( "second", 50, 0 )

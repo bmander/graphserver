@@ -27,7 +27,7 @@ def main():
     n_stops = gtfsdb.count_stops()
 
     for i, (stop_id, stop_name, stop_lat, stop_lon) in enumerate( gtfsdb.stops() ):
-        print "%d/%d %s"%(i,n_stops,stop_id),
+        print("%d/%d %s"%(i,n_stops,stop_id),)
         
         station_vertex_id = "sta-%s"%stop_id
         
@@ -35,13 +35,13 @@ def main():
             if link_stop_id == stop_id:
                 continue
             
-            print ".",
+            print(".",)
             
             link_length = vincenty( stop_lat, stop_lon, link_stop_lat, link_stop_lon)
             link_station_vertex_id = "sta-%s"%link_stop_id
             gdb.add_edge( station_vertex_id, link_station_vertex_id, Street("link", link_length) )
             
-        print ""
+        print("")
 
 if __name__=='__main__':
     main()

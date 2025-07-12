@@ -24,7 +24,7 @@ from sys import argv
 
 def main():
     if len(argv) < 2:
-        print "usage: python import_ned.py graphdb_filename profiledb_filename"
+        print("usage: python import_ned.py graphdb_filename profiledb_filename")
         return
         
     graphdb_filename = argv[1]
@@ -36,7 +36,7 @@ def main():
     n = gdb.num_edges()
 
     for i, (oid, vertex1, vertex2, edge) in enumerate( list(gdb.all_edges(include_oid=True)) ):
-        if i%500==0: print "%s/%s"%(i,n)
+        if i%500==0: print("%s/%s"%(i,n))
         
         if isinstance( edge, Street ):
             rise, fall = get_rise_and_fall( profiledb.get( edge.name ) )

@@ -121,7 +121,7 @@ class TestTripAlight(unittest.TestCase):
     
         try:
             al.get_alighting( 0 )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index 0 out of bounds"
     
         al.add_alighting( "morning", 0, 0 )
@@ -132,12 +132,12 @@ class TestTripAlight(unittest.TestCase):
         
         try:
             al.get_alighting( -1 )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index -1 out of bounds"
             
         try:
             al.get_alighting( 1 )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index 1 out of bounds"
 
     def test_add_several_in_order(self):
@@ -151,7 +151,7 @@ class TestTripAlight(unittest.TestCase):
         try:
             al.get_alighting( 0 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index 0 out of bounds"
     
         al.add_alighting( "first", 0, 0 )
@@ -168,13 +168,13 @@ class TestTripAlight(unittest.TestCase):
         try:
             al.get_alighting( -1 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index -1 out of bounds"
             
         try:
             al.get_alighting( 2 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index 2 out of bounds"
 
         al.add_alighting( "third", 150, 0 )
@@ -187,13 +187,13 @@ class TestTripAlight(unittest.TestCase):
         try:
             al.get_alighting( -1 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index -1 out of bounds"
             
         try:
             al.get_alighting( 3 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index 3 out of bounds"
             
         al.add_alighting( "fourth", 150, 0 )
@@ -215,7 +215,7 @@ class TestTripAlight(unittest.TestCase):
         try:
             al.get_alighting( 0 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index 0 out of bounds"
     
         al.add_alighting( "fourth", 150, 0 )
@@ -232,13 +232,13 @@ class TestTripAlight(unittest.TestCase):
         try:
             al.get_alighting( -1 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index -1 out of bounds"
             
         try:
             al.get_alighting( 2 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index 2 out of bounds"
 
         al.add_alighting( "third", 150, 0 )
@@ -251,13 +251,13 @@ class TestTripAlight(unittest.TestCase):
         try:
             al.get_alighting( -1 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index -1 out of bounds"
             
         try:
             al.get_alighting( 3 )
             raise Exception( "should have popped error by now" )
-        except Exception, ex:
+        except Exception as ex:
             assert str(ex) == "Index 3 out of bounds"
         
         al.add_alighting( "second", 50, 0 )

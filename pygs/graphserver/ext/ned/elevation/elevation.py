@@ -242,8 +242,8 @@ def selftest():
     
     gf = GridFloat(HOMEAREA, BASENAME)
     
-    print gf
-    print gf.extent
+    print(gf)
+    print(gf.extent)
     
     toprow = [gf.cell(x, 0) for x in range(gf.ncols)]
     assert gf.elevation( gf.left, gf.top )==toprow[0]
@@ -287,4 +287,4 @@ if __name__=='__main__':
     
     gf = GridFloat( HOMEAREA, BASENAME )
     for x in gf.extent:
-        print x
+        print(x)

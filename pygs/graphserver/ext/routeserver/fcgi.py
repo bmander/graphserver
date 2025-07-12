@@ -53,7 +53,7 @@ import sys
 import os
 import signal
 import struct
-import cStringIO as StringIO
+import io as StringIO
 import select
 import socket
 import errno
@@ -436,13 +436,13 @@ def encode_pair(name, value):
     if nameLength < 128:
         s = chr(nameLength)
     else:
-        s = struct.pack('!L', nameLength | 0x80000000L)
+        s = struct.pack('!L', nameLength | 0x80000000)
 
     valueLength = len(value)
     if valueLength < 128:
         s += chr(valueLength)
     else:
-        s += struct.pack('!L', valueLength | 0x80000000L)
+        s += struct.pack('!L', valueLength | 0x80000000)
 
     return s + name + value
     
@@ -470,7 +470,7 @@ class Record(object):
         while length:
             try:
                 data = sock.recv(length)
-            except socket.error, e:
+            except socket.error as e:
                 if e[0] == errno.EAGAIN:
                     select.select([sock], [], [])
                     continue
@@ -527,7 +527,7 @@ class Record(object):
         while length:
             try:
                 sent = sock.send(data)
-            except socket.error, e:
+            except socket.error as e:
                 if e[0] == errno.EAGAIN:
                     select.select([], [sock], [])
                     continue
@@ -592,7 +592,7 @@ class Request(object):
         self._flush()
         self._end(appStatus, protocolStatus)
 
-    def _end(self, appStatus=0L, protocolStatus=FCGI_REQUEST_COMPLETE):
+    def _end(self, appStatus=0, protocolStatus=FCGI_REQUEST_COMPLETE):
         self._conn.end_request(self, appStatus, protocolStatus)
         
     def _flush(self):
@@ -615,7 +615,7 @@ class CGIRequest(Request):
         self.stderr = sys.stderr
         self.data = StringIO.StringIO()
         
-    def _end(self, appStatus=0L, protocolStatus=FCGI_REQUEST_COMPLETE):
+    def _end(self, appStatus=0, protocolStatus=FCGI_REQUEST_COMPLETE):
         sys.exit(appStatus)
 
     def _flush(self):
@@ -664,7 +664,7 @@ class Connection(object):
                 self.process_input()
             except EOFError:
                 break
-            except (select.error, socket.error), e:
+            except (select.error, socket.error) as e:
                 if e[0] == errno.EBADF: # Socket was closed by Request.
                     break
                 raise
@@ -714,7 +714,7 @@ class Connection(object):
         """
         rec.write(self._sock)
 
-    def end_request(self, req, appStatus=0L,
+    def end_request(self, req, appStatus=0,
                     protocolStatus=FCGI_REQUEST_COMPLETE, remove=True):
         """
         End a Request.
@@ -763,7 +763,7 @@ class Connection(object):
 
         if not self._multiplexed and self._requests:
             # Can't multiplex requests.
-            self.end_request(req, 0L, FCGI_CANT_MPX_CONN, remove=False)
+            self.end_request(req, 0, FCGI_CANT_MPX_CONN, remove=False)
         else:
             self._requests[inrec.requestId] = req
 
@@ -854,7 +854,7 @@ class MultiplexedConnection(Connection):
         finally:
             self._lock.release()
 
-    def end_request(self, req, appStatus=0L,
+    def end_request(self, req, appStatus=0,
                     protocolStatus=FCGI_REQUEST_COMPLETE, remove=True):
         self._lock.acquire()
         try:
@@ -990,7 +990,7 @@ class Server(object):
                                  socket.SOCK_STREAM)
             try:
                 sock.getpeername()
-            except socket.error, e:
+            except socket.error as e:
                 if e[0] == errno.ENOTSOCK:
                     # Not a socket, assume CGI context.
                     isFCGI = False
@@ -1077,7 +1077,7 @@ class Server(object):
         while self._keepGoing:
             try:
                 r, w, e = select.select([sock], [], [], timeout)
-            except select.error, e:
+            except select.error as e:
                 if e[0] == errno.EINTR:
                     continue
                 raise
@@ -1085,7 +1085,7 @@ class Server(object):
             if r:
                 try:
                     clientSock, addr = sock.accept()
-                except socket.error, e:
+                except socket.error as e:
                     if e[0] in (errno.EINTR, errno.EAGAIN):
                         continue
                     raise
@@ -1131,7 +1131,7 @@ class Server(object):
         is passed at initialization time, this must be implemented by
         a subclass.
         """
-        raise NotImplementedError, self.__class__.__name__ + '.handler'
+        raise NotImplementedError(self.__class__.__name__ + '.handler')
 
     def error(self, req):
         """
@@ -1156,7 +1156,7 @@ class WSGIServer(Server):
 
         Set multithreaded to False if your application is not MT-safe.
         """
-        if kw.has_key('handler'):
+        if 'handler' in kw:
             del kw['handler'] # Doesn't make sense to let this through
         super(WSGIServer, self).__init__(**kw)
 
@@ -1240,7 +1240,7 @@ class WSGIServer(Server):
                 try:
                     if headers_sent:
                         # Re-raise if too late
-                        raise exc_info[0], exc_info[1], exc_info[2]
+                        raise exc_info[1].with_traceback(exc_info[2])
                 finally:
                     exc_info = None # avoid dangling circular ref
             else:
@@ -1273,7 +1273,7 @@ class WSGIServer(Server):
                 finally:
                     if hasattr(result, 'close'):
                         result.close()
-            except socket.error, e:
+            except socket.error as e:
                 if e[0] != errno.EPIPE:
                     raise # Don't let EPIPE propagate beyond server
         finally:
@@ -1284,9 +1284,9 @@ class WSGIServer(Server):
 
     def _sanitizeEnv(self, environ):
         """Ensure certain values are present, if required by WSGI."""
-        if not environ.has_key('SCRIPT_NAME'):
+        if 'SCRIPT_NAME' not in environ:
             environ['SCRIPT_NAME'] = ''
-        if not environ.has_key('PATH_INFO'):
+        if 'PATH_INFO' not in environ:
             environ['PATH_INFO'] = ''
 
         # If any of these are missing, it probably signifies a broken
@@ -1295,7 +1295,7 @@ class WSGIServer(Server):
                              ('SERVER_NAME', 'localhost'),
                              ('SERVER_PORT', '80'),
                              ('SERVER_PROTOCOL', 'HTTP/1.0')]:
-            if not environ.has_key(name):
+            if name not in environ:
                 environ['wsgi.errors'].write('%s: missing FastCGI param %s '
                                              'required by WSGI!\n' %
                                              (self.__class__.__name__, name))
@@ -1314,7 +1314,7 @@ if __name__ == '__main__':
         names.sort()
         for name in names:
             yield '<tr><td>%s</td><td>%s</td></tr>\n' % (
-                name, cgi.escape(`environ[name]`))
+                name, cgi.escape(repr(environ[name])))
 
         form = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ,
                                 keep_blank_values=1)

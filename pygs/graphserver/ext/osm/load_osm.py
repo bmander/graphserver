@@ -20,7 +20,7 @@ class OSMLoadable:
             self.add_vertex( prefix+str(way.fromv) )
             self.add_vertex( prefix+str(way.tov) )
 
-        for wayid, way in osm.ways.iteritems():
+        for wayid, way in osm.ways.items():
             if 'highway' in way.tags:
                 #len = way.length(projection)
                 # distance is not dependant on projection since osm nodes always use the same srs

@@ -28,13 +28,13 @@ def main():
 
     c = gdb.get_cursor()
     for i, (stop_id, stop_name, stop_lat, stop_lon) in enumerate( gtfsdb.stops() ):
-        print "%d/%d"%(i,n_stops)
+        print("%d/%d"%(i,n_stops))
         
         nd_id, nd_lat, nd_lon, nd_dist = osmdb.nearest_node( stop_lat, stop_lon )
         station_vertex_id = "sta-%s"%stop_id
         osm_vertex_id = "osm-%s"%nd_id
         
-        print station_vertex_id, osm_vertex_id
+        print(station_vertex_id, osm_vertex_id)
         
         gdb.add_edge( station_vertex_id, osm_vertex_id, Link(), c )
         gdb.add_edge( osm_vertex_id, station_vertex_id, Link(), c )

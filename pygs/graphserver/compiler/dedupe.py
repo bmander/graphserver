@@ -33,7 +33,7 @@ def main():
         if count==1:
             continue
         
-        #print count, m, t, w, th, f, s, su, start_date, end_date
+        #print(count, m, t, w, th, f, s, su, start_date, end_date)
         
         # get service_ids for this dow/start_date/end_date combination
         service_ids = [x[0] for x in list(  gtfsdb.execute( "SELECT service_id FROM calendar where monday=? and tuesday=? and wednesday=? and thursday=? and friday=? and saturday=? and sunday=? and start_date=? and end_date=?", (m,t,w,th,f,s,su,start_date,end_date) ) ) ]
@@ -54,7 +54,7 @@ def main():
         
     for new_name, old_names in equivilants:
         for old_name in old_names:
-            print old_name, new_name
+            print(old_name, new_name)
             
             c = gtfsdb.conn.cursor()
             

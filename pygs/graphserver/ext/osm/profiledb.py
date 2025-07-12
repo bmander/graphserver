@@ -86,12 +86,12 @@ def main():
         pdb = ProfileDB( argv[1] )
         
         if len(argv) > 2:
-            print pdb.get( argv[2] )
+            print(pdb.get( argv[2] ))
         else:
             for (id,) in list( pdb.execute( "SELECT id from profiles" ) ):
-                print id
+                print(id)
     else:
-        print "python profiledb.py profiledb_filename [profile_id]"
+        print("python profiledb.py profiledb_filename [profile_id]")
 
 if __name__ == '__main__':
     main()

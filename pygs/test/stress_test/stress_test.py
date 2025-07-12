@@ -7,12 +7,12 @@ def grind(func, n, threshold=10):
     mperc, m0 = get_mem_usage()
 
     g = Graph()
-    for i in xrange(n):
+    for i in range(n):
         func()
         
     mperc, m1 = get_mem_usage()
     
-    print m0, m1
+    print(m0, m1)
     assert m1 <= m0+threshold
 
 import unittest

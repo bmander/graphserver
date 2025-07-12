@@ -1,6 +1,6 @@
 from graphserver.core import *
 import unittest
-import StringIO
+import io
 import sys
 
 class TestPyPayload(unittest.TestCase):
@@ -69,7 +69,7 @@ class TestPyPayload(unittest.TestCase):
         stderrsave = sys.stderr
         
         # get a string-file to catch things placed into stdout
-        stderr_catcher = StringIO.StringIO()
+        stderr_catcher = io.StringIO()
         
         sys.stderr = stderr_catcher
                 
@@ -81,7 +81,7 @@ class TestPyPayload(unittest.TestCase):
         self.assertEqual( stderr_catcher.read().split("\n")[-2] , "Exception: I am designed to fail." )
 
         # set up a new buffer to catch a traceback
-        stderr_catcher = StringIO.StringIO()
+        stderr_catcher = io.StringIO()
         sys.stderr = stderr_catcher
         
         # blurt into it

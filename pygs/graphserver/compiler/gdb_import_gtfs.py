@@ -124,7 +124,7 @@ class GTFSGraphCompiler:
             
             for service_id in [x.encode("ascii") for x in self.gtfsdb.service_ids()]:
                 if service_ids is not None and service_id not in service_ids:
-		    continue
+                    continue
 
                 for fromv_label, tov_label, edge in self.bundle_to_boardalight_edges(bundle, service_id):
                     yield fromv_label, tov_label, edge
@@ -196,7 +196,7 @@ class GTFSGraphCompiler:
                 yield (s1, s2, ElapseTime(int(min_transfer_time)))
                 yield (s2, s1, ElapseTime(int(min_transfer_time)))
             elif conn_type == 3: # Transfers are not possible between routes at this location. 
-                print "WARNING: Support for no-transfer (transfers.txt transfer_type=3) not implemented."
+                print("WARNING: Support for no-transfer (transfers.txt transfer_type=3) not implemented.")
 
     def gtfsdb_to_edges( self, maxtrips=None, service_ids=None ):
         for edge_tuple in self.gtfsdb_to_scheduled_edges(maxtrips, service_ids=service_ids):
@@ -214,7 +214,7 @@ def gdb_load_gtfsdb(gdb, agency_namespace, gtfsdb, cursor, agency_id=None, maxtr
     if sample_date is not None:
         sample_date = datetime.date( *parse_gtfs_date( sample_date ) )
 	acceptable_service_ids = gtfsdb.service_periods( sample_date )
-	print "Importing only service periods operating on %s: %s"%(sample_date, acceptable_service_ids)
+	print("Importing only service periods operating on %s: %s"%(sample_date, acceptable_service_ids))
     else:
         acceptable_service_ids = None
 
@@ -261,7 +261,7 @@ def main():
     gtfsdb_filename  = args[1]
     agency_id        = args[2] if len(args)==3 else None
     
-    print "importing from gtfsdb '%s' into graphdb '%s'"%(gtfsdb_filename, graphdb_filename)
+    print("importing from gtfsdb '%s' into graphdb '%s'"%(gtfsdb_filename, graphdb_filename))
     
     gtfsdb = GTFSDatabase( gtfsdb_filename )
     gdb = GraphDatabase( graphdb_filename, overwrite=False )
@@ -270,7 +270,7 @@ def main():
     gdb_load_gtfsdb( gdb, options.namespace, gtfsdb, gdb.get_cursor(), agency_id, maxtrips=maxtrips, sample_date=options.sample_date)
     gdb.commit()
     
-    print "done"
+    print("done")
 
 if __name__ == '__main__':
     main()

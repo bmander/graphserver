@@ -109,7 +109,7 @@ def main():
     from sys import argv
     usage = "python graphcrawler.py graphdb_filename [port]"
     if len(argv)<2:
-      print usage
+      print(usage)
       exit()
 
     graphdb_filename = argv[1]
@@ -117,7 +117,7 @@ def main():
         port = int(argv[2])
     else: port = 8081
     gc = GraphCrawler(graphdb_filename)
-    print "serving on port %d" % port
+    print("serving on port %d" % port)
     gc.run_test_server(port=port)
             
 
@@ -125,7 +125,7 @@ if __name__ == '__main__':
     from sys import argv
     usage = "python graphcrawler.py graphdb_filename"
     if len(argv)<2:
-      print usage
+      print(usage)
       exit()
 
     graphdb_filename = argv[1]

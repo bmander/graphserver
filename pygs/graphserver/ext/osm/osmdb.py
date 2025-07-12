@@ -121,7 +121,7 @@ class OSMDB:
         c.close()
         
     def populate(self, osm_filename, dryrun=False, accept=lambda tags: True, reporter=None, create_indexes=True):
-        print "importing %s osm from XML to sqlite database" % osm_filename
+        print("importing %s osm from XML to sqlite database" % osm_filename)
         
         c = self.get_cursor()
         
@@ -158,12 +158,12 @@ class OSMDB:
             def endElement(self,name):
                 if name=='node':
                     if superself.n_nodes%5000==0:
-                        print "node %d"%superself.n_nodes
+                        print("node %d"%superself.n_nodes)
                     superself.n_nodes += 1
                     if not dryrun: superself.add_node( self.currElem, c )
                 elif name=='way':
                     if superself.n_ways%5000==0:
-                        print "way %d"%superself.n_ways
+                        print("way %d"%superself.n_ways)
                     superself.n_ways += 1
                     if not dryrun and accept(self.currElem.tags): superself.add_way( self.currElem, c )
 
@@ -177,15 +177,15 @@ class OSMDB:
         c.close()
         
         if not dryrun and create_indexes:
-            print "indexing primary tables...",
+            print("indexing primary tables...",)
             self.create_indexes()
         
-        print "done"
+        print("done")
         
     def set_endnode_ref_counts( self ):
         """Populate ways.endnode_refs. Necessary for splitting ways into single-edge sub-ways"""
         
-        print "counting end-node references to find way split-points"
+        print("counting end-node references to find way split-points")
         
         c = self.get_cursor()
         
@@ -193,19 +193,19 @@ class OSMDB:
         
         c.execute( "SELECT nds from ways" )
         
-        print "...counting"
+        print("...counting")
         for i, (nds_str,) in enumerate(c):
             if i%5000==0:
-                print i
+                print(i)
                 
             nds = json.loads( nds_str )
             for nd in nds:
                 endnode_ref_counts[ nd ] = endnode_ref_counts.get( nd, 0 )+1
         
-        print "...updating nodes table"
+        print("...updating nodes table")
         for i, (node_id, ref_count) in enumerate(endnode_ref_counts.items()):
             if i%5000==0:
-                print i
+                print(i)
             
             if ref_count > 1:
                 c.execute( "UPDATE nodes SET endnode_refs = ? WHERE id=?", (ref_count, node_id) )
@@ -214,7 +214,7 @@ class OSMDB:
         c.close()
     
     def index_endnodes( self ):
-        print "indexing endpoint nodes into rtree"
+        print("indexing endpoint nodes into rtree")
         
         c = self.get_cursor()
         
@@ -230,7 +230,7 @@ class OSMDB:
         self.set_endnode_ref_counts()
         self.index_endnodes()
         
-        print "splitting ways and inserting into edge table"
+        print("splitting ways and inserting into edge table")
         
         c = self.get_cursor()
         
@@ -239,7 +239,7 @@ class OSMDB:
         for i, way in enumerate(self.ways()):
             try:
                 if i%5000==0:
-                    print i
+                    print(i)
                 
                 subways = []
                 curr_subway = [ way.nds[0] ] # add first node to the current subway
@@ -268,10 +268,10 @@ class OSMDB:
                 else:
                     raise
         
-        print "indexing edges...",
+        print("indexing edges...",)
         c.execute( "CREATE INDEX edges_id ON edges (id)" )
         c.execute( "CREATE INDEX edges_parent_id ON edges (parent_id)" )
-        print "done"
+        print("done")
         
         self.conn.commit()
         c.close()
@@ -357,9 +357,9 @@ class OSMDB:
         c = self.get_cursor()
         
         if self.index:
-            #print "YOUR'RE USING THE INDEX"
+            #print("YOUR'RE USING THE INDEX")
             id = list(self.index.nearest( (lon, lat), 1 ))[0]
-            #print "THE ID IS %d"%id
+            #print("THE ID IS %d"%id)
             c.execute( "SELECT id, lat, lon FROM nodes WHERE id = ?", (id,) )
         else:
             c.execute( "SELECT id, lat, lon FROM nodes WHERE endnode_refs > 1 AND lat > ? AND lat < ? AND lon > ? AND lon < ?", (lat-range, lat+range, lon-range, lon+range) )
@@ -487,12 +487,12 @@ def osm_to_osmdb(osm_filenames, osmdb_filename, tolerant=False, skipload=False):
             osmdb.populate( osm_filename, accept=lambda tags: 'highway' in tags, reporter=sys.stdout, create_indexes=False )
 
     if not skipload:
-        print "indexing primary tables...",
+        print("indexing primary tables...",)
         osmdb.create_indexes()
         
     osmdb.create_and_populate_edges_table(tolerant)
     if osmdb.count_edges() == 0:
-        print "WARNING: osmdb has no edges!"
+        print("WARNING: osmdb has no edges!")
 
 from optparse import OptionParser
 def main():
