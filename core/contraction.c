@@ -51,11 +51,11 @@ CHPath* chpNewHollow( long length ) {
     return this;
 }
 
-int chpLength( CHPath* this ) {
+long chpLength( CHPath* this ) {
     if(!this) {
         return INFINITY;
     }
-    
+
     return this->length;
 }
 
@@ -89,7 +89,7 @@ Combination* pathToEdgePayload( CHPath* this ) {
     return ret;
 }
     
-CHPath* dist( Graph *gg, char* from_v_label, char* to_v_label, WalkOptions *wo, int weightlimit, int return_full_path )  {
+CHPath* dist( Graph *gg, char* from_v_label, char* to_v_label, WalkOptions *wo, long weightlimit, int return_full_path )  {
     if( strcmp( from_v_label, to_v_label ) == 0 ) {
         return NULL;
     }
@@ -171,7 +171,7 @@ CHPath** get_shortcuts( Graph *gg, Vertex* vv, WalkOptions* wo, int search_limit
     
     // GET PATHS c(v,w) FROM v to ALL ws, FINDING THE MAX c(v,w)
     CHPath** cvw = (CHPath**)malloc(n_ws*sizeof(CHPath*));
-    int max_cvw = -INFINITY;
+    long max_cvw = -INFINITY;
     for(i=0; i<n_ws; i++) {
         cvw[i] = dist( gg, vv->label, ws[i]->label, wo, INFINITY, TRUE );
         if( cvw[i] ) {
@@ -194,8 +194,8 @@ CHPath** get_shortcuts( Graph *gg, Vertex* vv, WalkOptions* wo, int search_limit
         //if the path c(u,v) is NULL, it means u==v; ignore
         if(cuv[i]) {
         
-            int cuv_length = chpLength( cuv[i] );
-            int weightlimit = cuv_length+max_cvw;
+            long cuv_length = chpLength( cuv[i] );
+            long weightlimit = cuv_length + max_cvw;
             
             //FOR EACH W
             for(j=0; j<n_ws; j++) {
