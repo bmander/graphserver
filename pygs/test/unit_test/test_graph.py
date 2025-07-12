@@ -54,8 +54,8 @@ class TestGraph(unittest.TestCase):
     def test_add_edge(self):
         g = Graph()
 
-        fromv = g.add_vertex("home")
-        tov = g.add_vertex("work")
+        g.add_vertex("home")
+        g.add_vertex("work")
         s = Street("helloworld", 1)
         e = g.add_edge("home", "work", s)
         assert e
@@ -74,7 +74,7 @@ class TestGraph(unittest.TestCase):
         fromv = g.add_vertex("home")
         tov = g.add_vertex("work")
         s = Street("helloworld", 1)
-        e = g.add_edge("home", "work", s)
+        g.add_edge("home", "work", s)
 
         assert fromv.degree_out == 1
         assert tov.degree_in == 1
@@ -84,8 +84,8 @@ class TestGraph(unittest.TestCase):
     def test_vertices(self):
         g = Graph()
 
-        fromv = g.add_vertex("home")
-        tov = g.add_vertex("work")
+        g.add_vertex("home")
+        g.add_vertex("work")
 
         assert g.vertices
         assert len(g.vertices) == 2
@@ -97,8 +97,8 @@ class TestGraph(unittest.TestCase):
         g = Graph()
 
         # add two vertices, home and work
-        fromv = g.add_vertex("home")
-        tov = g.add_vertex("work")
+        g.add_vertex("home")
+        g.add_vertex("work")
 
         # add two street edges, one going in each direction
         g.add_edge("home", "work", Street("helloworld", 10))
@@ -123,10 +123,10 @@ class TestGraph(unittest.TestCase):
     def test_bogus_origin(self):
         g = Graph()
 
-        fromv = g.add_vertex("home")
-        tov = g.add_vertex("work")
+        g.add_vertex("home")
+        g.add_vertex("work")
         s = Street("helloworld", 1)
-        e = g.add_edge("home", "work", s)
+        g.add_edge("home", "work", s)
         g.add_edge("work", "home", Street("backwards", 1))
 
         self.assertRaises(
@@ -151,8 +151,8 @@ class TestGraph(unittest.TestCase):
         g = Graph()
 
         # add two vertices
-        fromv = g.add_vertex("home")
-        tov = g.add_vertex("work")
+        g.add_vertex("home")
+        g.add_vertex("work")
 
         # hook them to each other
         g.add_edge("home", "work", Street("helloworld", 100))
@@ -244,8 +244,8 @@ class TestGraph(unittest.TestCase):
     def test_walk_longstreet(self):
         g = Graph()
 
-        fromv = g.add_vertex("home")
-        tov = g.add_vertex("work")
+        g.add_vertex("home")
+        g.add_vertex("work")
         s = Street("helloworld", 24000)
         e = g.add_edge("home", "work", s)
 
@@ -263,10 +263,10 @@ class TestGraph(unittest.TestCase):
 
     def xtestx_shortest_path_tree_bigweight(self):
         g = Graph()
-        fromv = g.add_vertex("home")
-        tov = g.add_vertex("work")
+        g.add_vertex("home")
+        g.add_vertex("work")
         s = Street("helloworld", 240000)
-        e = g.add_edge("home", "work", s)
+        g.add_edge("home", "work", s)
 
         spt = g.shortest_path_tree("home", "work", State(g.numagencies, 0))
 
@@ -277,10 +277,10 @@ class TestGraph(unittest.TestCase):
 
     def test_shortest_path_tree_retro(self):
         g = Graph()
-        fromv = g.add_vertex("home")
-        tov = g.add_vertex("work")
+        g.add_vertex("home")
+        g.add_vertex("work")
         s = Street("helloworld", 1)
-        e = g.add_edge("home", "work", s)
+        g.add_edge("home", "work", s)
         g.add_edge("work", "home", Street("backwards", 1))
 
         spt = g.shortest_path_tree_retro(
@@ -298,10 +298,10 @@ class TestGraph(unittest.TestCase):
 
     def test_shortest_path(self):
         g = Graph()
-        fromv = g.add_vertex("home")
-        tov = g.add_vertex("work")
+        g.add_vertex("home")
+        g.add_vertex("work")
         s = Street("helloworld", 1)
-        e = g.add_edge("home", "work", s)
+        g.add_edge("home", "work", s)
 
         spt = g.shortest_path_tree("home", "work", State(g.numagencies), WalkOptions())
         sp = spt.path("work")
@@ -310,10 +310,10 @@ class TestGraph(unittest.TestCase):
 
     def xtestx_shortest_path_bigweight(self):
         g = Graph()
-        fromv = g.add_vertex("home")
-        tov = g.add_vertex("work")
+        g.add_vertex("home")
+        g.add_vertex("work")
         s = Street("helloworld", 240000)
-        e = g.add_edge("home", "work", s)
+        g.add_edge("home", "work", s)
 
         sp = g.shortest_path("home", "work", State(g.numagencies))
 
@@ -322,8 +322,8 @@ class TestGraph(unittest.TestCase):
     def test_add_link(self):
         g = Graph()
 
-        fromv = g.add_vertex("home")
-        tov = g.add_vertex("work")
+        g.add_vertex("home")
+        g.add_vertex("work")
         s = Street("helloworld", 1)
         e = g.add_edge("home", "work", s)
 
@@ -352,7 +352,7 @@ class TestGraph(unittest.TestCase):
 
         wo = WalkOptions()
         wo.walking_speed = 1
-        spt = g.shortest_path_tree("A", None, State(1, 0), wo)
+        g.shortest_path_tree("A", None, State(1, 0), wo)
 
     def test_hop_limit(self):
         gg = Graph()
@@ -371,17 +371,17 @@ class TestGraph(unittest.TestCase):
         spt.destroy()
 
         spt = gg.shortest_path_tree("A", "E", State(0, 0), WalkOptions(), hoplimit=1)
-        assert spt.get_vertex("A") != None
-        assert spt.get_vertex("B") != None
+        assert spt.get_vertex("A") is not None
+        assert spt.get_vertex("B") is not None
         assert spt.get_vertex("C") is None
         assert spt.get_vertex("D") is None
         assert spt.get_vertex("E") is None
 
         spt = gg.shortest_path_tree("A", "E", State(0, 0), WalkOptions(), hoplimit=3)
-        assert spt.get_vertex("A") != None
-        assert spt.get_vertex("B") != None
-        assert spt.get_vertex("C") != None
-        assert spt.get_vertex("D") != None
+        assert spt.get_vertex("A") is not None
+        assert spt.get_vertex("B") is not None
+        assert spt.get_vertex("C") is not None
+        assert spt.get_vertex("D") is not None
         assert spt.get_vertex("E") is None
 
     def test_traverse(self):
@@ -399,8 +399,8 @@ class TestGraph(unittest.TestCase):
         gg = Graph()
         gg.add_vertex("A")
         gg.add_vertex("B")
-        ab = gg.add_edge("A", "B", Street("AB", 1))
-        ba = gg.add_edge("B", "A", Street("BA", 1))
+        gg.add_edge("A", "B", Street("AB", 1))
+        gg.add_edge("B", "A", Street("BA", 1))
 
         absoul = gg.get_vertex("A").outgoing[0].payload.soul
         basoul = gg.get_vertex("B").outgoing[0].payload.soul

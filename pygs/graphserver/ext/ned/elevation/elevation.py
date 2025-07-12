@@ -148,8 +148,6 @@ class BIL:
         self.fp = open(basename + ".bil", "rb")
 
     def _read_header(self, filename):
-        HCW = 15  # header column width
-
         fp = open(filename, "r")
 
         raw_header = dict([x.strip().split() for x in fp.read().strip().split("\n")])

@@ -384,7 +384,6 @@ class ContractionHierarchy(CShadow):
         upvertices, upedges = sptup.path(min_meetup)
         downvertices, downedges = sptdown.path_retro(min_meetup)
 
-        vertices = upvertices + downvertices[1:]
         edges = upedges + downedges
 
         ret = [ee.payload for ee in edges]

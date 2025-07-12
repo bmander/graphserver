@@ -85,7 +85,6 @@ class DescribeCrossingAtAlightEvent:
         )
 
     def __call__(self, vertex1, edge, vertex2, context):
-        stop_sequence_of_boarding = vertex1.state.stop_sequence
         trip_id = vertex1.state.trip_id
         alighting_trip_id, alighting_time, alighting_stop_sequences = (
             edge.payload.get_alighting_by_trip_id(trip_id)
@@ -251,7 +250,6 @@ class CrossingEvent:
         return edge is not None and isinstance(edge.payload, graphserver.core.Crossing)
 
     def __call__(self, v1, e, v2, context):
-        trip_id = v1.state.trip_id
         return (str(v1.state), str(e), str(v2.state))
 
 

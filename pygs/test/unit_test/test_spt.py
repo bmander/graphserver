@@ -1,4 +1,12 @@
-from graphserver.core import Graph, Street, State, WalkOptions, ShortestPathTree, Link
+from graphserver.core import (
+    Graph,
+    Street,
+    State,
+    WalkOptions,
+    Vertex,
+    ShortestPathTree,
+    Link,
+)
 import unittest
 
 
@@ -80,8 +88,8 @@ class TestShortestPathTree(unittest.TestCase):
     def test_add_edge(self):
         spt = ShortestPathTree()
 
-        fromv = spt.add_vertex(Vertex("home"))
-        tov = spt.add_vertex(Vertex("work"))
+        spt.add_vertex(Vertex("home"))
+        spt.add_vertex(Vertex("work"))
         s = Street("helloworld", 1)
         e = spt.add_edge("home", "work", s)
         assert e
@@ -100,7 +108,7 @@ class TestShortestPathTree(unittest.TestCase):
         fromv = spt.add_vertex(Vertex("home"))
         tov = spt.add_vertex(Vertex("work"))
         s = Street("helloworld", 1)
-        e = spt.add_edge("home", "work", s)
+        spt.add_edge("home", "work", s)
 
         assert fromv.degree_out == 1
         assert tov.degree_in == 1
@@ -110,8 +118,8 @@ class TestShortestPathTree(unittest.TestCase):
     def test_vertices(self):
         spt = ShortestPathTree()
 
-        fromv = spt.add_vertex(Vertex("home"))
-        tov = spt.add_vertex(Vertex("work"))
+        spt.add_vertex(Vertex("home"))
+        spt.add_vertex(Vertex("work"))
 
         assert spt.vertices
         assert len(spt.vertices) == 2
@@ -122,8 +130,8 @@ class TestShortestPathTree(unittest.TestCase):
     def test_walk_longstreet(self):
         spt = ShortestPathTree()
 
-        fromv = spt.add_vertex(Vertex("home"))
-        tov = spt.add_vertex(Vertex("work"))
+        spt.add_vertex(Vertex("home"))
+        spt.add_vertex(Vertex("work"))
         s = Street("helloworld", 24000)
         e = spt.add_edge("home", "work", s)
 
@@ -141,8 +149,8 @@ class TestShortestPathTree(unittest.TestCase):
     def test_add_link(self):
         spt = ShortestPathTree()
 
-        fromv = spt.add_vertex(Vertex("home"))
-        tov = spt.add_vertex(Vertex("work"))
+        spt.add_vertex(Vertex("home"))
+        spt.add_vertex(Vertex("work"))
         s = Street("helloworld", 1)
         e = spt.add_edge("home", "work", s)
 

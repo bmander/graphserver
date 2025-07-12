@@ -37,7 +37,7 @@ class CalculateWayLengthFilter(OSMDBFilter):
         try:
             c.execute("ALTER TABLE ways ADD column length FLOAT")
             db.conn.commit()
-        except:
+        except Exception:
             pass
         c.close()
 
@@ -67,7 +67,7 @@ class AddFromToColumnsFilter(OSMDBFilter):
             c.execute("ALTER TABLE ways ADD column from_v TEXT")
             c.execute("ALTER TABLE ways ADD column to_v TEXT")
             db.conn.commit()
-        except:
+        except Exception:
             pass
         c.close()
 
@@ -138,7 +138,7 @@ class PurgeDisjunctGraphsFilter(OSMDBFilter):
         f = FindDisjunctGraphsFilter()
         try:
             f.teardown(db)
-        except:
+        except Exception:
             pass
 
         f.run(db, *[])
@@ -249,7 +249,7 @@ class FindDisjunctGraphsFilter(OSMDBFilter):
             # c.execute("SELECT id from nodes where id not in (SELECT node_id from graph_nodes) LIMIT 1")
             try:
                 vertex, dummy = vertices.popitem()
-            except:
+            except Exception:
                 break
             spt = g.shortest_path_tree(vertex, None, State(1, 0))
             for v in spt.vertices:
@@ -273,8 +273,6 @@ class FindDisjunctGraphsFilter(OSMDBFilter):
 
     def visualize(self, db, out_filename, renderer="/usr/local/bin/prender/renderer"):
         from prender import processing
-
-        c = db.conn.cursor()
 
         group_color = {}
         group_weight = {}
@@ -354,7 +352,7 @@ class StitchDisjunctGraphs(OSMDBFilter):
             # ids = map(lambda x:x[0], osmdb.execute("SELECT id FROM nodes WHERE lat=? AND lon=?", (lat,lon)))
             # print(nds)
             nds = nds.split(",")
-            first = nds.pop(0)
+            nds.pop(0)
             alias[nds] = nds
             # alias the duplicate node to an identical node
             # for id in ids:

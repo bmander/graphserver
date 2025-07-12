@@ -8,10 +8,10 @@ class TestEdge(unittest.TestCase):
         v2 = Vertex("B")
         e1 = Edge(v1, v2, Street("atob", 10.0))
 
-        assert e1.enabled == True
+        assert e1.enabled
 
         e1.enabled = False
-        assert e1.enabled == False
+        assert not e1.enabled
 
     def test_walk(self):
         v1 = Vertex("A")
@@ -76,28 +76,28 @@ class TestEdge(unittest.TestCase):
         gg.add_edge("C", "D", Street("ctod", 1))
 
         for edge in gg.get_vertex("B").outgoing:
-            assert edge.enabled == True
+            assert edge.enabled
         for edge in gg.get_vertex("B").incoming:
-            assert edge.enabled == True
+            assert edge.enabled
 
         gg.set_vertex_enabled("B", False)
 
         for edge in gg.get_vertex("B").outgoing:
-            assert edge.enabled == False
+            assert not edge.enabled
         for edge in gg.get_vertex("B").incoming:
-            assert edge.enabled == False
+            assert not edge.enabled
 
         for edge in gg.get_vertex("C").outgoing:
-            assert edge.enabled == True
+            assert edge.enabled
         for edge in gg.get_vertex("C").incoming:
-            assert edge.enabled == True
+            assert edge.enabled
 
         gg.set_vertex_enabled("B", True)
 
         for edge in gg.get_vertex("B").outgoing:
-            assert edge.enabled == True
+            assert edge.enabled
         for edge in gg.get_vertex("B").incoming:
-            assert edge.enabled == True
+            assert edge.enabled
 
 
 if __name__ == "__main__":

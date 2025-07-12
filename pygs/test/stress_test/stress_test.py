@@ -2,17 +2,28 @@ from stress_utils import get_mem_usage
 import sys
 
 sys.path.append("..")
-from graphserver.core import *
+from graphserver.core import (
+    Graph,
+    State,
+    Street,
+    ServiceCalendar,
+    Timezone,
+    TimezonePeriod,
+    TripBoard,
+    TripAlight,
+    Link,
+    Wait,
+)
 
 
 def grind(func, n, threshold=10):
-    mperc, m0 = get_mem_usage()
+    _, m0 = get_mem_usage()
 
-    g = Graph()
+    Graph()  # memory leak test
     for i in range(n):
         func()
 
-    mperc, m1 = get_mem_usage()
+    _, m1 = get_mem_usage()
 
     print(m0, m1)
     assert m1 <= m0 + threshold
@@ -144,7 +155,7 @@ class StressTest(unittest.TestCase):
 
         def func():
             spt = s.shortest_path_tree("A", "C", State(1, 0))
-            sp = spt.path("C")
+            spt.path("C")  # memory leak test
             spt.destroy()
 
         grind(func, 50000)

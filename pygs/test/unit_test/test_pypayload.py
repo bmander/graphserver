@@ -20,7 +20,7 @@ class TestPyPayload(unittest.TestCase):
         return g
 
     def test_basic(self):
-        p = NoOpPyPayload(1.1)
+        NoOpPyPayload(1.1)
 
     def test_cast(self):
         g = self._minimal_graph()

@@ -97,8 +97,6 @@ class OSMGraph(Graph):
             else:
                 points = osmway.get_projected_points()
             length = edge.payload.length  # osmway.length(osm.nodes)
-            elapsed = state.time
-            num_transfers = state.num_transfers
 
             fp.write(
                 format
