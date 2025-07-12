@@ -1,5 +1,5 @@
-#ifndef _STATE_H_
-#define _STATE_H_
+#ifndef STATE_H
+#define STATE_H
 
 //---------------DECLARATIONS FOR STATE CLASS---------------------
 

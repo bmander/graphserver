@@ -1,5 +1,5 @@
-#ifndef _TIMEZONE_H_
-#define _TIMEZONE_H_
+#ifndef TIMEZONE_H
+#define TIMEZONE_H
 
 struct TimezonePeriod {
   long begin_time; //the first second on which the service_period is valid

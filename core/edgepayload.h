@@ -1,5 +1,5 @@
-#ifndef _EDGEPAYLOAD_H_
-#define _EDGEPAYLOAD_H_
+#ifndef EDGEPAYLOAD_H
+#define EDGEPAYLOAD_H
 
 //---------------DECLARATIONS FOR EDGEPAYLOAD CLASS---------------------
 

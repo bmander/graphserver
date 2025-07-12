@@ -1,5 +1,6 @@
 
 #include "graphserver.h"
+#include <stdlib.h>
 
 //---------------DEFINITIONS FOR WALKOPTIONS CLASS---------------
 

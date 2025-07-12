@@ -1,5 +1,5 @@
-#ifndef _SERVICECALENDAR_H_
-#define _SERVICECALENDAR_H_
+#ifndef SERVICECALENDAR_H
+#define SERVICECALENDAR_H
 
 struct ServiceCalendar {
     /* TripHops have service types, and the ServiceCalendar provides the correspondance between points in time and lists of service_ids.

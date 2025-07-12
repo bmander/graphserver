@@ -31,7 +31,7 @@ CheckOptions:
   - key: readability-identifier-naming.TypedefCase
     value: CamelCase
   - key: readability-identifier-naming.StructCase
-    value: lower_case
+    value: CamelCase
   - key: readability-identifier-naming.EnumCase
     value: lower_case
   - key: performance-for-range-copy.WarnOnAllAutoCopies
