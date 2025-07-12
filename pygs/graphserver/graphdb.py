@@ -68,8 +68,8 @@ class GraphDatabase:
         if id in self.payloads_cache:
             return self.payloads_cache[id]
 
-        typeclass = pickle.loads(str(type))
-        ret = typeclass.reconstitute(pickle.loads(str(state)), self)
+        typeclass = pickle.loads(type)
+        ret = typeclass.reconstitute(pickle.loads(state), self)
         ret.external_id = int(id)
         self.payloads_cache[id] = ret
         return ret
