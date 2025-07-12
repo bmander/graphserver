@@ -1,8 +1,8 @@
-from osm import OSM, Node, Way
+from osm import OSM
 import sys
 
 sys.path.append("../../..")
-from graphserver.core import Graph, Street
+from graphserver.core import Street
 
 
 class OSMLoadable:

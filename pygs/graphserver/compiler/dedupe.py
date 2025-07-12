@@ -2,7 +2,6 @@
 
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
 
-import sys
 from optparse import OptionParser
 
 

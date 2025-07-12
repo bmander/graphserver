@@ -1,6 +1,6 @@
-from .gsdll import CShadow, lgs
+from .gsdll import lgs
 
-from ctypes import Structure, c_int, c_void_p, pointer, addressof, byref
+from ctypes import Structure, c_int, c_void_p, addressof
 
 
 class Vector(Structure):

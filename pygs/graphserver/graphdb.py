@@ -6,7 +6,6 @@ try:
 except ImportError:
     import pickle
 from graphserver.core import State, Graph, Combination
-from graphserver import core
 from sys import argv
 import sys
 

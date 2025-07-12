@@ -20,20 +20,17 @@ except ImportError:
         PayloadMethodTypes,
     )
 from ctypes import (
-    string_at,
     byref,
     c_int,
     c_long,
-    c_size_t,
     c_char_p,
     c_double,
     c_void_p,
     py_object,
     c_float,
 )
-from ctypes import Structure, pointer, cast, POINTER, addressof
+from ctypes import Structure, cast, POINTER, addressof
 from _ctypes import Py_INCREF, Py_DECREF
-from time import asctime, gmtime
 from time import time as now
 import pytz
 import calendar
@@ -900,7 +897,8 @@ def failsafe(return_arg_num_on_failure):
             try:
                 return func(*args)
             except:
-                import traceback, sys
+                import traceback
+                import sys
 
                 sys.stderr.write("ERROR: Exception during callback ")
                 try:

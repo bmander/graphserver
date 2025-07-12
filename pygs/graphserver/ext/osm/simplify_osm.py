@@ -1,4 +1,4 @@
-from osm import OSM, Node, Way
+from osm import OSM
 
 osm = OSM("map.osm")
 

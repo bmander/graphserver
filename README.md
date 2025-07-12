@@ -33,7 +33,7 @@ pip install .
 **For development installation (editable):**
 ```bash
 cd pygs
-pip install -e .
+pip install -e .[dev]
 ```
 
 This installs the Python package and command-line tools. The tools are installed to your Python environment's bin directory.

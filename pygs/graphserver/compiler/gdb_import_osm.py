@@ -1,6 +1,5 @@
 from optparse import OptionParser
 from graphserver.graphdb import GraphDatabase
-import os
 from graphserver.core import Street
 from graphserver.ext.osm.osmdb import OSMDB
 import sys

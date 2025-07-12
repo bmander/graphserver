@@ -3,7 +3,6 @@ from graphserver.graphdb import GraphDatabase
 import cgi
 from graphserver.core import State, WalkOptions
 import time
-import sys
 
 
 def string_spt_vertex(vertex, level=0):

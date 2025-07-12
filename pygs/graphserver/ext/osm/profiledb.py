@@ -6,7 +6,7 @@ import sqlite3
 try:
     import json
 except ImportError:
-    import simplejson as json
+    pass
 import binascii
 from struct import pack, unpack
 

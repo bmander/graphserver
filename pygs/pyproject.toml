@@ -6,7 +6,6 @@ build-backend = "setuptools.build_meta"
 name = "graphserver"
 version = "1.0.0"
 description = "Graphserver routing engine."
-# readme = {file = "../README.markdown", content-type = "text/markdown"}
 requires-python = ">=3.7"
 license = {text = "BSD"}
 authors = [
@@ -28,8 +27,13 @@ classifiers = [
 ]
 dependencies = [
     "pytz>=2008b",
-    "servable>=2009b",
-    "pytest>=6.0"
+    "servable>=2009b"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "ruff"
 ]
 
 [project.urls]
@@ -61,3 +65,6 @@ exclude = ["examples*", "test*"]
 
 [tool.setuptools.package-data]
 graphserver = ["libgraphserver.so"]
+
+[tool.ruff]
+line-length = 88

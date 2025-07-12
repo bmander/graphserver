@@ -1,5 +1,5 @@
 from graphserver.ext.osm.osmdb import OSMDB
-from elevation.elevation import ElevationPile, GridFloat, BIL
+from elevation.elevation import ElevationPile
 from graphserver.ext.osm.profiledb import ProfileDB
 
 OSMDB_NAME = "./data/osm/map2.osmdb"

@@ -1,5 +1,3 @@
-import os
-import re
 import struct
 from math import floor
 from graphserver.vincenty import vincenty

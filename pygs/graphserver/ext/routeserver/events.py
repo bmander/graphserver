@@ -6,7 +6,7 @@ from graphserver.ext.osm.osmdb import OSMDB
 try:
     import json
 except ImportError:
-    import simplejson as json
+    pass
 
 
 class NarrativeEvent:

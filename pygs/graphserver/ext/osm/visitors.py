@@ -54,7 +54,7 @@ def main():
     visitor_cls, osmdb_file = argv[1:3]
     try:
         visitor = globals()[visitor_cls]()
-    except KeyError as e:
+    except KeyError:
         raise Exception("Visitor not found.")
 
     db = OSMDB(osmdb_file)

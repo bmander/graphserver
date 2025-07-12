@@ -1,6 +1,5 @@
 from graphserver.core import *
 import unittest
-import time
 
 
 class TestShortestPathTree(unittest.TestCase):

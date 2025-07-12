@@ -1,8 +1,6 @@
 import atexit
-from ctypes import cdll, CDLL, pydll, PyDLL, CFUNCTYPE
+from ctypes import cdll, PyDLL, CFUNCTYPE
 from ctypes import (
-    string_at,
-    byref,
     c_int,
     c_long,
     c_float,
@@ -12,8 +10,8 @@ from ctypes import (
     c_void_p,
     py_object,
 )
-from ctypes import c_int8, c_int16, c_int32, c_int64, sizeof
-from ctypes import Structure, pointer, cast, POINTER, addressof
+from ctypes import c_int8, c_int16, c_int32, c_int64
+from ctypes import POINTER
 from ctypes.util import find_library
 
 import os
@@ -819,7 +817,6 @@ class PayloadMethodTypes:
 
 
 #
-import sys
 
 
 class SafeWrapper(object):

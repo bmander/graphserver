@@ -1,6 +1,5 @@
 import unittest
 from graphserver.core import *
-import time
 
 
 class TestGraph(unittest.TestCase):

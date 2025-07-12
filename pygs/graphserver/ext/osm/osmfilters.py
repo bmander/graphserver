@@ -1,4 +1,4 @@
-from graphserver.core import Graph, Link, Street, State
+from graphserver.core import Graph, Link, State
 from osmdb import OSMDB
 import time
 from graphserver.vincenty import vincenty as dist_earth
@@ -422,7 +422,7 @@ def main():
 
     try:
         f = globals()[filter_cls]()
-    except KeyError as e:
+    except KeyError:
         raise Exception("Filter not found.")
 
     db = OSMDB(osmdb_file)

@@ -1,9 +1,9 @@
 import time
-from osm import OSM, dist
+from osm import OSM
 import sys
 
 sys.path.append("../../..")
-from graphserver.core import Graph, Street, State
+from graphserver.core import Graph, Street
 
 
 class OSMGraph(Graph):

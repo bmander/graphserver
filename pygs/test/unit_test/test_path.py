@@ -1,7 +1,5 @@
-from graphserver.core import Vertex, Edge, Link, Street, Path
+from graphserver.core import Vertex, Edge, Link, Path
 import unittest
-from graphserver.gsdll import lgs
-from ctypes import addressof
 
 
 class TestPathCreate(unittest.TestCase):

@@ -3,7 +3,6 @@ from graphserver.ext.osm.osmdb import OSMDB
 from graphserver.graphdb import GraphDatabase
 from graphserver.core import Link
 
-import sys
 from optparse import OptionParser
 
 
