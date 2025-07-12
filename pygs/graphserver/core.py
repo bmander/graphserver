@@ -322,11 +322,19 @@ class ShortestPathTree(CShadow):
     def remove_vertex(self, label):
         #void sptRemoveVertex( ShortestPathTree* this, char *label, int free_vertex_payload, int free_edge_payloads );
         
+        # Encode string to bytes for ctypes compatibility in Python 3
+        if isinstance(label, str):
+            label = label.encode('utf-8')
+        
         return self._cremove_vertex(self.soul, label)
         
     def get_vertex(self, label):
         #Vertex* sptGetVertex( ShortestPathTree* this, char *label );
         self.check_destroyed()
+        
+        # Encode string to bytes for ctypes compatibility in Python 3
+        if isinstance(label, str):
+            label = label.encode('utf-8')
         
         return self._cget_vertex(self.soul, label)
         
@@ -388,6 +396,10 @@ class ShortestPathTree(CShadow):
         
     def path_retro(self,origin):
         self.check_destroyed()
+        
+        # Encode string to bytes for ctypes compatibility in Python 3
+        if isinstance(origin, str):
+            origin = origin.encode('utf-8')
         
         path_pointer = lgs.sptPathRetro( self.soul, origin )
         
@@ -1093,7 +1105,16 @@ class Timezone(CShadow):
 #=============================================================================#
     
 class Link(EdgePayload):
-    name = cproperty(lgs.linkGetName, c_char_p)
+    # Use custom property to decode bytes to string for Python 3 compatibility
+    @property  
+    def name(self):
+        self.check_destroyed()
+        raw_name = lgs.linkGetName(c_void_p(self.soul))
+        if raw_name:
+            if isinstance(raw_name, bytes):
+                return raw_name.decode('utf-8')
+            return raw_name
+        return None
     
     def __init__(self):
         self.soul = self._cnew()

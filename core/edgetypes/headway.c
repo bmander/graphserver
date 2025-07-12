@@ -115,7 +115,7 @@ headwayWalkGeneral(EdgePayload* superthis, State* state, WalkOptions* options, i
         if( adjusted_time <= this->begin_time ) {
             wait = this->begin_time - adjusted_time;
         } else if( !state->prev_edge ||
-            !state->prev_edge->type == PL_HEADWAY  ||    //the last edge wasn't a bus
+            (state->prev_edge->type != PL_HEADWAY)  ||    //the last edge wasn't a bus
             !((Headway*)state->prev_edge)->trip_id               ||    //it was a bus, but the trip_id was NULL
             strcmp( ((Headway*)state->prev_edge)->trip_id, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
             wait = this->wait_period;
@@ -138,7 +138,7 @@ headwayWalkGeneral(EdgePayload* superthis, State* state, WalkOptions* options, i
         if( adjusted_time >= this->end_time ) {
             wait = adjusted_time - this->begin_time;
         } else if( !state->prev_edge ||
-            !state->prev_edge->type == PL_HEADWAY  ||    //the last edge wasn't a bus
+            (state->prev_edge->type != PL_HEADWAY)  ||    //the last edge wasn't a bus
             !((Headway*)state->prev_edge)->trip_id               ||    //it was a bus, but the trip_id was NULL
             strcmp( ((Headway*)state->prev_edge)->trip_id, this->trip_id ) != 0 )  { //the current and previous trip_ids are not the same
             wait = this->wait_period;
