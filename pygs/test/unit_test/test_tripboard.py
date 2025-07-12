@@ -47,13 +47,13 @@ class TestTripBoard(unittest.TestCase):
         tb.add_boarding("trip1", 0, 0)
 
         assert tb.get_boarding_by_trip_id("trip1") == ("trip1", 0, 0)
-        assert tb.get_boarding_by_trip_id("bogus") == None
+        assert tb.get_boarding_by_trip_id("bogus") is None
 
         tb.add_boarding("trip2", 1, 1)
 
         assert tb.get_boarding_by_trip_id("trip1") == ("trip1", 0, 0)
         assert tb.get_boarding_by_trip_id("trip2") == ("trip2", 1, 1)
-        assert tb.get_boarding_by_trip_id("bogus") == None
+        assert tb.get_boarding_by_trip_id("bogus") is None
 
     def test_overage(self):
         sc = ServiceCalendar()
@@ -373,13 +373,13 @@ class TestTripBoard(unittest.TestCase):
 
         tb = TripBoard("WKDY", sc, tz, 0)
 
-        assert tb.get_next_boarding(0) == None
+        assert tb.get_next_boarding(0) is None
 
         tb.add_boarding("morning", 15, 0)
 
         assert tb.get_next_boarding(5) == ("morning", 15, 0)
         assert tb.get_next_boarding(15) == ("morning", 15, 0)
-        assert tb.get_next_boarding(20) == None
+        assert tb.get_next_boarding(20) is None
 
     def test_get_next_boarding_several(self):
         sc = ServiceCalendar()
@@ -389,13 +389,13 @@ class TestTripBoard(unittest.TestCase):
 
         tb = TripBoard("WKDY", sc, tz, 0)
 
-        assert tb.get_next_boarding(0) == None
+        assert tb.get_next_boarding(0) is None
 
         tb.add_boarding("1", 15, 0)
 
         assert tb.get_next_boarding(5) == ("1", 15, 0)
         assert tb.get_next_boarding(15) == ("1", 15, 0)
-        assert tb.get_next_boarding(20) == None
+        assert tb.get_next_boarding(20) is None
 
         tb.add_boarding("2", 25, 0)
 
@@ -403,7 +403,7 @@ class TestTripBoard(unittest.TestCase):
         assert tb.get_next_boarding(15) == ("1", 15, 0)
         assert tb.get_next_boarding(20) == ("2", 25, 0)
         assert tb.get_next_boarding(25) == ("2", 25, 0)
-        assert tb.get_next_boarding(30) == None
+        assert tb.get_next_boarding(30) is None
 
     def test_walk(self):
         sc = ServiceCalendar()
@@ -420,7 +420,7 @@ class TestTripBoard(unittest.TestCase):
         # wrong day
         s = State(1, 1 * 3600 * 24)
         ret = tb.walk(s, WalkOptions())
-        assert ret == None
+        assert ret is None
 
         s = State(1, 0)
         ret = tb.walk(s, WalkOptions())
@@ -459,7 +459,7 @@ class TestTripBoard(unittest.TestCase):
 
         s = State(1, 201)
         ret = tb.walk(s, WalkOptions())
-        assert ret == None
+        assert ret is None
 
     def test_walk_back(self):
         sc = ServiceCalendar()

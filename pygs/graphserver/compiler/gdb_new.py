@@ -26,7 +26,7 @@ def main():
     if not os.path.exists(graphdb_filename) or options.overwrite:
         print("Creating graph database '%s'" % graphdb_filename)
 
-        graphdb = GraphDatabase(graphdb_filename, overwrite=options.overwrite)
+        GraphDatabase(graphdb_filename, overwrite=options.overwrite)
     else:
         print(
             "Graph database '%s' already exists. Use -o to overwrite" % graphdb_filename

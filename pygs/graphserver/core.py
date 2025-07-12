@@ -34,6 +34,7 @@ from _ctypes import Py_INCREF, Py_DECREF
 from time import time as now
 import pytz
 import calendar
+from functools import reduce
 from .util import TimeHelpers
 from .vector import Vector
 
@@ -190,7 +191,7 @@ class Graph(CShadow):
 
         e = self._cadd_edge(self.soul, fromv, tov, payload.soul)
 
-        if e != None:
+        if e is not None:
             return e
 
         if not self.get_vertex(fromv):
@@ -436,7 +437,7 @@ class ShortestPathTree(CShadow):
 
         e = self._cadd_edge(self.soul, fromv, tov, payload.soul)
 
-        if e != None:
+        if e is not None:
             return e
 
         if not self.get_vertex(fromv):
@@ -888,14 +889,14 @@ def failsafe(return_arg_num_on_failure):
         def safe(*args):
             try:
                 return func(*args)
-            except:
+            except Exception:
                 import traceback
                 import sys
 
                 sys.stderr.write("ERROR: Exception during callback ")
                 try:
                     sys.stderr.write("%s\n" % (map(str, args)))
-                except:
+                except Exception:
                     pass
                 traceback.print_exc()
                 return args[return_arg_num_on_failure]
@@ -1084,7 +1085,7 @@ class ServiceCalendar(CShadow):
         self.soul = None
 
     def get_service_id_int(self, service_id):
-        if type(service_id) != type("string"):
+        if not isinstance(service_id, str):
             raise TypeError("service_id is supposed to be a string")
 
         if isinstance(service_id, str):
@@ -1093,7 +1094,7 @@ class ServiceCalendar(CShadow):
         return lgs.scGetServiceIdInt(self.soul, service_id)
 
     def get_service_id_string(self, service_id):
-        if type(service_id) != type(1):
+        if not isinstance(service_id, int):
             raise TypeError("service_id is supposed to be an int, in this case")
 
         raw_result = lgs.scGetServiceIdString(self.soul, service_id)
@@ -1500,7 +1501,7 @@ class Headway(EdgePayload):
         agency,
         service_id,
     ):
-        if type(service_id) != type("string"):
+        if not isinstance(service_id, str):
             raise TypeError("service_id is supposed to be a string")
 
         int_sid = calendar.get_service_id_int(service_id)
@@ -1560,7 +1561,7 @@ class TripBoard(EdgePayload):
     def __init__(self, service_id, calendar, timezone, agency):
         service_id = (
             service_id
-            if type(service_id) == int
+            if isinstance(service_id, int)
             else calendar.get_service_id_int(service_id)
         )
 
@@ -1705,7 +1706,7 @@ class HeadwayBoard(EdgePayload):
     ):
         service_id = (
             service_id
-            if type(service_id) == int
+            if isinstance(service_id, int)
             else calendar.get_service_id_int(service_id)
         )
 
@@ -1805,7 +1806,7 @@ class HeadwayAlight(EdgePayload):
     ):
         service_id = (
             service_id
-            if type(service_id) == int
+            if isinstance(service_id, int)
             else calendar.get_service_id_int(service_id)
         )
 
@@ -1996,7 +1997,7 @@ class TripAlight(EdgePayload):
     def __init__(self, service_id, calendar, timezone, agency):
         service_id = (
             service_id
-            if type(service_id) == int
+            if isinstance(service_id, int)
             else calendar.get_service_id_int(service_id)
         )
 
