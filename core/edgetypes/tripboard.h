@@ -66,10 +66,10 @@ tbGetNextBoardingIndex(TripBoard* this, int time);
 int
 tbGetOverage(TripBoard* this);
 
-inline State*
+State*
 tbWalk( EdgePayload* superthis, State* state, WalkOptions* options );
 
-inline State*
+State*
 tbWalkBack( EdgePayload* superthis, State* state, WalkOptions* options );
 
 int

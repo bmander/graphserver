@@ -207,7 +207,7 @@ alGetAlightingIndexByTripId(TripAlight* this, char* trip_id) {
     return -1; 
 }
 
-inline State*
+State*
 alWalk(EdgePayload* this, State* state, WalkOptions* options) {
     State* ret = stateDup( state );
     ret->trip_id = NULL;
@@ -215,7 +215,7 @@ alWalk(EdgePayload* this, State* state, WalkOptions* options) {
     return ret;
 }
 
-inline State*
+State*
 alWalkBack( EdgePayload* superthis, State* state, WalkOptions* options ) {
     TripAlight* this = (TripAlight*)superthis;
     

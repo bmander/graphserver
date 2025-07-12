@@ -19,10 +19,10 @@ egressNew(const char *name, double length);
 void
 egressDestroy(Egress* tokill);
 
-inline State*
+State*
 egressWalk(EdgePayload* superthis, State* state, WalkOptions* options);
 
-inline State*
+State*
 egressWalkBack(EdgePayload* superthis, State* state, WalkOptions* options);
 
 char*

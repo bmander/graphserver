@@ -33,7 +33,7 @@ linkReturnOne(Link* this) {
     return 1;
 }
 
-inline State*
+State*
 linkWalkBackGeneral(EdgePayload* this, State* state, WalkOptions* options) {
     
   State* ret = stateDup( state );
@@ -43,12 +43,12 @@ linkWalkBackGeneral(EdgePayload* this, State* state, WalkOptions* options) {
   return ret;
 }
 
-inline State*
+State*
 linkWalkBack(EdgePayload* this, State* state, WalkOptions* options) {
   return linkWalkBackGeneral(this, state, options);
 }
 
-inline State*
+State*
 linkWalk(EdgePayload* this, State* state, WalkOptions* options) {
   return linkWalkBackGeneral(this, state, options);
 }

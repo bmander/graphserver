@@ -35,7 +35,7 @@ egressGetLength(Egress* this) {
 }
 
 
-inline State*
+State*
 egressWalkGeneral(EdgePayload* superthis, State* state, WalkOptions* options, int forward) {
   Egress* this = (Egress*)superthis;
   State* ret = stateDup( state );
@@ -62,12 +62,12 @@ egressWalkGeneral(EdgePayload* superthis, State* state, WalkOptions* options, in
   return ret;
 }
 
-inline State*
+State*
 egressWalk(EdgePayload* superthis, State* state, WalkOptions* options) {
     return egressWalkGeneral( superthis, state, options, TRUE );
 }
 
-inline State*
+State*
 egressWalkBack(EdgePayload* superthis, State* state, WalkOptions* options) {
     return egressWalkGeneral( superthis, state, options, FALSE );
 }

@@ -79,7 +79,7 @@ spPrint( ServicePeriod* this ) ;
 void
 spPrintPeriod( ServicePeriod* this ) ;
 
-inline long
+long
 spNormalizeTime( ServicePeriod* this, int timezone_offset, long time ) ;
 
 #endif

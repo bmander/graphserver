@@ -39,7 +39,7 @@ comboDestroy(Combination* this) {
     free( this );
 }
 
-inline State*
+State*
 comboWalk(EdgePayload* superthis, State* param, WalkOptions* options) {
     Combination* this = (Combination*)superthis;
     
@@ -68,7 +68,7 @@ comboWalk(EdgePayload* superthis, State* param, WalkOptions* options) {
     return ret;
 }
 
-inline State*
+State*
 comboWalkBack(EdgePayload* superthis, State* param, WalkOptions* options) {
     Combination* this = (Combination*)superthis;
     

@@ -50,10 +50,10 @@ hbGetEndTime( HeadwayBoard* this );
 int
 hbGetHeadwaySecs( HeadwayBoard* this );
 
-inline State*
+State*
 hbWalk( EdgePayload* superthis, State* state, WalkOptions* options );
 
-inline State*
+State*
 hbWalkBack( EdgePayload* superthis, State* state, WalkOptions* options );
 
 #endif

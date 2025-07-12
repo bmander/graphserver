@@ -35,10 +35,10 @@ crGetCrossingTimeByIndex(Crossing* this, int i);
 int
 crGetSize(Crossing* this);
 
-inline State*
+State*
 crWalk( EdgePayload* superthis, State* state, WalkOptions* options );
 
-inline State*
+State*
 crWalkBack( EdgePayload* superthis, State* state, WalkOptions* options );
 
 #endif

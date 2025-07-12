@@ -104,7 +104,7 @@ float speed_from_grade(WalkOptions* options, float grade) {
 }
 #endif
 
-inline State*
+State*
 streetWalkGeneral(EdgePayload* superthis, State* state, WalkOptions* options, int forward) {
   Street* this = (Street*)superthis;
   State* ret = stateDup( state );
@@ -150,12 +150,12 @@ streetWalkGeneral(EdgePayload* superthis, State* state, WalkOptions* options, in
   return ret;
 }
 
-inline State*
+State*
 streetWalk(EdgePayload* superthis, State* state, WalkOptions* options) {
     return streetWalkGeneral(superthis, state, options, TRUE);
 }
 
-inline State*
+State*
 streetWalkBack(EdgePayload* superthis, State* state, WalkOptions* options) {
     return streetWalkGeneral(superthis, state, options, FALSE);
 }

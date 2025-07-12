@@ -28,10 +28,10 @@ streetNewElev(const char *name, double length, float rise, float fall, int rever
 void
 streetDestroy(Street* tokill);
 
-inline State*
+State*
 streetWalk(EdgePayload* superthis, State* state, WalkOptions* options);
 
-inline State*
+State*
 streetWalkBack(EdgePayload* superthis, State* state, WalkOptions* options);
 
 char*

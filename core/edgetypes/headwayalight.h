@@ -50,10 +50,10 @@ haGetEndTime( HeadwayAlight* this );
 int
 haGetHeadwaySecs( HeadwayAlight* this );
 
-inline State*
+State*
 haWalk( EdgePayload* superthis, State* state, WalkOptions* options );
 
-inline State*
+State*
 haWalkBack( EdgePayload* superthis, State* state, WalkOptions* options );
 
 #endif

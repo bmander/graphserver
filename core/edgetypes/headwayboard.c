@@ -72,7 +72,7 @@ hbGetHeadwaySecs( HeadwayBoard* this ) {
   return this->headway_secs;
 }
 
-inline State*
+State*
 hbWalk( EdgePayload* superthis, State* state, WalkOptions* options ) {
     HeadwayBoard* this = (HeadwayBoard*)superthis;
     
@@ -144,7 +144,7 @@ hbWalk( EdgePayload* superthis, State* state, WalkOptions* options ) {
     
 }
 
-inline State*
+State*
 hbWalkBack(EdgePayload* superthis, State* state, WalkOptions* options) {
     HeadwayBoard* this = (HeadwayBoard*)superthis;
     

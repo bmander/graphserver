@@ -72,7 +72,7 @@ haGetHeadwaySecs( HeadwayAlight* this ) {
   return this->headway_secs;
 }
 
-inline State*
+State*
 haWalk(EdgePayload* this, State* state, WalkOptions* options) {
     State* ret = stateDup( state );
     ret->trip_id = NULL;
@@ -80,7 +80,7 @@ haWalk(EdgePayload* this, State* state, WalkOptions* options) {
     return ret;
 }
 
-inline State*
+State*
 haWalkBack( EdgePayload* superthis, State* state, WalkOptions* options ) {
     HeadwayAlight* this = (HeadwayAlight*)superthis;
     

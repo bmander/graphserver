@@ -67,10 +67,10 @@ alGetOverage(TripAlight* this);
 int
 alGetAlightingIndexByTripId(TripAlight* this, char* trip_id);
 
-inline State*
+State*
 alWalk(EdgePayload* this, State* state, WalkOptions* options);
 
-inline State*
+State*
 alWalkBack(EdgePayload* this, State* state, WalkOptions* options);
 
 #endif

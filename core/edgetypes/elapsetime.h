@@ -18,10 +18,10 @@ elapseTimeNew(long seconds);
 void
 elapseTimeDestroy(ElapseTime* tokill);
 
-inline State*
+State*
 elapseTimeWalk(EdgePayload* superthis, State* param, WalkOptions* options);
 
-inline State*
+State*
 elapseTimeWalkBack(EdgePayload* superthis, State* param, WalkOptions* options);
 
 long

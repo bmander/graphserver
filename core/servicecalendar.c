@@ -229,7 +229,7 @@ spPreviousPeriod(ServicePeriod* this) {
 void
 spPrint( ServicePeriod* this );
 
-inline long
+long
 spDatumMidnight( ServicePeriod* this, int timezone_offset ) {
     /*Returns the unix time corresponding to the local time of the last midnight to occur 
       before the beginning of this service peroid. Typically, triphops specify events relative
@@ -239,7 +239,7 @@ spDatumMidnight( ServicePeriod* this, int timezone_offset ) {
     return this->begin_time - since_local_midnight;
 }
 
-inline long
+long
 spNormalizeTime( ServicePeriod* this, int timezone_offset, long time ) {
     /* Normalizes unix time to seconds since the last midnight before the beginning of the service period */
     

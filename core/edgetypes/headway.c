@@ -61,7 +61,7 @@ ServiceId
 headwayServiceId(Headway* this) { return this->service_id; }
 
 
-inline State*
+State*
 headwayWalkGeneral(EdgePayload* superthis, State* state, WalkOptions* options, int forward) {
     Headway* this = (Headway*)superthis;
     
@@ -161,13 +161,13 @@ headwayWalkGeneral(EdgePayload* superthis, State* state, WalkOptions* options, i
 }
 
 
-inline State*
+State*
 headwayWalk(EdgePayload* superthis, State* state, WalkOptions* options) {
     return headwayWalkGeneral( superthis, state, options, TRUE );
 }
 
 
-inline State*
+State*
 headwayWalkBack(EdgePayload* superthis, State* state, WalkOptions* options) {
     return headwayWalkGeneral( superthis, state, options, FALSE );
 }

@@ -32,10 +32,10 @@ comboAdd(Combination *this, EdgePayload *ep) ;
 void
 comboDestroy(Combination* this) ;
 
-inline State*
+State*
 comboWalk(EdgePayload* superthis, State* param, WalkOptions* options) ;
 
-inline State*
+State*
 comboWalkBack(EdgePayload* superthis, State* param, WalkOptions* options) ;
 
 EdgePayload*

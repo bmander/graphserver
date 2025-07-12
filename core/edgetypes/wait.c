@@ -32,7 +32,7 @@ waitGetTimezone(Wait* this) {
 }
 
 
-inline State*
+State*
 waitWalk(EdgePayload* superthis, State* state, WalkOptions* options) {
     Wait* this = (Wait*)superthis;
     
@@ -52,7 +52,7 @@ waitWalk(EdgePayload* superthis, State* state, WalkOptions* options) {
     return ret;
 }
 
-inline State*
+State*
 waitWalkBack(EdgePayload* superthis, State* state, WalkOptions* options) {
     Wait* this = (Wait*)superthis;
     

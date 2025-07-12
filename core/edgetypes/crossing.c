@@ -102,7 +102,7 @@ crGetSize(Crossing* this) {
     return this->n;
 }
 
-inline State*
+State*
 crWalk( EdgePayload* superthis, State* state, WalkOptions* options ) {
     Crossing* this = (Crossing*)superthis;
     
@@ -137,7 +137,7 @@ crWalk( EdgePayload* superthis, State* state, WalkOptions* options ) {
     
 }
 
-inline State*
+State*
 crWalkBack( EdgePayload* superthis, State* state, WalkOptions* options ) {
     Crossing* this = (Crossing*)superthis;
     

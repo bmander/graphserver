@@ -17,10 +17,10 @@ waitNew(long end, Timezone* timezone);
 void
 waitDestroy(Wait* tokill);
 
-inline State*
+State*
 waitWalk(EdgePayload* superthis, State* param, WalkOptions* options);
 
-inline State*
+State*
 waitWalkBack(EdgePayload* superthis, State* param, WalkOptions* options);
 
 long

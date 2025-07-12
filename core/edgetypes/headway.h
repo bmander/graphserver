@@ -26,10 +26,10 @@ headwayNew(int begin_time, int end_time, int wait_period, int transit, char* tri
 void
 headwayDestroy(Headway* tokill);
 
-inline State*
+State*
 headwayWalk(EdgePayload* this, State* param, WalkOptions* options);
 
-inline State*
+State*
 headwayWalkBack(EdgePayload* this, State* param, WalkOptions* options);
 
 int

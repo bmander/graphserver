@@ -18,10 +18,10 @@ linkNew(void);
 void
 linkDestroy(Link* tokill);
 
-inline State*
+State*
 linkWalk(EdgePayload* this, State* param, WalkOptions* options);
 
-inline State*
+State*
 linkWalkBack(EdgePayload* this, State* param, WalkOptions* options);
 
 char*

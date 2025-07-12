@@ -233,7 +233,7 @@ smaller than the overage of the TripBoard, roll back the day by the number of da
 number of days, and check again.
 */
 
-inline State*
+State*
 tbWalk( EdgePayload* superthis, State* state, WalkOptions* options ) {
     TripBoard* this = (TripBoard*)superthis;
     
@@ -307,7 +307,7 @@ tbWalk( EdgePayload* superthis, State* state, WalkOptions* options ) {
     
 }
 
-inline State*
+State*
 tbWalkBack(EdgePayload* this, State* state, WalkOptions* options) {
     State* ret = stateDup( state );
     ret->trip_id = NULL;
