@@ -1,5 +1,12 @@
 import unittest
-from graphserver.core import *
+from graphserver.core import (
+    HeadwayBoard,
+    ServiceCalendar,
+    Timezone,
+    TimezonePeriod,
+    State,
+    WalkOptions,
+)
 
 
 class TestHeadwayBoard(unittest.TestCase):

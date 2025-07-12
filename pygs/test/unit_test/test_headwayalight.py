@@ -1,5 +1,12 @@
 import unittest
-from graphserver.core import *
+from graphserver.core import (
+    HeadwayAlight,
+    ServiceCalendar,
+    Timezone,
+    TimezonePeriod,
+    State,
+    WalkOptions,
+)
 
 
 class TestHeadwayAlight(unittest.TestCase):

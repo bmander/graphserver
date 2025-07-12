@@ -1,4 +1,4 @@
-from graphserver.core import *
+from graphserver.core import ServicePeriod, ServiceCalendar
 import unittest
 import pickle
 

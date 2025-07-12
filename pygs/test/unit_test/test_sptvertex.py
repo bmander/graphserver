@@ -1,5 +1,5 @@
 import unittest
-from graphserver.core import *
+from graphserver.core import SPTVertex, Vertex
 
 
 class TestSPTVertex(unittest.TestCase):

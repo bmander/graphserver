@@ -1,5 +1,5 @@
 import unittest
-from graphserver.core import *
+from graphserver.core import Crossing, State, WalkOptions
 
 
 class TestCrossing(unittest.TestCase):

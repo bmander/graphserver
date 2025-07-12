@@ -1,5 +1,5 @@
 import unittest
-from graphserver.core import *
+from graphserver.core import Combination, Street, State, WalkOptions
 
 
 class TestCombination(unittest.TestCase):

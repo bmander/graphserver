@@ -1,5 +1,5 @@
 import unittest
-from graphserver.core import *
+from graphserver.core import TimezonePeriod
 from graphserver import util
 import pickle
 

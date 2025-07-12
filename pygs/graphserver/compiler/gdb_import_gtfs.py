@@ -6,7 +6,6 @@ from graphserver.core import (
     Crossing,
     TripAlight,
     Timezone,
-    Street,
     Link,
     ElapseTime,
 )
@@ -14,7 +13,6 @@ from optparse import OptionParser
 from graphserver.graphdb import GraphDatabase
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase, parse_gtfs_date
 import sys
-import pytz
 from tools import service_calendar_from_timezone
 import datetime
 
