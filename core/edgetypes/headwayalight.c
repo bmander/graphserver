@@ -86,9 +86,10 @@ haWalkBack( EdgePayload* superthis, State* state, WalkOptions* options ) {
     
     //Get service period cached in travel state. If it doesn't exist, figure it out and cache it
     ServicePeriod* service_period = state->service_periods[this->agency];
-    if( !service_period )
+    if( !service_period ) {
         service_period = scPeriodOfOrBefore( this->calendar, state->time );
         state->service_periods[this->agency] = service_period;
+    }
     
         //If still can't find service_period, state->time is beyond service calendar, so bail
         if( !service_period )

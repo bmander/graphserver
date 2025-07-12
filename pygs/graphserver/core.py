@@ -123,10 +123,16 @@ class Graph(CShadow):
         #Vertex* gAddVertex( Graph* this, char *label );
         self.check_destroyed()
         
+        if isinstance(label, str):
+            label = label.encode('utf-8')
+        
         return self._cadd_vertex(self.soul, label)
         
     def remove_vertex(self, label, free_edge_payloads=True):
         #void gRemoveVertex( Graph* this, char *label, int free_vertex_payload, int free_edge_payloads );
+        
+        if isinstance(label, str):
+            label = label.encode('utf-8')
         
         return self._cremove_vertex(self.soul, label, free_edge_payloads)
         
@@ -134,11 +140,19 @@ class Graph(CShadow):
         #Vertex* gGetVertex( Graph* this, char *label );
         self.check_destroyed()
         
+        if isinstance(label, str):
+            label = label.encode('utf-8')
+        
         return self._cget_vertex(self.soul, label)
         
     def add_edge( self, fromv, tov, payload ):
         #Edge* gAddEdge( Graph* this, char *from, char *to, EdgePayload *payload );
         self.check_destroyed()
+        
+        if isinstance(fromv, str):
+            fromv = fromv.encode('utf-8')
+        if isinstance(tov, str):
+            tov = tov.encode('utf-8')
         
         e = self._cadd_edge( self.soul, fromv, tov, payload.soul )
         
@@ -193,12 +207,17 @@ class Graph(CShadow):
         if not tov:
             tov = "*bogus^*^vertex*"
         
+        if isinstance(fromv, str):
+            fromv = fromv.encode('utf-8')
+        if isinstance(tov, str):
+            tov = tov.encode('utf-8')
+        
         if walk_options is None:
             walk_options = WalkOptions()
-            ret = self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(maxtime), c_int(hoplimit), c_long(weightlimit) )
+            ret = self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(int(maxtime)), c_int(hoplimit), c_long(int(weightlimit)) )
             walk_options.destroy()
         else:
-            ret = self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(maxtime), c_int(hoplimit), c_long(weightlimit) )
+            ret = self._cshortest_path_tree( self.soul, fromv, tov, initstate.soul, walk_options.soul, c_long(int(maxtime)), c_int(hoplimit), c_long(int(weightlimit)) )
         
         if ret is None:
           raise Exception( "Could not create shortest path tree" ) # this shouldn't happen; TODO: more descriptive error
@@ -211,12 +230,17 @@ class Graph(CShadow):
         if not fromv:
             fromv = "*bogus^*^vertex*"
             
+        if isinstance(fromv, str):
+            fromv = fromv.encode('utf-8')
+        if isinstance(tov, str):
+            tov = tov.encode('utf-8')
+            
         if walk_options is None:
             walk_options = WalkOptions()
-            ret = self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime), c_int(hoplimit), c_long(weightlimit) )
+            ret = self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(int(mintime)), c_int(hoplimit), c_long(int(weightlimit)) )
             walk_options.destroy()
         else:
-            ret = self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(mintime), c_int(hoplimit), c_long(weightlimit) )
+            ret = self._cshortest_path_tree_retro( self.soul, fromv, tov, finalstate.soul, walk_options.soul, c_long(int(mintime)), c_int(hoplimit), c_long(int(weightlimit)) )
 
         if ret is None:
           raise Exception( "Could not create shortest path tree" ) # this shouldn't happen; TODO: more descriptive error
@@ -292,11 +316,17 @@ class ShortestPathTree(CShadow):
     def remove_vertex(self, label):
         #void sptRemoveVertex( ShortestPathTree* this, char *label, int free_vertex_payload, int free_edge_payloads );
         
+        if isinstance(label, str):
+            label = label.encode('utf-8')
+        
         return self._cremove_vertex(self.soul, label)
         
     def get_vertex(self, label):
         #Vertex* sptGetVertex( ShortestPathTree* this, char *label );
         self.check_destroyed()
+        
+        if isinstance(label, str):
+            label = label.encode('utf-8')
         
         return self._cget_vertex(self.soul, label)
         
@@ -359,6 +389,9 @@ class ShortestPathTree(CShadow):
     def path_retro(self,origin):
         self.check_destroyed()
         
+        if isinstance(origin, str):
+            origin = origin.encode('utf-8')
+        
         path_pointer = lgs.sptPathRetro( self.soul, origin )
         
         if path_pointer is None:
@@ -415,7 +448,7 @@ class State(CShadow):
     def __init__(self, n_agencies, time=None):
         if time is None:
             time = now()
-        self.soul = self._cnew(n_agencies, long(time))
+        self.soul = self._cnew(n_agencies, int(time))
         
     def service_period(self, agency):
         soul = lgs.stateServicePeriod( self.soul, agency )
@@ -542,12 +575,23 @@ class SPTEdge(Edge):
 
 class Vertex(CShadow):
     
-    label = cproperty(lgs.vGetLabel, c_char_p)
+    @property
+    def label(self):
+        self.check_destroyed()
+        raw_label = lgs.vGetLabel(c_void_p(self.soul))
+        if raw_label:
+            if isinstance(raw_label, bytes):
+                return raw_label.decode('utf-8')
+            return raw_label
+        return None
+    
     degree_in = cproperty(lgs.vDegreeIn, c_int)
     degree_out = cproperty(lgs.vDegreeOut, c_int)
     edgeclass = Edge
     
     def __init__(self,label):
+        if isinstance(label, str):
+            label = label.encode('utf-8')
         self.soul = self._cnew(label)
         
     def destroy(self):
@@ -609,7 +653,16 @@ class Vertex(CShadow):
         
 class SPTVertex(CShadow):
     
-    label = cproperty(lgs.sptvGetLabel, c_char_p)
+    @property
+    def label(self):
+        self.check_destroyed()
+        raw_label = lgs.sptvGetLabel(c_void_p(self.soul))
+        if raw_label:
+            if isinstance(raw_label, bytes):
+                return raw_label.decode('utf-8')
+            return raw_label
+        return None
+    
     degree_in = cproperty(lgs.sptvDegreeIn, c_int)
     degree_out = cproperty(lgs.sptvDegreeOut, c_int)
     hop = cproperty(lgs.sptvHop, c_int)
@@ -875,13 +928,21 @@ class ServiceCalendar(CShadow):
         if type(service_id)!=type("string"):
             raise TypeError("service_id is supposed to be a string")
         
+        if isinstance(service_id, str):
+            service_id = service_id.encode('utf-8')
+        
         return lgs.scGetServiceIdInt( self.soul, service_id );
         
     def get_service_id_string( self, service_id ):
         if type(service_id)!=type(1):
             raise TypeError("service_id is supposed to be an int, in this case")
         
-        return lgs.scGetServiceIdString( self.soul, service_id )
+        raw_result = lgs.scGetServiceIdString( self.soul, service_id )
+        if raw_result:
+            if isinstance(raw_result, bytes):
+                return raw_result.decode('utf-8')
+            return raw_result
+        return None
         
     def add_period(self, begin_time, end_time, service_ids):
         sp = ServicePeriod( begin_time, end_time, [self.get_service_id_int(x) for x in service_ids] )
@@ -961,7 +1022,7 @@ class TimezonePeriod(CShadow):
         return TimezonePeriod.from_pointer( lgs.tzpNextPeriod( self.soul ) )
         
     def time_since_midnight(self, time):
-        return lgs.tzpTimeSinceMidnight( self.soul, c_long(time) )
+        return lgs.tzpTimeSinceMidnight( self.soul, c_long(int(time)) )
         
     def __getstate__(self):
         return (self.begin_time, self.end_time, self.utc_offset)
@@ -998,7 +1059,7 @@ class Timezone(CShadow):
         return ret
         
     def time_since_midnight(self, time):
-        ret = lgs.tzTimeSinceMidnight( self.soul, c_long(time) )
+        ret = lgs.tzTimeSinceMidnight( self.soul, c_long(int(time)) )
         
         if ret==-1:
             raise IndexError( "%d lands within no timezone period"%time )
@@ -1043,7 +1104,15 @@ class Timezone(CShadow):
 #=============================================================================#
     
 class Link(EdgePayload):
-    name = cproperty(lgs.linkGetName, c_char_p)
+    @property  
+    def name(self):
+        self.check_destroyed()
+        raw_name = lgs.linkGetName(c_void_p(self.soul))
+        if raw_name:
+            if isinstance(raw_name, bytes):
+                return raw_name.decode('utf-8')
+            return raw_name
+        return None
     
     def __init__(self):
         self.soul = self._cnew()
@@ -1065,13 +1134,26 @@ class Link(EdgePayload):
     
 class Street(EdgePayload):
     length = cproperty(lgs.streetGetLength, c_double)
-    name   = cproperty(lgs.streetGetName, c_char_p)
+    
+    @property  
+    def name(self):
+        self.check_destroyed()
+        raw_name = lgs.streetGetName(c_void_p(self.soul))
+        if raw_name:
+            if isinstance(raw_name, bytes):
+                return raw_name.decode('utf-8')
+            return raw_name
+        return None
+    
     rise = cproperty(lgs.streetGetRise, c_float, setter=lgs.streetSetRise)
     fall = cproperty(lgs.streetGetFall, c_float, setter=lgs.streetSetFall)
     slog = cproperty(lgs.streetGetSlog, c_float, setter=lgs.streetSetSlog)
     way = cproperty(lgs.streetGetWay, c_long, setter=lgs.streetSetWay)
     
     def __init__(self,name,length,rise=0,fall=0,reverse_of_source=False):
+        # Encode string to bytes for ctypes compatibility in Python 3
+        if isinstance(name, str):
+            name = name.encode('utf-8')
         self.soul = self._cnew(name, length, rise, fall,reverse_of_source)
             
     def to_xml(self):
@@ -1105,9 +1187,21 @@ class Street(EdgePayload):
 
 class Egress(EdgePayload):
     length = cproperty(lgs.egressGetLength, c_double)
-    name   = cproperty(lgs.egressGetName, c_char_p)
+    
+    @property  
+    def name(self):
+        self.check_destroyed()
+        raw_name = lgs.egressGetName(c_void_p(self.soul))
+        if raw_name:
+            if isinstance(raw_name, bytes):
+                return raw_name.decode('utf-8')
+            return raw_name
+        return None
     
     def __init__(self,name,length):
+        # Encode string to bytes for ctypes compatibility in Python 3
+        if isinstance(name, str):
+            name = name.encode('utf-8')
         self.soul = self._cnew(name, length)
             
     def to_xml(self):
@@ -1170,7 +1264,17 @@ class Headway(EdgePayload):
     end_time = cproperty( lgs.headwayEndTime, c_int )
     wait_period = cproperty( lgs.headwayWaitPeriod, c_int )
     transit = cproperty( lgs.headwayTransit, c_int )
-    trip_id = cproperty( lgs.headwayTripId, c_char_p )
+    
+    @property  
+    def trip_id(self):
+        self.check_destroyed()
+        raw_trip_id = lgs.headwayTripId(c_void_p(self.soul))
+        if raw_trip_id:
+            if isinstance(raw_trip_id, bytes):
+                return raw_trip_id.decode('utf-8')
+            return raw_trip_id
+        return None
+    
     calendar = cproperty( lgs.headwayCalendar, c_void_p, ServiceCalendar )
     timezone = cproperty( lgs.headwayTimezone, c_void_p, Timezone )
     agency = cproperty( lgs.headwayAgency, c_int )
