@@ -255,7 +255,7 @@ class GTFSDatabase:
                 else:
                     trips_file = iterdecode( open( os.path.join( gtfs_filename, tablename+".txt" ) ), "utf-8" )
                 load_gtfs_table_to_sqlite(trips_file, tablename, c, table_def, verbose=verbose)
-            except (KeyError as IOError):
+            except KeyError:
                 print( "NOTICE: GTFS feed has no file %s.txt, cannot load\n"%tablename )
     
         self._create_indices(c)
