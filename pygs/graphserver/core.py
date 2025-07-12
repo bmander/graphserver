@@ -441,6 +441,12 @@ class ShortestPathTree(CShadow):
         # Edge* sptAddEdge( ShortestPathTree* this, char *from, char *to, EdgePayload *payload );
         self.check_destroyed()
 
+        # Encode strings to bytes for ctypes compatibility in Python 3
+        if isinstance(fromv, str):
+            fromv = fromv.encode("utf-8")
+        if isinstance(tov, str):
+            tov = tov.encode("utf-8")
+
         e = self._cadd_edge(self.soul, fromv, tov, payload.soul)
 
         if e is not None:
@@ -1598,6 +1604,9 @@ class TripBoard(EdgePayload):
         return (trip_id, depart, stop_sequence)
 
     def get_boarding_by_trip_id(self, trip_id):
+        # Encode string to bytes for ctypes compatibility in Python 3
+        if isinstance(trip_id, str):
+            trip_id = trip_id.encode("utf-8")
         boarding_index = lgs.tbGetBoardingIndexByTripId(self.soul, trip_id)
 
         if boarding_index == -1:
@@ -1811,7 +1820,15 @@ class HeadwayAlight(EdgePayload):
     timezone = cproperty(lgs.haGetTimezone, c_void_p, Timezone)
     agency = cproperty(lgs.haGetAgency, c_int)
     int_service_id = cproperty(lgs.haGetServiceId, c_int)
-    trip_id = cproperty(lgs.haGetTripId, c_char_p)
+    @property
+    def trip_id(self):
+        self.check_destroyed()
+        raw_trip_id = lgs.haGetTripId(c_void_p(self.soul))
+        if raw_trip_id:
+            if isinstance(raw_trip_id, bytes):
+                return raw_trip_id.decode("utf-8")
+            return raw_trip_id
+        return None
     start_time = cproperty(lgs.haGetStartTime, c_int)
     end_time = cproperty(lgs.haGetEndTime, c_int)
     headway_secs = cproperty(lgs.haGetHeadwaySecs, c_int)
@@ -1832,6 +1849,10 @@ class HeadwayAlight(EdgePayload):
             if isinstance(service_id, int)
             else calendar.get_service_id_int(service_id)
         )
+
+        # Encode string to bytes for ctypes compatibility in Python 3
+        if isinstance(trip_id, str):
+            trip_id = trip_id.encode("utf-8")
 
         self.soul = self._cnew(
             service_id,
@@ -2071,6 +2092,9 @@ class TripAlight(EdgePayload):
             return self.get_alighting(i)
 
     def get_alighting_by_trip_id(self, trip_id):
+        # Encode string to bytes for ctypes compatibility in Python 3
+        if isinstance(trip_id, str):
+            trip_id = trip_id.encode("utf-8")
         alighting_index = lgs.alGetAlightingIndexByTripId(self.soul, trip_id)
 
         if alighting_index == -1:
