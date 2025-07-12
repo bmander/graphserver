@@ -18,9 +18,9 @@ Learn more about Graphserver at [http://graphserver.github.com/graphserver/](htt
 
 #### Step 1: Build the core C library
 ```bash
-    $ cd core
-    $ make
-    $ sudo make install
+cd core
+make
+sudo make install
 ```
 
 #### Step 2: Install Python bindings
