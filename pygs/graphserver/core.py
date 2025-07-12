@@ -1697,10 +1697,17 @@ class HeadwayBoard(EdgePayload):
     timezone = cproperty(lgs.hbGetTimezone, c_void_p, Timezone)
     agency = cproperty(lgs.hbGetAgency, c_int)
     int_service_id = cproperty(lgs.hbGetServiceId, c_int)
-    trip_id = cproperty(lgs.hbGetTripId, c_char_p)
+    _trip_id = cproperty(lgs.hbGetTripId, c_char_p)
     start_time = cproperty(lgs.hbGetStartTime, c_int)
     end_time = cproperty(lgs.hbGetEndTime, c_int)
     headway_secs = cproperty(lgs.hbGetHeadwaySecs, c_int)
+
+    @property
+    def trip_id(self):
+        raw_trip_id = self._trip_id
+        if isinstance(raw_trip_id, bytes):
+            return raw_trip_id.decode("utf-8")
+        return raw_trip_id
 
     def __init__(
         self,
@@ -1718,6 +1725,9 @@ class HeadwayBoard(EdgePayload):
             if isinstance(service_id, int)
             else calendar.get_service_id_int(service_id)
         )
+
+        if isinstance(trip_id, str):
+            trip_id = trip_id.encode("utf-8")
 
         self.soul = self._cnew(
             service_id,
@@ -2021,6 +2031,8 @@ class TripAlight(EdgePayload):
         self.soul = self._cnew(service_id, calendar.soul, timezone.soul, agency)
 
     def add_alighting(self, trip_id, arrival, stop_sequence):
+        if isinstance(trip_id, str):
+            trip_id = trip_id.encode("utf-8")
         lgs.alAddAlighting(self.soul, trip_id, arrival, stop_sequence)
 
     def get_alighting(self, i):
@@ -2030,6 +2042,10 @@ class TripAlight(EdgePayload):
 
         if trip_id is None:
             raise IndexError("Index %d out of bounds" % i)
+
+        # Decode bytes to string for Python 3 compatibility
+        if isinstance(trip_id, bytes):
+            trip_id = trip_id.decode("utf-8")
 
         return (trip_id, arrival, stop_sequence)
 
