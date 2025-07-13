@@ -55,44 +55,45 @@ which gs
 
 ## TOOLS
 
-#### gs compile gtfs
+#### `gs compile gtfs`
 Create a GTFSDatabase (sqlite3 db) from a GTFS zip file
-    $ gs compile gtfs google_transit.zip google_transit.gtfsdb
+```bash
+gs compile gtfs google_transit.zip google_transit.gtfsdb
+```
 
-#### gs compile osm
+#### `gs compile osm`
 Create an OSM database (sqlite3 db) from an OSM XML file
-    $ gs compile osm map.osm map.osmdb
+```bash
+gs compile osm map.osm map.osmdb
+```
 
-#### gs new
+#### `gs new`
 Create a new graph file
-    $ gs new foobar.gdb
+```bash
+gs new foobar.gdb
+```
 
-#### gs import osm
+#### `gs import osm`
 Import an OSM database to a graph file
-    $ gs import osm foobar.gdb map.osmdb
+```bash
+gs import osm foobar.gdb map.osmdb
+```
 
-#### gs import gtfs
+#### `gs import gtfs`
 Import a GTFS database to a graph file
-    $ gs import gtfs foobar.gdb google_transit.gtfsdb
+```bash
+gs import gtfs foobar.gdb google_transit.gtfsdb
+```
 
-#### gs link
+#### `gs link`
 Link OSM vertices to GTFS vertices to enable multimodal trip planning
-    $ gs link foobar.gdb map.osmdb google_transit.gtfsdb
+```bash
+gs link foobar.gdb map.osmdb google_transit.gtfsdb
+```
 
-#### gs_osmfilter: run one of the filter classes from graphserver.ext.osm.osmfilters on an OSMDB instance
-    $ gs_osmfilter <Filter Name> <run|rerun|visualize> <osmdb_file> [<filter args> ...]
-   
-## Building just the C .dll/.so
-
-Provides the core DLL for routing. It is not necessary to manually build this if
-using the Python bindings.
-
-Build:
-    $ cd core
-    $ cmake -S . -B build
-    $ cmake --build build
-
-Install:
-    $ cd core
-    $ sudo cmake --install build
-
+#### `gs_osmfilter`
+Run one of the filter classes from `graphserver.ext.osm.osmfilters` on an OSMDB instance
+```bash
+gs_osmfilter <Filter Name> <run|rerun|visualize> <osmdb_file> [<filter args> ...]
+```
+ 
