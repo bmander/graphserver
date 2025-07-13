@@ -14,9 +14,11 @@ class UTF8TextFile(object):
     def __init__(self, fp):
         self.fp = fp
 
-    def next(self):
-        nextline = self.fp.next()
-        return nextline.encode("ascii", "ignore")
+    def __next__(self):
+        nextline = next(self.fp)
+        if isinstance(nextline, bytes):
+            nextline = nextline.decode("utf-8")
+        return nextline
 
     def __iter__(self):
         return self
@@ -60,7 +62,7 @@ def load_gtfs_table_to_sqlite(fp, gtfs_basename, cc, header=None, verbose=False)
     rd = csv.reader(ur)
 
     # create map of field locations in gtfs header to field locations as specified by the table definition
-    gtfs_header = [x.strip() for x in rd.next()]
+    gtfs_header = [x.strip() for x in next(rd)]
 
     print(gtfs_header)
 
@@ -352,9 +354,7 @@ class GTFSDatabase:
 
             try:
                 if not os.path.isdir(gtfs_filename):
-                    trips_file = iterdecode(
-                        zf.read(tablename + ".txt").split("\n"), "utf-8"
-                    )
+                    trips_file = iter(zf.read(tablename + ".txt").decode("utf-8").split("\n"))
                 else:
                     trips_file = iterdecode(
                         open(os.path.join(gtfs_filename, tablename + ".txt")), "utf-8"
