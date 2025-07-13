@@ -50,34 +50,34 @@ python3 -c "import graphserver.core; print('Core module: OK')"
 python3 -c "import graphserver.core; g = graphserver.core.Graph(); print('Graph creation: OK')"
 
 # Check installed tools
-which gs_new gs_import_osm gs_import_gtfs
+which gs
 ```
 
 ## TOOLS
 
-#### gs_gtfsdb_compile
+#### gs compile gtfs
 Create a GTFSDatabase (sqlite3 db) from a GTFS zip file
-    $ gs_gtfsdb_compile google_transit.zip google_transit.gtfsdb
+    $ gs compile gtfs google_transit.zip google_transit.gtfsdb
 
-#### gs_osmdb_compile
-Create a OSM database (sqlite3 db) from an OSM xml file
-    $ gs_osmdb_compile map.osm map.osmdb
+#### gs compile osm
+Create an OSM database (sqlite3 db) from an OSM XML file
+    $ gs compile osm map.osm map.osmdb
 
-#### gs_new
+#### gs new
 Create a new graph file
-    $ gs_new foobar.gdb
+    $ gs new foobar.gdb
 
-#### gs_import_osm
+#### gs import osm
 Import an OSM database to a graph file
-    $ gs_import_osm foobar.gdb map.osmdb
+    $ gs import osm foobar.gdb map.osmdb
 
-#### gs_import_gtfs
+#### gs import gtfs
 Import a GTFS database to a graph file
-    $ gs_import_gtfs foobar.gdb google_transit.gtfsdb
+    $ gs import gtfs foobar.gdb google_transit.gtfsdb
 
-#### gs_link_osm_gtfs
+#### gs link
 Link OSM vertices to GTFS vertices to enable multimodal trip planning
-    $ gs_link_osm_gtfs foobar.gdb map.osmdb google_transit.gtfsdb
+    $ gs link foobar.gdb map.osmdb google_transit.gtfsdb
 
 #### gs_osmfilter: run one of the filter classes from graphserver.ext.osm.osmfilters on an OSMDB instance
     $ gs_osmfilter <Filter Name> <run|rerun|visualize> <osmdb_file> [<filter args> ...]

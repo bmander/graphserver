@@ -42,6 +42,7 @@ Repository = "http://github.com/bmander/graphserver.git"
 
 [project.scripts]
 gs_osmfilter = "graphserver.ext.osm.osmfilters:main"
+gs = "graphserver.cli:cli"
 gs_osmdb_compile = "graphserver.ext.osm.osmdb:main"
 gs_gtfsdb_compile = "graphserver.ext.gtfs.gtfsdb:main_compile_gtfsdb"
 gs_gtfsdb_inspect = "graphserver.ext.gtfs.gtfsdb:main_inspect_gtfsdb"
