@@ -1,8 +1,8 @@
-from optparse import OptionParser
+import argparse
 import sys
 import time
 
-from servable import Servable
+from flask import Flask, Response, request
 
 from graphserver.core import State, WalkOptions
 from graphserver.graphdb import GraphDatabase
@@ -13,7 +13,6 @@ except ImportError:
     import simplejson as json
 import os
 
-from fcgi import WSGIServer
 import yaml
 
 
@@ -65,7 +64,7 @@ def postprocess_path(vertices, edges, vertex_events, edge_events):
                     yield handler.__class__.__name__, event
 
 
-class RouteServer(Servable):
+class RouteServer:
     def __init__(
         self, graphdb_filename, vertex_events, edge_events, vertex_reverse_geocoders
     ):
@@ -94,8 +93,6 @@ class RouteServer(Servable):
 
     def vertices(self):
         return "\n".join([vv.label for vv in self.graph.vertices])
-
-    vertices.mime = "text/plain"
 
     def get_vertex_id_raw(self, lat, lon):
         for reverse_geocoder in self.vertex_reverse_geocoders:
@@ -303,35 +300,8 @@ def get_handler_instances(handler_definitions, handler_type):
         yield handler_instance
 
 
-def main():
-    # get command line input
-    usage = """python routeserver.py graphdb_filename config_filename"""
-    parser = OptionParser(usage=usage)
-    parser.add_option(
-        "-p",
-        "--port",
-        dest="port",
-        default="8080",
-        help="Port to serve HTTP, if serving as a standalone server",
-    )
-    parser.add_option(
-        "-s",
-        "--socket",
-        dest="socket",
-        default=None,
-        help="Socket on which serve fastCGI. If both port and socket are specified, serves as an fastCGI backend.",
-    )
-
-    (options, args) = parser.parse_args()
-
-    if len(args) != 2:
-        parser.print_help()
-        exit(-1)
-
-    graphdb_filename, config_filename = args
-
-    # get narrative handler classes
-    handler_definitions = yaml.load(open(config_filename).read())
+def create_app(graphdb_filename, config_filename):
+    handler_definitions = yaml.safe_load(open(config_filename))
 
     edge_events = list(get_handler_instances(handler_definitions, "edge_handlers"))
     vertex_events = list(get_handler_instances(handler_definitions, "vertex_handlers"))
@@ -339,28 +309,122 @@ def main():
         get_handler_instances(handler_definitions, "vertex_reverse_geocoders")
     )
 
-    # explain to the nice people which handlers were loaded
     print("edge event handlers:")
-    for edge_event in edge_events:
-        print("   %s" % edge_event)
+    for e in edge_events:
+        print(f"   {e}")
     print("vertex event handlers:")
-    for vertex_event in vertex_events:
-        print("   %s" % vertex_event)
+    for v in vertex_events:
+        print(f"   {v}")
     print("vertex reverse geocoders:")
-    for vertex_reverse_geocoder in vertex_reverse_geocoders:
-        print("   %s" % vertex_reverse_geocoder)
+    for g in vertex_reverse_geocoders:
+        print(f"   {g}")
 
-    # start up the routeserver
-    gc = RouteServer(
-        graphdb_filename, vertex_events, edge_events, vertex_reverse_geocoders
+    rs = RouteServer(graphdb_filename, vertex_events, edge_events, vertex_reverse_geocoders)
+    app = Flask(__name__)
+
+    @app.route("/bounds")
+    def bounds():
+        cb = request.args.get("callback")
+        data = rs.bounds(jsoncallback=cb)
+        mimetype = "application/javascript" if cb else "application/json"
+        return Response(data, mimetype=mimetype)
+
+    @app.route("/vertices")
+    def vertices():
+        return Response(rs.vertices(), mimetype="text/plain")
+
+    @app.route("/get_vertex_id")
+    def get_vertex_id():
+        lat = float(request.args["lat"])
+        lon = float(request.args["lon"])
+        return Response(rs.get_vertex_id(lat, lon), mimetype="application/json")
+
+    @app.route("/path")
+    def path_route():
+        args = request.args
+        data = rs.path(
+            origin=args["origin"],
+            dest=args["dest"],
+            currtime=int(args.get("currtime")) if args.get("currtime") else None,
+            time_offset=int(args.get("time_offset")) if args.get("time_offset") else None,
+            transfer_penalty=int(args.get("transfer_penalty", 0)),
+            walking_speed=float(args.get("walking_speed", 1.0)),
+            hill_reluctance=float(args.get("hill_reluctance", 1.5)),
+            turn_penalty=float(args.get("turn_penalty")) if args.get("turn_penalty") else None,
+            walking_reluctance=float(args.get("walking_reluctance")) if args.get("walking_reluctance") else None,
+            max_walk=float(args.get("max_walk")) if args.get("max_walk") else None,
+            jsoncallback=args.get("callback"),
+        )
+        mimetype = "application/javascript" if args.get("callback") else "application/json"
+        return Response(data, mimetype=mimetype)
+
+    @app.route("/geompath")
+    def geompath_route():
+        args = request.args
+        data = rs.geompath(
+            lat1=float(args["lat1"]),
+            lon1=float(args["lon1"]),
+            lat2=float(args["lat2"]),
+            lon2=float(args["lon2"]),
+            currtime=int(args.get("currtime")) if args.get("currtime") else None,
+            time_offset=int(args.get("time_offset")) if args.get("time_offset") else None,
+            transfer_penalty=int(args.get("transfer_penalty", 0)),
+            walking_speed=float(args.get("walking_speed", 1.0)),
+            hill_reluctance=float(args.get("hill_reluctance", 1.5)),
+            turn_penalty=float(args.get("turn_penalty")) if args.get("turn_penalty") else None,
+            walking_reluctance=float(args.get("walking_reluctance")) if args.get("walking_reluctance") else None,
+            max_walk=float(args.get("max_walk")) if args.get("max_walk") else None,
+            jsoncallback=args.get("callback"),
+        )
+        mimetype = "application/javascript" if args.get("callback") else "application/json"
+        return Response(data, mimetype=mimetype)
+
+    @app.route("/path_retro")
+    def path_retro_route():
+        args = request.args
+        data = rs.path_retro(
+            origin=args["origin"],
+            dest=args["dest"],
+            currtime=int(args.get("currtime")) if args.get("currtime") else None,
+            time_offset=int(args.get("time_offset")) if args.get("time_offset") else None,
+            transfer_penalty=int(args.get("transfer_penalty", 0)),
+            walking_speed=float(args.get("walking_speed", 1.0)),
+        )
+        return Response(data, mimetype="application/json")
+
+    @app.route("/path_raw")
+    def path_raw_route():
+        args = request.args
+        currtime = int(args.get("currtime")) if args.get("currtime") else None
+        data = rs.path_raw(args["origin"], args["dest"], currtime)
+        return Response(data, mimetype="text/plain")
+
+    @app.route("/path_raw_retro")
+    def path_raw_retro_route():
+        args = request.args
+        currtime = int(args["currtime"])
+        data = rs.path_raw_retro(args["origin"], args["dest"], currtime)
+        return Response(data, mimetype="text/plain")
+
+    return app
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Graphserver route server")
+    parser.add_argument("graphdb_filename")
+    parser.add_argument("config_filename")
+    parser.add_argument(
+        "-p",
+        "--port",
+        default=8080,
+        type=int,
+        help="Port to serve HTTP",
     )
 
-    # serve as either an HTTP server or an fastCGI backend
-    if options.socket:
-        print("Starting fastCGI backend serving at %s" % options.socket)
-        WSGIServer(gc.wsgi_app(), bindAddress=options.socket).run()
-    else:
-        gc.run_test_server(port=int(options.port))
+    args = parser.parse_args()
+
+    app = create_app(args.graphdb_filename, args.config_filename)
+    app.run(host="0.0.0.0", port=args.port)
 
 
 if __name__ == "__main__":
