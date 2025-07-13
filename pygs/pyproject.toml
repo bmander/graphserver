@@ -27,7 +27,7 @@ classifiers = [
 ]
 dependencies = [
     "pytz>=2008b",
-    "servable>=2009b"
+    "Flask>=3.0"
 ]
 
 [project.optional-dependencies]
