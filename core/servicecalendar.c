@@ -227,8 +227,6 @@ spPreviousPeriod(const ServicePeriod* this) {
 	return this->prev_period;
 }
 
-void
-spPrint( ServicePeriod* this );
 
 long
 spDatumMidnight( const ServicePeriod* this, int timezone_offset ) {
