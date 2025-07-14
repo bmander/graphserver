@@ -1,12 +1,8 @@
-from optparse import OptionParser
 import sys
 
-from gdb_import_ned import get_rise_and_fall
-
 from graphserver.core import Street
-from graphserver.ext.osm.osmdb import OSMDB
-from graphserver.ext.osm.profiledb import ProfileDB
-from graphserver.graphdb import GraphDatabase
+
+from .gdb_import_ned import get_rise_and_fall
 
 
 def edges_from_osmdb(osmdb, vertex_namespace, slogs, profiledb=None):
@@ -82,61 +78,3 @@ def gdb_import_osm(gdb, osmdb, vertex_namespace, slogs, profiledb=None):
 
     print("indexing vertices...")
     gdb.index()
-
-
-def main():
-    usage = """usage: python gdb_import_osm.py <graphdb_filename> <osmdb_filename>"""
-    parser = OptionParser(usage=usage)
-    parser.add_option(
-        "-n",
-        "--namespace",
-        dest="namespace",
-        default="osm",
-        help="prefix all imported vertices with namespace string",
-    )
-    parser.add_option(
-        "-s",
-        "--slog",
-        action="append",
-        dest="slog_strings",
-        default=[],
-        help="specify slog for highway type, in highway_type:slog form. For example, 'motorway:10.5'",
-    )
-    parser.add_option(
-        "-p",
-        "--profiledb",
-        dest="profiledb_filename",
-        default=None,
-        help="specify profiledb to annotate streets with rise/fall data",
-    )
-
-    (options, args) = parser.parse_args()
-
-    if len(args) != 2:
-        parser.print_help()
-        exit(-1)
-
-    slogs = {}
-    for slog_string in options.slog_strings:
-        highway_type, slog_penalty = slog_string.split(":")
-        slogs[highway_type] = float(slog_penalty)
-    print("slog values: %s" % slogs)
-
-    graphdb_filename = args[0]
-    osmdb_filename = args[1]
-
-    print("importing osmdb '%s' into graphdb '%s'" % (osmdb_filename, graphdb_filename))
-
-    profiledb = (
-        ProfileDB(options.profiledb_filename) if options.profiledb_filename else None
-    )
-    osmdb = OSMDB(osmdb_filename)
-    gdb = GraphDatabase(graphdb_filename, overwrite=False)
-
-    gdb_import_osm(gdb, osmdb, options.namespace, slogs, profiledb)
-
-    print("done")
-
-
-if __name__ == "__main__":
-    main()

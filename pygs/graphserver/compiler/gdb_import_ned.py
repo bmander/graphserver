@@ -1,10 +1,3 @@
-from sys import argv
-
-from graphserver.core import Street
-from graphserver.ext.osm.profiledb import ProfileDB
-from graphserver.graphdb import GraphDatabase
-
-
 def cons(ary):
     for i in range(len(ary) - 1):
         yield (ary[i], ary[i + 1])
@@ -23,35 +16,3 @@ def get_rise_and_fall(profile):
                 fall -= diff
 
     return rise, fall
-
-
-def main():
-    if len(argv) < 2:
-        print("usage: python import_ned.py graphdb_filename profiledb_filename")
-        return
-
-    graphdb_filename = argv[1]
-    profiledb_filename = argv[2]
-
-    gdb = GraphDatabase(graphdb_filename)
-    profiledb = ProfileDB(profiledb_filename)
-
-    n = gdb.num_edges()
-
-    for i, (oid, vertex1, vertex2, edge) in enumerate(
-        list(gdb.all_edges(include_oid=True))
-    ):
-        if i % 500 == 0:
-            print("%s/%s" % (i, n))
-
-        if isinstance(edge, Street):
-            rise, fall = get_rise_and_fall(profiledb.get(edge.name))
-            edge.rise = rise
-            edge.fall = fall
-
-            gdb.remove_edge(oid)
-            gdb.add_edge(vertex1, vertex2, edge)
-
-
-if __name__ == "__main__":
-    main()

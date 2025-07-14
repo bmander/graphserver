@@ -1820,6 +1820,7 @@ class HeadwayAlight(EdgePayload):
     timezone = cproperty(lgs.haGetTimezone, c_void_p, Timezone)
     agency = cproperty(lgs.haGetAgency, c_int)
     int_service_id = cproperty(lgs.haGetServiceId, c_int)
+
     @property
     def trip_id(self):
         self.check_destroyed()
@@ -1829,6 +1830,7 @@ class HeadwayAlight(EdgePayload):
                 return raw_trip_id.decode("utf-8")
             return raw_trip_id
         return None
+
     start_time = cproperty(lgs.haGetStartTime, c_int)
     end_time = cproperty(lgs.haGetEndTime, c_int)
     headway_secs = cproperty(lgs.haGetHeadwaySecs, c_int)

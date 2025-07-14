@@ -319,7 +319,9 @@ def create_app(graphdb_filename, config_filename):
     for g in vertex_reverse_geocoders:
         print(f"   {g}")
 
-    rs = RouteServer(graphdb_filename, vertex_events, edge_events, vertex_reverse_geocoders)
+    rs = RouteServer(
+        graphdb_filename, vertex_events, edge_events, vertex_reverse_geocoders
+    )
     app = Flask(__name__)
 
     @app.route("/bounds")
@@ -346,16 +348,24 @@ def create_app(graphdb_filename, config_filename):
             origin=args["origin"],
             dest=args["dest"],
             currtime=int(args.get("currtime")) if args.get("currtime") else None,
-            time_offset=int(args.get("time_offset")) if args.get("time_offset") else None,
+            time_offset=int(args.get("time_offset"))
+            if args.get("time_offset")
+            else None,
             transfer_penalty=int(args.get("transfer_penalty", 0)),
             walking_speed=float(args.get("walking_speed", 1.0)),
             hill_reluctance=float(args.get("hill_reluctance", 1.5)),
-            turn_penalty=float(args.get("turn_penalty")) if args.get("turn_penalty") else None,
-            walking_reluctance=float(args.get("walking_reluctance")) if args.get("walking_reluctance") else None,
+            turn_penalty=float(args.get("turn_penalty"))
+            if args.get("turn_penalty")
+            else None,
+            walking_reluctance=float(args.get("walking_reluctance"))
+            if args.get("walking_reluctance")
+            else None,
             max_walk=float(args.get("max_walk")) if args.get("max_walk") else None,
             jsoncallback=args.get("callback"),
         )
-        mimetype = "application/javascript" if args.get("callback") else "application/json"
+        mimetype = (
+            "application/javascript" if args.get("callback") else "application/json"
+        )
         return Response(data, mimetype=mimetype)
 
     @app.route("/geompath")
@@ -367,16 +377,24 @@ def create_app(graphdb_filename, config_filename):
             lat2=float(args["lat2"]),
             lon2=float(args["lon2"]),
             currtime=int(args.get("currtime")) if args.get("currtime") else None,
-            time_offset=int(args.get("time_offset")) if args.get("time_offset") else None,
+            time_offset=int(args.get("time_offset"))
+            if args.get("time_offset")
+            else None,
             transfer_penalty=int(args.get("transfer_penalty", 0)),
             walking_speed=float(args.get("walking_speed", 1.0)),
             hill_reluctance=float(args.get("hill_reluctance", 1.5)),
-            turn_penalty=float(args.get("turn_penalty")) if args.get("turn_penalty") else None,
-            walking_reluctance=float(args.get("walking_reluctance")) if args.get("walking_reluctance") else None,
+            turn_penalty=float(args.get("turn_penalty"))
+            if args.get("turn_penalty")
+            else None,
+            walking_reluctance=float(args.get("walking_reluctance"))
+            if args.get("walking_reluctance")
+            else None,
             max_walk=float(args.get("max_walk")) if args.get("max_walk") else None,
             jsoncallback=args.get("callback"),
         )
-        mimetype = "application/javascript" if args.get("callback") else "application/json"
+        mimetype = (
+            "application/javascript" if args.get("callback") else "application/json"
+        )
         return Response(data, mimetype=mimetype)
 
     @app.route("/path_retro")
@@ -386,7 +404,9 @@ def create_app(graphdb_filename, config_filename):
             origin=args["origin"],
             dest=args["dest"],
             currtime=int(args.get("currtime")) if args.get("currtime") else None,
-            time_offset=int(args.get("time_offset")) if args.get("time_offset") else None,
+            time_offset=int(args.get("time_offset"))
+            if args.get("time_offset")
+            else None,
             transfer_penalty=int(args.get("transfer_penalty", 0)),
             walking_speed=float(args.get("walking_speed", 1.0)),
         )
@@ -407,25 +427,3 @@ def create_app(graphdb_filename, config_filename):
         return Response(data, mimetype="text/plain")
 
     return app
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Graphserver route server")
-    parser.add_argument("graphdb_filename")
-    parser.add_argument("config_filename")
-    parser.add_argument(
-        "-p",
-        "--port",
-        default=8080,
-        type=int,
-        help="Port to serve HTTP",
-    )
-
-    args = parser.parse_args()
-
-    app = create_app(args.graphdb_filename, args.config_filename)
-    app.run(host="0.0.0.0", port=args.port)
-
-
-if __name__ == "__main__":
-    main()

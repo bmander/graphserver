@@ -2,8 +2,6 @@ import datetime
 from optparse import OptionParser
 import sys
 
-from tools import service_calendar_from_timezone
-
 from graphserver.core import (
     Crossing,
     ElapseTime,
@@ -17,6 +15,8 @@ from graphserver.core import (
 )
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase, parse_gtfs_date
 from graphserver.graphdb import GraphDatabase
+
+from .tools import service_calendar_from_timezone
 
 
 def cons(ary):
@@ -472,61 +472,3 @@ def graph_load_gtfsdb(
         gg.add_edge(fromv_label, tov_label, edge)
 
     return gg
-
-
-def main():
-    usage = """usage: python gdb_import_gtfs.py [options] <graphdb_filename> <gtfsdb_filename> [<agency_id>]"""
-    parser = OptionParser(usage=usage)
-    parser.add_option(
-        "-n", "--namespace", dest="namespace", default="0", help="agency namespace"
-    )
-    parser.add_option(
-        "-m",
-        "--maxtrips",
-        dest="maxtrips",
-        default=None,
-        help="maximum number of trips to load",
-    )
-    parser.add_option(
-        "-d",
-        "--date",
-        dest="sample_date",
-        default=None,
-        help="only load transit running on a given day. YYYYMMDD",
-    )
-
-    (options, args) = parser.parse_args()
-
-    if len(args) != 2:
-        parser.print_help()
-        exit(-1)
-
-    graphdb_filename = args[0]
-    gtfsdb_filename = args[1]
-    agency_id = args[2] if len(args) == 3 else None
-
-    print(
-        "importing from gtfsdb '%s' into graphdb '%s'"
-        % (gtfsdb_filename, graphdb_filename)
-    )
-
-    gtfsdb = GTFSDatabase(gtfsdb_filename)
-    gdb = GraphDatabase(graphdb_filename, overwrite=False)
-
-    maxtrips = int(options.maxtrips) if options.maxtrips else None
-    gdb_load_gtfsdb(
-        gdb,
-        options.namespace,
-        gtfsdb,
-        gdb.get_cursor(),
-        agency_id,
-        maxtrips=maxtrips,
-        sample_date=options.sample_date,
-    )
-    gdb.commit()
-
-    print("done")
-
-
-if __name__ == "__main__":
-    main()

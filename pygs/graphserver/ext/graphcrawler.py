@@ -142,35 +142,3 @@ class GraphCrawler(Servable):
 
     def str(self):
         return str(self.graphdb)
-
-
-def main():
-    from sys import argv
-
-    usage = "python graphcrawler.py graphdb_filename [port]"
-    if len(argv) < 2:
-        print(usage)
-        exit()
-
-    graphdb_filename = argv[1]
-    if len(argv) == 3:
-        port = int(argv[2])
-    else:
-        port = 8081
-    gc = GraphCrawler(graphdb_filename)
-    print("serving on port %d" % port)
-    gc.run_test_server(port=port)
-
-
-if __name__ == "__main__":
-    from sys import argv
-
-    usage = "python graphcrawler.py graphdb_filename"
-    if len(argv) < 2:
-        print(usage)
-        exit()
-
-    graphdb_filename = argv[1]
-
-    gc = GraphCrawler(graphdb_filename)
-    gc.run_test_server(8081)

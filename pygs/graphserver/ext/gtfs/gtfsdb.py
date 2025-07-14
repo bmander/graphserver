@@ -354,7 +354,9 @@ class GTFSDatabase:
 
             try:
                 if not os.path.isdir(gtfs_filename):
-                    trips_file = iter(zf.read(tablename + ".txt").decode("utf-8").split("\n"))
+                    trips_file = iter(
+                        zf.read(tablename + ".txt").decode("utf-8").split("\n")
+                    )
                 else:
                     trips_file = iterdecode(
                         open(os.path.join(gtfs_filename, tablename + ".txt")), "utf-8"
@@ -657,82 +659,3 @@ class GTFSDatabase:
                 ret.append((lon, lat))
 
         return ret
-
-
-def main_inspect_gtfsdb():
-    from sys import argv
-
-    if len(argv) < 2:
-        print("usage: python gtfsdb.py gtfsdb_filename [query]")
-        exit()
-
-    gtfsdb_filename = argv[1]
-    gtfsdb = GTFSDatabase(gtfsdb_filename)
-
-    if len(argv) == 2:
-        for table_name, fields in gtfsdb.GTFS_DEF:
-            print("Table: %s" % table_name)
-            for field_name, field_type, field_converter in fields:
-                print("\t%s %s" % (field_type, field_name))
-        exit()
-
-    query = argv[2]
-    for record in gtfsdb.execute(query):
-        print(record)
-
-    # for stop_id, stop_name, stop_lat, stop_lon in gtfsdb.stops():
-    #    print( stop_lat, stop_lon )
-    #    gtfsdb.nearby_stops( stop_lat, stop_lon, 0.05 )
-    #    break
-
-    # bundles = gtfsdb.compile_trip_bundles()
-    # for bundle in bundles:
-    #    for departure_set in bundle.iter_departures("WKDY"):
-    #        print( departure_set )
-    #
-    #    #print( len(bundle.trip_ids) )
-    #    sys.stdout.flush()
-
-    pass
-
-
-def main_compile_gtfsdb():
-    parser = OptionParser()
-    parser.add_option(
-        "-t",
-        "--table",
-        dest="tables",
-        action="append",
-        default=[],
-        help="copy over only the given tables",
-    )
-    parser.add_option(
-        "-v",
-        "--verbose",
-        action="store_true",
-        dest="verbose",
-        default=False,
-        help="make a bunch of noise",
-    )
-
-    (options, args) = parser.parse_args()
-    if len(options.tables) == 0:
-        options.tables = None
-
-    if len(args) < 2:
-        print(
-            "Converts GTFS file to GTFS-DB, which is super handy\nusage: python process_gtfs.py gtfs_filename gtfsdb_filename"
-        )
-        exit()
-
-    gtfsdb_filename = args[1]
-    gtfs_filename = args[0]
-
-    gtfsdb = GTFSDatabase(gtfsdb_filename, overwrite=True)
-    gtfsdb.load_gtfs(
-        gtfs_filename, options.tables, reporter=sys.stdout, verbose=options.verbose
-    )
-
-
-if __name__ == "__main__":
-    main_compile_gtfsdb()
