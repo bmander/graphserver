@@ -242,4 +242,3 @@ class GraphDatabase:
             reporter.write("\rLoaded %d edges %s\n" % (num_edges, " " * 10))
 
         return g
-

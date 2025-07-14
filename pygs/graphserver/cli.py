@@ -8,8 +8,10 @@ from graphserver.compiler.gdb_import_ned import get_rise_and_fall
 from graphserver.compiler.gdb_import_osm import gdb_import_osm
 from graphserver.core import Link, Street, State
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
+
 try:
     from graphserver.ext.graphcrawler import GraphCrawler
+
     CRAWL_AVAILABLE = True
 except (ImportError, SyntaxError):
     CRAWL_AVAILABLE = False
@@ -35,7 +37,9 @@ def compile():
 @compile.command()
 @click.argument("gtfs_filename")
 @click.argument("gtfsdb_filename")
-@click.option("-t", "--table", "tables", multiple=True, help="Copy only the given tables")
+@click.option(
+    "-t", "--table", "tables", multiple=True, help="Copy only the given tables"
+)
 @click.option("-v", "--verbose", is_flag=True, help="Increase output verbosity")
 def gtfs(gtfs_filename, gtfsdb_filename, tables, verbose):
     """Compile a GTFS zip file into a GTFS database."""
@@ -68,7 +72,7 @@ def profile(osmdb_filename, profiledb_filename, resolution, dem_basenames):
     click.echo(f"profiledb name: {profiledb_filename}")
     click.echo(f"resolution: {resolution}")
     click.echo(f"dem_basenames: {dem_basenames}")
-    
+
     populate_profile_db(osmdb_filename, profiledb_filename, dem_basenames, resolution)
 
 
@@ -110,24 +114,28 @@ def osm(filter_name, mode, osmdb_file, filter_args):
     """Filter and process OSM databases."""
     # Import the osmfilters module to get access to all filter classes
     import graphserver.ext.osm.osmfilters as osmfilters
-    
+
     # Get all filter classes
     available_filters = {}
     for name, obj in vars(osmfilters).items():
-        if isinstance(obj, type) and issubclass(obj, OSMDBFilter) and obj != OSMDBFilter:
+        if (
+            isinstance(obj, type)
+            and issubclass(obj, OSMDBFilter)
+            and obj != OSMDBFilter
+        ):
             available_filters[name] = obj
-    
+
     if filter_name not in available_filters:
         click.echo(f"Filter '{filter_name}' not found. Available filters:")
         for name in available_filters:
             click.echo(f" -- {name}")
         raise click.Abort()
-    
+
     filter_cls = available_filters[filter_name]
     filter_instance = filter_cls()
-    
+
     db = OSMDB(osmdb_file)
-    
+
     if mode == "run":
         filter_instance.run(db, *filter_args)
     elif mode == "rerun":
@@ -142,7 +150,7 @@ def osm(filter_name, mode, osmdb_file, filter_args):
 def gtfsdb(gtfsdb_filename, query):
     """Show information about a GTFS database."""
     gtfsdb = GTFSDatabase(gtfsdb_filename)
-    
+
     if query is None:
         for table_name, fields in gtfsdb.GTFS_DEF:
             click.echo(f"Table: {table_name}")
@@ -160,7 +168,7 @@ def gtfsdb(gtfsdb_filename, query):
 def gdb(graphdb_filename, vertex1, time):
     """Show information about a graph database."""
     gdb = GraphDatabase(graphdb_filename)
-    
+
     if vertex1 is None:
         click.echo("vertices:")
         for vertex_label in sorted(gdb.all_vertex_labels()):
@@ -171,7 +179,7 @@ def gdb(graphdb_filename, vertex1, time):
     else:
         for v1, v2, edgetype in gdb.all_outgoing(vertex1):
             click.echo(f"{v1} -> {v2}\n\t{repr(edgetype)}")
-            
+
             if time is not None:
                 s0 = State(1, time)
                 result = edgetype.walk(s0)
@@ -182,9 +190,23 @@ def gdb(graphdb_filename, vertex1, time):
 @click.argument("graphdb_filename")
 @click.argument("osmdb_filename")
 @click.option("-n", "--namespace", default="osm", help="Vertex namespace prefix")
-@click.option("-s", "--slog", "slog_strings", multiple=True, help="Highway slog in type:value form")
-@click.option("-p", "--profiledb", "profiledb_filename", default=None, help="ProfileDB with rise/fall data")
-def import_osm(graphdb_filename, osmdb_filename, namespace, slog_strings, profiledb_filename):
+@click.option(
+    "-s",
+    "--slog",
+    "slog_strings",
+    multiple=True,
+    help="Highway slog in type:value form",
+)
+@click.option(
+    "-p",
+    "--profiledb",
+    "profiledb_filename",
+    default=None,
+    help="ProfileDB with rise/fall data",
+)
+def import_osm(
+    graphdb_filename, osmdb_filename, namespace, slog_strings, profiledb_filename
+):
     """Import an OSM database into a graph database."""
     slogs = {}
     for slog_string in slog_strings:
@@ -202,8 +224,16 @@ def import_osm(graphdb_filename, osmdb_filename, namespace, slog_strings, profil
 @click.argument("agency_id", required=False)
 @click.option("-n", "--namespace", default="0", help="Agency namespace")
 @click.option("-m", "--maxtrips", default=None, help="Maximum number of trips to load")
-@click.option("-d", "--date", "sample_date", default=None, help="Only load transit running on YYYYMMDD")
-def import_gtfs(graphdb_filename, gtfsdb_filename, agency_id, namespace, maxtrips, sample_date):
+@click.option(
+    "-d",
+    "--date",
+    "sample_date",
+    default=None,
+    help="Only load transit running on YYYYMMDD",
+)
+def import_gtfs(
+    graphdb_filename, gtfsdb_filename, agency_id, namespace, maxtrips, sample_date
+):
     """Import a GTFS database into a graph database."""
     gtfsdb = GTFSDatabase(gtfsdb_filename)
     gdb = GraphDatabase(graphdb_filename, overwrite=False)
@@ -227,20 +257,20 @@ def import_ned(graphdb_filename, profiledb_filename):
     """Import NED elevation data into a graph database."""
     gdb = GraphDatabase(graphdb_filename)
     profiledb = ProfileDB(profiledb_filename)
-    
+
     n = gdb.num_edges()
-    
+
     for i, (oid, vertex1, vertex2, edge) in enumerate(
         list(gdb.all_edges(include_oid=True))
     ):
         if i % 500 == 0:
             click.echo(f"{i}/{n}")
-        
+
         if isinstance(edge, Street):
             rise, fall = get_rise_and_fall(profiledb.get(edge.name))
             edge.rise = rise
             edge.fall = fall
-            
+
             gdb.remove_edge(oid)
             gdb.add_edge(vertex1, vertex2, edge)
 
@@ -248,7 +278,9 @@ def import_ned(graphdb_filename, profiledb_filename):
 @cli.command()
 @click.argument("graphdb_filename")
 @click.option("--osm-file", "osm_file", help="OSM database filename")
-@click.option("--gtfs-file", "gtfs_files", multiple=True, help="GTFS database filename(s)")
+@click.option(
+    "--gtfs-file", "gtfs_files", multiple=True, help="GTFS database filename(s)"
+)
 @click.option("--range", "link_range", type=float, help="Range for GTFS-GTFS linking")
 def link(graphdb_filename, osm_file, gtfs_files, link_range):
     """Link vertices in a graph database."""
@@ -274,12 +306,12 @@ def link(graphdb_filename, osm_file, gtfs_files, link_range):
             gdb.add_edge(osm_vertex_id, station_vertex_id, Link(), c)
 
         gdb.commit()
-        
+
     elif len(gtfs_files) == 2:
         # GTFS-GTFS linking
         if link_range is None:
             raise click.UsageError("--range is required for GTFS-GTFS linking")
-            
+
         gtfsdb_filename = gtfs_files[0]  # Use first GTFS file as source
         gtfsdb = GTFSDatabase(gtfsdb_filename)
         gdb = GraphDatabase(graphdb_filename)
@@ -291,7 +323,12 @@ def link(graphdb_filename, osm_file, gtfs_files, link_range):
 
             station_vertex_id = f"sta-{stop_id}"
 
-            for (link_stop_id, link_stop_name, link_stop_lat, link_stop_lon) in gtfsdb.nearby_stops(stop_lat, stop_lon, link_range):
+            for (
+                link_stop_id,
+                link_stop_name,
+                link_stop_lat,
+                link_stop_lon,
+            ) in gtfsdb.nearby_stops(stop_lat, stop_lon, link_range):
                 if link_stop_id == stop_id:
                     continue
 
@@ -299,12 +336,18 @@ def link(graphdb_filename, osm_file, gtfs_files, link_range):
 
                 link_length = vincenty(stop_lat, stop_lon, link_stop_lat, link_stop_lon)
                 link_station_vertex_id = f"sta-{link_stop_id}"
-                gdb.add_edge(station_vertex_id, link_station_vertex_id, Street("link", link_length))
+                gdb.add_edge(
+                    station_vertex_id,
+                    link_station_vertex_id,
+                    Street("link", link_length),
+                )
 
             click.echo("")
-            
+
     else:
-        raise click.UsageError("Provide either: --osm-file and one --gtfs-file, or two --gtfs-file arguments")
+        raise click.UsageError(
+            "Provide either: --osm-file and one --gtfs-file, or two --gtfs-file arguments"
+        )
 
 
 @cli.command()
@@ -313,10 +356,12 @@ def link(graphdb_filename, osm_file, gtfs_files, link_range):
 def crawl(graphdb_filename, port):
     """Start a web server for crawling graph databases."""
     if not CRAWL_AVAILABLE:
-        click.echo("Error: GraphCrawler not available due to servable dependency issues")
+        click.echo(
+            "Error: GraphCrawler not available due to servable dependency issues"
+        )
         click.echo("See: https://github.com/bmander/graphserver/issues/42")
         raise click.Abort()
-    
+
     gc = GraphCrawler(graphdb_filename)
     click.echo(f"serving on port {port}")
     gc.run_test_server(port=port)

@@ -472,4 +472,3 @@ def graph_load_gtfsdb(
         gg.add_edge(fromv_label, tov_label, edge)
 
     return gg
-

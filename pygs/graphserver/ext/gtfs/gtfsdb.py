@@ -354,7 +354,9 @@ class GTFSDatabase:
 
             try:
                 if not os.path.isdir(gtfs_filename):
-                    trips_file = iter(zf.read(tablename + ".txt").decode("utf-8").split("\n"))
+                    trips_file = iter(
+                        zf.read(tablename + ".txt").decode("utf-8").split("\n")
+                    )
                 else:
                     trips_file = iterdecode(
                         open(os.path.join(gtfs_filename, tablename + ".txt")), "utf-8"

@@ -1,4 +1,3 @@
-
 def cons(ary):
     for i in range(len(ary) - 1):
         yield (ary[i], ary[i + 1])

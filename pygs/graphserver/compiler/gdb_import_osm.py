@@ -78,4 +78,3 @@ def gdb_import_osm(gdb, osmdb, vertex_namespace, slogs, profiledb=None):
 
     print("indexing vertices...")
     gdb.index()
-
