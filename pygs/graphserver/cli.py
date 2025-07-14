@@ -6,9 +6,10 @@ import click
 from graphserver.compiler.gdb_import_gtfs import gdb_load_gtfsdb
 from graphserver.compiler.gdb_import_ned import get_rise_and_fall
 from graphserver.compiler.gdb_import_osm import gdb_import_osm
-from graphserver.core import Link, Street
+from graphserver.core import Link, Street, State
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
 from graphserver.ext.graphcrawler import GraphCrawler
+from graphserver.ext.ned.profile import populate_profile_db
 from graphserver.ext.osm.osmdb import OSMDB, osm_to_osmdb
 from graphserver.ext.osm.profiledb import ProfileDB
 from graphserver.graphdb import GraphDatabase
@@ -49,6 +50,21 @@ def osm(args, tolerant, dryrun):
     osm_to_osmdb(osm_files, osmdb_filename, tolerant, dryrun)
 
 
+@compile.command()
+@click.argument("osmdb_filename")
+@click.argument("profiledb_filename")
+@click.argument("resolution", type=int)
+@click.argument("dem_basenames", nargs=-1, required=True)
+def profile(osmdb_filename, profiledb_filename, resolution, dem_basenames):
+    """Compile elevation profiles from DEM data into a profile database."""
+    click.echo(f"osmdb name: {osmdb_filename}")
+    click.echo(f"profiledb name: {profiledb_filename}")
+    click.echo(f"resolution: {resolution}")
+    click.echo(f"dem_basenames: {dem_basenames}")
+    
+    populate_profile_db(osmdb_filename, profiledb_filename, dem_basenames, resolution)
+
+
 @cli.command()
 @click.argument("graphdb_filename")
 @click.option("-o", "--overwrite", is_flag=True, help="Overwrite existing database")
@@ -66,6 +82,53 @@ def new(graphdb_filename, overwrite):
 @cli.group(name="import")
 def import_cmd():
     """Import compiled data into a graph database."""
+
+
+@cli.group()
+def show():
+    """Show information about databases."""
+
+
+@show.command()
+@click.argument("gtfsdb_filename")
+@click.argument("query", required=False)
+def gtfsdb(gtfsdb_filename, query):
+    """Show information about a GTFS database."""
+    gtfsdb = GTFSDatabase(gtfsdb_filename)
+    
+    if query is None:
+        for table_name, fields in gtfsdb.GTFS_DEF:
+            click.echo(f"Table: {table_name}")
+            for field_name, field_type, field_converter in fields:
+                click.echo(f"\t{field_type} {field_name}")
+    else:
+        for record in gtfsdb.execute(query):
+            click.echo(record)
+
+
+@show.command()
+@click.argument("graphdb_filename")
+@click.argument("vertex1", required=False)
+@click.argument("time", required=False, type=int)
+def gdb(graphdb_filename, vertex1, time):
+    """Show information about a graph database."""
+    gdb = GraphDatabase(graphdb_filename)
+    
+    if vertex1 is None:
+        click.echo("vertices:")
+        for vertex_label in sorted(gdb.all_vertex_labels()):
+            click.echo(vertex_label)
+        click.echo("resources:")
+        for name, resource in gdb.resources():
+            click.echo(f"{name} {resource}")
+    else:
+        for v1, v2, edgetype in gdb.all_outgoing(vertex1):
+            click.echo(f"{v1} -> {v2}\n\t{repr(edgetype)}")
+            
+            if time is not None:
+                s0 = State(1, time)
+                result = edgetype.walk(s0)
+                click.echo(f"\t{str(result)}")
 
 
 @import_cmd.command(name="osm")
