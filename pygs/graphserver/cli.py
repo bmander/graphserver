@@ -13,6 +13,7 @@ from graphserver.ext.ned.profile import populate_profile_db
 from graphserver.ext.osm.osmdb import OSMDB, osm_to_osmdb
 from graphserver.ext.osm.profiledb import ProfileDB
 from graphserver.graphdb import GraphDatabase
+from graphserver.vincenty import vincenty
 
 
 @click.group()
@@ -200,29 +201,64 @@ def import_ned(graphdb_filename, profiledb_filename):
 
 @cli.command()
 @click.argument("graphdb_filename")
-@click.argument("osmdb_filename")
-@click.argument("gtfsdb_filename")
-def link(graphdb_filename, osmdb_filename, gtfsdb_filename):
-    """Link OSM vertices to GTFS vertices."""
-    gtfsdb = GTFSDatabase(gtfsdb_filename)
-    osmdb = OSMDB(osmdb_filename)
-    gdb = GraphDatabase(graphdb_filename)
+@click.option("--osm-file", "osm_file", help="OSM database filename")
+@click.option("--gtfs-file", "gtfs_files", multiple=True, help="GTFS database filename(s)")
+@click.option("--range", "link_range", type=float, help="Range for GTFS-GTFS linking")
+def link(graphdb_filename, osm_file, gtfs_files, link_range):
+    """Link vertices in a graph database."""
+    if osm_file and len(gtfs_files) == 1:
+        # OSM-GTFS linking
+        gtfsdb_filename = gtfs_files[0]
+        gtfsdb = GTFSDatabase(gtfsdb_filename)
+        osmdb = OSMDB(osm_file)
+        gdb = GraphDatabase(graphdb_filename)
 
-    n_stops = gtfsdb.count_stops()
-    c = gdb.get_cursor()
-    for i, (stop_id, _name, stop_lat, stop_lon) in enumerate(gtfsdb.stops()):
-        click.echo(f"{i}/{n_stops}")
+        n_stops = gtfsdb.count_stops()
+        c = gdb.get_cursor()
+        for i, (stop_id, _name, stop_lat, stop_lon) in enumerate(gtfsdb.stops()):
+            click.echo(f"{i}/{n_stops}")
 
-        nd_id, nd_lat, nd_lon, nd_dist = osmdb.nearest_node(stop_lat, stop_lon)
-        station_vertex_id = f"sta-{stop_id}"
-        osm_vertex_id = f"osm-{nd_id}"
+            nd_id, nd_lat, nd_lon, nd_dist = osmdb.nearest_node(stop_lat, stop_lon)
+            station_vertex_id = f"sta-{stop_id}"
+            osm_vertex_id = f"osm-{nd_id}"
 
-        click.echo(f"{station_vertex_id} {osm_vertex_id}")
+            click.echo(f"{station_vertex_id} {osm_vertex_id}")
 
-        gdb.add_edge(station_vertex_id, osm_vertex_id, Link(), c)
-        gdb.add_edge(osm_vertex_id, station_vertex_id, Link(), c)
+            gdb.add_edge(station_vertex_id, osm_vertex_id, Link(), c)
+            gdb.add_edge(osm_vertex_id, station_vertex_id, Link(), c)
 
-    gdb.commit()
+        gdb.commit()
+        
+    elif len(gtfs_files) == 2:
+        # GTFS-GTFS linking
+        if link_range is None:
+            raise click.UsageError("--range is required for GTFS-GTFS linking")
+            
+        gtfsdb_filename = gtfs_files[0]  # Use first GTFS file as source
+        gtfsdb = GTFSDatabase(gtfsdb_filename)
+        gdb = GraphDatabase(graphdb_filename)
+
+        n_stops = gtfsdb.count_stops()
+
+        for i, (stop_id, stop_name, stop_lat, stop_lon) in enumerate(gtfsdb.stops()):
+            click.echo(f"{i}/{n_stops} {stop_id}")
+
+            station_vertex_id = f"sta-{stop_id}"
+
+            for (link_stop_id, link_stop_name, link_stop_lat, link_stop_lon) in gtfsdb.nearby_stops(stop_lat, stop_lon, link_range):
+                if link_stop_id == stop_id:
+                    continue
+
+                click.echo(".")
+
+                link_length = vincenty(stop_lat, stop_lon, link_stop_lat, link_stop_lon)
+                link_station_vertex_id = f"sta-{link_stop_id}"
+                gdb.add_edge(station_vertex_id, link_station_vertex_id, Street("link", link_length))
+
+            click.echo("")
+            
+    else:
+        raise click.UsageError("Provide either: --osm-file and one --gtfs-file, or two --gtfs-file arguments")
 
 
 @cli.command()
