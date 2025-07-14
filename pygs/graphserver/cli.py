@@ -11,6 +11,7 @@ from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
 from graphserver.ext.graphcrawler import GraphCrawler
 from graphserver.ext.ned.profile import populate_profile_db
 from graphserver.ext.osm.osmdb import OSMDB, osm_to_osmdb
+from graphserver.ext.osm.osmfilters import OSMDBFilter
 from graphserver.ext.osm.profiledb import ProfileDB
 from graphserver.graphdb import GraphDatabase
 from graphserver.vincenty import vincenty
@@ -88,6 +89,46 @@ def import_cmd():
 @cli.group()
 def show():
     """Show information about databases."""
+
+
+@cli.group()
+def filter():
+    """Filter and process databases."""
+
+
+@filter.command()
+@click.argument("filter_name")
+@click.argument("mode", type=click.Choice(["run", "rerun", "visualize"]))
+@click.argument("osmdb_file")
+@click.argument("filter_args", nargs=-1)
+def osm(filter_name, mode, osmdb_file, filter_args):
+    """Filter and process OSM databases."""
+    # Import the osmfilters module to get access to all filter classes
+    import graphserver.ext.osm.osmfilters as osmfilters
+    
+    # Get all filter classes
+    available_filters = {}
+    for name, obj in vars(osmfilters).items():
+        if isinstance(obj, type) and issubclass(obj, OSMDBFilter) and obj != OSMDBFilter:
+            available_filters[name] = obj
+    
+    if filter_name not in available_filters:
+        click.echo(f"Filter '{filter_name}' not found. Available filters:")
+        for name in available_filters:
+            click.echo(f" -- {name}")
+        raise click.Abort()
+    
+    filter_cls = available_filters[filter_name]
+    filter_instance = filter_cls()
+    
+    db = OSMDB(osmdb_file)
+    
+    if mode == "run":
+        filter_instance.run(db, *filter_args)
+    elif mode == "rerun":
+        filter_instance.rerun(db, *filter_args)
+    elif mode == "visualize":
+        filter_instance.visualize(db, *filter_args)
 
 
 @show.command()
