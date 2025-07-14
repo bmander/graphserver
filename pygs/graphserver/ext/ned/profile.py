@@ -89,26 +89,3 @@ def populate_profile_db(osmdb_name, profiledb_name, dem_basenames, resolution):
         pdb.store(id, profile)
 
     pdb.conn.commit()
-
-
-def main():
-    usage = "python profile.py osmdb_name profiledb_name resolution dem_basename "
-    if len(argv) < 5:
-        print(usage)
-        exit()
-
-    osmdb_name = argv[1]
-    profiledb_name = argv[2]
-    resolution = int(argv[3])
-    dem_basenames = argv[4:]
-
-    print("osmdb name:", osmdb_name)
-    print("profiledb name:", profiledb_name)
-    print("resolution:", resolution)
-    print("dem_basenames:", dem_basenames)
-
-    populate_profile_db(osmdb_name, profiledb_name, dem_basenames, resolution)
-
-
-if __name__ == "__main__":
-    main()

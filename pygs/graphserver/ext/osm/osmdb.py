@@ -595,29 +595,3 @@ def osm_to_osmdb(osm_filenames, osmdb_filename, tolerant=False, skipload=False):
     osmdb.create_and_populate_edges_table(tolerant)
     if osmdb.count_edges() == 0:
         print("WARNING: osmdb has no edges!")
-
-
-def main():
-    parser = OptionParser(
-        usage="%prog [options] osm_filename [osm_filename ...] osmdb_filename"
-    )
-    parser.add_option("-t", "--tolerant", dest="tolerant", action="store_true")
-    parser.add_option(
-        "-d",
-        "--dryrun",
-        dest="dryrun",
-        help="Just read the OSM file; don't copy anything to a database",
-        action="store_true",
-    )
-
-    (options, args) = parser.parse_args()
-
-    if len(args) < 2:
-        parser.error("incorrect number of arguments")
-    osmdb_filename = args.pop()
-
-    osm_to_osmdb(args, osmdb_filename, options.tolerant, options.dryrun)
-
-
-if __name__ == "__main__":
-    main()

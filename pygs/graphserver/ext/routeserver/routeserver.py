@@ -408,24 +408,3 @@ def create_app(graphdb_filename, config_filename):
 
     return app
 
-
-def main():
-    parser = argparse.ArgumentParser(description="Graphserver route server")
-    parser.add_argument("graphdb_filename")
-    parser.add_argument("config_filename")
-    parser.add_argument(
-        "-p",
-        "--port",
-        default=8080,
-        type=int,
-        help="Port to serve HTTP",
-    )
-
-    args = parser.parse_args()
-
-    app = create_app(args.graphdb_filename, args.config_filename)
-    app.run(host="0.0.0.0", port=args.port)
-
-
-if __name__ == "__main__":
-    main()

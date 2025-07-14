@@ -43,22 +43,7 @@ Homepage = "http://github.com/bmander/graphserver/tree/master"
 Repository = "http://github.com/bmander/graphserver.git"
 
 [project.scripts]
-gs_osmfilter = "graphserver.ext.osm.osmfilters:main"
 gs = "graphserver.cli:cli"
-gs_osmdb_compile = "graphserver.ext.osm.osmdb:main"
-gs_gtfsdb_compile = "graphserver.ext.gtfs.gtfsdb:main_compile_gtfsdb"
-gs_gtfsdb_inspect = "graphserver.ext.gtfs.gtfsdb:main_inspect_gtfsdb"
-gs_crawl = "graphserver.ext.graphcrawler:main"
-gs_new = "graphserver.compiler.gdb_new:main"
-gs_import_osm = "graphserver.compiler.gdb_import_osm:main"
-gs_import_gtfs = "graphserver.compiler.gdb_import_gtfs:main"
-gs_import_ned = "graphserver.compiler.gdb_import_ned:main"
-gs_link_osm_gtfs = "graphserver.compiler.gdb_link_osm_gtfs:main"
-gs_link_gtfs_gtfs = "graphserver.compiler.gdb_link_gtfs_gtfs:main"
-gs_gdb_inspect = "graphserver.graphdb:main"
-gs_routeserver = "graphserver.ext.routeserver.routeserver:main"
-gs_profile = "graphserver.ext.ned.profile:main"
-gs_profiledb = "graphserver.ext.osm.profiledb:main"
 
 [tool.setuptools]
 zip-safe = false
