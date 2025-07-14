@@ -1,9 +1,9 @@
 import time
 
-from .osmdb import OSMDB
-
 from graphserver.core import Graph, Link, State
 from graphserver.vincenty import vincenty as dist_earth
+
+from .osmdb import OSMDB
 
 try:
     import json

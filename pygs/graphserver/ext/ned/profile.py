@@ -1,9 +1,9 @@
 from sys import argv
 
-from .elevation.elevation import ElevationPile
-
 from graphserver.ext.osm.osmdb import OSMDB
 from graphserver.ext.osm.profiledb import ProfileDB
+
+from .elevation.elevation import ElevationPile
 
 OSMDB_NAME = "./data/osm/map2.osmdb"
 ELEV_BASENAME = "./data/83892907/83892907"

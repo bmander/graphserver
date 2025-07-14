@@ -2,8 +2,6 @@ import datetime
 from optparse import OptionParser
 import sys
 
-from .tools import service_calendar_from_timezone
-
 from graphserver.core import (
     Crossing,
     ElapseTime,
@@ -17,6 +15,8 @@ from graphserver.core import (
 )
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase, parse_gtfs_date
 from graphserver.graphdb import GraphDatabase
+
+from .tools import service_calendar_from_timezone
 
 
 def cons(ary):

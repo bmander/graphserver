@@ -6,7 +6,7 @@ import click
 from graphserver.compiler.gdb_import_gtfs import gdb_load_gtfsdb
 from graphserver.compiler.gdb_import_ned import get_rise_and_fall
 from graphserver.compiler.gdb_import_osm import gdb_import_osm
-from graphserver.core import Link, Street, State
+from graphserver.core import Link, State, Street
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
 
 try:
@@ -16,10 +16,10 @@ try:
 except (ImportError, SyntaxError):
     CRAWL_AVAILABLE = False
 from graphserver.ext.ned.profile import populate_profile_db
-from graphserver.ext.routeserver.routeserver import create_app
 from graphserver.ext.osm.osmdb import OSMDB, osm_to_osmdb
 from graphserver.ext.osm.osmfilters import OSMDBFilter
 from graphserver.ext.osm.profiledb import ProfileDB
+from graphserver.ext.routeserver.routeserver import create_app
 from graphserver.graphdb import GraphDatabase
 from graphserver.vincenty import vincenty
 

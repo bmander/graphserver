@@ -1,8 +1,8 @@
 import sys
 
-from .gdb_import_ned import get_rise_and_fall
-
 from graphserver.core import Street
+
+from .gdb_import_ned import get_rise_and_fall
 
 
 def edges_from_osmdb(osmdb, vertex_namespace, slogs, profiledb=None):
