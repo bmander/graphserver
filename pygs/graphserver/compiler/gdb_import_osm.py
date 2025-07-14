@@ -1,7 +1,7 @@
 from optparse import OptionParser
 import sys
 
-from gdb_import_ned import get_rise_and_fall
+from .gdb_import_ned import get_rise_and_fall
 
 from graphserver.core import Street
 from graphserver.ext.osm.osmdb import OSMDB

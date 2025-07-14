@@ -1,6 +1,6 @@
 from sys import argv
 
-from elevation.elevation import ElevationPile
+from .elevation.elevation import ElevationPile
 
 from graphserver.ext.osm.osmdb import OSMDB
 from graphserver.ext.osm.profiledb import ProfileDB

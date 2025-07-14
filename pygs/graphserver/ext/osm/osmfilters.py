@@ -1,6 +1,6 @@
 import time
 
-from osmdb import OSMDB
+from .osmdb import OSMDB
 
 from graphserver.core import Graph, Link, State
 from graphserver.vincenty import vincenty as dist_earth

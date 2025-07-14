@@ -1,7 +1,7 @@
 import sys
 import time
 
-from osm import OSM
+from .osm import OSM
 
 sys.path.append("../../..")
 from graphserver.core import Graph, Street

@@ -27,7 +27,9 @@ classifiers = [
 ]
 dependencies = [
     "pytz>=2025.2",
-    "Flask>=3.0"
+    "Flask>=3.0",
+    "rtree>=1.0.0",
+    "PyYAML>=6.0"
 ]
 
 [project.optional-dependencies]

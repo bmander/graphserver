@@ -2,7 +2,7 @@ import datetime
 from optparse import OptionParser
 import sys
 
-from tools import service_calendar_from_timezone
+from .tools import service_calendar_from_timezone
 
 from graphserver.core import (
     Crossing,

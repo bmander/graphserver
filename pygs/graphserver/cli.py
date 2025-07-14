@@ -8,7 +8,11 @@ from graphserver.compiler.gdb_import_ned import get_rise_and_fall
 from graphserver.compiler.gdb_import_osm import gdb_import_osm
 from graphserver.core import Link, Street, State
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
-from graphserver.ext.graphcrawler import GraphCrawler
+try:
+    from graphserver.ext.graphcrawler import GraphCrawler
+    CRAWL_AVAILABLE = True
+except (ImportError, SyntaxError):
+    CRAWL_AVAILABLE = False
 from graphserver.ext.ned.profile import populate_profile_db
 from graphserver.ext.routeserver.routeserver import create_app
 from graphserver.ext.osm.osmdb import OSMDB, osm_to_osmdb
@@ -308,6 +312,11 @@ def link(graphdb_filename, osm_file, gtfs_files, link_range):
 @click.option("-p", "--port", default=8081, help="Port to serve on")
 def crawl(graphdb_filename, port):
     """Start a web server for crawling graph databases."""
+    if not CRAWL_AVAILABLE:
+        click.echo("Error: GraphCrawler not available due to servable dependency issues")
+        click.echo("See: https://github.com/bmander/graphserver/issues/42")
+        raise click.Abort()
+    
     gc = GraphCrawler(graphdb_filename)
     click.echo(f"serving on port {port}")
     gc.run_test_server(port=port)
