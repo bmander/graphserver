@@ -10,6 +10,7 @@ from graphserver.core import Link, Street, State
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
 from graphserver.ext.graphcrawler import GraphCrawler
 from graphserver.ext.ned.profile import populate_profile_db
+from graphserver.ext.routeserver.routeserver import create_app
 from graphserver.ext.osm.osmdb import OSMDB, osm_to_osmdb
 from graphserver.ext.osm.osmfilters import OSMDBFilter
 from graphserver.ext.osm.profiledb import ProfileDB
@@ -310,6 +311,16 @@ def crawl(graphdb_filename, port):
     gc = GraphCrawler(graphdb_filename)
     click.echo(f"serving on port {port}")
     gc.run_test_server(port=port)
+
+
+@cli.command()
+@click.argument("graphdb_filename")
+@click.argument("config_filename")
+@click.option("-p", "--port", default=8080, type=int, help="Port to serve HTTP")
+def routeserver(graphdb_filename, config_filename, port):
+    """Start a route server for path planning."""
+    app = create_app(graphdb_filename, config_filename)
+    app.run(host="0.0.0.0", port=port)
 
 
 if __name__ == "__main__":
