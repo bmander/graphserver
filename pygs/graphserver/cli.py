@@ -4,8 +4,9 @@ import sys
 import click
 
 from graphserver.compiler.gdb_import_gtfs import gdb_load_gtfsdb
+from graphserver.compiler.gdb_import_ned import get_rise_and_fall
 from graphserver.compiler.gdb_import_osm import gdb_import_osm
-from graphserver.core import Link
+from graphserver.core import Link, Street
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
 from graphserver.ext.graphcrawler import GraphCrawler
 from graphserver.ext.osm.osmdb import OSMDB, osm_to_osmdb
@@ -107,6 +108,31 @@ def import_gtfs(graphdb_filename, gtfsdb_filename, agency_id, namespace, maxtrip
         sample_date=sample_date,
     )
     gdb.commit()
+
+
+@import_cmd.command(name="ned")
+@click.argument("graphdb_filename")
+@click.argument("profiledb_filename")
+def import_ned(graphdb_filename, profiledb_filename):
+    """Import NED elevation data into a graph database."""
+    gdb = GraphDatabase(graphdb_filename)
+    profiledb = ProfileDB(profiledb_filename)
+    
+    n = gdb.num_edges()
+    
+    for i, (oid, vertex1, vertex2, edge) in enumerate(
+        list(gdb.all_edges(include_oid=True))
+    ):
+        if i % 500 == 0:
+            click.echo(f"{i}/{n}")
+        
+        if isinstance(edge, Street):
+            rise, fall = get_rise_and_fall(profiledb.get(edge.name))
+            edge.rise = rise
+            edge.fall = fall
+            
+            gdb.remove_edge(oid)
+            gdb.add_edge(vertex1, vertex2, edge)
 
 
 @cli.command()
