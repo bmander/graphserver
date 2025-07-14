@@ -7,6 +7,7 @@ from graphserver.compiler.gdb_import_gtfs import gdb_load_gtfsdb
 from graphserver.compiler.gdb_import_osm import gdb_import_osm
 from graphserver.core import Link
 from graphserver.ext.gtfs.gtfsdb import GTFSDatabase
+from graphserver.ext.graphcrawler import GraphCrawler
 from graphserver.ext.osm.osmdb import OSMDB, osm_to_osmdb
 from graphserver.ext.osm.profiledb import ProfileDB
 from graphserver.graphdb import GraphDatabase
@@ -133,6 +134,16 @@ def link(graphdb_filename, osmdb_filename, gtfsdb_filename):
         gdb.add_edge(osm_vertex_id, station_vertex_id, Link(), c)
 
     gdb.commit()
+
+
+@cli.command()
+@click.argument("graphdb_filename")
+@click.option("-p", "--port", default=8081, help="Port to serve on")
+def crawl(graphdb_filename, port):
+    """Start a web server for crawling graph databases."""
+    gc = GraphCrawler(graphdb_filename)
+    click.echo(f"serving on port {port}")
+    gc.run_test_server(port=port)
 
 
 if __name__ == "__main__":
