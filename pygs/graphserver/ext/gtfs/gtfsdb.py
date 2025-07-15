@@ -180,7 +180,7 @@ SELECT stop_times.* FROM stop_times, trips
                 )
             )
 
-        return zip(*(trip_id_sorter.values()))
+        return list(zip(*(trip_id_sorter.values())))
 
     def __repr__(self):
         return "<TripBundle n_trips: %d n_stops: %d>" % (
@@ -392,7 +392,7 @@ class GTFSDatabase:
     def stop(self, stop_id):
         c = self.get_cursor()
         c.execute("SELECT * FROM stops WHERE stop_id = ?", (stop_id,))
-        ret = c.next()
+        ret = next(c)
         c.close()
         return ret
 
@@ -400,7 +400,7 @@ class GTFSDatabase:
         c = self.get_cursor()
         c.execute("SELECT count(*) FROM stops")
 
-        ret = c.next()[0]
+        ret = next(c)[0]
         c.close()
         return ret
 
@@ -411,7 +411,7 @@ class GTFSDatabase:
         bundles = {}
 
         c.execute("SELECT count(*) FROM trips")
-        n_trips = c.next()[0]
+        n_trips = next(c)[0]
 
         if maxtrips is not None and maxtrips < n_trips:
             n_trips = maxtrips
@@ -477,7 +477,7 @@ class GTFSDatabase:
             "SELECT min(stop_lon), min(stop_lat), max(stop_lon), max(stop_lat) FROM stops"
         )
 
-        ret = c.next()
+        ret = next(c)
         c.close()
         return ret
 

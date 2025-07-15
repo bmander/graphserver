@@ -37,7 +37,7 @@ def service_calendar_from_timezone(gtfsdb, timezone_name):
     # for each day in service range, inclusive
     for currdate in iter_dates(start_date, end_date):
         # get and encode in utf-8 the service_ids of all service periods running thos date
-        service_ids = [x.encode("utf8") for x in gtfsdb.service_periods(currdate)]
+        service_ids = [x for x in gtfsdb.service_periods(currdate)]
 
         # figure datetime.datetime bounds of this service day
         currdate_start = datetime.combine(currdate, time(0))
