@@ -369,7 +369,7 @@ def crawl(graphdb_filename, port):
 
 @cli.command()
 @click.argument("graphdb_filename")
-@click.argument("config_filename")
+@click.argument("config_filename", required=False)
 @click.option("-p", "--port", default=8080, type=int, help="Port to serve HTTP")
 def routeserver(graphdb_filename, config_filename, port):
     """Start a route server for path planning."""

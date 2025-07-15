@@ -198,7 +198,7 @@ class GraphDatabase:
             image = list(
                 self.execute("SELECT image FROM resources WHERE name = ?", (str(name),))
             )[0][0]
-            resource = pickle.loads(str(image))
+            resource = pickle.loads(image)
             self.resources_cache[name] = resource
             return resource
 
