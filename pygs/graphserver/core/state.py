@@ -1,22 +1,8 @@
-try:
-    from graphserver.gsdll import (
-        CShadow,
-        cproperty,
-        lgs,
-    )
-except ImportError:
-    from gsdll import (
-        CShadow,
-        cproperty,
-        lgs,
-    )
-
-from ctypes import c_char_p, c_double, c_int, c_long, c_void_p
+from ctypes import c_char_p, c_double, c_int, c_long
 from time import time as now
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from ..core_original import EdgePayload, ServicePeriod
+from ..gsdll import CShadow, ccast, cproperty, lgs
+from .serviceperiod import ServicePeriod
 
 
 class State(CShadow):
@@ -26,8 +12,6 @@ class State(CShadow):
         self.soul = self._cnew(n_agencies, int(time))
 
     def service_period(self, agency):
-        from ..core_original import ServicePeriod
-
         soul = lgs.stateServicePeriod(self.soul, agency)
         return ServicePeriod.from_pointer(soul)
 
@@ -106,3 +90,8 @@ class State(CShadow):
     num_agencies = cproperty(lgs.stateGetNumAgencies, c_int)
     trip_id = cproperty(lgs.stateGetTripId, c_char_p)
     stop_sequence = cproperty(lgs.stateGetStopSequence, c_int)
+
+
+State._cnew = lgs.stateNew
+State._cdel = lgs.stateDestroy
+State._ccopy = ccast(lgs.stateDup, State)
