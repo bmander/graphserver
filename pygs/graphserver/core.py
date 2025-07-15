@@ -37,14 +37,15 @@ from ctypes import (
 )
 from functools import reduce
 from time import time as now
+from typing import Any, Iterator, List, Optional, Tuple, Union
 
-import pytz
+import pytz  # type: ignore
 
 from .util import TimeHelpers
 from .vector import Vector
 
 
-def indent(a, n):
+def indent(a: str, n: int) -> str:
     return "\n".join([" " * n + x for x in a.split("\n")])
 
 
@@ -63,10 +64,17 @@ These classes map C structs to Python Ctypes Structures.
 class Walkable:
     """Implements the walkable interface."""
 
-    def walk(self, state, walk_options):
+    def __init__(self) -> None:
+        self.soul: Optional[c_void_p] = None
+        self._cwalk: Any = None
+        self._cwalk_back: Any = None
+
+    def walk(self, state: "State", walk_options: "WalkOptions") -> Optional["State"]:
         return State.from_pointer(self._cwalk(self.soul, state.soul, walk_options.soul))
 
-    def walk_back(self, state, walk_options):
+    def walk_back(
+        self, state: "State", walk_options: "WalkOptions"
+    ) -> Optional["State"]:
         return State.from_pointer(
             self._cwalk_back(self.soul, state.soul, walk_options.soul)
         )
@@ -92,23 +100,33 @@ class Path(Structure):
 
     _fields_ = [("vertices", POINTER(Vector)), ("edges", POINTER(Vector))]
 
-    def __new__(cls, origin, init_size=50, expand_delta=50):
+    def __new__(
+        cls, origin: "Vertex", init_size: int = 50, expand_delta: int = 50
+    ) -> "Path":
         # initiate the Path Struct with a C constructor
+        if lgs is None:
+            raise RuntimeError("libgraphserver not loaded")
         soul = lgs.pathNew(origin.soul, init_size, expand_delta)
 
         # wrap an instance of this class around that pointer
         return cls.from_address(soul)
 
-    def __init__(self, origin, init_size=50, expand_delta=50):
+    def __init__(
+        self, origin: "Vertex", init_size: int = 50, expand_delta: int = 50
+    ) -> None:
         # this gets called with the same arguments as __new__ right after
         # __new__ is called, but we've already constructed the struct, so
         # do nothing
         pass
 
-    def addSegment(self, vertex, edge):
+    def addSegment(self, vertex: "Vertex", edge: "Edge") -> None:
+        if lgs is None:
+            raise RuntimeError("libgraphserver not loaded")
         lgs.pathAddSegment(addressof(self), vertex.soul, edge.soul)
 
-    def getVertex(self, i):
+    def getVertex(self, i: int) -> Optional["SPTVertex"]:
+        if lgs is None:
+            raise RuntimeError("libgraphserver not loaded")
         vertex_soul = lgs.pathGetVertex(addressof(self), i)
 
         # reinterpret the error code as an exception
@@ -117,7 +135,9 @@ class Path(Structure):
 
         return SPTVertex.from_pointer(vertex_soul)
 
-    def getEdge(self, i):
+    def getEdge(self, i: int) -> Optional["Edge"]:
+        if lgs is None:
+            raise RuntimeError("libgraphserver not loaded")
         edge_soul = lgs.pathGetEdge(addressof(self), i)
 
         # reinterpret the error code as an exception
@@ -126,14 +146,16 @@ class Path(Structure):
 
         return Edge.from_pointer(edge_soul)
 
-    def destroy(self):
+    def destroy(self) -> None:
+        if lgs is None:
+            raise RuntimeError("libgraphserver not loaded")
         lgs.pathDestroy(addressof(self))
 
     @property
-    def num_elements(self):
+    def num_elements(self) -> int:
         return self.edges.contents.num_elements
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<Path shadowing %s with %d segments>" % (
             hex(addressof(self)),
             self.num_elements,
