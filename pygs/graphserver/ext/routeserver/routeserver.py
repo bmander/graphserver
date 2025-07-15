@@ -306,7 +306,7 @@ def create_app(graphdb_filename, config_filename=None):
         handler_definitions = {
             "edge_handlers": [],
             "vertex_handlers": [],
-            "vertex_reverse_geocoders": []
+            "vertex_reverse_geocoders": [],
         }
     else:
         handler_definitions = yaml.safe_load(open(config_filename))
@@ -345,8 +345,8 @@ def create_app(graphdb_filename, config_filename=None):
                 "/geompath": "Calculate path with geometry",
                 "/path_retro": "Calculate path with retro processing",
                 "/path_raw": "Calculate raw path",
-                "/path_raw_retro": "Calculate raw path with retro processing"
-            }
+                "/path_raw_retro": "Calculate raw path with retro processing",
+            },
         }
 
     @app.route("/bounds")

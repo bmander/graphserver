@@ -254,7 +254,7 @@ class GTFSGraphCompiler:
                 self.reporter.write("%d/%d loading %s\n" % (i + 1, n_bundles, bundle))
 
             available_service_ids = list(self.gtfsdb.service_ids())
-            
+
             for service_id in available_service_ids:
                 if service_ids is not None and service_id not in service_ids:
                     continue
