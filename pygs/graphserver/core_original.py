@@ -43,6 +43,7 @@ import pytz  # type: ignore
 
 from .util import TimeHelpers
 from .vector import Vector
+from .core.walkable import Walkable
 
 
 def indent(a: str, n: int) -> str:
@@ -61,23 +62,6 @@ These classes map C structs to Python Ctypes Structures.
 """
 
 
-class Walkable:
-    """Implements the walkable interface."""
-
-    def __init__(self) -> None:
-        self.soul: Optional[c_void_p] = None
-        self._cwalk: Any = None
-        self._cwalk_back: Any = None
-
-    def walk(self, state: "State", walk_options: "WalkOptions") -> Optional["State"]:
-        return State.from_pointer(self._cwalk(self.soul, state.soul, walk_options.soul))
-
-    def walk_back(
-        self, state: "State", walk_options: "WalkOptions"
-    ) -> Optional["State"]:
-        return State.from_pointer(
-            self._cwalk_back(self.soul, state.soul, walk_options.soul)
-        )
 
 
 """
