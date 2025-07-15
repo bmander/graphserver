@@ -1,8 +1,9 @@
 from ctypes import c_void_p
-from typing import Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
-    from ..core_original import State, WalkOptions
+    from ..core_original import WalkOptions
+    from .state import State
 
 
 class Walkable:
@@ -14,13 +15,15 @@ class Walkable:
         self._cwalk_back: Any = None
 
     def walk(self, state: "State", walk_options: "WalkOptions") -> Optional["State"]:
-        from ..core_original import State
+        from .state import State
+
         return State.from_pointer(self._cwalk(self.soul, state.soul, walk_options.soul))
 
     def walk_back(
         self, state: "State", walk_options: "WalkOptions"
     ) -> Optional["State"]:
-        from ..core_original import State
+        from .state import State
+
         return State.from_pointer(
             self._cwalk_back(self.soul, state.soul, walk_options.soul)
         )
