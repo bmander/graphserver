@@ -22,7 +22,7 @@ def cons(ary):
 
 
 def pack_coords(coords):
-    return binascii.b2a_base64("".join([pack("ff", *coord) for coord in coords]))
+    return binascii.b2a_base64(b"".join([pack("ff", *coord) for coord in coords]))
 
 
 def unpack_coords(str):
@@ -340,7 +340,7 @@ class OSMDB:
         )
 
         try:
-            ret = c.next()
+            ret = next(c)
             way_id, parent_id, from_nd, to_nd, dist, geom, tags = ret
             return (
                 way_id,
@@ -426,7 +426,7 @@ class OSMDB:
         c.execute("SELECT * FROM nodes WHERE id = ?", (id,))
 
         try:
-            ret = c.next()
+            ret = next(c)
         except StopIteration:
             c.close()
             raise IndexError("Database does not have node with id '%s'" % id)
@@ -482,7 +482,7 @@ class OSMDB:
         c.execute("SELECT id, tags, nds FROM ways WHERE id = ?", (id,))
 
         try:
-            id, tags_str, nds_str = c.next()
+            id, tags_str, nds_str = next(c)
             ret = WayRecord(id, tags_str, nds_str)
         except StopIteration:
             raise Exception("OSMDB has no way with id '%s'" % id)
@@ -495,7 +495,7 @@ class OSMDB:
         c = self.get_cursor()
         c.execute("SELECT nds FROM ways WHERE id = ?", (id,))
 
-        (nds_str,) = c.next()
+        (nds_str,) = next(c)
         c.close()
 
         return json.loads(nds_str)
@@ -514,7 +514,7 @@ class OSMDB:
         c = self.get_cursor()
 
         c.execute("SELECT count(*) FROM ways")
-        ret = c.next()[0]
+        ret = next(c)[0]
 
         c.close()
 
@@ -524,7 +524,7 @@ class OSMDB:
         c = self.get_cursor()
 
         c.execute("SELECT count(*) FROM edges")
-        ret = c.next()[0]
+        ret = next(c)[0]
 
         c.close()
 
