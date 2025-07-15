@@ -253,7 +253,9 @@ class GTFSGraphCompiler:
             if self.reporter:
                 self.reporter.write("%d/%d loading %s\n" % (i + 1, n_bundles, bundle))
 
-            for service_id in [x.encode("ascii") for x in self.gtfsdb.service_ids()]:
+            available_service_ids = list(self.gtfsdb.service_ids())
+            
+            for service_id in available_service_ids:
                 if service_ids is not None and service_id not in service_ids:
                     continue
 
@@ -456,6 +458,7 @@ def gdb_load_gtfsdb(
             gdb.add_vertex(tov_label, c)
             v_added.add(tov_label)
         gdb.add_edge(fromv_label, tov_label, edge, c)
+    c.close()
     gdb.commit()
 
 
