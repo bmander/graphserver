@@ -4,7 +4,7 @@ This document outlines the modernization tasks needed to bring the Graphserver c
 
 ## Critical Priority Tasks
 
-### 1. Python 3 Migration
+### 1. [x] Python 3 Migration
 **Status**: Critical - Blocking all Python functionality
 - **Issue**: Codebase targets Python 2.6+ but modern systems use Python 3.x
 - **Tasks**:
@@ -20,7 +20,7 @@ This document outlines the modernization tasks needed to bring the Graphserver c
   - `/pygs/graphserver/graphdb.py`
   - `/pygs/graphserver/ext/` modules
 
-### 2. C Code Compilation Fixes
+### 2. [x] C Code Compilation Fixes
 **Status**: Critical - Blocking core library functionality
 - **Issue**: C code fails to compile with modern GCC (13.3.0)
 - **Problems Identified**:
@@ -33,7 +33,7 @@ This document outlines the modernization tasks needed to bring the Graphserver c
   - Update C code to be compatible with modern compiler standards
   - Review and update compiler flags in Makefile
 
-### 3. Build System Modernization
+### 3. [x] Build System Modernization
 **Status**: High Priority
 - **Current**: Uses traditional Makefile + setuptools
 - **Issues**:
@@ -46,7 +46,7 @@ This document outlines the modernization tasks needed to bring the Graphserver c
   - Consider using `setuptools-scm` for version management
   - Improve C extension building integration
 
-### 4. Dependency Management Update
+### 4. [x] Dependency Management Update
 **Status**: High Priority
 - **Current Issues**:
   - Dependencies pinned to very old versions (e.g., 'servable>=2009b')
@@ -60,7 +60,7 @@ This document outlines the modernization tasks needed to bring the Graphserver c
 
 ## High Priority Tasks
 
-### 5. Testing Framework Modernization
+### 5. [x] Testing Framework Modernization
 **Status**: High Priority
 - **Current**: Uses nose testing framework (deprecated)
 - **Tasks**:
@@ -83,7 +83,7 @@ This document outlines the modernization tasks needed to bring the Graphserver c
 **Status**: High Priority
 - **Current**: No apparent code quality tools configured
 - **Tasks**:
-  - Add Python linting with flake8 or ruff
+  - Add Python linting/checkign with ruff
   - Add code formatting with black
   - Add import sorting with isort
   - Configure pre-commit hooks
