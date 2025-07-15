@@ -37,3 +37,22 @@ test/wallingford.csv
 pygs/test/unit_testunit_test.db
 *.swp
 pygs/test/integration_test/map.osm
+core/libgraphserver.so
+graphdb_test.gdb
+core/test/build
+core/build
+pygs/dist
+
+# SWIG generated files
+core/vector_wrap.c
+core/vector_swig.py
+core/_vector_swig.*.so
+pygs/graphserver/vector_wrap.c
+pygs/graphserver/_vector_swig.*.so
+
+# Backup files
+pygs/graphserver/vector_ctypes_backup.py
+
+# Build artifacts
+build/
+*.egg-info/
