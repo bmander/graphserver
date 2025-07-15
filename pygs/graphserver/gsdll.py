@@ -20,9 +20,10 @@ from ctypes import (
 from ctypes.util import find_library
 import os
 import sys
+from typing import Any, Callable, List, Optional, Tuple, Type, Union
 
 # The libgraphserver.so object:
-lgs = None
+lgs: Optional[PyDLL] = None
 
 # Try loading from the source tree. If that doesn't work, fall back to the installed location.
 _dlldirs = [
@@ -44,21 +45,24 @@ if not lgs:
         % "\n".join(_dlldirs)
     )
 
-libc = cdll.LoadLibrary(find_library("c"))
+libc_path = find_library("c")
+if libc_path is None:
+    raise ImportError("unable to find libc")
+libc = cdll.LoadLibrary(libc_path)
 
 
 class _EmptyClass(object):
     pass
 
 
-def instantiate(cls):
+def instantiate(cls: Type[Any]) -> Any:
     """instantiates a class without calling the constructor"""
     ret = _EmptyClass()
     ret.__class__ = cls
     return ret
 
 
-def cleanup():
+def cleanup() -> None:
     """Perform any necessary cleanup when the library is unloaded."""
     pass
 
@@ -69,21 +73,24 @@ atexit.register(cleanup)
 class CShadow(object):
     """Base class for all objects that shadow a C structure."""
 
+    def __init__(self) -> None:
+        self.soul: Optional[c_void_p] = None
+
     @classmethod
-    def from_pointer(cls, ptr):
+    def from_pointer(cls, ptr: Optional[c_void_p]) -> Optional["CShadow"]:
         if ptr is None:
             return None
 
         ret = instantiate(cls)
         ret.soul = ptr
-        return ret
+        return ret  # type: ignore
 
-    def check_destroyed(self):
+    def check_destroyed(self) -> None:
         if self.soul is None:
             raise Exception("You are trying to use an instance that has been destroyed")
 
 
-def _declare(fun, restype, argtypes):
+def _declare(fun: Any, restype: Any, argtypes: Any) -> None:
     fun.argtypes = argtypes
     fun.restype = restype
     fun.safe = True
@@ -147,7 +154,7 @@ class LGSTypes:
 
 
 LGSTypes.edgepayload_t = {1: c_int8, 2: c_int16, 4: c_int32, 8: c_int64}[
-    c_size_t.in_dll(lgs, "EDGEPAYLOAD_ENUM_SIZE").value
+    c_size_t.in_dll(lgs, "EDGEPAYLOAD_ENUM_SIZE").value  # type: ignore
 ]
 declarations = [
     (lgs.chpNew, LGSTypes.CHPath, [c_int, c_long]),
@@ -749,7 +756,9 @@ for d in declarations:
     _declare(*d)
 
 
-def caccessor(cfunc, restype, ptrclass=None):
+def caccessor(
+    cfunc: Any, restype: Any, ptrclass: Optional[Type[Any]] = None
+) -> Callable[[Any], Any]:
     """Wraps a C data accessor in a python function.
     If a ptrclass is provided, the result will be converted to by the class' from_pointer method.
     """
@@ -758,21 +767,23 @@ def caccessor(cfunc, restype, ptrclass=None):
     # cfunc.argtypes = [c_void_p]
     if ptrclass:
 
-        def prop(self):
+        def prop(self: Any) -> Any:
             self.check_destroyed()
             ret = cfunc(c_void_p(self.soul))
             return ptrclass.from_pointer(ret)
 
     else:
 
-        def prop(self):
+        def prop(self: Any) -> Any:
             self.check_destroyed()
             return cfunc(c_void_p(self.soul))
 
     return prop
 
 
-def cmutator(cfunc, argtype, ptrclass=None):
+def cmutator(
+    cfunc: Any, argtype: Any, ptrclass: Optional[Type[Any]] = None
+) -> Callable[[Any, Any], None]:
     """Wraps a C data mutator in a python function.
     If a ptrclass is provided, the soul of the argument will be used."""
     # Leaving this to the bulk declare function
@@ -780,18 +791,23 @@ def cmutator(cfunc, argtype, ptrclass=None):
     # cfunc.restype = None
     if ptrclass:
 
-        def propset(self, arg):
+        def propset(self: Any, arg: Any) -> None:
             cfunc(self.soul, arg.soul)
 
     else:
 
-        def propset(self, arg):
+        def propset(self: Any, arg: Any) -> None:
             cfunc(self.soul, arg)
 
     return propset
 
 
-def cproperty(cfunc, restype, ptrclass=None, setter=None):
+def cproperty(
+    cfunc: Any,
+    restype: Any,
+    ptrclass: Optional[Type[Any]] = None,
+    setter: Optional[Any] = None,
+) -> Any:
     """if restype is c_null_p, specify a class to convert the pointer into"""
     if not setter:
         return property(caccessor(cfunc, restype, ptrclass))
@@ -800,12 +816,12 @@ def cproperty(cfunc, restype, ptrclass=None, setter=None):
     )
 
 
-def ccast(func, cls):
+def ccast(func: Any, cls: Type[Any]) -> Callable[[Any], Any]:
     """Wraps a function to casts the result of a function (assumed c_void_p)
     into an object using the class's from_pointer method."""
     func.restype = c_void_p
 
-    def _cast(self, *args):
+    def _cast(self: Any, *args: Any) -> Any:
         return cls.from_pointer(func(*args))
 
     return _cast
@@ -824,11 +840,11 @@ class PayloadMethodTypes:
 
 
 class SafeWrapper(object):
-    def __init__(self, lib, name):
+    def __init__(self, lib: Any, name: str) -> None:
         self.lib = lib
         self.name = name
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str) -> "SafeWrapper":
         v = getattr(self.lib, attr)
         if not getattr(v, "safe", False):
             raise Exception(
@@ -837,7 +853,7 @@ class SafeWrapper(object):
             )
         return SafeWrapper(v, name=self.name + "." + attr)
 
-    def __call__(self, *args):
+    def __call__(self, *args: Any) -> Any:
         """Very useful for debugging bogus calls to the DLL which result in segfaluts."""
         sys.stderr.write(
             ">%s %s(%s)\n"
@@ -853,4 +869,4 @@ class SafeWrapper(object):
 
 
 if "GS_VERBOSE_CTYPES" in os.environ:
-    lgs = SafeWrapper(lgs, "lgs")
+    lgs = SafeWrapper(lgs, "lgs")  # type: ignore
