@@ -40,9 +40,10 @@
 """
 
 from math import asin, atan, atan2, cos, pi, radians, sin, sqrt, tan
+from typing import Optional
 
 
-def vincenty(lat1, lon1, lat2, lon2):
+def vincenty(lat1: float, lon1: float, lat2: float, lon2: float) -> Optional[float]:
     """returns distance in meters between any points earth"""
 
     a = 6378137

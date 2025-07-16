@@ -1,11 +1,14 @@
 from ctypes import c_int
+from typing import Any, Callable
 
 
-def failsafe(return_arg_num_on_failure):
+def failsafe(
+    return_arg_num_on_failure: int,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Decorator to prevent segfaults during failed callbacks."""
 
-    def deco(func):
-        def safe(*args):
+    def deco(func: Callable[..., Any]) -> Callable[..., Any]:
+        def safe(*args: Any) -> Any:
             try:
                 return func(*args)
             except Exception:
@@ -30,7 +33,7 @@ def indent(a: str, n: int) -> str:
 
 
 # TODO this is probably defined somewhere else, too
-def unparse_secs(secs):
+def unparse_secs(secs: int) -> str:
     return "%02d:%02d:%02d" % (secs // 3600, (secs % 3600) // 60, secs % 60)
 
 

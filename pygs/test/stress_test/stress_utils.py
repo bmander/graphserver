@@ -1,7 +1,7 @@
 import os
 
 
-def get_mem_usage():
+def get_mem_usage() -> tuple[float, int]:
     """returns percentage and vsz mem usage of this script"""
     pid = os.getpid()
     psout = os.popen("ps u -p %s" % pid).read()

@@ -1,17 +1,22 @@
+from typing import TYPE_CHECKING, Any, Generator
+
 from ..gsdll import lgs
 from .edgepayload import EdgePayload
 
+if TYPE_CHECKING:
+    from ..graphdb import GraphDatabase
+
 
 class Crossing(EdgePayload):
-    def __init__(self):
+    def __init__(self) -> None:
         self.soul = self._cnew()
 
-    def add_crossing_time(self, trip_id, crossing_time):
+    def add_crossing_time(self, trip_id: str | bytes, crossing_time: int) -> None:
         if isinstance(trip_id, str):
             trip_id = trip_id.encode("utf-8")
         lgs.crAddCrossingTime(self.soul, trip_id, crossing_time)
 
-    def get_crossing_time(self, trip_id):
+    def get_crossing_time(self, trip_id: str | bytes) -> int | None:
         if isinstance(trip_id, str):
             trip_id = trip_id.encode("utf-8")
         ret = lgs.crGetCrossingTime(self.soul, trip_id)
@@ -19,7 +24,7 @@ class Crossing(EdgePayload):
             return None
         return ret
 
-    def get_crossing(self, i):
+    def get_crossing(self, i: int) -> tuple[str, int] | None:
         trip_id = lgs.crGetCrossingTimeTripIdByIndex(self.soul, i)
         crossing_time = lgs.crGetCrossingTimeByIndex(self.soul, i)
 
@@ -32,21 +37,21 @@ class Crossing(EdgePayload):
         return (trip_id, crossing_time)
 
     @property
-    def size(self):
+    def size(self) -> int:
         return lgs.crGetSize(self.soul)
 
-    def get_all_crossings(self):
+    def get_all_crossings(self) -> Generator[tuple[str, int], None, None]:
         for i in range(self.size):
             yield self.get_crossing(i)
 
-    def to_xml(self):
+    def to_xml(self) -> str:
         return '<Crossing size="%d"/>' % self.size
 
-    def __getstate__(self):
+    def __getstate__(self) -> list[tuple[str, int]]:
         return list(self.get_all_crossings())
 
     @classmethod
-    def reconstitute(cls, state, resolver):
+    def reconstitute(cls, state: list[tuple[str, int]], resolver: Any) -> "Crossing":
         ret = Crossing()
 
         for trip_id, crossing_time in state:
@@ -54,7 +59,7 @@ class Crossing(EdgePayload):
 
         return ret
 
-    def expound(self):
+    def expound(self) -> str:
         ret = []
 
         ret.append("Crossing")
@@ -64,7 +69,7 @@ class Crossing(EdgePayload):
 
         return "\n".join(ret)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<Crossing %s>" % list(self.get_all_crossings())
 
 

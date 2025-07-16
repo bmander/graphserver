@@ -1,20 +1,18 @@
-from osmdb import OSMDB
+import json
+from typing import Any
 
-try:
-    import json
-except ImportError:
-    import simplejson as json
+from osmdb import OSMDB
 
 
 class Visitor(object):
     """Basic interface for an OSM visitor."""
 
-    def visit(self, db, *args):
+    def visit(self, db: OSMDB, *args: Any) -> None:
         pass
 
 
 class UniqueTagNames(object):
-    def visit(self, db, feature_type):
+    def visit(self, db: OSMDB, feature_type: str) -> None:
         tag_names = {}
         if feature_type == "nodes":
             query = "SELECT tags FROM nodes"
@@ -32,7 +30,7 @@ class UniqueTagNames(object):
 
 
 class UniqueTagValues(object):
-    def visit(self, db, feature_type, tag_name):
+    def visit(self, db: OSMDB, feature_type: str, tag_name: str) -> None:
         tag_values = {}
         if feature_type == "nodes":
             query = "SELECT tags FROM nodes"
@@ -48,7 +46,7 @@ class UniqueTagValues(object):
             print("TAG VALUE: %s" % k)
 
 
-def main():
+def main() -> None:
     from sys import argv
 
     visitor_cls, osmdb_file = argv[1:3]

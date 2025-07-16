@@ -1,22 +1,25 @@
 from math import floor
 import struct
+from typing import Any, Generator, Optional, Union
 
 from graphserver.vincenty import vincenty
 
 
-def floatrange(start, stop, step):
+def floatrange(start: float, stop: float, step: float) -> Generator[float, None, None]:
     i = start
     while i <= stop:
         yield i
         i += step
 
 
-def cons(ary):
+def cons(ary: list[Any]) -> Generator[tuple[Any, Any], None, None]:
     for i in range(len(ary) - 1):
         yield ary[i], ary[i + 1]
 
 
-def split_line_segment(lng1, lat1, lng2, lat2, max_section_length):
+def split_line_segment(
+    lng1: float, lat1: float, lng2: float, lat2: float, max_section_length: float
+) -> Generator[list[float], None, None]:
     # Split line segment defined by (x1, y1, x2, y2) into a set of points
     # (x,y,displacement) spaced less than max_section_length apart
 
@@ -26,6 +29,9 @@ def split_line_segment(lng1, lat1, lng2, lat2, max_section_length):
         return
 
     street_len = vincenty(lat1, lng1, lat2, lng2)
+    if street_len is None:
+        raise ValueError("Vincenty calculation failed")
+
     n_sections = int(street_len / max_section_length) + 1
 
     geolen = ((lat2 - lat1) ** 2 + (lng2 - lng1) ** 2) ** 0.5
@@ -39,7 +45,9 @@ def split_line_segment(lng1, lat1, lng2, lat2, max_section_length):
         yield vec
 
 
-def split_line_string(points, max_section_length):
+def split_line_string(
+    points: list[tuple[float, float]], max_section_length: float
+) -> list[tuple[float, float, float]]:
     # Split each line segment in the linestring into segment smaller than max_section_length
     split_segs = []
     for (lng1, lat1), (lng2, lat2) in cons(points):
@@ -48,7 +56,7 @@ def split_line_string(points, max_section_length):
 
     # String together the sub linestrings into a single linestring
     ret = []
-    segstart_s = 0
+    segstart_s = 0.0
     for i, split_seg in enumerate(split_segs):
         for x, y, s in split_seg[:-1]:
             ret.append((x, y, s + segstart_s))
@@ -57,17 +65,17 @@ def split_line_string(points, max_section_length):
             x, y, s = split_seg[-1]
             ret.append((x, y, s + segstart_s))
 
-        segstart_s += split_seg[-1][2]
+        segstart_s += float(split_seg[-1][2])
 
     return ret
 
 
 class GridFloat:
-    def __init__(self, basename):
+    def __init__(self, basename: str) -> None:
         self._read_header(basename + ".hdr")
         self.fp = open(basename + ".flt", "rb")
 
-    def _read_header(self, filename):
+    def _read_header(self, filename: str) -> None:
         fp = open(filename, "r")
 
         self.ncols = int(fp.readline()[14:].strip())
@@ -84,7 +92,7 @@ class GridFloat:
         self.top = self.yllcorner + (self.nrows - 1) * self.cellsize
 
     @property
-    def extent(self):
+    def extent(self) -> tuple[float, float, float, float]:
         return (
             self.xllcorner,
             self.yllcorner,
@@ -92,27 +100,30 @@ class GridFloat:
             self.yllcorner + self.cellsize * (self.nrows - 1),
         )
 
-    def contains(self, lng, lat):
+    def contains(self, lng: float, lat: float) -> bool:
         return not (
             lng < self.left or lng >= self.right or lat <= self.bottom or lat > self.top
         )
 
-    def allcells(self):
+    def allcells(self) -> tuple[float, ...]:
         self.fp.seek(0)
         return struct.unpack(
             "%s%df" % (self.byteorder, self.nrows * self.ncols), self.fp.read()
         )
 
-    def extremes(self):
+    def extremes(self) -> tuple[float, float]:
         mem = self.allcells()
         return (min(mem), max(mem))
 
-    def cell(self, x, y):
+    def cell(self, x: int, y: int) -> float:
         position = (y * self.ncols + x) * 4
         self.fp.seek(position)
-        return struct.unpack("%sf" % (self.byteorder), self.fp.read(4))[0]
+        result = struct.unpack("%sf" % (self.byteorder), self.fp.read(4))
+        return float(result[0])
 
-    def elevation(self, lng, lat, interpolate=True):
+    def elevation(
+        self, lng: float, lat: float, interpolate: bool = True
+    ) -> Optional[float]:
         if lng < self.left or lng >= self.right or lat <= self.bottom or lat > self.top:
             return None
 
@@ -136,7 +147,9 @@ class GridFloat:
 
         return (lm - um) * celltop + um
 
-    def profile(self, points, resolution=10):
+    def profile(
+        self, points: list[tuple[float, float]], resolution: float = 10
+    ) -> list[tuple[float, Optional[float]]]:
         return [
             (s, self.elevation(lng, lat))
             for lng, lat, s in split_line_string(points, resolution)
@@ -144,11 +157,11 @@ class GridFloat:
 
 
 class BIL:
-    def __init__(self, basename):
+    def __init__(self, basename: str) -> None:
         self._read_header(basename + ".hdr")
         self.fp = open(basename + ".bil", "rb")
 
-    def _read_header(self, filename):
+    def _read_header(self, filename: str) -> None:
         fp = open(filename, "r")
 
         raw_header = dict([x.strip().split() for x in fp.read().strip().split("\n")])
@@ -174,30 +187,33 @@ class BIL:
         self.top = self.ulymap
 
     @property
-    def extent(self):
+    def extent(self) -> tuple[float, float, float, float]:
         return (self.left, self.bottom, self.right, self.top)
 
-    def contains(self, lng, lat):
+    def contains(self, lng: float, lat: float) -> bool:
         return not (
             lng < self.left or lng >= self.right or lat <= self.bottom or lat > self.top
         )
 
-    def allcells(self):
+    def allcells(self) -> tuple[float, ...]:
         self.fp.seek(0)
         return struct.unpack(
             "%s%df" % (self.byteorder, self.nrows * self.ncols), self.fp.read()
         )
 
-    def extremes(self):
+    def extremes(self) -> tuple[float, float]:
         mem = self.allcells()
         return (min(mem), max(mem))
 
-    def cell(self, x, y):
+    def cell(self, x: int, y: int) -> float:
         position = (y * self.ncols + x) * 4
         self.fp.seek(position)
-        return struct.unpack("%sf" % (self.byteorder), self.fp.read(4))[0]
+        result = struct.unpack("%sf" % (self.byteorder), self.fp.read(4))
+        return float(result[0])
 
-    def elevation(self, lng, lat, interpolate=True):
+    def elevation(
+        self, lng: float, lat: float, interpolate: bool = True
+    ) -> Optional[float]:
         if lng < self.left or lng >= self.right or lat <= self.bottom or lat > self.top:
             return None
 
@@ -221,7 +237,9 @@ class BIL:
 
         return (lm - um) * celltop + um
 
-    def profile(self, points, resolution=10):
+    def profile(
+        self, points: list[tuple[float, float]], resolution: float = 10
+    ) -> list[tuple[float, Optional[float]]]:
         return [
             (s, self.elevation(lng, lat))
             for lng, lat, s in split_line_string(points, resolution)
@@ -229,12 +247,13 @@ class BIL:
 
 
 class ElevationPile:
-    def __init__(self):
-        self.tiles = []
+    def __init__(self) -> None:
+        self.tiles: list[Union[GridFloat, BIL]] = []
 
-    def add(self, dem_basename):
+    def add(self, dem_basename: str) -> None:
         base_basename = "".join(dem_basename.split(".")[0:-1])
         format = dem_basename.split(".")[-1]
+        dem: Union[GridFloat, BIL]
         if format == "flt":
             dem = GridFloat(base_basename)
         elif format == "bil":
@@ -244,76 +263,18 @@ class ElevationPile:
 
         self.tiles.append(dem)
 
-    def elevation(self, lng, lat, interpolate=True):
+    def elevation(
+        self, lng: float, lat: float, interpolate: bool = True
+    ) -> Optional[float]:
         for tile in self.tiles:
             if tile.contains(lng, lat):
                 return tile.elevation(lng, lat, interpolate)
+        return None
 
-    def profile(self, points, resolution=10):
+    def profile(
+        self, points: list[tuple[float, float]], resolution: float = 10
+    ) -> list[tuple[float, Optional[float]]]:
         return [
             (s, self.elevation(lng, lat))
             for lng, lat, s in split_line_string(points, resolution)
         ]
-
-
-def selftest():
-    BASENAME = "64883885"
-    HOMEAREA = "./data/" + BASENAME
-
-    gf = GridFloat(HOMEAREA, BASENAME)
-
-    print(gf)
-    print(gf.extent)
-
-    toprow = [gf.cell(x, 0) for x in range(gf.ncols)]
-    assert gf.elevation(gf.left, gf.top) == toprow[0]
-    assert round(gf.elevation(gf.right - 0.00000000001, gf.top), 5) == round(
-        toprow[-1], 5
-    )
-
-    bottomrow = [gf.cell(x, gf.nrows - 2) for x in range(gf.ncols)]
-    assert gf.elevation(gf.left, gf.bottom + 0.000000001) == bottomrow[0]
-    assert gf.elevation(gf.right - 0.00000001, gf.bottom + 0.00000001) == bottomrow[-2]
-
-    assert gf.extremes() == (4.7509551048278809, 144.3404541015625)
-
-    assert round(
-        gf.elevation(
-            (gf.right - gf.left) / 2 + gf.left, (gf.top - gf.bottom) / 2 + gf.bottom
-        ),
-        6,
-    ) == round(89.278957367, 6)
-
-
-def create_elev_circles():
-    from renderer.processing import MapRenderer
-
-    BASENAME = "64883885"
-    HOMEAREA = "./data/" + BASENAME
-
-    gf = GridFloat(HOMEAREA, BASENAME)
-    mr = MapRenderer("./renderer/application.linux/renderer")
-    mr.start(gf.left, gf.bottom, gf.right, gf.top, 2000)
-    mr.smooth()
-    mr.fill(250, 230, 230)
-    mr.background(255, 255, 255)
-    mr.strokeWeight(0.00007)
-
-    for y in floatrange(gf.bottom, gf.top, (gf.top - gf.bottom) / 50):
-        for x in floatrange(gf.left, gf.right, (gf.right - gf.left) / 50):
-            elev = gf.elevation(x, y)
-            mr.ellipse(x, y, elev * 0.00001, elev * 0.00001)
-
-    mr.saveLocal("elevs.png")
-    mr.stop()
-
-
-if __name__ == "__main__":
-    # selftest()
-
-    BASENAME = "83892907"
-    HOMEAREA = "./data/" + BASENAME
-
-    gf = GridFloat(HOMEAREA, BASENAME)
-    for x in gf.extent:
-        print(x)

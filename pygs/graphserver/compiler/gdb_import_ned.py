@@ -1,9 +1,14 @@
-def cons(ary):
+from typing import Generator
+
+
+def cons(ary: list) -> Generator[tuple]:
+    """Generate consecutive pairs from a list."""
+
     for i in range(len(ary) - 1):
         yield (ary[i], ary[i + 1])
 
 
-def get_rise_and_fall(profile):
+def get_rise_and_fall(profile: list[tuple[int, int]]) -> tuple[int, int]:
     rise = 0
     fall = 0
 
