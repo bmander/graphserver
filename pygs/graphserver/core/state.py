@@ -79,7 +79,7 @@ class State(CShadow):
     )
 
     def _get_prev_edge(self):
-        from ..core_original import EdgePayload
+        from .edgepayload import EdgePayload
 
         return EdgePayload.from_pointer(lgs.stateGetPrevEdge(self.soul))
 

@@ -1,11 +1,8 @@
+from _ctypes import Py_DECREF, Py_INCREF
 from ctypes import c_int, c_long, py_object, pythonapi
 
 from ..gsdll import CShadow, cproperty, instantiate, lgs
 from .walkable import Walkable
-
-# Python C API function for reference counting
-Py_INCREF = pythonapi.Py_IncRef
-Py_INCREF.argtypes = [py_object]
 
 
 class EdgePayload(CShadow, Walkable):
@@ -49,7 +46,7 @@ class EdgePayload(CShadow, Walkable):
             raise ValueError(f"Unknown EdgePayload type: {type_id}")
 
         # Import here to avoid circular imports
-        from .genericpayload import GenericPyPayload
+        from .genericpypayload import GenericPyPayload
 
         if payloadtype is GenericPyPayload:
             p = lgs.cpSoul(ptr)

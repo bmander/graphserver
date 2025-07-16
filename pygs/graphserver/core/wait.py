@@ -1,4 +1,8 @@
+from ctypes import c_long
+
+from ..gsdll import c_void_p, cproperty, lgs
 from .edgepayload import EdgePayload
+from .timezone import Timezone
 
 
 class Wait(EdgePayload):

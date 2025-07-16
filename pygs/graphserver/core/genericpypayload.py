@@ -1,8 +1,10 @@
-from .edgepayload import EdgePayload
-from ..gsdll import c_void_p, cproperty, lgs, PayloadMethodTypes
+from _ctypes import Py_DECREF, Py_INCREF
 from ctypes import py_object
-from .util import failsafe
+
+from ..gsdll import PayloadMethodTypes, c_void_p, cproperty, lgs
+from .edgepayload import EdgePayload
 from .state import State
+from .util import failsafe
 from .walkoptions import WalkOptions
 
 

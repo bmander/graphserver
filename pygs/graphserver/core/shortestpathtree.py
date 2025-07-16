@@ -1,13 +1,14 @@
-from ctypes import POINTER, byref, c_int, c_long, c_void_p, cast, Structure, addressof
+from ctypes import POINTER, Structure, addressof, byref, c_int, c_long, c_void_p, cast
+from typing import Optional
 
 from ..gsdll import CShadow, ccast, cproperty, lgs
+from ..vector import Vector
+from .edgepayload import EdgePayload
 from .exceptions import VertexNotFoundError
 from .graph import Edge, Vertex
-from ..vector import Vector
-from typing import Optional
 from .list import ListNode
 from .state import State
-from .edgepayload import EdgePayload
+from .walkoptions import WalkOptions
 
 
 class SPTEdge(Edge):
@@ -312,9 +313,6 @@ SPTEdge._cpayload = ccast(lgs.eGetPayload, EdgePayload)
 SPTEdge._cwalk = ccast(lgs.eWalk, State)
 SPTEdge._cwalk_back = lgs.eWalkBack
 
-_cshortest_path_tree = ccast(lgs.gShortestPathTree, ShortestPathTree)
-_cshortest_path_tree_retro = ccast(lgs.gShortestPathTreeRetro, ShortestPathTree)
-
 
 def shortest_path_tree(
     graph,
@@ -338,27 +336,31 @@ def shortest_path_tree(
 
     if walk_options is None:
         walk_options = WalkOptions()
-        ret = _cshortest_path_tree(
-            graph.soul,
-            fromv,
-            tov,
-            initstate.soul,
-            walk_options.soul,
-            c_long(int(maxtime)),
-            c_int(hoplimit),
-            c_long(int(weightlimit)),
+        ret = ShortestPathTree.from_pointer(
+            lgs.gShortestPathTree(
+                graph.soul,
+                fromv,
+                tov,
+                initstate.soul,
+                walk_options.soul,
+                c_long(int(maxtime)),
+                c_int(hoplimit),
+                c_long(int(weightlimit)),
+            )
         )
         walk_options.destroy()
     else:
-        ret = _cshortest_path_tree(
-            graph.soul,
-            fromv,
-            tov,
-            initstate.soul,
-            walk_options.soul,
-            c_long(int(maxtime)),
-            c_int(hoplimit),
-            c_long(int(weightlimit)),
+        ret = ShortestPathTree.from_pointer(
+            lgs.gShortestPathTree(
+                graph.soul,
+                fromv,
+                tov,
+                initstate.soul,
+                walk_options.soul,
+                c_long(int(maxtime)),
+                c_int(hoplimit),
+                c_long(int(weightlimit)),
+            )
         )
 
     if ret is None:
@@ -391,27 +393,31 @@ def shortest_path_tree_retro(
 
     if walk_options is None:
         walk_options = WalkOptions()
-        ret = _cshortest_path_tree_retro(
-            graph.soul,
-            fromv,
-            tov,
-            finalstate.soul,
-            walk_options.soul,
-            c_long(int(mintime)),
-            c_int(hoplimit),
-            c_long(int(weightlimit)),
+        ret = ShortestPathTree.from_pointer(
+            lgs.gShortestPathTreeRetro(
+                graph.soul,
+                fromv,
+                tov,
+                finalstate.soul,
+                walk_options.soul,
+                c_long(int(mintime)),
+                c_int(hoplimit),
+                c_long(int(weightlimit)),
+            )
         )
         walk_options.destroy()
     else:
-        ret = _cshortest_path_tree_retro(
-            graph.soul,
-            fromv,
-            tov,
-            finalstate.soul,
-            walk_options.soul,
-            c_long(int(mintime)),
-            c_int(hoplimit),
-            c_long(int(weightlimit)),
+        ret = ShortestPathTree.from_pointer(
+            lgs.gShortestPathTreeRetro(
+                graph.soul,
+                fromv,
+                tov,
+                finalstate.soul,
+                walk_options.soul,
+                c_long(int(mintime)),
+                c_int(hoplimit),
+                c_long(int(weightlimit)),
+            )
         )
 
     if ret is None:

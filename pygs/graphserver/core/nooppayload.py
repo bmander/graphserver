@@ -1,3 +1,6 @@
+from .genericpypayload import GenericPyPayload
+
+
 class NoOpPyPayload(GenericPyPayload):
     def __init__(self, num):
         self.num = num

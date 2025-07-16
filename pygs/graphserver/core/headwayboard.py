@@ -1,8 +1,9 @@
-from .edgepayload import EdgePayload
+from ctypes import c_char_p
+
 from ..gsdll import c_int, c_void_p, cproperty, lgs
+from .edgepayload import EdgePayload
 from .servicecalendar import ServiceCalendar
 from .timezone import Timezone
-from ctypes import c_char_p
 
 
 class HeadwayBoard(EdgePayload):

@@ -1,4 +1,10 @@
+from ctypes import c_int, c_long, py_object, pythonapi
+
+from ..gsdll import c_void_p, cproperty, lgs
 from .edgepayload import EdgePayload
+from .servicecalendar import ServiceCalendar
+from .timezone import Timezone
+from .util import indent, unparse_secs
 
 
 class TripBoard(EdgePayload):

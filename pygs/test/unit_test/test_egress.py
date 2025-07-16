@@ -1,6 +1,13 @@
 import unittest
 
-from graphserver.core import Egress, Graph, ShortestPathTree, State, WalkOptions
+from graphserver.core import (
+    Egress,
+    Graph,
+    ShortestPathTree,
+    State,
+    WalkOptions,
+    shortest_path_tree,
+)
 
 
 class TestEgress(unittest.TestCase):
@@ -58,7 +65,7 @@ class TestEgress(unittest.TestCase):
         g.add_vertex("S")
         g.add_edge("E", "S", Egress("E2S", 10))
 
-        spt = g.shortest_path_tree("E", "S", State(0, 0), WalkOptions())
+        spt = shortest_path_tree(g, "E", "S", State(0, 0), WalkOptions())
         assert spt
         assert spt.__class__ == ShortestPathTree
         assert spt.get_vertex("S").state.dist_walked == 10

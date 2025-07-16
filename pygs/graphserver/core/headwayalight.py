@@ -1,5 +1,5 @@
-from .edgepayload import EdgePayload
 from ..gsdll import c_int, c_void_p, cproperty, lgs
+from .edgepayload import EdgePayload
 from .servicecalendar import ServiceCalendar
 from .timezone import Timezone
 

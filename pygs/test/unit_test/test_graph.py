@@ -1,6 +1,16 @@
 import unittest
 
-from graphserver.core import Graph, Link, ShortestPathTree, State, Street, WalkOptions
+from graphserver.core import (
+    Graph,
+    Link,
+    ShortestPathTree,
+    State,
+    Street,
+    WalkOptions,
+    get_contraction_hierarchies,
+    shortest_path_tree,
+    shortest_path_tree_retro,
+)
 
 
 class TestGraph(unittest.TestCase):
@@ -106,8 +116,8 @@ class TestGraph(unittest.TestCase):
         g.add_edge("work", "home", Street("backwards", 10))
 
         # get the shortest path tree
-        spt = g.shortest_path_tree(
-            "home", "work", State(g.numagencies, 0), WalkOptions()
+        spt = shortest_path_tree(
+            g, "home", "work", State(g.numagencies, 0), WalkOptions()
         )
         assert spt
         assert spt.__class__ == ShortestPathTree
@@ -132,7 +142,8 @@ class TestGraph(unittest.TestCase):
 
         self.assertRaises(
             Exception,
-            g.shortest_path_tree,
+            shortest_path_tree,
+            g,
             "bogus",
             "work",
             State(g.numagencies, 0),
@@ -141,7 +152,8 @@ class TestGraph(unittest.TestCase):
 
         self.assertRaises(
             Exception,
-            g.shortest_path_tree_retro,
+            shortest_path_tree_retro,
+            g,
             "home",
             "bogus",
             State(g.numagencies, 0),
@@ -160,8 +172,8 @@ class TestGraph(unittest.TestCase):
         g.add_edge("work", "home", Street("backwards", 100))
 
         # find the path from work to home to arrive at work at 100
-        spt = g.shortest_path_tree_retro(
-            "home", "work", State(g.numagencies, 100), WalkOptions()
+        spt = shortest_path_tree_retro(
+            g, "home", "work", State(g.numagencies, 100), WalkOptions()
         )
 
         assert spt
@@ -188,8 +200,8 @@ class TestGraph(unittest.TestCase):
         g.add_edge("B", "C", Street("BC", 1))
         g.add_edge("C", "D", Street("CD", 1))
 
-        spt = g.shortest_path_tree_retro(
-            "A", "D", State(g.numagencies, 1000), WalkOptions()
+        spt = shortest_path_tree_retro(
+            g, "A", "D", State(g.numagencies, 1000), WalkOptions()
         )
 
         assert spt.get_vertex("A").state.time
@@ -204,8 +216,8 @@ class TestGraph(unittest.TestCase):
         g.add_edge("home", "work", Link())
         g.add_edge("work", "home", Link())
 
-        spt = g.shortest_path_tree(
-            "home", "work", State(g.numagencies, 0), WalkOptions()
+        spt = shortest_path_tree(
+            g, "home", "work", State(g.numagencies, 0), WalkOptions()
         )
         assert spt
         assert spt.__class__ == ShortestPathTree
@@ -227,8 +239,8 @@ class TestGraph(unittest.TestCase):
         g.add_edge("home", "work", Link())
         g.add_edge("work", "home", Link())
 
-        spt = g.shortest_path_tree_retro(
-            "home", "work", State(g.numagencies, 0), WalkOptions()
+        spt = shortest_path_tree_retro(
+            g, "home", "work", State(g.numagencies, 0), WalkOptions()
         )
         assert spt
         assert spt.__class__ == ShortestPathTree
@@ -269,7 +281,7 @@ class TestGraph(unittest.TestCase):
         s = Street("helloworld", 240000)
         g.add_edge("home", "work", s)
 
-        spt = g.shortest_path_tree("home", "work", State(g.numagencies, 0))
+        spt = shortest_path_tree(g, "home", "work", State(g.numagencies, 0))
 
         assert spt.get_vertex("home").degree_out == 1
 
@@ -284,8 +296,8 @@ class TestGraph(unittest.TestCase):
         g.add_edge("home", "work", s)
         g.add_edge("work", "home", Street("backwards", 1))
 
-        spt = g.shortest_path_tree_retro(
-            "home", "work", State(g.numagencies, 0), WalkOptions()
+        spt = shortest_path_tree_retro(
+            g, "home", "work", State(g.numagencies, 0), WalkOptions()
         )
         assert spt
         assert spt.__class__ == ShortestPathTree
@@ -304,7 +316,7 @@ class TestGraph(unittest.TestCase):
         s = Street("helloworld", 1)
         g.add_edge("home", "work", s)
 
-        spt = g.shortest_path_tree("home", "work", State(g.numagencies), WalkOptions())
+        spt = shortest_path_tree(g, "home", "work", State(g.numagencies), WalkOptions())
         sp = spt.path("work")
 
         assert sp
@@ -353,7 +365,7 @@ class TestGraph(unittest.TestCase):
 
         wo = WalkOptions()
         wo.walking_speed = 1
-        g.shortest_path_tree("A", None, State(1, 0), wo)
+        shortest_path_tree(g, "A", None, State(1, 0), wo)
 
     def test_hop_limit(self):
         gg = Graph()
@@ -367,18 +379,18 @@ class TestGraph(unittest.TestCase):
         gg.add_edge("C", "D", Street("CD", 1))
         gg.add_edge("D", "E", Street("DE", 1))
 
-        spt = gg.shortest_path_tree("A", "E", State(0, 0), WalkOptions())
+        spt = shortest_path_tree(gg, "A", "E", State(0, 0), WalkOptions())
         assert spt.get_vertex("E").state.weight == 0
         spt.destroy()
 
-        spt = gg.shortest_path_tree("A", "E", State(0, 0), WalkOptions(), hoplimit=1)
+        spt = shortest_path_tree(gg, "A", "E", State(0, 0), WalkOptions(), hoplimit=1)
         assert spt.get_vertex("A") is not None
         assert spt.get_vertex("B") is not None
         assert spt.get_vertex("C") is None
         assert spt.get_vertex("D") is None
         assert spt.get_vertex("E") is None
 
-        spt = gg.shortest_path_tree("A", "E", State(0, 0), WalkOptions(), hoplimit=3)
+        spt = shortest_path_tree(gg, "A", "E", State(0, 0), WalkOptions(), hoplimit=3)
         assert spt.get_vertex("A") is not None
         assert spt.get_vertex("B") is not None
         assert spt.get_vertex("C") is not None
@@ -406,7 +418,7 @@ class TestGraph(unittest.TestCase):
         absoul = gg.get_vertex("A").outgoing[0].payload.soul
         basoul = gg.get_vertex("B").outgoing[0].payload.soul
 
-        ch = gg.get_contraction_hierarchies(WalkOptions())
+        ch = get_contraction_hierarchies(gg, WalkOptions())
 
         assert ch.upgraph.get_vertex("A").outgoing[0].payload.soul == absoul
         assert ch.downgraph.get_vertex("B").outgoing[0].payload.soul == basoul

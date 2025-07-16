@@ -1,5 +1,5 @@
-from .edgepayload import EdgePayload
 from ..gsdll import c_long, c_void_p, cproperty, lgs
+from .edgepayload import EdgePayload
 
 
 class ElapseTime(EdgePayload):

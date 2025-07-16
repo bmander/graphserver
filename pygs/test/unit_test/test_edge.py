@@ -1,6 +1,14 @@
 import unittest
 
-from graphserver.core import Edge, Graph, State, Street, Vertex, WalkOptions
+from graphserver.core import (
+    Edge,
+    Graph,
+    State,
+    Street,
+    Vertex,
+    WalkOptions,
+    shortest_path_tree,
+)
 
 
 class TestEdge(unittest.TestCase):
@@ -49,7 +57,7 @@ class TestEdge(unittest.TestCase):
         gg.add_edge("A", "B", light)
 
         assert (
-            gg.shortest_path_tree("A", "B", State(0, 0), WalkOptions())
+            shortest_path_tree(gg, "A", "B", State(0, 0), WalkOptions())
             .path("B")[1][0]
             .payload.name
             == "Light"
@@ -59,7 +67,7 @@ class TestEdge(unittest.TestCase):
         lightedge.enabled = False
 
         assert (
-            gg.shortest_path_tree("A", "B", State(0, 0), WalkOptions())
+            shortest_path_tree(gg, "A", "B", State(0, 0), WalkOptions())
             .path("B")[1][0]
             .payload.name
             == "Heavy"

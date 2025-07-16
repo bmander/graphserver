@@ -1,7 +1,13 @@
 import os
 import unittest
 
-from graphserver.core import Graph, Link, Street, WalkOptions
+from graphserver.core import (
+    Graph,
+    Link,
+    Street,
+    WalkOptions,
+    get_contraction_hierarchies,
+)
 from graphserver.graphdb import GraphDatabase
 
 
@@ -62,7 +68,7 @@ class TestGraphDatabase(unittest.TestCase):
         g.add_edge("C", "A", Street("baz", 10))
 
         wo = WalkOptions()
-        ch = g.get_contraction_hierarchies(wo)
+        ch = get_contraction_hierarchies(g, wo)
 
         gdb_file = os.path.dirname(__file__) + "unit_test.db"
         gdb = GraphDatabase(gdb_file)

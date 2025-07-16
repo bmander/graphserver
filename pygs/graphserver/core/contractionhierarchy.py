@@ -46,10 +46,10 @@ class ContractionHierarchy(CShadow):
         return ret
 
 
-def get_contraction_hierarchy(
+def get_contraction_hierarchies(
     graph: Graph, walk_options: WalkOptions, search_limit: int = 1
 ) -> ContractionHierarchy:
     """Get the global ContractionHierarchy instance."""
-    return ccast(lgs.chGetContractionHierarchy, ContractionHierarchy)(
-        graph.soul, walk_options.soul, search_limit
+    return ContractionHierarchy.from_pointer(
+        lgs.get_contraction_hierarchies(graph.soul, walk_options.soul, search_limit)
     )

@@ -10,6 +10,7 @@ from graphserver.core import (
     Street,
     Vertex,
     WalkOptions,
+    shortest_path_tree,
 )
 
 
@@ -20,7 +21,7 @@ class TestShortestPathTree(unittest.TestCase):
         self.B = self.gg.add_vertex("B")
         self.a = self.gg.add_edge("A", "B", Street("a", 10))
 
-        self.spt = self.gg.shortest_path_tree("A", "B", State(0))
+        self.spt = shortest_path_tree(self.gg, "A", "B", State(0))
 
     def test_path_retro_basic(self):
         """ShortestPathTree.path_retro works on a trivial graph"""

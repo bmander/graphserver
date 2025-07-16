@@ -9,6 +9,7 @@ from graphserver.core import (
     ShortestPathTree,
     State,
     WalkOptions,
+    shortest_path_tree,
 )
 
 
@@ -121,7 +122,7 @@ class TestPyPayload(unittest.TestCase):
 
         g = self._minimal_graph()
         g.add_edge("Seattle", "Portland", MovingWalkway())
-        spt = g.shortest_path_tree("Seattle", "Portland", State(0, 0), WalkOptions())
+        spt = shortest_path_tree(g, "Seattle", "Portland", State(0, 0), WalkOptions())
         assert spt
         assert spt.__class__ == ShortestPathTree
         assert spt.get_vertex("Portland").state.weight == 5
