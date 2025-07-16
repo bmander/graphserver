@@ -118,3 +118,9 @@ class ServiceCalendar(CShadow):
             )
 
         return "\n".join(periodstrs)
+
+
+ServiceCalendar._cnew = lgs.scNew
+ServiceCalendar._cdel = lgs.scDestroy
+ServiceCalendar._cperiod_of_or_before = ccast(lgs.scPeriodOfOrBefore, ServicePeriod)
+ServiceCalendar._cperiod_of_or_after = ccast(lgs.scPeriodOfOrAfter, ServicePeriod)

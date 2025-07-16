@@ -18,6 +18,7 @@ from graphserver.core import (
     TripBoard,
     Vertex,
     Wait,
+    shortest_path_tree,
 )
 
 
@@ -141,7 +142,7 @@ class StressTest(unittest.TestCase):
         s.add_edge("B", "C", Street("2", 2.2))
 
         def func():
-            spt = s.shortest_path_tree("A", "C", State(1, 0))
+            spt = shortest_path_tree(s, "A", "C", State(1, 0))
             spt.destroy()
 
         grind(func, 100000)
@@ -156,7 +157,7 @@ class StressTest(unittest.TestCase):
         s.add_edge("B", "C", Street("2", 2.2))
 
         def func():
-            spt = s.shortest_path_tree("A", "C", State(1, 0))
+            spt = shortest_path_tree(s, "A", "C", State(1, 0))
             spt.path("C")  # memory leak test
             spt.destroy()
 
