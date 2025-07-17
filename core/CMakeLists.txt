@@ -5,18 +5,18 @@ project(graphserver_core C)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# Find clang-tidy
-find_program(CLANG_TIDY_EXE
-    NAMES "clang-tidy"
-    DOC "Path to clang-tidy executable")
+# # Find clang-tidy
+# find_program(CLANG_TIDY_EXE
+#     NAMES "clang-tidy"
+#     DOC "Path to clang-tidy executable")
 
-# Enable clang-tidy if found
-if(CLANG_TIDY_EXE)
-    message(STATUS "Found clang-tidy: ${CLANG_TIDY_EXE}")
-    set(CMAKE_C_CLANG_TIDY ${CLANG_TIDY_EXE})
-else()
-    message(WARNING "clang-tidy not found. Install clang-tidy to enable static analysis.")
-endif()
+# # Enable clang-tidy if found
+# if(CLANG_TIDY_EXE)
+#     message(STATUS "Found clang-tidy: ${CLANG_TIDY_EXE}")
+#     set(CMAKE_C_CLANG_TIDY ${CLANG_TIDY_EXE})
+# else()
+#     message(WARNING "clang-tidy not found. Install clang-tidy to enable static analysis.")
+# endif()
 
 # Source files
 file(GLOB CORE_SRCS

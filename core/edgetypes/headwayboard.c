@@ -3,7 +3,9 @@
 // HEADWAYBOARD FUNCTIONS
 
 HeadwayBoard*
-hbNew(  ServiceId service_id, ServiceCalendar* calendar, Timezone* timezone, int agency, char* trip_id, int start_time, int end_time, int headway_secs ) {
+hbNew(ServiceId service_id, char* trip_id,
+      ServiceCalendar* calendar, Timezone* timezone, int agency,
+      int start_time, int end_time, int headway_secs ) {
   HeadwayBoard* ret = (HeadwayBoard*)malloc(sizeof(HeadwayBoard));
   ret->external_id = 0;
   ret->type = PL_HEADWAYBOARD;

@@ -1744,10 +1744,10 @@ class HeadwayBoard(EdgePayload):
 
         self.soul = self._cnew(
             service_id,
+            trip_id,
             calendar.soul,
             timezone.soul,
             agency,
-            trip_id,
             start_time,
             end_time,
             headway_secs,
@@ -1858,10 +1858,10 @@ class HeadwayAlight(EdgePayload):
 
         self.soul = self._cnew(
             service_id,
+            trip_id,
             calendar.soul,
             timezone.soul,
             agency,
-            trip_id,
             start_time,
             end_time,
             headway_secs,
