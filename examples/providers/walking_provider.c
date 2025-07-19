@@ -3,6 +3,10 @@
 #include <string.h>
 #include <math.h>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 /**
  * @file walking_provider.c
  * @brief Implementation of walking provider with realistic constraints
@@ -95,6 +99,9 @@ static void generate_walking_edges_grid(
                 continue;
             }
             
+            // Set edge to own the target vertex since we created it specifically for this edge
+            gs_edge_set_owns_target_vertex(edge, true);
+            
             // Add metadata
             GraphserverValue edge_mode = gs_value_create_string("walking");
             GraphserverValue edge_distance = gs_value_create_float(distance);
@@ -179,6 +186,9 @@ static void generate_walking_edges_poi(
             gs_vertex_destroy(dest_vertex);
             continue;
         }
+        
+        // Set edge to own the target vertex since we created it specifically for this edge
+        gs_edge_set_owns_target_vertex(edge, true);
         
         // Add metadata
         GraphserverValue edge_mode = gs_value_create_string("walking");
