@@ -26,6 +26,14 @@ set(CORE_SOURCES
     src/planner_dijkstra.c
 )
 
+# Example provider sources
+set(EXAMPLE_SOURCES
+    ../examples/providers/utility_functions.c
+    ../examples/providers/walking_provider.c
+    ../examples/providers/transit_provider.c
+    ../examples/providers/road_network_provider.c
+)
+
 # Create the core library
 add_library(graphserver_core STATIC ${CORE_SOURCES})
 
@@ -61,10 +69,21 @@ add_executable(test_planner tests/test_planner.c)
 target_link_libraries(test_planner graphserver_core)
 add_test(NAME planner_tests COMMAND test_planner)
 
+add_executable(test_integration tests/test_integration.c ${EXAMPLE_SOURCES})
+target_link_libraries(test_integration graphserver_core m)
+target_include_directories(test_integration PRIVATE ../examples/include)
+add_test(NAME integration_tests COMMAND test_integration)
+
+add_executable(test_performance tests/test_performance.c ${EXAMPLE_SOURCES})
+target_link_libraries(test_performance graphserver_core m)
+target_include_directories(test_performance PRIVATE ../examples/include)
+# Note: Performance tests are not run automatically with 'make test'
+# Run manually with: ./test_performance
+
 # Custom target to run all tests
 add_custom_target(run_tests
     COMMAND ${CMAKE_CTEST_COMMAND} --verbose
-    DEPENDS test_vertex test_edge test_memory test_engine test_planner
+    DEPENDS test_vertex test_edge test_memory test_engine test_planner test_integration
     COMMENT "Running all tests"
 )
 
