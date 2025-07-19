@@ -243,6 +243,7 @@ GraphserverEdgeList* gs_edge_list_create(void) {
     edge_list->edges = NULL;
     edge_list->num_edges = 0;
     edge_list->capacity = 0;
+    edge_list->owns_edges = false; // By default, edge lists don't own their edges for backward compatibility
     
     return edge_list;
 }
@@ -250,7 +251,15 @@ GraphserverEdgeList* gs_edge_list_create(void) {
 void gs_edge_list_destroy(GraphserverEdgeList* edge_list) {
     if (!edge_list) return;
     
-    // Note: We don't destroy the individual edges as the list doesn't own them
+    // Destroy individual edges if this list owns them
+    if (edge_list->owns_edges && edge_list->edges) {
+        for (size_t i = 0; i < edge_list->num_edges; i++) {
+            if (edge_list->edges[i]) {
+                gs_edge_destroy(edge_list->edges[i]);
+            }
+        }
+    }
+    
     free(edge_list->edges);
     free(edge_list);
 }
@@ -300,8 +309,26 @@ size_t gs_edge_list_get_count(const GraphserverEdgeList* edge_list) {
 void gs_edge_list_clear(GraphserverEdgeList* edge_list) {
     if (!edge_list) return;
     
+    // Destroy individual edges if this list owns them
+    if (edge_list->owns_edges && edge_list->edges) {
+        for (size_t i = 0; i < edge_list->num_edges; i++) {
+            if (edge_list->edges[i]) {
+                gs_edge_destroy(edge_list->edges[i]);
+            }
+        }
+    }
+    
     edge_list->num_edges = 0;
-    // Note: We don't destroy the edges themselves as the list doesn't own them
+}
+
+void gs_edge_list_set_owns_edges(GraphserverEdgeList* edge_list, bool owns_edges) {
+    if (edge_list) {
+        edge_list->owns_edges = owns_edges;
+    }
+}
+
+bool gs_edge_list_get_owns_edges(const GraphserverEdgeList* edge_list) {
+    return edge_list ? edge_list->owns_edges : false;
 }
 
 // Edge comparison and utilities

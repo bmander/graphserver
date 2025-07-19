@@ -220,9 +220,13 @@ TEST(edge_cloning) {
     ASSERT_STR_EQ("transit", retrieved_val.as.s_val);
     gs_value_destroy(&retrieved_val);
     
+    // Get cloned target vertex before destroying edge
+    GraphserverVertex* cloned_target = gs_edge_get_target_vertex(clone);
+    
     gs_edge_destroy(original);
     gs_edge_destroy(clone);
     gs_vertex_destroy(target);
+    gs_vertex_destroy(cloned_target);
 }
 
 // Test edge list operations
@@ -230,6 +234,9 @@ TEST(edge_list_operations) {
     GraphserverEdgeList* edge_list = gs_edge_list_create();
     ASSERT_NOT_NULL(edge_list);
     ASSERT_EQ(0, gs_edge_list_get_count(edge_list));
+    
+    // Set edge list to own its edges for this test
+    gs_edge_list_set_owns_edges(edge_list, true);
     
     // Create some edges
     GraphserverVertex* target1 = create_test_vertex("Target1", 40.7, -74.0);
@@ -264,14 +271,12 @@ TEST(edge_list_operations) {
     result = gs_edge_list_get_edge(edge_list, 2, &retrieved_edge);
     ASSERT_EQ(GS_ERROR_INVALID_ARGUMENT, result);
     
-    // Clear the list
+    // Clear the list (this will destroy the edges since list owns them)
     gs_edge_list_clear(edge_list);
     ASSERT_EQ(0, gs_edge_list_get_count(edge_list));
     
-    // Cleanup
+    // Cleanup (edges are already destroyed by clear)
     gs_edge_list_destroy(edge_list);
-    gs_edge_destroy(edge1);
-    gs_edge_destroy(edge2);
     gs_vertex_destroy(target1);
     gs_vertex_destroy(target2);
 }

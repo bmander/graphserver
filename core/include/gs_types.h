@@ -69,6 +69,7 @@ struct GraphserverEdgeList {
     size_t num_edges;
     GraphserverEdge** edges;
     size_t capacity;
+    bool owns_edges; // Whether this list owns and should destroy the edges
 };
 
 // Function pointer types for edge providers and goal predicates

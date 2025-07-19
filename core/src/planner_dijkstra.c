@@ -292,6 +292,9 @@ GraphserverResult dijkstra_search(
             break;
         }
         
+        // Set edge list to own its edges since providers create transient edges
+        gs_edge_list_set_owns_edges(edges, true);
+        
         GraphserverResult expand_result = gs_engine_expand_vertex(engine, current_vertex, edges);
         if (expand_result != GS_SUCCESS) {
             gs_edge_list_destroy(edges);

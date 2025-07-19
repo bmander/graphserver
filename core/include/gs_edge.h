@@ -33,6 +33,8 @@ GraphserverResult gs_edge_list_add_edge(GraphserverEdgeList* edge_list, Graphser
 GraphserverResult gs_edge_list_get_edge(const GraphserverEdgeList* edge_list, size_t index, GraphserverEdge** out_edge);
 size_t gs_edge_list_get_count(const GraphserverEdgeList* edge_list);
 void gs_edge_list_clear(GraphserverEdgeList* edge_list);
+void gs_edge_list_set_owns_edges(GraphserverEdgeList* edge_list, bool owns_edges);
+bool gs_edge_list_get_owns_edges(const GraphserverEdgeList* edge_list);
 
 // Edge comparison and utilities
 bool gs_edge_equals(const GraphserverEdge* a, const GraphserverEdge* b);

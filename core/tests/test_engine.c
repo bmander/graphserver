@@ -303,6 +303,9 @@ TEST(engine_vertex_expansion) {
     GraphserverEdgeList* edges = gs_edge_list_create();
     ASSERT_NOT_NULL(edges);
     
+    // Set edge list to own its edges since providers create transient edges
+    gs_edge_list_set_owns_edges(edges, true);
+    
     // Expand vertex
     GraphserverResult result = gs_engine_expand_vertex(engine, vertex, edges);
     ASSERT_EQ(GS_SUCCESS, result);
@@ -337,6 +340,7 @@ TEST(engine_multiple_provider_expansion) {
     
     GraphserverVertex* vertex = create_test_vertex("start");
     GraphserverEdgeList* edges = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(edges, true);
     
     GraphserverResult result = gs_engine_expand_vertex(engine, vertex, edges);
     ASSERT_EQ(GS_SUCCESS, result);
@@ -361,6 +365,7 @@ TEST(engine_disabled_provider_expansion) {
     
     GraphserverVertex* vertex = create_test_vertex("start");
     GraphserverEdgeList* edges = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(edges, true);
     
     GraphserverResult result = gs_engine_expand_vertex(engine, vertex, edges);
     ASSERT_EQ(GS_SUCCESS, result);
@@ -382,6 +387,7 @@ TEST(engine_failing_provider_expansion) {
     
     GraphserverVertex* vertex = create_test_vertex("start");
     GraphserverEdgeList* edges = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(edges, true);
     
     GraphserverResult result = gs_engine_expand_vertex(engine, vertex, edges);
     ASSERT_EQ(GS_SUCCESS, result); // Should still succeed overall
