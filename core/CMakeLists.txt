@@ -22,6 +22,8 @@ set(CORE_SOURCES
     src/memory.c
     src/hash_table.c
     src/engine.c
+    src/priority_queue.c
+    src/planner_dijkstra.c
 )
 
 # Create the core library
@@ -55,10 +57,14 @@ add_executable(test_engine tests/test_engine.c)
 target_link_libraries(test_engine graphserver_core)
 add_test(NAME engine_tests COMMAND test_engine)
 
+add_executable(test_planner tests/test_planner.c)
+target_link_libraries(test_planner graphserver_core)
+add_test(NAME planner_tests COMMAND test_planner)
+
 # Custom target to run all tests
 add_custom_target(run_tests
     COMMAND ${CMAKE_CTEST_COMMAND} --verbose
-    DEPENDS test_vertex test_edge test_memory test_engine
+    DEPENDS test_vertex test_edge test_memory test_engine test_planner
     COMMENT "Running all tests"
 )
 

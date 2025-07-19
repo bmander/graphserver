@@ -2,6 +2,7 @@
 #include "../include/gs_memory.h"
 #include "../include/gs_vertex.h"
 #include "../include/gs_edge.h"
+#include "../include/gs_planner_internal.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -412,8 +413,7 @@ GraphserverPath* gs_pathlist_get_path(const GraphserverPathList* path_list, size
     return path_list->paths[index];
 }
 
-// Placeholder implementations for planning functions
-// These will be fully implemented when we add the Dijkstra planner
+// Planning function implementations using Dijkstra algorithm
 
 GraphserverPathList* gs_plan(
     GraphserverEngine* engine,
@@ -425,15 +425,60 @@ GraphserverPathList* gs_plan(
     // Clear previous stats
     memset(&engine->last_plan_stats, 0, sizeof(GraphserverPlanStats));
     
-    // TODO: Implement actual planning with Dijkstra
-    // For now, return an empty path list
-    GraphserverPathList* result = gs_pathlist_create();
+    // Create arena for planning operations
+    GraphserverArena* arena = gs_arena_create(engine->config.default_arena_size);
+    if (!arena) return NULL;
     
-    if (out_stats) {
-        *out_stats = engine->last_plan_stats;
+    GraphserverPath* path = NULL;
+    GraphserverPlanStats stats = {0};
+    
+    // Use Dijkstra planner (currently only single-objective supported)
+    GraphserverResult result = gs_plan_dijkstra(
+        engine,
+        options->start_vertex,
+        options->is_goal_fn,
+        options->is_goal_user_data,
+        options->timeout_seconds,
+        arena,
+        &path,
+        &stats
+    );
+    
+    // Create path list result
+    GraphserverPathList* path_list = gs_pathlist_create();
+    if (!path_list) {
+        if (path) gs_path_destroy(path);
+        gs_arena_destroy(arena);
+        return NULL;
     }
     
-    return result;
+    // Add path to list if found
+    if (result == GS_SUCCESS && path) {
+        // Expand path list capacity if needed
+        if (path_list->capacity == 0) {
+            path_list->capacity = 1;
+            path_list->paths = malloc(sizeof(GraphserverPath*) * path_list->capacity);
+            if (!path_list->paths) {
+                gs_path_destroy(path);
+                gs_pathlist_destroy(path_list);
+                gs_arena_destroy(arena);
+                return NULL;
+            }
+        }
+        
+        path_list->paths[0] = path;
+        path_list->num_paths = 1;
+    }
+    
+    // Store stats in engine
+    engine->last_plan_stats = stats;
+    
+    if (out_stats) {
+        *out_stats = stats;
+    }
+    
+    gs_arena_destroy(arena);
+    return path_list;
 }
 
 GraphserverPath* gs_plan_simple(
@@ -445,27 +490,40 @@ GraphserverPath* gs_plan_simple(
     
     if (!engine || !start_vertex || !is_goal) return NULL;
     
-    // Create planning options
-    GraphserverPlanOptions options = {0};
-    options.planner_name = "DIJKSTRA";
-    options.start_vertex = start_vertex;
-    options.is_goal_fn = is_goal;
-    options.is_goal_user_data = goal_user_data;
-    options.distance_vector_size = 1; // Single objective
+    // Create arena for planning operations
+    GraphserverArena* arena = gs_arena_create(engine->config.default_arena_size);
+    if (!arena) return NULL;
     
-    GraphserverPathList* path_list = gs_plan(engine, &options, out_stats);
-    if (!path_list) return NULL;
+    GraphserverPath* path = NULL;
+    GraphserverPlanStats stats = {0};
     
-    GraphserverPath* result = NULL;
-    if (gs_pathlist_get_count(path_list) > 0) {
-        result = gs_pathlist_get_path(path_list, 0);
-        // Remove from list without destroying
-        path_list->paths[0] = NULL;
-        path_list->num_paths = 0;
+    // Use Dijkstra planner directly
+    GraphserverResult result = gs_plan_dijkstra(
+        engine,
+        start_vertex,
+        is_goal,
+        goal_user_data,
+        engine->config.default_timeout_seconds,
+        arena,
+        &path,
+        &stats
+    );
+    
+    // Store stats in engine
+    engine->last_plan_stats = stats;
+    
+    if (out_stats) {
+        *out_stats = stats;
     }
     
-    gs_pathlist_destroy(path_list);
-    return result;
+    gs_arena_destroy(arena);
+    
+    if (result == GS_SUCCESS) {
+        return path;
+    } else {
+        if (path) gs_path_destroy(path);
+        return NULL;
+    }
 }
 
 // Utility functions
