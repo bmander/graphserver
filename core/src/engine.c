@@ -346,7 +346,16 @@ GraphserverPath* gs_path_create(size_t cost_vector_size) {
 void gs_path_destroy(GraphserverPath* path) {
     if (!path) return;
     
-    free(path->edges);
+    // Destroy individual edges
+    if (path->edges) {
+        for (size_t i = 0; i < path->num_edges; i++) {
+            if (path->edges[i]) {
+                gs_edge_destroy(path->edges[i]);
+            }
+        }
+        free(path->edges);
+    }
+    
     free(path->total_cost);
     free(path);
 }

@@ -85,6 +85,9 @@ static int mock_provider_simple(const GraphserverVertex* current_vertex,
         return -1;
     }
     
+    // Set edge to own the target vertex since we created it specifically for this edge
+    gs_edge_set_owns_target_vertex(edge, true);
+    
     // Add to output list
     GraphserverResult result = gs_edge_list_add_edge(out_edges, edge);
     return (result == GS_SUCCESS) ? 0 : -1;
@@ -113,6 +116,9 @@ static int mock_provider_multiple(const GraphserverVertex* current_vertex,
             gs_vertex_destroy(target);
             return -1;
         }
+        
+        // Set edge to own the target vertex since we created it specifically for this edge
+        gs_edge_set_owns_target_vertex(edge, true);
         
         gs_edge_list_add_edge(out_edges, edge);
     }

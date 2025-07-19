@@ -87,6 +87,7 @@ GraphserverEdge* gs_edge_create(GraphserverVertex* target_vertex,
     edge->distance_vector_size = distance_vector_size;
     edge->metadata = NULL;
     edge->metadata_count = 0;
+    edge->owns_target_vertex = false; // By default, edges don't own their target vertices
     
     // If distance vector duplication failed and we had a non-empty vector, cleanup and fail
     if (distance_vector_size > 0 && !edge->distance_vector) {
@@ -100,7 +101,11 @@ GraphserverEdge* gs_edge_create(GraphserverVertex* target_vertex,
 void gs_edge_destroy(GraphserverEdge* edge) {
     if (!edge) return;
     
-    // Note: We don't destroy the target vertex as the edge doesn't own it
+    // Destroy the target vertex if this edge owns it
+    if (edge->owns_target_vertex && edge->target_vertex) {
+        gs_vertex_destroy(edge->target_vertex);
+    }
+    
     free(edge->distance_vector);
     
     // Cleanup metadata
@@ -130,6 +135,9 @@ GraphserverEdge* gs_edge_clone(const GraphserverEdge* edge) {
         gs_vertex_destroy(cloned_vertex);
         return NULL;
     }
+    
+    // The cloned edge owns the cloned vertex
+    cloned_edge->owns_target_vertex = true;
     
     // Clone metadata
     for (size_t i = 0; i < edge->metadata_count; i++) {
@@ -391,4 +399,15 @@ char* gs_edge_to_string(const GraphserverEdge* edge) {
     pos += snprintf(buffer + pos, buffer_size - pos, "}");
     
     return buffer;
+}
+
+// Edge vertex ownership management
+void gs_edge_set_owns_target_vertex(GraphserverEdge* edge, bool owns_target_vertex) {
+    if (edge) {
+        edge->owns_target_vertex = owns_target_vertex;
+    }
+}
+
+bool gs_edge_get_owns_target_vertex(const GraphserverEdge* edge) {
+    return edge ? edge->owns_target_vertex : false;
 }

@@ -367,6 +367,16 @@ GraphserverResult dijkstra_search(
 void dijkstra_cleanup(DijkstraState* state) {
     if (!state) return;
     
+    // Clean up cloned vertices in the node table
+    if (state->nodes) {
+        for (size_t i = 0; i < state->node_capacity; i++) {
+            DijkstraNode* node = &state->nodes[i];
+            if (node->vertex) {
+                gs_vertex_destroy(node->vertex);
+            }
+        }
+    }
+    
     // Priority queue and vertex set will be cleaned up with arena
     // No explicit cleanup needed for arena-allocated memory
     

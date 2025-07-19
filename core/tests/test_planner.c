@@ -112,6 +112,9 @@ static int grid_provider(const GraphserverVertex* current_vertex,
             continue;
         }
         
+        // Set edge to own the target vertex since we created it specifically for this edge
+        gs_edge_set_owns_target_vertex(edge, true);
+        
         gs_edge_list_add_edge(out_edges, edge);
     }
     
@@ -333,6 +336,10 @@ static int linear_provider(const GraphserverVertex* current_vertex,
         
         double distance = 1.0;
         GraphserverEdge* edge = gs_edge_create(next, &distance, 1);
+        
+        // Set edge to own the target vertex since we created it specifically for this edge
+        gs_edge_set_owns_target_vertex(edge, true);
+        
         gs_edge_list_add_edge(out_edges, edge);
     }
     

@@ -26,6 +26,10 @@ const double* gs_edge_get_distance_vector(const GraphserverEdge* edge);
 size_t gs_edge_get_distance_vector_size(const GraphserverEdge* edge);
 size_t gs_edge_get_metadata_count(const GraphserverEdge* edge);
 
+// Edge vertex ownership management
+void gs_edge_set_owns_target_vertex(GraphserverEdge* edge, bool owns_target_vertex);
+bool gs_edge_get_owns_target_vertex(const GraphserverEdge* edge);
+
 // Edge list management
 GraphserverEdgeList* gs_edge_list_create(void);
 void gs_edge_list_destroy(GraphserverEdgeList* edge_list);

@@ -62,6 +62,7 @@ struct GraphserverEdge {
     size_t distance_vector_size;
     GraphserverKeyPair* metadata;
     size_t metadata_count;
+    bool owns_target_vertex; // Whether this edge owns and should destroy the target vertex
 };
 
 // List of edges returned by providers
