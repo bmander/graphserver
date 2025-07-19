@@ -41,7 +41,7 @@ extern "C" {
 
 /**
  * Get the version string of the Graphserver library
- * @return Version string (e.g., "1.0.0")
+ * @return Version string (e.g., "2.0.0")
  */
 const char* gs_get_version(void);
 
