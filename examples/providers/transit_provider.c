@@ -137,6 +137,9 @@ static GraphserverEdge* create_walk_to_stop_edge(
         return NULL;
     }
     
+    // Set edge to own the target vertex since we created it specifically for this edge
+    gs_edge_set_owns_target_vertex(edge, true);
+    
     // Add metadata to edge
     GraphserverValue edge_mode = gs_value_create_string("walking");
     GraphserverValue edge_distance = gs_value_create_float(distance);
@@ -194,6 +197,9 @@ static GraphserverEdge* create_transit_edge(
         gs_vertex_destroy(target_vertex);
         return NULL;
     }
+    
+    // Set edge to own the target vertex since we created it specifically for this edge
+    gs_edge_set_owns_target_vertex(edge, true);
     
     // Add metadata
     GraphserverValue edge_mode = gs_value_create_string(route->route_type);

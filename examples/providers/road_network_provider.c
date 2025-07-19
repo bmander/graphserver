@@ -180,6 +180,9 @@ static void generate_road_edges(
                 continue;
             }
             
+            // Set edge to own the target vertex since we created it specifically for this edge
+            gs_edge_set_owns_target_vertex(edge, true);
+            
             // Add metadata
             GraphserverValue edge_mode = gs_value_create_string(network->vehicle_type);
             GraphserverValue edge_road_type = gs_value_create_string(segment->road_type);
@@ -230,6 +233,9 @@ static void generate_road_edges(
                     gs_vertex_destroy(dest_vertex);
                     continue;
                 }
+                
+                // Set edge to own the target vertex since we created it specifically for this edge
+                gs_edge_set_owns_target_vertex(edge, true);
                 
                 // Add metadata
                 GraphserverValue edge_mode = gs_value_create_string(network->vehicle_type);
