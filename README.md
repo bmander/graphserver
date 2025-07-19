@@ -14,7 +14,7 @@ The system is built around a C core library for maximum performance and portabil
 - **Edge Providers**: Function-pointer based plugins that define domain-specific transition rules
 - **Planners**: Algorithms like Dijkstra and A* that search for optimal paths
 
-**Current Status**: M1 Stage 1 complete - core data structures implemented and tested.
+**Current Status**: M1 Stage 4 complete - core library with full integration testing and end-to-end scenarios.
 
 ## Building
 
@@ -32,41 +32,123 @@ make
 This generates:
 - `libgraphserver_core.a` - Static library
 - `libgraphserver_core.so` - Shared library  
-- `test_vertex` and `test_edge` - Unit test executables
+- Test executables: `test_vertex`, `test_edge`, `test_memory`, `test_engine`, `test_planner`, `test_integration`
+- Performance benchmarks: `test_performance`
+- Example applications: `simple_routing` (in examples directory)
 
 ## Testing
 
-Run all tests:
+### Unit Tests
+Run all core unit tests:
 ```bash
 make run_tests
 ```
 
 Or run individual test suites:
 ```bash
-./test_vertex   # 10 vertex functionality tests
-./test_edge     # 8 edge functionality tests
+./test_vertex   # Vertex functionality tests
+./test_edge     # Edge functionality tests  
+./test_memory   # Memory management tests
+./test_engine   # Engine and provider tests
+./test_planner  # Dijkstra planner tests
 ```
 
-Expected output: `All tests PASSED!` with 100% pass rate.
+### Integration Tests
+Run comprehensive integration tests with real-world scenarios:
+```bash
+./test_integration
+```
 
-## Running
+This test suite includes:
+- Utility function validation (distance calculation, location handling)
+- Walking provider with realistic constraints and accessibility
+- Transit provider with NYC-style subway/bus simulation
+- Road network provider with traffic modeling and vehicle routing
+- Multi-modal journey planning end-to-end scenarios
+- Large-scale network performance testing
+- Edge case handling and error validation
+- Memory management across multiple planning cycles
 
-Currently implemented: Core data structures for vertices and edges with comprehensive APIs.
+Expected output: `8/8 tests passed` with detailed scenario results.
 
-**Coming next**: Engine implementation with edge provider registration and simple Dijkstra planner.
+### Performance Benchmarks
+Run performance analysis (not included in automated testing):
+```bash
+./test_performance
+```
 
-Basic usage (when engine is complete):
+Measures planning time, memory usage, and scalability across different network sizes.
+
+### Memory Leak Detection
+Run Valgrind analysis to detect memory leaks:
+```bash
+# Install Valgrind if needed
+sudo apt-get install valgrind
+
+# Run automated memory analysis
+../scripts/valgrind_test.sh
+```
+
+This script runs all test executables under Valgrind with comprehensive memory checking options, generating detailed reports for each test. Expected output: `All tests passed Valgrind analysis!`
+
+### Example Applications
+Test complete workflow with realistic usage:
+```bash
+cd ../examples
+./simple_routing
+```
+
+Demonstrates engine setup, provider registration, multi-modal journey planning from Financial District to Brooklyn Bridge area with detailed route analysis.
+
+## Usage
+
+The library is fully functional with complete engine implementation, edge provider registration, and Dijkstra planning algorithm.
+
+### Basic Planning Workflow
 ```c
 #include "graphserver.h"
+#include "include/example_providers.h"
+
+// Initialize library
+gs_initialize();
 
 // Create engine and register providers
 GraphserverEngine* engine = gs_engine_create();
-gs_engine_register_provider(engine, "my_provider", my_edge_generator, NULL);
 
-// Plan a path
-GraphserverVertex* start = gs_vertex_create();
-// ... configure start vertex ...
-GraphserverPath* path = gs_plan_simple(engine, start, goal_predicate, NULL);
+// Walking provider for pedestrian routing
+WalkingConfig walking_config = walking_config_default();
+gs_engine_register_provider(engine, "walking", walking_provider, &walking_config);
+
+// Transit provider for subway/bus routing
+TransitNetwork* transit = transit_network_create_example();
+gs_engine_register_provider(engine, "transit", transit_provider, transit);
+
+// Plan a multi-modal journey
+GraphserverVertex* start = create_location_vertex(40.7074, -74.0113, time(NULL));
+LocationGoal goal = {40.7061, -73.9969, 200.0}; // Brooklyn Bridge area
+
+GraphserverPlanStats stats;
+GraphserverPath* path = gs_plan_simple(engine, start, location_goal_predicate, &goal, &stats);
+
+if (path) {
+    size_t num_edges = gs_path_get_num_edges(path);
+    const double* total_cost = gs_path_get_total_cost(path);
+    printf("Found path with %zu edges, %.1f minutes\n", num_edges, total_cost[0]);
+    gs_path_destroy(path);
+}
+
+// Cleanup
+gs_vertex_destroy(start);
+transit_network_destroy(transit);
+gs_engine_destroy(engine);
+gs_cleanup();
 ```
+
+### Available Providers
+- **Walking Provider**: Pedestrian routing with configurable speed, distance limits, and accessibility options
+- **Transit Provider**: Public transit with schedule simulation, transfers, and multi-objective costs (time + fare)
+- **Road Network Provider**: Vehicle routing with traffic modeling and vehicle-specific constraints (car, bicycle, motorcycle)
+
+Run `./simple_routing` in the examples directory for a complete working demonstration.
 
 See `DESIGN.md` for complete architecture documentation and `PLAN_M1.md` for current implementation status.
