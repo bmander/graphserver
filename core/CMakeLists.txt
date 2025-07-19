@@ -19,6 +19,9 @@ include_directories(include)
 set(CORE_SOURCES
     src/vertex.c
     src/edge.c
+    src/memory.c
+    src/hash_table.c
+    src/engine.c
 )
 
 # Create the core library
@@ -44,10 +47,18 @@ add_executable(test_edge tests/test_edge.c)
 target_link_libraries(test_edge graphserver_core)
 add_test(NAME edge_tests COMMAND test_edge)
 
+add_executable(test_memory tests/test_memory.c)
+target_link_libraries(test_memory graphserver_core)
+add_test(NAME memory_tests COMMAND test_memory)
+
+add_executable(test_engine tests/test_engine.c)
+target_link_libraries(test_engine graphserver_core)
+add_test(NAME engine_tests COMMAND test_engine)
+
 # Custom target to run all tests
 add_custom_target(run_tests
     COMMAND ${CMAKE_CTEST_COMMAND} --verbose
-    DEPENDS test_vertex test_edge
+    DEPENDS test_vertex test_edge test_memory test_engine
     COMMENT "Running all tests"
 )
 

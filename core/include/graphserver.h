@@ -25,6 +25,8 @@
 #include "gs_types.h"
 #include "gs_vertex.h"
 #include "gs_edge.h"
+#include "gs_memory.h"
+#include "gs_engine.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -93,13 +95,13 @@ GraphserverResult gs_engine_unregister_provider(
 /**
  * List all registered providers
  * @param engine Target engine
- * @param out_provider_names Array of provider names (caller must free)
+ * @param out_provider_info Array of provider information (caller must free)
  * @param out_count Number of providers
  * @return Result code
  */
 GraphserverResult gs_engine_list_providers(
     const GraphserverEngine* engine,
-    const char*** out_provider_names,
+    GraphserverProviderInfo** out_provider_info,
     size_t* out_count
 );
 
@@ -114,11 +116,13 @@ GraphserverResult gs_engine_list_providers(
  * Find a path from start to goal using the specified planner
  * @param engine Engine instance with registered providers
  * @param options Planning options and parameters
+ * @param out_stats Optional statistics output (can be NULL)
  * @return List of paths found, or NULL on failure
  */
 GraphserverPathList* gs_plan(
     GraphserverEngine* engine,
-    const GraphserverPlanOptions* options
+    const GraphserverPlanOptions* options,
+    GraphserverPlanStats* out_stats
 );
 
 /**
@@ -127,13 +131,15 @@ GraphserverPathList* gs_plan(
  * @param start_vertex Starting vertex
  * @param is_goal Goal predicate function
  * @param goal_user_data User data for goal predicate
+ * @param out_stats Optional statistics output (can be NULL)
  * @return Single path, or NULL if no path found
  */
 GraphserverPath* gs_plan_simple(
     GraphserverEngine* engine,
     const GraphserverVertex* start_vertex,
     gs_goal_predicate_fn is_goal,
-    void* goal_user_data
+    void* goal_user_data,
+    GraphserverPlanStats* out_stats
 );
 
 /** @} */
