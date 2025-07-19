@@ -1,2 +1,0 @@
-class VertexNotFoundError(Exception):
-    pass
