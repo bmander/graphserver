@@ -188,6 +188,8 @@ TEST(edge_cloning) {
     double distances[] = {100.0, 5.0};
     
     GraphserverEdge* original = gs_edge_create(target, distances, 2);
+    // Set original edge to own the target vertex for consistent cleanup
+    gs_edge_set_owns_target_vertex(original, true);
     
     // Add some metadata
     GraphserverValue mode_val = gs_value_create_string("transit");
@@ -220,13 +222,9 @@ TEST(edge_cloning) {
     ASSERT_STR_EQ("transit", retrieved_val.as.s_val);
     gs_value_destroy(&retrieved_val);
     
-    // Get cloned target vertex before destroying edge
-    GraphserverVertex* cloned_target = gs_edge_get_target_vertex(clone);
-    
+    // Both edges now own their target vertices, so they'll be cleaned up automatically
     gs_edge_destroy(original);
     gs_edge_destroy(clone);
-    gs_vertex_destroy(target);
-    gs_vertex_destroy(cloned_target);
 }
 
 // Test edge list operations
