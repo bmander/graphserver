@@ -58,7 +58,7 @@ def test_plan_with_provider() -> None:
         import _graphserver
 
         engine = _graphserver.create_engine()
-        
+
         # Register a simple provider that creates a path from x=0 to x=1
         def simple_provider(vertex: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
             x = vertex.get("x", 0)
@@ -159,20 +159,19 @@ def test_data_conversion() -> None:
         # Test complex data types
         def complex_provider(vertex: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
             if vertex.get("start", False):
-                return [{
-                    "target": {
-                        "x": 10,
-                        "y": 20.5,
-                        "name": "destination",
-                        "active": True,
-                        "path": [1, 2, 3]
-                    },
-                    "cost": 15.5,
-                    "metadata": {
-                        "direction": "north",
-                        "distance": 100
+                return [
+                    {
+                        "target": {
+                            "x": 10,
+                            "y": 20.5,
+                            "name": "destination",
+                            "active": True,
+                            "path": [1, 2, 3],
+                        },
+                        "cost": 15.5,
+                        "metadata": {"direction": "north", "distance": 100},
                     }
-                }]
+                ]
             return []
 
         engine.register_provider("complex", complex_provider)
@@ -180,9 +179,15 @@ def test_data_conversion() -> None:
         # Test planning with complex data
         result = engine.plan(
             start={"start": True, "location": "origin"},
-            goal={"x": 10, "y": 20.5, "name": "destination", "active": True, "path": [1, 2, 3]}
+            goal={
+                "x": 10,
+                "y": 20.5,
+                "name": "destination",
+                "active": True,
+                "path": [1, 2, 3],
+            },
         )
-        
+
         assert len(result) == 1
         edge = result[0]
         # Target vertex data should now be accessible
