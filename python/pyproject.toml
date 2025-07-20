@@ -55,13 +55,15 @@ ignore = [
     "PLR2004", # Magic value comparisons (common in tests)
     "PLC0415", # Import at top-level (tests often have conditional imports)
     "ARG001",  # Unused function arguments (common in test stubs)
+    "TC003",   # Standard library imports in type-checking (Path used at runtime)
+    "PLR0913", # Too many arguments (acceptable for provider constructors)
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "PLR2004", "PLC0415", "ARG001", "T201", "SLF001", "E501"]
 "debug_*.py" = ["T201", "SLF001", "E501", "EXE001", "BLE001"]
 "minimal_*.py" = ["T201", "SLF001", "E501", "EXE001", "BLE001"]
-"examples/*" = ["T201", "S310", "PTH123", "EXE001", "BLE001", "E501", "C901", "PLR0912", "PLR0915", "PTH110"]
+"examples/*" = ["T201", "S310", "PTH123", "EXE001", "BLE001", "E501", "C901", "PLR0912", "PLR0915", "PTH110", "SLF001"]
 
 [tool.black]
 target-version = ["py312"]

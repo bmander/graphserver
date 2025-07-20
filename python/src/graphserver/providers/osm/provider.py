@@ -13,7 +13,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-from ...core import Edge, Vertex, VertexEdgePair
+from graphserver.core import Edge, Vertex, VertexEdgePair
+
 from .parser import OSMParser
 from .spatial import SpatialIndex
 from .types import WalkingProfile

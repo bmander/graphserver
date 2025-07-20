@@ -37,4 +37,4 @@ __all__ = [
 
 # Add providers to __all__ if available
 if providers is not None:
-    __all__.append("providers")
+    __all__ += ["providers"]

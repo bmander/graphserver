@@ -203,7 +203,7 @@ class OSMParser:
                 # Store forward edge
                 self.edges[(from_node_id, to_node_id)] = forward_edge
 
-                # Create reverse edge for bidirectional ways (most pedestrian ways are bidirectional)
+                # Create reverse edge for bidirectional ways (most pedestrian ways)
                 oneway = way.tags.get("oneway", "no")
                 if oneway not in {"yes", "true", "1"}:
                     reverse_edge = OSMEdge(
@@ -225,7 +225,7 @@ class OSMParser:
         Yields:
             OSMEdge objects starting from the given node
         """
-        for (from_id, to_id), edge in self.edges.items():
+        for (from_id, _to_id), edge in self.edges.items():
             if from_id == node_id:
                 yield edge
 

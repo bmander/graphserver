@@ -13,7 +13,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-from ...core import Edge, Vertex, VertexEdgePair
+from graphserver.core import Edge, Vertex, VertexEdgePair
+
 from .parser import OSMParser
 from .spatial import SpatialIndex
 from .types import WalkingProfile
@@ -154,7 +155,7 @@ class OSMAccessProvider:
         """Generate edges from a vertex (implements EdgeProvider protocol).
 
         Args:
-            vertex: Input vertex containing either coordinates or OSM node ID for offramp
+            vertex: Input vertex containing coordinates or OSM node ID for offramp
 
         Returns:
             List of (target_vertex, edge) tuples
@@ -291,7 +292,7 @@ class OSMAccessProvider:
     ) -> Sequence[VertexEdgePair]:
         """Generate offramp edges from an OSM node to a specific coordinate.
 
-        This method is called when the planner needs to create an offramp from an OSM node
+        Called when the planner needs to create an offramp from an OSM node
         to reach a specific coordinate target.
 
         Args:

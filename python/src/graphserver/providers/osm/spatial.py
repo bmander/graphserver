@@ -13,6 +13,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from .types import OSMNode
+
 try:
     from rtree import index
 except ImportError as e:
@@ -23,10 +25,12 @@ try:
     from pyproj import Geod
     from shapely.geometry import Point
 except ImportError as e:
-    msg = "PyProj and Shapely are required for distance calculations. Install with: pip install pyproj shapely"
+    msg = (
+        "PyProj and Shapely are required for distance calculations. "
+        "Install with: pip install pyproj shapely"
+    )
     raise ImportError(msg) from e
 
-from .types import OSMNode
 
 logger = logging.getLogger(__name__)
 

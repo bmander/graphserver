@@ -365,7 +365,7 @@ class TestOSMAccessProvider:
             sample_osm_file,
             search_radius_m=1000.0,
             max_nearby_nodes=3,
-            build_index=True
+            build_index=True,
         )
 
         # Create vertex with coordinates near but not exactly at sample data
@@ -447,7 +447,7 @@ class TestIntegrationWithGraphserver:
                 parser=network_provider.parser,
                 search_radius_m=1000.0,
                 max_nearby_nodes=3,
-                build_index=True
+                build_index=True,
             )
 
             engine.register_provider("osm_network", network_provider)

@@ -65,9 +65,7 @@ class OSMWay:
             foot = self.tags.get("foot", "")
             access = self.tags.get("access", "")
 
-            if foot == "no" or access == "no":
-                return False
-            return True
+            return not (foot == "no" or access == "no")
 
         # Some primary/secondary roads may be walkable if they have sidewalks
         if highway in {"primary", "secondary", "tertiary"}:
