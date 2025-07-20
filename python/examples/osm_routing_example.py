@@ -8,7 +8,13 @@ Requirements:
     pip install graphserver[osm]
 
 Usage:
-    python osm_routing_example.py path/to/your_area.osm
+    python osm_routing_example.py <osm_file> [start_lat,start_lon] [end_lat,end_lon]
+    
+    If start/end coordinates are not provided, you'll be prompted to enter them interactively.
+
+Examples:
+    python osm_routing_example.py campus.osm
+    python osm_routing_example.py campus.osm 47.6540,-122.3100 47.6550,-122.3090
 """
 
 from __future__ import annotations
@@ -27,10 +33,45 @@ except ImportError as e:
     sys.exit(1)
 
 
+def get_coordinates(prompt: str) -> tuple[float, float]:
+    """Get lat,lon coordinates from user input.
+    
+    Args:
+        prompt: Prompt to show the user
+        
+    Returns:
+        Tuple of (latitude, longitude)
+    """
+    while True:
+        try:
+            coord_input = input(f"{prompt} (lat,lon): ").strip()
+            if ',' in coord_input:
+                lat_str, lon_str = coord_input.split(',', 1)
+                lat = float(lat_str.strip())
+                lon = float(lon_str.strip())
+                
+                # Basic validation
+                if not (-90 <= lat <= 90):
+                    print(f"Invalid latitude: {lat} (must be between -90 and 90)")
+                    continue
+                if not (-180 <= lon <= 180):
+                    print(f"Invalid longitude: {lon} (must be between -180 and 180)")
+                    continue
+                    
+                return lat, lon
+            else:
+                print("Please enter coordinates as: lat,lon (e.g., 47.6540,-122.3100)")
+        except ValueError:
+            print("Invalid format. Please enter numeric coordinates as: lat,lon")
+        except KeyboardInterrupt:
+            print("\nCancelled.")
+            sys.exit(0)
+
+
 def main() -> None:
     """Main example function."""
-    if len(sys.argv) != 2:
-        print("Usage: python osm_routing_example.py <osm_file>")
+    if len(sys.argv) < 2:
+        print("Usage: python osm_routing_example.py <osm_file> [start_lat,start_lon] [end_lat,end_lon]")
         print("Download OSM data from: https://www.openstreetmap.org/export")
         sys.exit(1)
 
@@ -38,6 +79,26 @@ def main() -> None:
     if not osm_file.exists():
         print(f"OSM file not found: {osm_file}")
         sys.exit(1)
+    
+    # Parse optional start/end coordinates from command line
+    start_coords = None
+    end_coords = None
+    
+    if len(sys.argv) >= 3:
+        try:
+            start_lat, start_lon = map(float, sys.argv[2].split(','))
+            start_coords = (start_lat, start_lon)
+        except ValueError:
+            print(f"Invalid start coordinates: {sys.argv[2]}")
+            sys.exit(1)
+    
+    if len(sys.argv) >= 4:
+        try:
+            end_lat, end_lon = map(float, sys.argv[3].split(','))
+            end_coords = (end_lat, end_lon)
+        except ValueError:
+            print(f"Invalid end coordinates: {sys.argv[3]}")
+            sys.exit(1)
 
     print(f"Loading OSM data from: {osm_file}")
     print("This may take a moment for large files...")
@@ -79,14 +140,21 @@ def main() -> None:
     print('  1. Geographic coordinates: {"lat": 47.6062, "lon": -122.3321}')
     print('  2. OSM node IDs: {"osm_node_id": 12345}')
 
+    # Get coordinates for demonstration
+    if start_coords is None:
+        print("\\nTo test the provider, we need some coordinates within your OSM data.")
+        print("You can find coordinates by:")
+        print("  - Using www.openstreetmap.org and right-clicking to copy coordinates")
+        print("  - Looking at your OSM data's geographic bounds")
+        print("  - Using GPS coordinates from the area")
+        start_coords = get_coordinates("Enter start coordinates")
+    
+    example_lat, example_lon = start_coords
+
     # Example 1: Find nearest node to coordinates
     print("\\n" + "=" * 60)
     print("Example 1: Finding nearest OSM node to coordinates")
     print("=" * 60)
-
-    # Use coordinates near the center of your OSM data
-    # These are example coordinates for Seattle - adjust for your data
-    example_lat, example_lon = 47.6062, -122.3321
 
     nearest_node = osm_provider.find_nearest_node(example_lat, example_lon)
     if nearest_node:
@@ -147,46 +215,48 @@ def main() -> None:
     print("Example 4: Pathfinding between coordinates")
     print("=" * 60)
 
-    if edges_from_coords and len(edges_from_coords) >= 2:
-        # Use first and last nearby nodes as start/goal
-        start_vertex = edges_from_coords[0][0]  # First nearby node
-        goal_vertex = edges_from_coords[-1][0]  # Last nearby node
+    # Get goal coordinates for pathfinding
+    if end_coords is None:
+        print("\\nFor pathfinding demonstration, we need a destination coordinate.")
+        end_coords = get_coordinates("Enter destination coordinates")
+    
+    goal_lat, goal_lon = end_coords
+    
+    # Create vertices from the coordinates
+    start_vertex = Vertex({"lat": example_lat, "lon": example_lon})
+    goal_vertex = Vertex({"lat": goal_lat, "lon": goal_lon})
 
-        print(
-            f"Planning route from node {start_vertex['osm_node_id']} to node {goal_vertex['osm_node_id']}"
-        )
+    print(f"Planning route from ({example_lat}, {example_lon}) to ({goal_lat}, {goal_lon})")
 
-        try:
-            planning_start = time.time()
-            result = engine.plan(start=start_vertex, goal=goal_vertex)
-            planning_time = time.time() - planning_start
+    try:
+        planning_start = time.time()
+        result = engine.plan(start=start_vertex, goal=goal_vertex)
+        planning_time = time.time() - planning_start
 
-            print(f"Pathfinding completed in {planning_time:.3f} seconds")
-            if result and len(result) > 0:
-                print(f"Path found: {len(result)} edges")
-                print(
-                    f"Total cost: {result.total_cost:.1f} seconds ({result.total_cost / 60:.1f} minutes)"
-                )
-
-                print("\\nPath details:")
-                for i, path_edge in enumerate(result[:5]):  # Show first 5 edges
-                    print(f"  Step {i + 1}: to node {path_edge.target['osm_node_id']}")
-                    print(f"    Cost: {path_edge.edge.cost:.1f}s")
-                    if "highway" in path_edge.edge.metadata:
-                        print(f"    Highway: {path_edge.edge.metadata['highway']}")
-
-                if len(result) > 5:
-                    print(f"  ... and {len(result) - 5} more steps")
-            else:
-                print("No path found between the selected nodes")
-
-        except Exception as e:
-            print(f"Pathfinding failed: {e}")
+        print(f"Pathfinding completed in {planning_time:.3f} seconds")
+        if result and len(result) > 0:
+            print(f"Path found: {len(result)} edges")
             print(
-                "This may be expected if the C extension pathfinding is not fully implemented"
+                f"Total cost: {result.total_cost:.1f} seconds ({result.total_cost / 60:.1f} minutes)"
             )
-    else:
-        print("Insufficient nearby nodes for pathfinding example")
+
+            print("\\nPath details:")
+            for i, path_edge in enumerate(result[:5]):  # Show first 5 edges
+                print(f"  Step {i + 1}: to node {path_edge.target['osm_node_id']}")
+                print(f"    Cost: {path_edge.edge.cost:.1f}s")
+                if "highway" in path_edge.edge.metadata:
+                    print(f"    Highway: {path_edge.edge.metadata['highway']}")
+
+            if len(result) > 5:
+                print(f"  ... and {len(result) - 5} more steps")
+        else:
+            print("No path found between the selected coordinates")
+
+    except Exception as e:
+        print(f"Pathfinding failed: {e}")
+        print(
+            "This may be expected if the C extension pathfinding is not fully implemented"
+        )
 
     print("\\n" + "=" * 60)
     print("Example completed!")
