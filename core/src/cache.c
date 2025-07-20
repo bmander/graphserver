@@ -41,6 +41,9 @@ static GraphserverEdgeList* edge_list_deep_copy(const GraphserverEdgeList* sourc
     GraphserverEdgeList* copy = gs_edge_list_create();
     if (!copy) return NULL;
     
+    // Set the edge list to own the edges so they get properly destroyed
+    gs_edge_list_set_owns_edges(copy, true);
+    
     size_t edge_count = gs_edge_list_get_count(source);
     for (size_t i = 0; i < edge_count; i++) {
         GraphserverEdge* edge;
