@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 try:
     import osmium
 except ImportError as e:
-    msg = "PyOsmium is required for OSM parsing. Install with: pip install pyosmium"
+    msg = "PyOsmium is required for OSM parsing. Install with: pip install osmium"
     raise ImportError(msg) from e
 
 from .types import OSMEdge, OSMNode, OSMWay, WalkingProfile

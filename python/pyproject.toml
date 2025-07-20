@@ -20,7 +20,7 @@ dev = [
     "black",
 ]
 osm = [
-    "pyosmium>=4.0.2",
+    "osmium>=4.0.2",
     "shapely>=2.0",
     "pyproj>=3.7",
     "rtree>=1.4.0",
