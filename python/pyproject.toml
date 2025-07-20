@@ -40,7 +40,19 @@ warn_unused_configs = true
 [tool.ruff]
 target-version = "py312"
 line-length = 88
-select = ["E", "F", "W", "C90", "I", "N", "UP", "YTT", "S", "BLE", "FBT", "B", "A", "COM", "C4", "DTZ", "T10", "DJ", "EM", "EXE", "FA", "ISC", "ICN", "G", "INP", "PIE", "T20", "PYI", "PT", "Q", "RSE", "RET", "SLF", "SLOT", "SIM", "TID", "TCH", "INT", "ARG", "PTH", "TD", "FIX", "ERA", "PD", "PGH", "PL", "TRY", "FLY", "NPY", "AIR", "PERF"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "C90", "I", "N", "UP", "YTT", "S", "BLE", "FBT", "B", "A", "C4", "DTZ", "T10", "DJ", "EM", "EXE", "FA", "ISC", "ICN", "G", "INP", "PIE", "T20", "PYI", "PT", "Q", "RSE", "RET", "SLF", "SLOT", "SIM", "TID", "TCH", "INT", "ARG", "PTH", "TD", "FIX", "ERA", "PD", "PGH", "PL", "TRY", "FLY", "NPY", "AIR", "PERF"]
+ignore = [
+    "COM812",  # Conflicts with formatter
+    "S101",    # Use of assert detected (normal in tests)
+    "PLR2004", # Magic value comparisons (common in tests)
+    "PLC0415", # Import at top-level (tests often have conditional imports)
+    "ARG001",  # Unused function arguments (common in test stubs)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "PLR2004", "PLC0415", "ARG001"]
 
 [tool.black]
 target-version = ["py312"]

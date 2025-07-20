@@ -1,10 +1,11 @@
-from setuptools import setup, Extension
-import os
+from pathlib import Path
+
+from setuptools import Extension, setup
 
 # Path to core library
-core_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "core"))
-core_include = os.path.join(core_path, "include")
-core_build = os.path.join(core_path, "build")
+core_path = (Path(__file__).parent / ".." / "core").resolve()
+core_include = str(core_path / "include")
+core_build = str(core_path / "build")
 
 # Define the extension module
 extension = Extension(
@@ -13,7 +14,7 @@ extension = Extension(
     include_dirs=[core_include],
     library_dirs=[core_build],
     libraries=["m"],
-    extra_objects=[os.path.join(core_build, "libgraphserver_core.a")],
+    extra_objects=[str(core_path / "build" / "libgraphserver_core.a")],
     extra_compile_args=["-std=c99", "-Wall", "-Wextra"],
     extra_link_args=[],
 )

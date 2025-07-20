@@ -7,7 +7,7 @@ across various domains.
 
 from __future__ import annotations
 
-from .core import Engine, PathResult, EdgeProvider
+from .core import EdgeProvider, Engine, PathResult
 
 __version__ = "2.0.0"
 __all__ = ["Engine", "PathResult", "EdgeProvider"]

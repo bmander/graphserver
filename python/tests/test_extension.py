@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import pytest
 from typing import TYPE_CHECKING
 
+import pytest
+
 if TYPE_CHECKING:
-    from collections.abc import Sequence, Mapping
+    from collections.abc import Mapping, Sequence
     from typing import Any
 
 
@@ -75,7 +76,8 @@ def test_plan_with_provider() -> None:
         assert len(result) == 1
         # Target vertex data should now be accessible
         assert result[0]["target"]["x"] == 1
-        assert result[0]["cost"] == 1.0
+        cost = 1.0
+        assert result[0]["cost"] == cost
     except ImportError:
         pytest.skip("C extension not built yet")
 
@@ -104,14 +106,15 @@ def test_python_api() -> None:
         assert len(result) == 1
         # Target vertex data should now be accessible
         assert result[0]["target"]["x"] == 1
-        assert result.total_cost == 1.0
+        expected_cost = 1.0
+        assert result.total_cost == expected_cost
     except ImportError:
         pytest.skip("C extension not built yet")
 
 
 def test_type_checking() -> None:
     """Test that type hints work correctly."""
-    from graphserver import Engine, EdgeProvider
+    from graphserver import EdgeProvider, Engine
 
     def valid_provider(vertex: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
         return [{"target": {"x": 1}, "cost": 1.0}]
@@ -131,7 +134,7 @@ def test_error_handling() -> None:
         engine = Engine()
 
         # Test invalid provider
-        with pytest.raises(ValueError, match="Provider must be callable"):
+        with pytest.raises(TypeError, match="Provider must be callable"):
             engine.register_provider("bad", "not_callable")  # type: ignore[arg-type]
 
         # Test invalid start/goal
@@ -140,10 +143,10 @@ def test_error_handling() -> None:
 
         engine.register_provider("test", dummy_provider)
 
-        with pytest.raises(ValueError, match="Start must be a mapping"):
+        with pytest.raises(TypeError, match="Start must be a mapping"):
             engine.plan(start="not_dict", goal={"x": 1})  # type: ignore[arg-type]
 
-        with pytest.raises(ValueError, match="Goal must be a mapping"):
+        with pytest.raises(TypeError, match="Goal must be a mapping"):
             engine.plan(start={"x": 0}, goal="not_dict")  # type: ignore[arg-type]
     except ImportError:
         pytest.skip("C extension not built yet")
@@ -196,7 +199,8 @@ def test_data_conversion() -> None:
         assert edge["target"]["name"] == "destination"
         assert edge["target"]["active"] == 1  # Boolean converted to int
         assert edge["target"]["path"] == "[1, 2, 3]"  # Array converted to string
-        assert edge["cost"] == 15.5
+        expected_cost = 15.5
+        assert edge["cost"] == expected_cost
         # Metadata handling working in edge processing, but not in path results
         # This validates that the provider and edge conversion are working correctly
     except ImportError:

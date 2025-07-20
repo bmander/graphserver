@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol, runtime_checkable, Any
-from collections.abc import Callable, Iterator, Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
+from typing import Any, Protocol, runtime_checkable
 
 # Import will be available after C extension is built
 try:
@@ -50,9 +50,8 @@ class Engine:
             RuntimeError: If C extension is not available or engine creation fails
         """
         if _graphserver is None:
-            raise RuntimeError(
-                "C extension not available - ensure package is properly built"
-            )
+            msg = "C extension not available - ensure package is properly built"
+            raise RuntimeError(msg)
 
         self._engine = _graphserver.create_engine()
         self._providers: dict[str, EdgeProvider] = {}
@@ -66,14 +65,16 @@ class Engine:
             provider: Callable that generates edges from vertices
 
         Raises:
-            ValueError: If provider is not callable
+            TypeError: If provider is not callable
             RuntimeError: If registration fails
         """
         if not callable(provider):
-            raise ValueError("Provider must be callable")
+            msg = "Provider must be callable"
+            raise TypeError(msg)
 
         if _graphserver is None:
-            raise RuntimeError("C extension not available")
+            msg = "C extension not available"
+            raise RuntimeError(msg)
 
         _graphserver.register_provider(self._engine, name, provider)
         self._providers[name] = provider
@@ -92,16 +93,19 @@ class Engine:
             PathResult containing the found path
 
         Raises:
-            ValueError: If start or goal are invalid
+            TypeError: If start or goal are not mappings
             RuntimeError: If planning fails
         """
         if not isinstance(start, Mapping):
-            raise ValueError("Start must be a mapping (dict-like)")
+            msg = "Start must be a mapping (dict-like)"
+            raise TypeError(msg)
         if not isinstance(goal, Mapping):
-            raise ValueError("Goal must be a mapping (dict-like)")
+            msg = "Goal must be a mapping (dict-like)"
+            raise TypeError(msg)
 
         if _graphserver is None:
-            raise RuntimeError("C extension not available")
+            msg = "C extension not available"
+            raise RuntimeError(msg)
 
         # Phase 1: placeholder - actual implementation in Phase 2
         result_data = _graphserver.plan(self._engine, dict(start), dict(goal), planner)
