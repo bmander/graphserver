@@ -281,6 +281,40 @@ GraphserverResult gs_engine_expand_vertex(
     // Clear the output edge list
     gs_edge_list_clear(out_edges);
     
+    // Check cache first if caching is enabled
+    if (engine->config.enable_edge_caching && engine->edge_cache) {
+        GraphserverEdgeList* cached_edges = NULL;
+        GraphserverResult cache_result = edge_cache_get(engine->edge_cache, vertex, &cached_edges);
+        
+        if (cache_result == GS_SUCCESS && cached_edges) {
+            // Cache hit! Clone all cached edges for output
+            size_t cached_edge_count = gs_edge_list_get_count(cached_edges);
+            for (size_t i = 0; i < cached_edge_count; i++) {
+                GraphserverEdge* edge;
+                GraphserverResult get_result = gs_edge_list_get_edge(cached_edges, i, &edge);
+                if (get_result == GS_SUCCESS && edge) {
+                    // Clone the edge so output list owns its own copy
+                    GraphserverEdge* edge_clone = gs_edge_clone(edge);
+                    if (edge_clone) {
+                        gs_edge_list_add_edge(out_edges, edge_clone);
+                    }
+                }
+            }
+            
+            // Update statistics
+            engine->last_plan_stats.cache_hits++;
+            engine->last_plan_stats.edges_generated += cached_edge_count;
+            
+            // Clean up cached edges and return early
+            gs_edge_list_destroy(cached_edges);
+            return GS_SUCCESS;
+        } else if (cache_result == GS_ERROR_KEY_NOT_FOUND) {
+            // Cache miss - proceed with provider calls
+            engine->last_plan_stats.cache_misses++;
+        }
+        // For other cache errors, just proceed with provider calls
+    }
+    
     GraphserverResult overall_result = GS_SUCCESS;
     
     // Call each enabled provider
@@ -318,6 +352,14 @@ GraphserverResult gs_engine_expand_vertex(
         gs_edge_list_destroy(provider_edges);
     }
     
+    // Store results in cache if caching is enabled and providers succeeded
+    if (engine->config.enable_edge_caching && engine->edge_cache && overall_result == GS_SUCCESS) {
+        (void)edge_cache_put(engine->edge_cache, vertex, out_edges);
+        // Update cache_puts statistics regardless of success/failure
+        engine->last_plan_stats.cache_puts++;
+        // Note: We don't fail the overall operation if cache storage fails
+    }
+    
     return overall_result;
 }
 
@@ -339,6 +381,16 @@ GraphserverResult gs_engine_get_config(
     if (!engine || !out_config) return GS_ERROR_NULL_POINTER;
     
     *out_config = engine->config;
+    return GS_SUCCESS;
+}
+
+GraphserverResult gs_engine_get_stats(
+    const GraphserverEngine* engine,
+    GraphserverPlanStats* out_stats) {
+    
+    if (!engine || !out_stats) return GS_ERROR_NULL_POINTER;
+    
+    *out_stats = engine->last_plan_stats;
     return GS_SUCCESS;
 }
 

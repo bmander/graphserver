@@ -59,6 +59,9 @@ typedef struct {
     double planning_time_seconds;   // Total planning time
     size_t peak_memory_usage;       // Peak memory usage during planning
     uint32_t path_length;           // Length of found path (0 if no path)
+    uint64_t cache_hits;            // Number of successful cache lookups
+    uint64_t cache_misses;          // Number of cache misses
+    uint64_t cache_puts;            // Number of entries stored in cache
 } GraphserverPlanStats;
 
 /**
@@ -181,6 +184,17 @@ GraphserverResult gs_engine_set_config(
 GraphserverResult gs_engine_get_config(
     const GraphserverEngine* engine,
     GraphserverEngineConfig* out_config
+);
+
+/**
+ * Get current engine statistics
+ * @param engine Target engine
+ * @param out_stats Statistics structure to fill
+ * @return Result code
+ */
+GraphserverResult gs_engine_get_stats(
+    const GraphserverEngine* engine,
+    GraphserverPlanStats* out_stats
 );
 
 /**

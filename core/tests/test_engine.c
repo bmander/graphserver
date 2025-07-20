@@ -498,6 +498,186 @@ TEST(engine_cache_lifecycle) {
     gs_engine_destroy(engine);
 }
 
+// Test cache hit performance and behavior
+TEST(engine_cache_hit_performance) {
+    // Create engine with caching enabled
+    GraphserverEngineConfig config = gs_engine_get_default_config();
+    config.enable_edge_caching = true;
+    
+    GraphserverEngine* engine = gs_engine_create_with_config(&config);
+    ASSERT_NOT_NULL(engine);
+    
+    // Register a provider
+    gs_engine_register_provider(engine, "test_provider", mock_provider_simple, NULL);
+    
+    GraphserverVertex* vertex = create_test_vertex("cache_test");
+    ASSERT_NOT_NULL(vertex);
+    
+    // First expansion - should be a cache miss
+    GraphserverEdgeList* edges1 = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(edges1, true);
+    
+    GraphserverResult result1 = gs_engine_expand_vertex(engine, vertex, edges1);
+    ASSERT_EQ(GS_SUCCESS, result1);
+    
+    size_t first_edge_count = gs_edge_list_get_count(edges1);
+    ASSERT(first_edge_count > 0); // Should have generated some edges
+    
+    // Verify cache miss statistics
+    GraphserverPlanStats stats;
+    GraphserverResult stats_result = gs_engine_get_stats(engine, &stats);
+    ASSERT_EQ(GS_SUCCESS, stats_result);
+    ASSERT_EQ(1U, stats.cache_misses);
+    ASSERT_EQ(0U, stats.cache_hits);
+    ASSERT_EQ(1U, stats.cache_puts);
+    ASSERT_EQ(1U, stats.providers_called);
+    
+    // Second expansion of same vertex - should be a cache hit
+    GraphserverEdgeList* edges2 = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(edges2, true);
+    
+    // Reset providers_called to verify cache hit doesn't call providers
+    // Note: We can't directly modify stats, so we'll verify the difference instead
+    
+    GraphserverResult result2 = gs_engine_expand_vertex(engine, vertex, edges2);
+    ASSERT_EQ(GS_SUCCESS, result2);
+    
+    size_t second_edge_count = gs_edge_list_get_count(edges2);
+    ASSERT_EQ(first_edge_count, second_edge_count); // Should have same number of edges
+    
+    // Verify cache hit statistics
+    GraphserverResult stats_result2 = gs_engine_get_stats(engine, &stats);
+    ASSERT_EQ(GS_SUCCESS, stats_result2);
+    ASSERT_EQ(1U, stats.cache_misses); // Still 1
+    ASSERT_EQ(1U, stats.cache_hits);   // Now 1
+    ASSERT_EQ(1U, stats.cache_puts);   // Still 1
+    ASSERT_EQ(1U, stats.providers_called); // Should still be 1 (providers not called for cache hit)
+    
+    gs_edge_list_destroy(edges1);
+    gs_edge_list_destroy(edges2);
+    gs_vertex_destroy(vertex);
+    gs_engine_destroy(engine);
+}
+
+// Test cache miss behavior
+TEST(engine_cache_miss_behavior) {
+    GraphserverEngineConfig config = gs_engine_get_default_config();
+    config.enable_edge_caching = true;
+    
+    GraphserverEngine* engine = gs_engine_create_with_config(&config);
+    ASSERT_NOT_NULL(engine);
+    
+    gs_engine_register_provider(engine, "test_provider", mock_provider_simple, NULL);
+    
+    GraphserverVertex* vertex = create_test_vertex("miss_test");
+    GraphserverEdgeList* edges = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(edges, true);
+    
+    GraphserverResult result = gs_engine_expand_vertex(engine, vertex, edges);
+    ASSERT_EQ(GS_SUCCESS, result);
+    
+    // Verify cache miss behavior
+    GraphserverPlanStats stats;
+    GraphserverResult stats_result = gs_engine_get_stats(engine, &stats);
+    ASSERT_EQ(GS_SUCCESS, stats_result);
+    ASSERT_EQ(1U, stats.cache_misses);
+    ASSERT_EQ(0U, stats.cache_hits);
+    ASSERT_EQ(1U, stats.cache_puts);
+    ASSERT_EQ(1U, stats.providers_called);
+    
+    // Verify edges were generated normally
+    ASSERT(gs_edge_list_get_count(edges) > 0);
+    
+    gs_edge_list_destroy(edges);
+    gs_vertex_destroy(vertex);
+    gs_engine_destroy(engine);
+}
+
+// Test caching disabled behavior
+TEST(engine_cache_disabled_behavior) {
+    // Create engine with caching disabled (default)
+    GraphserverEngine* engine = gs_engine_create();
+    ASSERT_NOT_NULL(engine);
+    
+    gs_engine_register_provider(engine, "test_provider", mock_provider_simple, NULL);
+    
+    GraphserverVertex* vertex = create_test_vertex("disabled_test");
+    
+    // Expand vertex multiple times
+    for (int i = 0; i < 3; i++) {
+        GraphserverEdgeList* edges = gs_edge_list_create();
+        gs_edge_list_set_owns_edges(edges, true);
+        
+        GraphserverResult result = gs_engine_expand_vertex(engine, vertex, edges);
+        ASSERT_EQ(GS_SUCCESS, result);
+        ASSERT(gs_edge_list_get_count(edges) > 0);
+        
+        gs_edge_list_destroy(edges);
+    }
+    
+    // Verify cache statistics remain zero
+    GraphserverPlanStats stats;
+    GraphserverResult stats_result = gs_engine_get_stats(engine, &stats);
+    ASSERT_EQ(GS_SUCCESS, stats_result);
+    ASSERT_EQ(0U, stats.cache_hits);
+    ASSERT_EQ(0U, stats.cache_misses);
+    ASSERT_EQ(0U, stats.cache_puts);
+    // Providers should be called every time
+    ASSERT_EQ(3U, stats.providers_called);
+    
+    gs_vertex_destroy(vertex);
+    gs_engine_destroy(engine);
+}
+
+// Test mixed cache hit/miss scenario
+TEST(engine_mixed_cache_scenario) {
+    GraphserverEngineConfig config = gs_engine_get_default_config();
+    config.enable_edge_caching = true;
+    
+    GraphserverEngine* engine = gs_engine_create_with_config(&config);
+    ASSERT_NOT_NULL(engine);
+    
+    gs_engine_register_provider(engine, "test_provider", mock_provider_simple, NULL);
+    
+    GraphserverVertex* vertexA = create_test_vertex("vertex_A");
+    GraphserverVertex* vertexB = create_test_vertex("vertex_B");
+    
+    GraphserverEdgeList* edges = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(edges, true);
+    
+    // Expand vertex A (cache miss)
+    gs_engine_expand_vertex(engine, vertexA, edges);
+    GraphserverPlanStats stats;
+    GraphserverResult stats_result = gs_engine_get_stats(engine, &stats);
+    ASSERT_EQ(GS_SUCCESS, stats_result);
+    ASSERT_EQ(1U, stats.cache_misses);
+    ASSERT_EQ(0U, stats.cache_hits);
+    ASSERT_EQ(1U, stats.cache_puts);
+    
+    // Expand vertex B (cache miss)
+    gs_edge_list_clear(edges);
+    gs_engine_expand_vertex(engine, vertexB, edges);
+    stats_result = gs_engine_get_stats(engine, &stats);
+    ASSERT_EQ(GS_SUCCESS, stats_result);
+    ASSERT_EQ(2U, stats.cache_misses);
+    ASSERT_EQ(0U, stats.cache_hits);
+    ASSERT_EQ(2U, stats.cache_puts);
+    
+    // Expand vertex A again (cache hit)
+    gs_edge_list_clear(edges);
+    gs_engine_expand_vertex(engine, vertexA, edges);
+    stats_result = gs_engine_get_stats(engine, &stats);
+    ASSERT_EQ(GS_SUCCESS, stats_result);
+    ASSERT_EQ(2U, stats.cache_misses); // Still 2
+    ASSERT_EQ(1U, stats.cache_hits);   // Now 1
+    ASSERT_EQ(2U, stats.cache_puts);   // Still 2
+    
+    gs_edge_list_destroy(edges);
+    gs_vertex_destroy(vertexA);
+    gs_vertex_destroy(vertexB);
+    gs_engine_destroy(engine);
+}
+
 // Test utility functions
 TEST(utility_functions) {
     // Test version string
@@ -534,6 +714,10 @@ int main(void) {
     run_test_engine_error_conditions();
     run_test_engine_cache_configuration();
     run_test_engine_cache_lifecycle();
+    run_test_engine_cache_hit_performance();
+    run_test_engine_cache_miss_behavior();
+    run_test_engine_cache_disabled_behavior();
+    run_test_engine_mixed_cache_scenario();
     run_test_utility_functions();
     
     printf("\n=================================\n");
