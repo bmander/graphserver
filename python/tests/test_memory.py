@@ -80,11 +80,11 @@ def test_repeated_operations() -> None:
             engine = Engine()
             engine.register_provider(f"test_{i}", provider_func)
 
-            # Try planning (will fail with NotImplementedError, but shouldn't leak)
+            # Try planning (will fail with no path found, but shouldn't leak)
             try:
                 engine.plan(start={"x": i}, goal={"x": i + 1})
-            except NotImplementedError:
-                pass  # Expected in Phase 1
+            except (NotImplementedError, RuntimeError):
+                pass  # Expected - either Phase 1 (NotImplementedError) or Phase 2 (RuntimeError: no path)
 
         # Force cleanup
         gc.collect()
