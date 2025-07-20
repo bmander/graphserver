@@ -39,8 +39,6 @@ def test_provider_registration() -> None:
     try:
         import _graphserver
 
-        from graphserver import Edge, Vertex, VertexEdgePair
-
         def dummy_provider(vertex: Vertex) -> Sequence[VertexEdgePair]:
             return []
 
@@ -92,7 +90,7 @@ def test_plan_with_provider() -> None:
 def test_python_api() -> None:
     """Test Python wrapper layer."""
     try:
-        from graphserver import Edge, Engine, Vertex, VertexEdgePair
+        from graphserver import Edge, Engine, Vertex
 
         engine = Engine()
         assert engine is not None
@@ -142,7 +140,7 @@ def test_type_checking() -> None:
 def test_error_handling() -> None:
     """Test error handling in various scenarios."""
     try:
-        from graphserver import Engine, Vertex, VertexEdgePair
+        from graphserver import Engine, Vertex
 
         engine = Engine()
 
@@ -168,7 +166,7 @@ def test_error_handling() -> None:
 def test_data_conversion() -> None:
     """Test data conversion between Python and C."""
     try:
-        from graphserver import Edge, Engine, Vertex, VertexEdgePair
+        from graphserver import Edge, Engine, Vertex
 
         engine = Engine()
 

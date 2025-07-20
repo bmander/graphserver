@@ -91,6 +91,10 @@ class Vertex:
             return NotImplemented
         return self._data == other._data
 
+    def __hash__(self) -> int:
+        """Hash value for vertex based on its data."""
+        return hash(tuple(sorted(self._data.items())))
+
 
 class Edge:
     """Edge object representing a transition between vertices.
@@ -298,7 +302,7 @@ class PathResult:
         total = 0.0
         for path_edge in self._edges:
             cost = path_edge.edge.cost
-            if isinstance(cost, (int, float)):
+            if isinstance(cost, int | float):
                 total += float(cost)
             elif isinstance(cost, Sequence):
                 # For multi-objective costs, use first component
