@@ -15,7 +15,7 @@ import pytest
 pytest_plugins = []
 
 try:
-    from graphserver.providers.osm import OSMProvider
+    from graphserver.providers.osm import OSMNetworkProvider, OSMAccessProvider
     from graphserver.providers.osm.parser import OSMParser
     from graphserver.providers.osm.spatial import SpatialIndex, calculate_distance
     from graphserver.providers.osm.types import OSMNode, OSMWay, WalkingProfile
@@ -277,57 +277,24 @@ class TestOSMParser:
         sample_osm_file.unlink()
 
 
-class TestOSMProvider:
-    """Test OSM provider functionality."""
+class TestOSMNetworkProvider:
+    """Test OSM network provider functionality."""
 
-    def test_provider_creation(
+    def test_network_provider_creation(
         self, sample_osm_file: Path, walking_profile: WalkingProfile
     ) -> None:
-        """Test OSM provider creation and initialization."""
+        """Test OSM network provider creation and initialization."""
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
 
-        provider = OSMProvider(
+        provider = OSMNetworkProvider(
             sample_osm_file,
             walking_profile=walking_profile,
-            search_radius_m=200.0,
-            max_nearby_nodes=3,
         )
 
         assert provider.node_count > 0
         assert provider.way_count > 0
         assert provider.edge_count > 0
-        assert provider.search_radius_m == 200.0
-        assert provider.max_nearby_nodes == 3
-
-        # Clean up
-        sample_osm_file.unlink()
-
-    def test_coordinate_based_edges(self, sample_osm_file: Path) -> None:
-        """Test edge generation from geographic coordinates."""
-        if not OSM_AVAILABLE:
-            pytest.skip("OSM dependencies not available")
-
-        from graphserver import Vertex
-
-        provider = OSMProvider(sample_osm_file, search_radius_m=1000.0)
-
-        # Create vertex with coordinates near sample data
-        coord_vertex = Vertex({"lat": 47.6062, "lon": -122.3321})
-
-        # Generate edges
-        edges = provider(coord_vertex)
-
-        assert len(edges) > 0
-
-        # Check edge structure
-        for target_vertex, edge in edges:
-            assert "osm_node_id" in target_vertex
-            assert "lat" in target_vertex
-            assert "lon" in target_vertex
-            assert edge.cost > 0
-            assert "edge_type" in edge.metadata
-            assert edge.metadata["edge_type"] == "coordinate_to_node"
 
         # Clean up
         sample_osm_file.unlink()
@@ -339,7 +306,7 @@ class TestOSMProvider:
 
         from graphserver import Vertex
 
-        provider = OSMProvider(sample_osm_file)
+        provider = OSMNetworkProvider(sample_osm_file)
 
         # Create vertex with OSM node ID
         node_vertex = Vertex({"osm_node_id": 1})
@@ -362,31 +329,12 @@ class TestOSMProvider:
         # Clean up
         sample_osm_file.unlink()
 
-    def test_unknown_vertex_type(self, sample_osm_file: Path) -> None:
-        """Test handling of unknown vertex types."""
-        if not OSM_AVAILABLE:
-            pytest.skip("OSM dependencies not available")
-
-        from graphserver import Vertex
-
-        provider = OSMProvider(sample_osm_file)
-
-        # Create vertex with unknown structure
-        unknown_vertex = Vertex({"unknown_key": "unknown_value"})
-
-        # Should return empty edges
-        edges = provider(unknown_vertex)
-        assert len(edges) == 0
-
-        # Clean up
-        sample_osm_file.unlink()
-
     def test_utility_methods(self, sample_osm_file: Path) -> None:
-        """Test utility methods like find_nearest_node."""
+        """Test utility methods like get_node_by_id."""
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
 
-        provider = OSMProvider(sample_osm_file)
+        provider = OSMNetworkProvider(sample_osm_file)
 
         # Test get_node_by_id
         node_vertex = provider.get_node_by_id(1)
@@ -398,6 +346,73 @@ class TestOSMProvider:
         # Test non-existent node
         missing_vertex = provider.get_node_by_id(999)
         assert missing_vertex is None
+
+        # Clean up
+        sample_osm_file.unlink()
+
+
+class TestOSMAccessProvider:
+    """Test OSM access provider functionality."""
+
+    def test_coordinate_based_edges(self, sample_osm_file: Path) -> None:
+        """Test edge generation from geographic coordinates."""
+        if not OSM_AVAILABLE:
+            pytest.skip("OSM dependencies not available")
+
+        from graphserver import Vertex
+
+        provider = OSMAccessProvider(
+            sample_osm_file, 
+            search_radius_m=1000.0,
+            max_nearby_nodes=3,
+            build_index=True
+        )
+
+        # Create vertex with coordinates near but not exactly at sample data
+        coord_vertex = Vertex({"lat": 47.6063, "lon": -122.3322})
+
+        # Generate edges
+        edges = provider(coord_vertex)
+
+        assert len(edges) > 0
+
+        # Check edge structure
+        for target_vertex, edge in edges:
+            assert "osm_node_id" in target_vertex
+            assert "lat" in target_vertex
+            assert "lon" in target_vertex
+            assert edge.cost > 0
+            assert "edge_type" in edge.metadata
+            assert edge.metadata["edge_type"] == "coordinate_to_node"
+
+        # Clean up
+        sample_osm_file.unlink()
+
+    def test_unknown_vertex_type(self, sample_osm_file: Path) -> None:
+        """Test handling of unknown vertex types."""
+        if not OSM_AVAILABLE:
+            pytest.skip("OSM dependencies not available")
+
+        from graphserver import Vertex
+
+        provider = OSMAccessProvider(sample_osm_file, build_index=True)
+
+        # Create vertex with unknown structure
+        unknown_vertex = Vertex({"unknown_key": "unknown_value"})
+
+        # Should return empty edges
+        edges = provider(unknown_vertex)
+        assert len(edges) == 0
+
+        # Clean up
+        sample_osm_file.unlink()
+
+    def test_find_nearest_node(self, sample_osm_file: Path) -> None:
+        """Test find_nearest_node functionality."""
+        if not OSM_AVAILABLE:
+            pytest.skip("OSM dependencies not available")
+
+        provider = OSMAccessProvider(sample_osm_file, search_radius_m=1000.0, build_index=True)
 
         # Test find_nearest_node
         nearest = provider.find_nearest_node(47.6062, -122.3321)
@@ -423,19 +438,28 @@ class TestIntegrationWithGraphserver:
         try:
             from graphserver import Engine, Vertex
 
-            # Create engine and register OSM provider
+            # Create engine and register both OSM providers
             engine = Engine()
-            provider = OSMProvider(sample_osm_file, search_radius_m=1000.0)
-            engine.register_provider("osm", provider)
+            network_provider = OSMNetworkProvider(sample_osm_file)
+            access_provider = OSMAccessProvider(
+                parser=network_provider.parser,
+                search_radius_m=1000.0,
+                max_nearby_nodes=3,
+                build_index=True
+            )
+            
+            engine.register_provider("osm_network", network_provider)
+            engine.register_provider("osm_access", access_provider)
 
             # Check provider registration
-            assert "osm" in engine.providers
+            assert "osm_network" in engine.providers
+            assert "osm_access" in engine.providers
 
             # Test planning with coordinates
             start = Vertex({"lat": 47.6062, "lon": -122.3321})
             goal = Vertex({"lat": 47.6082, "lon": -122.3301})
 
-            # This should work with the OSM provider
+            # This should work with the OSM providers
             # Note: Actual pathfinding success depends on connectivity in sample data
             try:
                 result = engine.plan(start=start, goal=goal)
