@@ -25,7 +25,7 @@ from pathlib import Path
 
 try:
     from graphserver import Engine, Vertex
-    from graphserver.providers.osm import OSMProvider
+    from graphserver.providers.osm import OSMNetworkProvider, OSMAccessProvider
     from graphserver.providers.osm.types import WalkingProfile
 except ImportError as e:
     print(f"Error importing required modules: {e}")
@@ -113,11 +113,18 @@ def main() -> None:
         max_detour_factor=1.5,  # Allow up to 50% detour
     )
 
-    # Initialize OSM provider
+    # Initialize OSM providers
     start_time = time.time()
     try:
-        osm_provider = OSMProvider(
+        # Create network provider for OSM-to-OSM navigation
+        network_provider = OSMNetworkProvider(
             osm_file,
+            walking_profile=walking_profile,
+        )
+        
+        # Create access provider for coordinate-to-OSM connections (shares parser)
+        access_provider = OSMAccessProvider(
+            parser=network_provider.parser,
             walking_profile=walking_profile,
             search_radius_m=150.0,  # Look for nodes within 150m of coordinates
             max_nearby_nodes=5,  # Consider up to 5 nearby nodes
@@ -130,17 +137,21 @@ def main() -> None:
     load_time = time.time() - start_time
     print(f"OSM data loaded in {load_time:.2f} seconds")
     print(
-        f"Network: {osm_provider.node_count} nodes, {osm_provider.way_count} ways, {osm_provider.edge_count} edges"
+        f"Network: {network_provider.node_count} nodes, {network_provider.way_count} ways, {network_provider.edge_count} edges"
     )
 
     # Create and configure the planning engine
     engine = Engine()
-    engine.register_provider("osm", osm_provider)
+    engine.register_provider("osm_network", network_provider)
+    engine.register_provider("osm_access", access_provider)
 
-    print("\\nOSM Provider registered with Graphserver engine")
-    print("Provider supports two vertex types:")
-    print('  1. Geographic coordinates: {"lat": 47.6062, "lon": -122.3321}')
-    print('  2. OSM node IDs: {"osm_node_id": 12345}')
+    print("\\nOSM Providers registered with Graphserver engine")
+    print("Two providers handle different routing aspects:")
+    print('  1. osm_access: Connects coordinates to OSM network')
+    print('  2. osm_network: Navigates between OSM nodes via streets')
+    print("Vertex types:")
+    print('  - Geographic coordinates: {"lat": 47.6062, "lon": -122.3321}')
+    print('  - OSM node IDs: {"osm_node_id": 12345}')
 
     # Get coordinates for demonstration
     if start_coords is None:
@@ -158,7 +169,7 @@ def main() -> None:
     print("Example 1: Finding nearest OSM node to coordinates")
     print("=" * 60)
 
-    nearest_node = osm_provider.find_nearest_node(example_lat, example_lon)
+    nearest_node = access_provider.find_nearest_node(example_lat, example_lon)
     if nearest_node:
         print(
             f"Nearest node to ({example_lat}, {example_lon}): {nearest_node['osm_node_id']}"
@@ -174,11 +185,11 @@ def main() -> None:
 
     # Example 2: Generate edges from coordinates
     print("\\n" + "=" * 60)
-    print("Example 2: Generating edges from geographic coordinates")
+    print("Example 2: Generating access edges from geographic coordinates")
     print("=" * 60)
 
     coord_vertex = Vertex({"lat": example_lat, "lon": example_lon})
-    edges_from_coords = osm_provider(coord_vertex)
+    edges_from_coords = access_provider(coord_vertex)
 
     print(f"Found {len(edges_from_coords)} edges from coordinates:")
     for i, (target_vertex, edge) in enumerate(edges_from_coords[:3]):  # Show first 3
@@ -193,11 +204,11 @@ def main() -> None:
     # Example 3: Generate edges from OSM node ID
     if nearest_node:
         print("\\n" + "=" * 60)
-        print("Example 3: Generating edges from OSM node ID")
+        print("Example 3: Generating network edges from OSM node ID")
         print("=" * 60)
 
         node_vertex = Vertex({"osm_node_id": nearest_node["osm_node_id"]})
-        edges_from_node = osm_provider(node_vertex)
+        edges_from_node = network_provider(node_vertex)
 
         print(
             f"Found {len(edges_from_node)} edges from node {nearest_node['osm_node_id']}:"
@@ -212,9 +223,9 @@ def main() -> None:
         if len(edges_from_node) > 3:
             print(f"  ... and {len(edges_from_node) - 3} more edges")
 
-    # Example 4: Pathfinding between coordinates
+    # Example 4: Pathfinding between coordinates using both providers
     print("\\n" + "=" * 60)
-    print("Example 4: Pathfinding between coordinates")
+    print("Example 4: Pathfinding between coordinates (using both providers)")
     print("=" * 60)
 
     # Get goal coordinates for pathfinding
@@ -231,6 +242,10 @@ def main() -> None:
     print(
         f"Planning route from ({example_lat}, {example_lon}) to ({goal_lat}, {goal_lon})"
     )
+    print("Route will use:")
+    print("  1. osm_access: coordinate → OSM network (onramp)")
+    print("  2. osm_network: navigation between OSM nodes")
+    print("  3. osm_access: OSM network → coordinate (offramp)")
 
     try:
         planning_start = time.time()
@@ -269,7 +284,8 @@ def main() -> None:
     print("- Try with your own OSM data from https://www.openstreetmap.org/export")
     print("- Experiment with different WalkingProfile settings")
     print("- Adjust search_radius_m and max_nearby_nodes for your use case")
-    print("- Use the provider in your own pathfinding applications")
+    print("- Register both providers in your own pathfinding applications")
+    print("- Note: Both osm_network and osm_access providers are required for complete functionality")
 
 
 if __name__ == "__main__":

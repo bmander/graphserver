@@ -7,13 +7,13 @@ and walking profiles.
 """
 
 from graphserver import Engine, Vertex
-from graphserver.providers.osm import OSMProvider
+from graphserver.providers.osm import OSMNetworkProvider, OSMAccessProvider
 from graphserver.providers.osm.types import WalkingProfile
 
 
 def main():
     """Demonstrate OSM provider functionality."""
-    print("🗺️  OSM Provider Demonstration")
+    print("🗺️  OSM Providers Demonstration")
     print("=" * 50)
 
     # Check if we have OSM data
@@ -34,9 +34,14 @@ def main():
         max_detour_factor=1.5,
     )
 
-    # Initialize provider with spatial indexing
-    provider = OSMProvider(
+    # Initialize providers with spatial indexing
+    network_provider = OSMNetworkProvider(
         "uw_campus.osm",
+        walking_profile=campus_profile,
+    )
+    
+    access_provider = OSMAccessProvider(
+        parser=network_provider.parser,
         walking_profile=campus_profile,
         search_radius_m=100.0,
         max_nearby_nodes=5,
@@ -44,7 +49,7 @@ def main():
     )
 
     print(
-        f"✅ Loaded {provider.node_count:,} nodes, {provider.way_count:,} ways, {provider.edge_count:,} edges"
+        f"✅ Loaded {network_provider.node_count:,} nodes, {network_provider.way_count:,} ways, {network_provider.edge_count:,} edges"
     )
 
     # Demonstrate spatial queries
@@ -55,7 +60,7 @@ def main():
     test_lat, test_lon = 47.65906510597771, -122.3043737809855
 
     # Find nearest node
-    nearest = provider.find_nearest_node(test_lat, test_lon)
+    nearest = access_provider.find_nearest_node(test_lat, test_lon)
     if nearest:
         print(f"📍 Nearest node to ({test_lat}, {test_lon}):")
         print(f"   Node ID: {nearest['osm_node_id']}")
@@ -68,12 +73,12 @@ def main():
         if tags:
             print(f"   Tags: {tags}")
 
-    # Demonstrate edge generation from coordinates
-    print("\n🔗 Edge Generation from Coordinates")
-    print("-" * 40)
+    # Demonstrate edge generation from coordinates  
+    print("\n🔗 Access Edge Generation from Coordinates")
+    print("-" * 45)
 
     coord_vertex = Vertex({"lat": test_lat, "lon": test_lon})
-    edges = provider(coord_vertex)
+    edges = access_provider(coord_vertex)
 
     print(f"Generated {len(edges)} edges from coordinates:")
     for i, (target, edge) in enumerate(edges):
@@ -84,11 +89,11 @@ def main():
 
     # Demonstrate edge generation from node ID
     if nearest:
-        print(f"\n🚶 Edge Generation from Node {nearest['osm_node_id']}")
-        print("-" * 40)
+        print(f"\n🚶 Network Edge Generation from Node {nearest['osm_node_id']}")
+        print("-" * 50)
 
         node_vertex = Vertex({"osm_node_id": nearest["osm_node_id"]})
-        node_edges = provider(node_vertex)
+        node_edges = network_provider(node_vertex)
 
         print(
             f"Found {len(node_edges)} connections from node {nearest['osm_node_id']}:"
@@ -111,10 +116,13 @@ def main():
     print("-" * 35)
 
     engine = Engine()
-    engine.register_provider("osm", provider)
+    engine.register_provider("osm_network", network_provider)
+    engine.register_provider("osm_access", access_provider)
 
-    print(f"✅ Provider registered with engine")
+    print(f"✅ Both providers registered with engine")
     print(f"   Available providers: {list(engine.providers.keys())}")
+    print(f"   osm_network: Handles OSM-to-OSM navigation")
+    print(f"   osm_access: Handles coordinate-to-OSM connections")
 
     # Test pathfinding (may not find path depending on connectivity)
     print("\n🛤️  Pathfinding Test")
@@ -147,7 +155,7 @@ def main():
 
     # Analyze highway types
     highway_stats = {}
-    for way in provider.parser.ways.values():
+    for way in network_provider.parser.ways.values():
         highway = way.tags.get("highway", "unknown")
         highway_stats[highway] = highway_stats.get(highway, 0) + 1
 
@@ -155,17 +163,17 @@ def main():
     for highway, count in sorted(
         highway_stats.items(), key=lambda x: x[1], reverse=True
     ):
-        percentage = (count / provider.way_count) * 100
+        percentage = (count / network_provider.way_count) * 100
         print(f"  {highway:15} {count:4d} ways ({percentage:5.1f}%)")
 
-    print(f"\n🎉 OSM Provider Demo Complete!")
-    print(f"   Total walkable network: {provider.edge_count:,} edges")
+    print(f"\n🎉 OSM Providers Demo Complete!")
+    print(f"   Total walkable network: {network_provider.edge_count:,} edges")
     print(
-        f"   Spatial index: {len(provider.spatial_index):,} indexed nodes"
-        if provider.spatial_index
+        f"   Spatial index: {len(access_provider.spatial_index):,} indexed nodes"
+        if access_provider.spatial_index
         else "   No spatial index"
     )
-    print(f"   Provider ready for routing applications!")
+    print(f"   Both providers ready for coordinate-to-coordinate routing!")
 
 
 if __name__ == "__main__":
