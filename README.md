@@ -6,7 +6,7 @@ The core innovation is dynamic, on-the-fly graph expansion through **Edge Provid
 
 ## Implementation
 
-The system is built around a C core library for maximum performance and portability, with planned language bindings for Python, Kotlin, and Swift. Key components include:
+The system is built around a C core library for maximum performance and portability, with complete Python bindings and planned language bindings for Kotlin and Swift. Key components include:
 
 - **GraphserverVertex**: State representation using key-value pairs with efficient canonical form
 - **GraphserverEdge**: Multi-objective transitions with metadata support  
@@ -14,7 +14,7 @@ The system is built around a C core library for maximum performance and portabil
 - **Edge Providers**: Function-pointer based plugins that define domain-specific transition rules
 - **Planners**: Algorithms like Dijkstra and A* that search for optimal paths
 
-**Current Status**: M1 Stage 4 complete - core library with full integration testing and end-to-end scenarios.
+**Current Status**: M1 Stage 4 complete - core library with full integration testing. M2 Phase 2 complete - Python bindings with end-to-end provider integration working.
 
 ## Building
 
@@ -86,7 +86,7 @@ Run Valgrind analysis to detect memory leaks:
 sudo apt-get install valgrind
 
 # Run automated memory analysis
-../scripts/valgrind_test.sh
+../../scripts/valgrind_test.sh
 ```
 
 This script runs all test executables under Valgrind with comprehensive memory checking options, generating detailed reports for each test. Expected output: `All tests passed Valgrind analysis!`
@@ -152,3 +152,165 @@ gs_cleanup();
 Run `./simple_routing` in the examples directory for a complete working demonstration.
 
 See `DESIGN.md` for complete architecture documentation and `PLAN_M1.md` for current implementation status.
+
+## Python Library
+
+**Status**: Phase 2 Complete ✅ - Full Python provider integration with end-to-end pathfinding working!
+
+The Python library provides a high-level interface to the Graphserver planning engine with complete integration for writing custom edge providers in Python.
+
+### Installation
+
+```bash
+cd python
+pip install -e .
+```
+
+Requirements:
+- Python 3.8+
+- C99-compatible compiler for building the extension
+- Core library dependencies (built automatically)
+
+### Building from Source
+
+The Python library includes a C extension that automatically builds the core library:
+
+```bash
+cd python
+python -m pip install build
+python -m build
+pip install dist/graphserver-*.whl
+```
+
+### Testing
+
+Run the complete test suite:
+```bash
+cd python
+python -m pytest tests/ -v
+```
+
+Run specific test categories:
+```bash
+# C extension functionality
+python -m pytest tests/test_extension.py -v
+
+# Python API integration  
+python -m pytest tests/test_core.py -v
+
+# Type checking validation
+python -m pytest tests/test_types.py -v
+```
+
+### Example Usage
+
+```python
+from graphserver import Engine
+
+# Create planning engine
+engine = Engine()
+
+# Define a custom edge provider in Python
+def grid_world_provider(vertex):
+    """2D grid world with simple movement rules."""
+    x, y = vertex.get('x', 0), vertex.get('y', 0)
+    edges = []
+    
+    # Can move right
+    if x < 10:
+        edges.append({
+            'target': {'x': x + 1, 'y': y},
+            'cost': 1.0,
+            'metadata': {'direction': 'east'}
+        })
+    
+    # Can move up
+    if y < 10:
+        edges.append({
+            'target': {'x': x, 'y': y + 1},
+            'cost': 1.0,
+            'metadata': {'direction': 'north'}
+        })
+    
+    return edges
+
+# Register the provider
+engine.register_provider("grid", grid_world_provider)
+
+# Plan a path
+result = engine.plan(
+    start={'x': 0, 'y': 0},
+    goal={'x': 3, 'y': 2}
+)
+
+print(f"Found path with {len(result)} steps")
+print(f"Total cost: {sum(edge['cost'] for edge in result)}")
+```
+
+### Advanced Features
+
+**Complex Data Types**: Full support for Python data types in vertices:
+```python
+# Rich vertex data with multiple types
+start_vertex = {
+    'x': 0, 'y': 0,           # Coordinates (int)
+    'elevation': 125.5,        # Elevation (float)  
+    'name': 'start_point',     # Labels (string)
+    'accessible': True,        # Flags (bool)
+    'equipment': [1, 2, 3]     # Lists (converted to string representation)
+}
+```
+
+**Multi-Objective Costs**: Support for multiple cost dimensions:
+```python
+def transport_provider(vertex):
+    return [{
+        'target': {'station': 'downtown'},
+        'cost': [15.0, 5.50],  # [time_minutes, fare_dollars]
+        'metadata': {'mode': 'subway', 'line': 'red'}
+    }]
+```
+
+**Provider Metadata**: Rich edge metadata for analysis:
+```python
+def road_provider(vertex):
+    return [{
+        'target': {'intersection': 'main_st'},
+        'cost': 2.5,
+        'metadata': {
+            'road_type': 'residential',
+            'speed_limit': 25,
+            'traffic_level': 'light'
+        }
+    }]
+```
+
+### Demo Application
+
+Run the comprehensive demo to see the full system in action:
+```bash
+python phase2_demo.py
+```
+
+This demonstrates:
+- Engine creation and provider registration
+- Complex data type conversion
+- Multi-step pathfinding with optimal results
+- Provider functions called multiple times during search
+- Cost calculation and path analysis
+
+Expected output: Successful pathfinding from (0,0) to (2,1) with optimal 3-step path and total cost 3.0.
+
+### Known Limitations
+
+- Target vertex data in path results is temporarily simplified due to memory management complexity
+- All core functionality (planning, providers, costs) works perfectly
+- Can be enhanced in future iterations if full vertex data access is needed
+
+### Type Safety
+
+The library includes full type hints and supports static analysis:
+```bash
+cd python  
+mypy src/graphserver --strict
+```
