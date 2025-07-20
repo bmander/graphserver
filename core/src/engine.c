@@ -3,6 +3,7 @@
 #include "../include/gs_vertex.h"
 #include "../include/gs_edge.h"
 #include "../include/gs_planner_internal.h"
+#include "../include/gs_cache.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -24,6 +25,9 @@ struct GraphserverEngine {
     size_t provider_capacity;
     
     GraphserverEngineConfig config;
+    
+    // Edge cache for vertex expansion acceleration
+    EdgeCache* edge_cache;
     
     // Statistics
     GraphserverPlanStats last_plan_stats;
@@ -98,6 +102,7 @@ GraphserverEngineConfig gs_engine_get_default_config(void) {
     config.default_timeout_seconds = 30.0; // 30 seconds
     config.enable_concurrent_expansion = false; // Not implemented yet
     config.max_worker_threads = 4;
+    config.enable_edge_caching = false; // Disabled by default
     
     return config;
 }
@@ -119,6 +124,17 @@ GraphserverEngine* gs_engine_create_with_config(const GraphserverEngineConfig* c
     engine->provider_capacity = 0;
     engine->config = *config;
     
+    // Initialize edge cache if enabled
+    if (config->enable_edge_caching) {
+        engine->edge_cache = edge_cache_create();
+        if (!engine->edge_cache) {
+            free(engine);
+            return NULL;
+        }
+    } else {
+        engine->edge_cache = NULL;
+    }
+    
     // Initialize stats
     memset(&engine->last_plan_stats, 0, sizeof(GraphserverPlanStats));
     
@@ -131,6 +147,11 @@ void gs_engine_destroy(GraphserverEngine* engine) {
     // Free provider names
     for (size_t i = 0; i < engine->provider_count; i++) {
         free(engine->providers[i].name);
+    }
+    
+    // Destroy edge cache
+    if (engine->edge_cache) {
+        edge_cache_destroy(engine->edge_cache);
     }
     
     free(engine->providers);

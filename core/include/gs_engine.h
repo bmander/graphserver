@@ -25,6 +25,7 @@ extern "C" {
 typedef struct GraphserverEngine GraphserverEngine;
 typedef struct GraphserverPath GraphserverPath;
 typedef struct GraphserverPathList GraphserverPathList;
+typedef struct EdgeCache EdgeCache;
 
 /**
  * Engine configuration options
@@ -35,6 +36,7 @@ typedef struct {
     double default_timeout_seconds; // Default timeout for planning operations
     bool enable_concurrent_expansion; // Enable concurrent edge provider execution
     uint32_t max_worker_threads;    // Maximum worker threads for concurrent expansion
+    bool enable_edge_caching;       // Enable edge caching for vertex expansion
 } GraphserverEngineConfig;
 
 /**

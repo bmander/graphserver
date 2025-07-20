@@ -452,6 +452,52 @@ TEST(engine_error_conditions) {
     gs_engine_destroy(engine);
 }
 
+// Test edge cache configuration
+TEST(engine_cache_configuration) {
+    // Test engine with caching disabled (default)
+    GraphserverEngine* engine1 = gs_engine_create();
+    ASSERT_NOT_NULL(engine1);
+    
+    GraphserverEngineConfig config1;
+    GraphserverResult result = gs_engine_get_config(engine1, &config1);
+    ASSERT_EQ(GS_SUCCESS, result);
+    ASSERT(!config1.enable_edge_caching); // Should be disabled by default
+    
+    gs_engine_destroy(engine1);
+    
+    // Test engine with caching enabled
+    GraphserverEngineConfig config2 = gs_engine_get_default_config();
+    config2.enable_edge_caching = true;
+    
+    GraphserverEngine* engine2 = gs_engine_create_with_config(&config2);
+    ASSERT_NOT_NULL(engine2);
+    
+    GraphserverEngineConfig retrieved_config;
+    result = gs_engine_get_config(engine2, &retrieved_config);
+    ASSERT_EQ(GS_SUCCESS, result);
+    ASSERT(retrieved_config.enable_edge_caching); // Should be enabled
+    
+    gs_engine_destroy(engine2);
+}
+
+// Test cache creation and destruction
+TEST(engine_cache_lifecycle) {
+    GraphserverEngineConfig config = gs_engine_get_default_config();
+    config.enable_edge_caching = true;
+    
+    GraphserverEngine* engine = gs_engine_create_with_config(&config);
+    ASSERT_NOT_NULL(engine);
+    
+    // Engine should be created successfully with cache enabled
+    GraphserverEngineConfig retrieved_config;
+    GraphserverResult result = gs_engine_get_config(engine, &retrieved_config);
+    ASSERT_EQ(GS_SUCCESS, result);
+    ASSERT(retrieved_config.enable_edge_caching);
+    
+    // Engine destruction should clean up cache without errors
+    gs_engine_destroy(engine);
+}
+
 // Test utility functions
 TEST(utility_functions) {
     // Test version string
@@ -486,6 +532,8 @@ int main(void) {
     run_test_engine_failing_provider_expansion();
     run_test_engine_basic_planning();
     run_test_engine_error_conditions();
+    run_test_engine_cache_configuration();
+    run_test_engine_cache_lifecycle();
     run_test_utility_functions();
     
     printf("\n=================================\n");

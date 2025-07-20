@@ -21,6 +21,7 @@ set(CORE_SOURCES
     src/edge.c
     src/memory.c
     src/hash_table.c
+    src/cache.c
     src/engine.c
     src/priority_queue.c
     src/planner_dijkstra.c
