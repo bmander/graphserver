@@ -15,7 +15,7 @@ import pytest
 pytest_plugins = []
 
 try:
-    from graphserver.providers.osm import OSMNetworkProvider, OSMAccessProvider
+    from graphserver.providers.osm import OSMAccessProvider, OSMNetworkProvider
     from graphserver.providers.osm.parser import OSMParser
     from graphserver.providers.osm.spatial import SpatialIndex, calculate_distance
     from graphserver.providers.osm.types import OSMNode, OSMWay, WalkingProfile
@@ -362,7 +362,7 @@ class TestOSMAccessProvider:
         from graphserver import Vertex
 
         provider = OSMAccessProvider(
-            sample_osm_file, 
+            sample_osm_file,
             search_radius_m=1000.0,
             max_nearby_nodes=3,
             build_index=True
@@ -412,7 +412,9 @@ class TestOSMAccessProvider:
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
 
-        provider = OSMAccessProvider(sample_osm_file, search_radius_m=1000.0, build_index=True)
+        provider = OSMAccessProvider(
+            sample_osm_file, search_radius_m=1000.0, build_index=True
+        )
 
         # Test find_nearest_node
         nearest = provider.find_nearest_node(47.6062, -122.3321)
@@ -447,7 +449,7 @@ class TestIntegrationWithGraphserver:
                 max_nearby_nodes=3,
                 build_index=True
             )
-            
+
             engine.register_provider("osm_network", network_provider)
             engine.register_provider("osm_access", access_provider)
 

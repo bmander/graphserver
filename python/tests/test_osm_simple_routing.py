@@ -133,7 +133,7 @@ class TestSimpleOSMRouting:
     def test_access_provider_onramps(
         self, simple_osm_file: Path, simple_walking_profile: WalkingProfile
     ) -> None:
-        """Test that the access provider generates onramps from coordinates to OSM nodes."""
+        """Test access provider generates onramps from coordinates to OSM nodes."""
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
 
@@ -204,7 +204,7 @@ class TestSimpleOSMRouting:
     def test_coordinate_to_coordinate_routing_setup(
         self, simple_osm_file: Path, simple_walking_profile: WalkingProfile
     ) -> None:
-        """Test the setup for coordinate-to-coordinate routing (without offramps yet)."""
+        """Test setup for coordinate-to-coordinate routing (without offramps yet)."""
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
 
@@ -248,7 +248,7 @@ class TestSimpleOSMRouting:
         assert len(edges_1_to_2) > 0, "Should find edges from node 1 to node 2"
         assert len(edges_2_to_1) > 0, "Should find edges from node 2 to node 1"
 
-        # Note: Actual coordinate-to-coordinate routing will require offramp implementation
+        # Note: coordinate-to-coordinate routing will require offramp implementation
 
         # Clean up
         simple_osm_file.unlink()
@@ -291,9 +291,10 @@ class TestSimpleOSMRouting:
         # 2. Verify that goal coordinate gets stored as target
         goal_onramps = access_provider(goal_coords)
         assert len(goal_onramps) > 0, "Should generate onramps from goal coordinates"
+        # Check that target coordinates are stored (accessing for test purposes)
         assert len(access_provider._target_coordinates) >= 1, (
             "Should store target coordinates"
-        )
+        )  # noqa: SLF001
 
         # 3. Verify offramps work - test with OSM nodes
         node1_vertex = Vertex({"osm_node_id": 1})
@@ -318,9 +319,7 @@ class TestSimpleOSMRouting:
             # For now, we accept either success or failure since the C extension
             # pathfinding may not be fully implemented
             if len(result) > 0:
-                print(
-                    f"✅ Successful coordinate-to-coordinate routing: {len(result)} edges"
-                )
+                # Successful coordinate-to-coordinate routing
 
                 # Verify the path structure
                 for i, path_edge in enumerate(result):
@@ -332,10 +331,11 @@ class TestSimpleOSMRouting:
                         f"Path edge {i} should have cost"
                     )
 
-        except (RuntimeError, NotImplementedError) as e:
+        except (RuntimeError, NotImplementedError):
             # Planning may fail if C extension pathfinding is not fully implemented
             # This is expected in the current state
-            print(f"⚠️  Planning failed as expected: {e}")
+            # Planning failed as expected
+            pass
 
         # Clean up
         access_provider.clear_target_coordinates()

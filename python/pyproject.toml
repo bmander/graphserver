@@ -58,7 +58,10 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101", "PLR2004", "PLC0415", "ARG001"]
+"tests/*" = ["S101", "PLR2004", "PLC0415", "ARG001", "T201", "SLF001", "E501"]
+"debug_*.py" = ["T201", "SLF001", "E501", "EXE001", "BLE001"]
+"minimal_*.py" = ["T201", "SLF001", "E501", "EXE001", "BLE001"]
+"examples/*" = ["T201", "S310", "PTH123", "EXE001", "BLE001", "E501", "C901", "PLR0912", "PLR0915", "PTH110"]
 
 [tool.black]
 target-version = ["py312"]
