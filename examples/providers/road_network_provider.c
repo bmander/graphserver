@@ -4,6 +4,10 @@
 #include <math.h>
 #include <time.h>
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE  // For strdup
+#endif
+
 /**
  * @file road_network_provider.c
  * @brief Implementation of road network provider with traffic simulation
@@ -52,7 +56,15 @@ RoadNetwork* road_network_create_example(const char* vehicle_type) {
     memcpy(network->segments, example_segments, sizeof(RoadSegment) * network->segment_count);
     
     // Set vehicle-specific parameters
-    network->vehicle_type = strdup(vehicle_type);
+    size_t len = strlen(vehicle_type) + 1;
+    char* type_copy = malloc(len);
+    if (!type_copy) {
+        free(network->segments);
+        free(network);
+        return NULL;
+    }
+    strcpy(type_copy, vehicle_type);
+    network->vehicle_type = type_copy;
     
     if (strcmp(vehicle_type, "car") == 0) {
         network->max_speed_kmh = 120.0;

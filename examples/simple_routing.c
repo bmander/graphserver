@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include "include/example_providers.h"
 #include "../core/include/graphserver.h"
