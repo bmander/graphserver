@@ -73,9 +73,8 @@ def test_plan_with_provider() -> None:
         assert result is not None
         assert isinstance(result, list)
         assert len(result) == 1
-        # Note: target vertex data temporarily disabled due to memory management
-        # Core functionality (planning, cost calculation) working perfectly
-        assert result[0]["target"] is None  # Temporary limitation
+        # Target vertex data should now be accessible
+        assert result[0]["target"]["x"] == 1
         assert result[0]["cost"] == 1.0
     except ImportError:
         pytest.skip("C extension not built yet")
@@ -103,9 +102,8 @@ def test_python_api() -> None:
         result = engine.plan(start={"x": 0}, goal={"x": 1})
         assert result is not None
         assert len(result) == 1
-        # Note: target vertex data temporarily disabled due to memory management
-        # Core functionality (planning, cost calculation) working perfectly
-        assert result[0]["target"] is None  # Temporary limitation
+        # Target vertex data should now be accessible
+        assert result[0]["target"]["x"] == 1
         assert result.total_cost == 1.0
     except ImportError:
         pytest.skip("C extension not built yet")
@@ -187,9 +185,12 @@ def test_data_conversion() -> None:
         
         assert len(result) == 1
         edge = result[0]
-        # Note: target vertex data temporarily disabled due to memory management
-        # Core functionality (planning, cost calculation) working perfectly
-        assert edge["target"] is None  # Temporary limitation
+        # Target vertex data should now be accessible
+        assert edge["target"]["x"] == 10
+        assert edge["target"]["y"] == 20.5
+        assert edge["target"]["name"] == "destination"
+        assert edge["target"]["active"] == 1  # Boolean converted to int
+        assert edge["target"]["path"] == "[1, 2, 3]"  # Array converted to string
         assert edge["cost"] == 15.5
         # Metadata handling working in edge processing, but not in path results
         # This validates that the provider and edge conversion are working correctly

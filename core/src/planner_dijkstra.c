@@ -197,11 +197,23 @@ static GraphserverResult reconstruct_path(
         
         // Create edge from parent to current
         double edge_cost = current->cost - parent_node->cost;
-        GraphserverEdge* edge = gs_edge_create(current->vertex, &edge_cost, 1);
-        if (!edge) {
+        
+        // Clone the vertex to ensure data persistence after cleanup
+        GraphserverVertex* target_vertex_copy = gs_vertex_clone(current->vertex);
+        if (!target_vertex_copy) {
             gs_path_destroy(path);
             return GS_ERROR_OUT_OF_MEMORY;
         }
+        
+        GraphserverEdge* edge = gs_edge_create(target_vertex_copy, &edge_cost, 1);
+        if (!edge) {
+            gs_vertex_destroy(target_vertex_copy);
+            gs_path_destroy(path);
+            return GS_ERROR_OUT_OF_MEMORY;
+        }
+        
+        // Set the edge to own the cloned vertex so it persists after path creation
+        gs_edge_set_owns_target_vertex(edge, true);
         
         path->edges[i] = edge;
         current = parent_node;

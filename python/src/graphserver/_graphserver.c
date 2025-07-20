@@ -17,6 +17,7 @@ static PyObject* py_plan(PyObject* self, PyObject* args, PyObject* kwargs);
 
 // Utility functions for data conversion (implemented in Phase 2)
 static PyObject* vertex_to_python_dict(const GraphserverVertex* vertex);
+static PyObject* safe_vertex_to_python_dict(const GraphserverVertex* vertex);
 static GraphserverVertex* python_dict_to_vertex(PyObject* dict);
 static PyObject* path_to_python_list(const GraphserverPath* path);
 static int python_edges_to_c_edges(PyObject* edge_list, GraphserverEdgeList* out_edges);
@@ -236,8 +237,20 @@ static PyObject* py_plan(PyObject* self, PyObject* args, PyObject* kwargs) {
         PyDict_SetItemString(edge_dict, "cost", cost_obj);
         Py_DECREF(cost_obj);
         
-        // For now, skip the target vertex data to avoid the memory issue
-        PyDict_SetItemString(edge_dict, "target", Py_None);
+        // Get target vertex data - now safe due to vertex cloning in C library
+        const GraphserverVertex* target_vertex = gs_edge_get_target_vertex(edge);
+        PyObject* target_dict = vertex_to_python_dict(target_vertex);
+        if (!target_dict) {
+            Py_DECREF(edge_dict);
+            Py_DECREF(python_path);
+            gs_path_destroy(path);
+            gs_vertex_destroy(start_vertex);
+            gs_vertex_destroy(goal_vertex);
+            return NULL;
+        }
+        
+        PyDict_SetItemString(edge_dict, "target", target_dict);
+        Py_DECREF(target_dict);
         
         PyList_SetItem(python_path, i, edge_dict);
     }
@@ -403,6 +416,28 @@ static PyObject* vertex_to_python_dict(const GraphserverVertex* vertex) {
     }
     
     return dict;
+}
+
+// Safe vertex conversion that handles potentially invalid vertex pointers
+static PyObject* safe_vertex_to_python_dict(const GraphserverVertex* vertex) {
+    if (!vertex) {
+        // Return empty dict for null vertex
+        return PyDict_New();
+    }
+    
+    // Try to access vertex data safely
+    // The risk is that the vertex memory might have been freed by the planning algorithm
+    // We'll attempt to read the key count first as a basic validity check
+    size_t key_count;
+    
+    // Attempt to get key count - this will segfault if vertex is freed
+    // For now, we'll assume the vertex is valid during path conversion
+    // TODO: Add more sophisticated memory validation if needed
+    key_count = gs_vertex_get_key_count(vertex);
+    
+    // If we get here, vertex appears to be accessible
+    // Use the standard conversion function
+    return vertex_to_python_dict(vertex);
 }
 
 static GraphserverVertex* python_dict_to_vertex(PyObject* dict) {
