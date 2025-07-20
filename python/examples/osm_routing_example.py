@@ -9,7 +9,7 @@ Requirements:
 
 Usage:
     python osm_routing_example.py <osm_file> [start_lat,start_lon] [end_lat,end_lon]
-    
+
     If start/end coordinates are not provided, you'll be prompted to enter them interactively.
 
 Examples:
@@ -35,21 +35,21 @@ except ImportError as e:
 
 def get_coordinates(prompt: str) -> tuple[float, float]:
     """Get lat,lon coordinates from user input.
-    
+
     Args:
         prompt: Prompt to show the user
-        
+
     Returns:
         Tuple of (latitude, longitude)
     """
     while True:
         try:
             coord_input = input(f"{prompt} (lat,lon): ").strip()
-            if ',' in coord_input:
-                lat_str, lon_str = coord_input.split(',', 1)
+            if "," in coord_input:
+                lat_str, lon_str = coord_input.split(",", 1)
                 lat = float(lat_str.strip())
                 lon = float(lon_str.strip())
-                
+
                 # Basic validation
                 if not (-90 <= lat <= 90):
                     print(f"Invalid latitude: {lat} (must be between -90 and 90)")
@@ -57,7 +57,7 @@ def get_coordinates(prompt: str) -> tuple[float, float]:
                 if not (-180 <= lon <= 180):
                     print(f"Invalid longitude: {lon} (must be between -180 and 180)")
                     continue
-                    
+
                 return lat, lon
             else:
                 print("Please enter coordinates as: lat,lon (e.g., 47.6540,-122.3100)")
@@ -71,7 +71,9 @@ def get_coordinates(prompt: str) -> tuple[float, float]:
 def main() -> None:
     """Main example function."""
     if len(sys.argv) < 2:
-        print("Usage: python osm_routing_example.py <osm_file> [start_lat,start_lon] [end_lat,end_lon]")
+        print(
+            "Usage: python osm_routing_example.py <osm_file> [start_lat,start_lon] [end_lat,end_lon]"
+        )
         print("Download OSM data from: https://www.openstreetmap.org/export")
         sys.exit(1)
 
@@ -79,22 +81,22 @@ def main() -> None:
     if not osm_file.exists():
         print(f"OSM file not found: {osm_file}")
         sys.exit(1)
-    
+
     # Parse optional start/end coordinates from command line
     start_coords = None
     end_coords = None
-    
+
     if len(sys.argv) >= 3:
         try:
-            start_lat, start_lon = map(float, sys.argv[2].split(','))
+            start_lat, start_lon = map(float, sys.argv[2].split(","))
             start_coords = (start_lat, start_lon)
         except ValueError:
             print(f"Invalid start coordinates: {sys.argv[2]}")
             sys.exit(1)
-    
+
     if len(sys.argv) >= 4:
         try:
-            end_lat, end_lon = map(float, sys.argv[3].split(','))
+            end_lat, end_lon = map(float, sys.argv[3].split(","))
             end_coords = (end_lat, end_lon)
         except ValueError:
             print(f"Invalid end coordinates: {sys.argv[3]}")
@@ -148,7 +150,7 @@ def main() -> None:
         print("  - Looking at your OSM data's geographic bounds")
         print("  - Using GPS coordinates from the area")
         start_coords = get_coordinates("Enter start coordinates")
-    
+
     example_lat, example_lon = start_coords
 
     # Example 1: Find nearest node to coordinates
@@ -219,14 +221,16 @@ def main() -> None:
     if end_coords is None:
         print("\\nFor pathfinding demonstration, we need a destination coordinate.")
         end_coords = get_coordinates("Enter destination coordinates")
-    
+
     goal_lat, goal_lon = end_coords
-    
+
     # Create vertices from the coordinates
     start_vertex = Vertex({"lat": example_lat, "lon": example_lon})
     goal_vertex = Vertex({"lat": goal_lat, "lon": goal_lon})
 
-    print(f"Planning route from ({example_lat}, {example_lon}) to ({goal_lat}, {goal_lon})")
+    print(
+        f"Planning route from ({example_lat}, {example_lon}) to ({goal_lat}, {goal_lon})"
+    )
 
     try:
         planning_start = time.time()
