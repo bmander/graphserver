@@ -154,13 +154,13 @@ def main():
             if len(result) > 0:
                 print(f"✅ SUCCESS! Found path with {len(result)} edges")
 
-                total_cost = sum(edge["cost"] for edge in result)
+                total_cost = result.total_cost
                 print(f"   Total cost: {total_cost:.2f} seconds")
 
                 print("   Path breakdown:")
-                for i, edge in enumerate(result):
-                    target = edge["target"]
-                    cost = edge["cost"]
+                for i, path_edge in enumerate(result):
+                    target = path_edge.target
+                    cost = path_edge.edge.cost
 
                     if "osm_node_id" in target:
                         print(

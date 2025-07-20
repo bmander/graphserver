@@ -324,8 +324,9 @@ class TestSimpleOSMRouting:
 
                 # Verify the path structure
                 for i, path_edge in enumerate(result):
-                    assert "target" in path_edge, f"Path edge {i} should have target"
-                    assert "cost" in path_edge, f"Path edge {i} should have cost"
+                    assert hasattr(path_edge, "target"), f"Path edge {i} should have target"
+                    assert hasattr(path_edge, "edge"), f"Path edge {i} should have edge"
+                    assert path_edge.edge.cost is not None, f"Path edge {i} should have cost"
 
         except (RuntimeError, NotImplementedError) as e:
             # Planning may fail if C extension pathfinding is not fully implemented

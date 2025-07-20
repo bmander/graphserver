@@ -159,6 +159,11 @@ class OSMAccessProvider:
         Returns:
             List of (target_vertex, edge) tuples
         """
+        # Handle OSM node inputs for offramp (OSM node -> coordinates)
+        # IMPORTANT: Check this FIRST because OSM nodes also have lat/lon coordinates
+        if "osm_node_id" in vertex:
+            return self._offramp_edges_from_node(vertex)
+
         # Handle coordinate inputs (onramp: coordinate -> OSM nodes)
         if "lat" in vertex and "lon" in vertex:
             # Store this coordinate as a potential target for offramps
@@ -166,10 +171,6 @@ class OSMAccessProvider:
             if (lat, lon) not in self._target_coordinates:
                 self.add_target_coordinate(lat, lon)
             return self._edges_from_coordinates(vertex)
-
-        # Handle OSM node inputs for offramp (OSM node -> coordinates)
-        if "osm_node_id" in vertex:
-            return self._offramp_edges_from_node(vertex)
 
         # Unknown vertex type
         return []
