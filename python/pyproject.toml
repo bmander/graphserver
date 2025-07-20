@@ -19,6 +19,12 @@ dev = [
     "ruff",
     "black",
 ]
+osm = [
+    "pyosmium>=4.0.2",
+    "shapely>=2.0",
+    "pyproj>=3.7",
+    "rtree>=1.4.0",
+]
 
 [tool.scikit-build]
 cmake.build-type = "Release"
