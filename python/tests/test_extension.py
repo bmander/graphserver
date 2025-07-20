@@ -52,16 +52,29 @@ def test_provider_registration() -> None:
         pytest.skip("C extension not built yet")
 
 
-def test_plan_placeholder() -> None:
-    """Test plan function placeholder."""
+def test_plan_with_provider() -> None:
+    """Test plan function with actual provider."""
     try:
         import _graphserver
 
         engine = _graphserver.create_engine()
+        
+        # Register a simple provider that creates a path from x=0 to x=1
+        def simple_provider(vertex: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
+            x = vertex.get("x", 0)
+            if x == 0:
+                return [{"target": {"x": 1}, "cost": 1.0}]
+            return []
 
-        # Should raise NotImplementedError in Phase 1
-        with pytest.raises(NotImplementedError):
-            _graphserver.plan(engine, {"x": 0}, {"x": 1})
+        _graphserver.register_provider(engine, "simple", simple_provider)
+
+        # Now planning should work
+        result = _graphserver.plan(engine, {"x": 0}, {"x": 1})
+        assert result is not None
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0]["target"]["x"] == 1
+        assert result[0]["cost"] == 1.0
     except ImportError:
         pytest.skip("C extension not built yet")
 
@@ -74,16 +87,22 @@ def test_python_api() -> None:
         engine = Engine()
         assert engine is not None
 
-        # Test provider registration (should not crash)
-        def dummy_provider(vertex: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
+        # Test provider registration with working provider
+        def simple_provider(vertex: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
+            x = vertex.get("x", 0)
+            if x == 0:
+                return [{"target": {"x": 1}, "cost": 1.0}]
             return []
 
-        engine.register_provider("test", dummy_provider)
-        assert "test" in engine.providers
+        engine.register_provider("simple", simple_provider)
+        assert "simple" in engine.providers
 
-        # Test plan placeholder
-        with pytest.raises(NotImplementedError):
-            engine.plan(start={"x": 0}, goal={"x": 1})
+        # Test actual planning
+        result = engine.plan(start={"x": 0}, goal={"x": 1})
+        assert result is not None
+        assert len(result) == 1
+        assert result[0]["target"]["x"] == 1
+        assert result.total_cost == 1.0
     except ImportError:
         pytest.skip("C extension not built yet")
 
@@ -124,5 +143,52 @@ def test_error_handling() -> None:
 
         with pytest.raises(ValueError, match="Goal must be a mapping"):
             engine.plan(start={"x": 0}, goal="not_dict")  # type: ignore[arg-type]
+    except ImportError:
+        pytest.skip("C extension not built yet")
+
+
+def test_data_conversion() -> None:
+    """Test data conversion between Python and C."""
+    try:
+        from graphserver import Engine
+
+        engine = Engine()
+
+        # Test complex data types
+        def complex_provider(vertex: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
+            if vertex.get("start", False):
+                return [{
+                    "target": {
+                        "x": 10,
+                        "y": 20.5,
+                        "name": "destination",
+                        "active": True,
+                        "path": [1, 2, 3]
+                    },
+                    "cost": 15.5,
+                    "metadata": {
+                        "direction": "north",
+                        "distance": 100
+                    }
+                }]
+            return []
+
+        engine.register_provider("complex", complex_provider)
+
+        # Test planning with complex data
+        result = engine.plan(
+            start={"start": True, "location": "origin"},
+            goal={"x": 10, "y": 20.5, "name": "destination", "active": True, "path": [1, 2, 3]}
+        )
+        
+        assert len(result) == 1
+        edge = result[0]
+        assert edge["target"]["x"] == 10
+        assert edge["target"]["y"] == 20.5
+        assert edge["target"]["name"] == "destination"
+        assert edge["target"]["active"] == True
+        assert edge["target"]["path"] == [1, 2, 3]
+        assert edge["cost"] == 15.5
+        assert "metadata" in edge
     except ImportError:
         pytest.skip("C extension not built yet")
