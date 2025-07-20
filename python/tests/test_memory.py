@@ -17,6 +17,7 @@ except ImportError:
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
     from graphserver import Vertex, VertexEdgePair
 
 
@@ -92,6 +93,7 @@ def test_repeated_operations() -> None:
         # Try planning (will fail with no path found, but shouldn't leak)
         with contextlib.suppress(NotImplementedError, RuntimeError):
             from graphserver import Vertex
+
             engine.plan(start=Vertex({"x": i}), goal=Vertex({"x": i + 1}))
             # Expected - either Phase 1 (NotImplementedError) or Phase 2 (RuntimeError)
 

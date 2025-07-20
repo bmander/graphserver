@@ -7,7 +7,23 @@ across various domains.
 
 from __future__ import annotations
 
-from .core import Edge, EdgeProvider, Engine, PathEdge, PathResult, Vertex, VertexEdgePair
+from .core import (
+    Edge,
+    EdgeProvider,
+    Engine,
+    PathEdge,
+    PathResult,
+    Vertex,
+    VertexEdgePair,
+)
 
 __version__ = "2.0.0"
-__all__ = ["Engine", "PathResult", "EdgeProvider", "Vertex", "Edge", "PathEdge", "VertexEdgePair"]
+__all__ = [
+    "Engine",
+    "PathResult",
+    "EdgeProvider",
+    "Vertex",
+    "Edge",
+    "PathEdge",
+    "VertexEdgePair",
+]

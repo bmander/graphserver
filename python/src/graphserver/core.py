@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterator, KeysView, ItemsView, Mapping, Sequence
+from collections.abc import ItemsView, Iterator, KeysView, Mapping, Sequence
 from typing import Any, Protocol, runtime_checkable
 
 # Import will be available after C extension is built
@@ -13,78 +13,78 @@ except ImportError:
 
 class Vertex:
     """Vertex object representing a state in the planning graph.
-    
+
     Provides dictionary-like access with square bracket syntax for
     getting and setting vertex attributes.
     """
-    
+
     def __init__(self, data: Mapping[str, Any] | None = None) -> None:
         """Initialize vertex with optional data.
-        
+
         Args:
             data: Initial vertex attributes as key-value pairs
         """
         self._data: dict[str, Any] = dict(data) if data else {}
-    
+
     def __getitem__(self, key: str) -> Any:
         """Get vertex attribute using square bracket syntax.
-        
+
         Args:
             key: Attribute name
-            
+
         Returns:
             Attribute value
-            
+
         Raises:
             KeyError: If attribute doesn't exist
         """
         return self._data[key]
-    
+
     def __setitem__(self, key: str, value: Any) -> None:
         """Set vertex attribute using square bracket syntax.
-        
+
         Args:
             key: Attribute name
             value: Attribute value
         """
         self._data[key] = value
-    
+
     def __contains__(self, key: str) -> bool:
         """Check if vertex has attribute."""
         return key in self._data
-    
+
     def get(self, key: str, default: Any = None) -> Any:
         """Get vertex attribute with optional default.
-        
+
         Args:
             key: Attribute name
             default: Default value if attribute doesn't exist
-            
+
         Returns:
             Attribute value or default
         """
         return self._data.get(key, default)
-    
+
     def keys(self) -> KeysView[str]:
         """Get all attribute names."""
         return self._data.keys()
-    
+
     def items(self) -> ItemsView[str, Any]:
         """Get all attribute name-value pairs."""
         return self._data.items()
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to plain dictionary.
-        
+
         Returns:
             Copy of vertex data as dictionary
         """
         return self._data.copy()
-    
+
     def __repr__(self) -> str:
         """String representation of vertex."""
         return f"Vertex({self._data!r})"
-    
+
     def __eq__(self, other: object) -> bool:
         """Check equality with another vertex."""
         if not isinstance(other, Vertex):
@@ -94,55 +94,53 @@ class Vertex:
 
 class Edge:
     """Edge object representing a transition between vertices.
-    
+
     Contains cost information and optional metadata.
     """
-    
+
     def __init__(
-        self, 
-        cost: float | Sequence[float], 
-        metadata: Mapping[str, Any] | None = None
+        self, cost: float | Sequence[float], metadata: Mapping[str, Any] | None = None
     ) -> None:
         """Initialize edge with cost and optional metadata.
-        
+
         Args:
             cost: Edge cost (single value or multi-objective vector)
             metadata: Optional edge metadata as key-value pairs
         """
         self._cost = cost
         self._metadata: dict[str, Any] = dict(metadata) if metadata else {}
-    
+
     @property
     def cost(self) -> float | Sequence[float]:
         """Edge cost (single value or multi-objective vector)."""
         return self._cost
-    
+
     @property
     def metadata(self) -> Mapping[str, Any]:
         """Read-only view of edge metadata."""
         return self._metadata.copy()
-    
+
     def get_metadata(self, key: str, default: Any = None) -> Any:
         """Get metadata value with optional default.
-        
+
         Args:
             key: Metadata key
             default: Default value if key doesn't exist
-            
+
         Returns:
             Metadata value or default
         """
         return self._metadata.get(key, default)
-    
+
     def set_metadata(self, key: str, value: Any) -> None:
         """Set metadata value.
-        
+
         Args:
             key: Metadata key
             value: Metadata value
         """
         self._metadata[key] = value
-    
+
     def __repr__(self) -> str:
         """String representation of edge."""
         if self._metadata:
@@ -246,7 +244,9 @@ class Engine:
             raise RuntimeError(msg)
 
         # Convert Vertex objects to dictionaries for C extension
-        result_data = _graphserver.plan(self._engine, start.to_dict(), goal.to_dict(), planner)
+        result_data = _graphserver.plan(
+            self._engine, start.to_dict(), goal.to_dict(), planner
+        )
         return PathResult(result_data)
 
     @property
@@ -273,8 +273,10 @@ class PathResult:
             target_data = edge_data.get("target", {})
             target_vertex = Vertex(target_data) if target_data else Vertex()
             cost = edge_data.get("cost", 0.0)
-            metadata = {k: v for k, v in edge_data.items() if k not in ("target", "cost")}
-            
+            metadata = {
+                k: v for k, v in edge_data.items() if k not in ("target", "cost")
+            }
+
             edge = Edge(cost=cost, metadata=metadata)
             self._edges.append(PathEdge(target=target_vertex, edge=edge))
 
@@ -315,17 +317,17 @@ class PathResult:
 
 class PathEdge:
     """Edge in a path result, containing target vertex and edge information."""
-    
+
     def __init__(self, target: Vertex, edge: Edge) -> None:
         """Initialize path edge.
-        
+
         Args:
             target: Target vertex of the edge
             edge: Edge object with cost and metadata
         """
         self.target = target
         self.edge = edge
-    
+
     def __repr__(self) -> str:
         """String representation of path edge."""
         return f"PathEdge(target={self.target!r}, edge={self.edge!r})"
