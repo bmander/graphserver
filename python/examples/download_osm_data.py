@@ -48,7 +48,7 @@ def download_osm_data(
     encoded_query = quote(overpass_query)
     url = f"https://overpass-api.de/api/interpreter?data={encoded_query}"
 
-    print(f"Downloading OSM data for bounding box:")
+    print("Downloading OSM data for bounding box:")
     print(f"  South-West: ({lat_min}, {lon_min})")
     print(f"  North-East: ({lat_max}, {lon_max})")
     print(f"  Output file: {output_file}")
@@ -64,7 +64,7 @@ def download_osm_data(
                 print(f"Error: HTTP {response.status}")
                 sys.exit(1)
 
-            print(f"Request successful, downloading data...")
+            print("Request successful, downloading data...")
             data = response.read()
 
         download_time = time.time() - start_time

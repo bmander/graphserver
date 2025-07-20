@@ -14,7 +14,7 @@ import pytest
 # Skip all tests if OSM dependencies are not available
 try:
     from graphserver import Engine, Vertex
-    from graphserver.providers.osm import OSMNetworkProvider, OSMAccessProvider
+    from graphserver.providers.osm import OSMAccessProvider, OSMNetworkProvider
     from graphserver.providers.osm.types import WalkingProfile
 
     OSM_AVAILABLE = True

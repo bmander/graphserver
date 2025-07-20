@@ -25,7 +25,7 @@ from pathlib import Path
 
 try:
     from graphserver import Engine, Vertex
-    from graphserver.providers.osm import OSMNetworkProvider, OSMAccessProvider
+    from graphserver.providers.osm import OSMAccessProvider, OSMNetworkProvider
     from graphserver.providers.osm.types import WalkingProfile
 except ImportError as e:
     print(f"Error importing required modules: {e}")
@@ -59,8 +59,7 @@ def get_coordinates(prompt: str) -> tuple[float, float]:
                     continue
 
                 return lat, lon
-            else:
-                print("Please enter coordinates as: lat,lon (e.g., 47.6540,-122.3100)")
+            print("Please enter coordinates as: lat,lon (e.g., 47.6540,-122.3100)")
         except ValueError:
             print("Invalid format. Please enter numeric coordinates as: lat,lon")
         except KeyboardInterrupt:

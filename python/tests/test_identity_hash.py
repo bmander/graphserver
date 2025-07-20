@@ -1,8 +1,9 @@
 """Test identity hash system for vertex matching."""
 
 import pytest
+
 from graphserver import Engine, Vertex
-from graphserver.providers.osm import OSMNetworkProvider, OSMAccessProvider
+from graphserver.providers.osm import OSMAccessProvider
 
 
 def test_coordinate_identity_hash_matching():
@@ -59,8 +60,8 @@ def test_provider_generated_identity_hashes():
     """Test that providers generate identity hashes correctly."""
     # This test would need actual OSM data, so we'll skip it if not available
     try:
-        from graphserver.providers.osm.types import WalkingProfile
         from graphserver.providers.osm.parser import OSMParser
+        from graphserver.providers.osm.types import WalkingProfile
 
         # Create a mock parser for testing (minimal setup)
         walking_profile = WalkingProfile()

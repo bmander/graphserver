@@ -5,7 +5,7 @@ import tempfile
 from pathlib import Path
 
 from graphserver import Engine, Vertex
-from graphserver.providers.osm import OSMNetworkProvider, OSMAccessProvider
+from graphserver.providers.osm import OSMAccessProvider, OSMNetworkProvider
 from graphserver.providers.osm.types import WalkingProfile
 
 # Simple OSM data: single road from (0,0) to (0,0.001)
@@ -86,7 +86,7 @@ def debug_offramp_generation():
                 )
 
         # Test what happens when we add the goal vertex identity hash manually
-        print(f"\n--- Manual Goal Hash Test ---")
+        print("\n--- Manual Goal Hash Test ---")
         engine = Engine()
         goal_vertex = Vertex({"lat": goal_lat, "lon": goal_lon})
         goal_with_hash = engine._add_identity_hash_to_vertex(goal_vertex)

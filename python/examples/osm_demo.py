@@ -7,7 +7,7 @@ and walking profiles.
 """
 
 from graphserver import Engine, Vertex
-from graphserver.providers.osm import OSMNetworkProvider, OSMAccessProvider
+from graphserver.providers.osm import OSMAccessProvider, OSMNetworkProvider
 from graphserver.providers.osm.types import WalkingProfile
 
 
@@ -119,10 +119,10 @@ def main():
     engine.register_provider("osm_network", network_provider)
     engine.register_provider("osm_access", access_provider)
 
-    print(f"✅ Both providers registered with engine")
+    print("✅ Both providers registered with engine")
     print(f"   Available providers: {list(engine.providers.keys())}")
-    print(f"   osm_network: Handles OSM-to-OSM navigation")
-    print(f"   osm_access: Handles coordinate-to-OSM connections")
+    print("   osm_network: Handles OSM-to-OSM navigation")
+    print("   osm_access: Handles coordinate-to-OSM connections")
 
     # Test pathfinding (may not find path depending on connectivity)
     print("\n🛤️  Pathfinding Test")
@@ -132,7 +132,7 @@ def main():
     start_coord = Vertex({"lat": test_lat, "lon": test_lon})
     goal_coord = Vertex({"lat": test_lat + 0.001, "lon": test_lon + 0.001})
 
-    print(f"Attempting to plan route:")
+    print("Attempting to plan route:")
     print(f"  From: ({start_coord['lat']}, {start_coord['lon']})")
     print(f"  To:   ({goal_coord['lat']}, {goal_coord['lon']})")
 
@@ -166,14 +166,14 @@ def main():
         percentage = (count / network_provider.way_count) * 100
         print(f"  {highway:15} {count:4d} ways ({percentage:5.1f}%)")
 
-    print(f"\n🎉 OSM Providers Demo Complete!")
+    print("\n🎉 OSM Providers Demo Complete!")
     print(f"   Total walkable network: {network_provider.edge_count:,} edges")
     print(
         f"   Spatial index: {len(access_provider.spatial_index):,} indexed nodes"
         if access_provider.spatial_index
         else "   No spatial index"
     )
-    print(f"   Both providers ready for coordinate-to-coordinate routing!")
+    print("   Both providers ready for coordinate-to-coordinate routing!")
 
 
 if __name__ == "__main__":

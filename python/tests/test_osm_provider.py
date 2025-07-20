@@ -8,14 +8,8 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import pytest
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
-
-    from graphserver import Vertex, VertexEdgePair
 
 # Skip all tests if OSM dependencies are not available
 pytest_plugins = []

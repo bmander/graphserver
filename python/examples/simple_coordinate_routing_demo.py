@@ -9,7 +9,7 @@ import tempfile
 from pathlib import Path
 
 from graphserver import Engine, Vertex
-from graphserver.providers.osm import OSMNetworkProvider, OSMAccessProvider
+from graphserver.providers.osm import OSMAccessProvider, OSMNetworkProvider
 from graphserver.providers.osm.types import WalkingProfile
 
 # Simple OSM data: single road from (0,0) to (0,0.001)
