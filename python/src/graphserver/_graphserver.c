@@ -31,8 +31,8 @@ static int python_provider_wrapper(
     GraphserverEdgeList* out_edges,
     void* user_data);
 
-// Goal predicate for simple vertex equality checking
-static bool simple_goal_predicate(
+// Goal predicate for identity-aware vertex equality checking
+static bool identity_aware_goal_predicate(
     const GraphserverVertex* vertex,
     void* user_data);
 
