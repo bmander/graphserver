@@ -63,7 +63,9 @@ def simple_walking_profile() -> WalkingProfile:
 class TestSimpleOSMRouting:
     """Test basic coordinate-to-coordinate routing with minimal OSM data."""
 
-    def test_simple_osm_parsing(self, simple_osm_file: Path, simple_walking_profile: WalkingProfile) -> None:
+    def test_simple_osm_parsing(
+        self, simple_osm_file: Path, simple_walking_profile: WalkingProfile
+    ) -> None:
         """Test that the simple OSM file parses correctly."""
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
@@ -82,7 +84,7 @@ class TestSimpleOSMRouting:
         # Check specific nodes exist
         node1 = network_provider.get_node_by_id(1)
         node2 = network_provider.get_node_by_id(2)
-        
+
         assert node1 is not None
         assert node2 is not None
         assert node1["lat"] == 0.0
@@ -93,7 +95,9 @@ class TestSimpleOSMRouting:
         # Clean up
         simple_osm_file.unlink()
 
-    def test_network_provider_edges(self, simple_osm_file: Path, simple_walking_profile: WalkingProfile) -> None:
+    def test_network_provider_edges(
+        self, simple_osm_file: Path, simple_walking_profile: WalkingProfile
+    ) -> None:
         """Test that the network provider generates correct edges between OSM nodes."""
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
@@ -106,17 +110,17 @@ class TestSimpleOSMRouting:
         # Test edges from node 1
         node1_vertex = Vertex({"osm_node_id": 1})
         edges_from_1 = network_provider(node1_vertex)
-        
+
         assert len(edges_from_1) == 1  # Should connect to node 2
         target_vertex, edge = edges_from_1[0]
         assert target_vertex["osm_node_id"] == 2
         assert edge.cost > 0
         assert edge.metadata["edge_type"] == "osm_way"
 
-        # Test edges from node 2  
+        # Test edges from node 2
         node2_vertex = Vertex({"osm_node_id": 2})
         edges_from_2 = network_provider(node2_vertex)
-        
+
         assert len(edges_from_2) == 1  # Should connect to node 1
         target_vertex, edge = edges_from_2[0]
         assert target_vertex["osm_node_id"] == 1
@@ -126,7 +130,9 @@ class TestSimpleOSMRouting:
         # Clean up
         simple_osm_file.unlink()
 
-    def test_access_provider_onramps(self, simple_osm_file: Path, simple_walking_profile: WalkingProfile) -> None:
+    def test_access_provider_onramps(
+        self, simple_osm_file: Path, simple_walking_profile: WalkingProfile
+    ) -> None:
         """Test that the access provider generates onramps from coordinates to OSM nodes."""
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
@@ -143,7 +149,7 @@ class TestSimpleOSMRouting:
         # Test onramp from coordinate near node 1
         coord_near_1 = Vertex({"lat": 0.0001, "lon": 0.0001})  # Close to (0,0)
         onramps = access_provider(coord_near_1)
-        
+
         assert len(onramps) > 0
         # Should find at least node 1
         found_node_1 = any(target["osm_node_id"] == 1 for target, _ in onramps)
@@ -152,7 +158,7 @@ class TestSimpleOSMRouting:
         # Test onramp from coordinate near node 2
         coord_near_2 = Vertex({"lat": 0.0001, "lon": 0.0011})  # Close to (0, 0.001)
         onramps = access_provider(coord_near_2)
-        
+
         assert len(onramps) > 0
         # Should find at least node 2
         found_node_2 = any(target["osm_node_id"] == 2 for target, _ in onramps)
@@ -161,7 +167,9 @@ class TestSimpleOSMRouting:
         # Clean up
         simple_osm_file.unlink()
 
-    def test_provider_integration(self, simple_osm_file: Path, simple_walking_profile: WalkingProfile) -> None:
+    def test_provider_integration(
+        self, simple_osm_file: Path, simple_walking_profile: WalkingProfile
+    ) -> None:
         """Test that both providers can be registered with the engine."""
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
@@ -171,7 +179,7 @@ class TestSimpleOSMRouting:
             simple_osm_file,
             walking_profile=simple_walking_profile,
         )
-        
+
         access_provider = OSMAccessProvider(
             parser=network_provider.parser,  # Share parser for efficiency
             walking_profile=simple_walking_profile,
@@ -193,7 +201,9 @@ class TestSimpleOSMRouting:
         # Clean up
         simple_osm_file.unlink()
 
-    def test_coordinate_to_coordinate_routing_setup(self, simple_osm_file: Path, simple_walking_profile: WalkingProfile) -> None:
+    def test_coordinate_to_coordinate_routing_setup(
+        self, simple_osm_file: Path, simple_walking_profile: WalkingProfile
+    ) -> None:
         """Test the setup for coordinate-to-coordinate routing (without offramps yet)."""
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
@@ -203,7 +213,7 @@ class TestSimpleOSMRouting:
             simple_osm_file,
             walking_profile=simple_walking_profile,
         )
-        
+
         access_provider = OSMAccessProvider(
             parser=network_provider.parser,
             walking_profile=simple_walking_profile,
@@ -219,31 +229,33 @@ class TestSimpleOSMRouting:
 
         # Define test coordinates
         start_coords = Vertex({"lat": 0.0001, "lon": 0.0001})  # Near node 1
-        goal_coords = Vertex({"lat": 0.0001, "lon": 0.0011})   # Near node 2
+        goal_coords = Vertex({"lat": 0.0001, "lon": 0.0011})  # Near node 2
 
         # Verify that access provider can generate onramps for both coordinates
         start_onramps = access_provider(start_coords)
         goal_onramps = access_provider(goal_coords)
-        
+
         assert len(start_onramps) > 0, "Should find onramps from start coordinates"
         assert len(goal_onramps) > 0, "Should find onramps from goal coordinates"
 
         # Verify that network provider can navigate between OSM nodes
         node1_vertex = Vertex({"osm_node_id": 1})
         node2_vertex = Vertex({"osm_node_id": 2})
-        
+
         edges_1_to_2 = network_provider(node1_vertex)
         edges_2_to_1 = network_provider(node2_vertex)
-        
+
         assert len(edges_1_to_2) > 0, "Should find edges from node 1 to node 2"
         assert len(edges_2_to_1) > 0, "Should find edges from node 2 to node 1"
 
         # Note: Actual coordinate-to-coordinate routing will require offramp implementation
-        
+
         # Clean up
         simple_osm_file.unlink()
 
-    def test_complete_coordinate_to_coordinate_routing(self, simple_osm_file: Path, simple_walking_profile: WalkingProfile) -> None:
+    def test_complete_coordinate_to_coordinate_routing(
+        self, simple_osm_file: Path, simple_walking_profile: WalkingProfile
+    ) -> None:
         """Test complete coordinate-to-coordinate routing with offramps."""
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
@@ -253,7 +265,7 @@ class TestSimpleOSMRouting:
             simple_osm_file,
             walking_profile=simple_walking_profile,
         )
-        
+
         access_provider = OSMAccessProvider(
             parser=network_provider.parser,
             walking_profile=simple_walking_profile,
@@ -269,7 +281,7 @@ class TestSimpleOSMRouting:
 
         # Define test coordinates close to our simple road
         start_coords = Vertex({"lat": 0.0001, "lon": 0.0001})  # Near node 1 (0,0)
-        goal_coords = Vertex({"lat": 0.0001, "lon": 0.0011})   # Near node 2 (0,0.001)
+        goal_coords = Vertex({"lat": 0.0001, "lon": 0.0011})  # Near node 2 (0,0.001)
 
         # Manually test the bidirectional access provider functionality
         # 1. Verify onramps work
@@ -279,41 +291,47 @@ class TestSimpleOSMRouting:
         # 2. Verify that goal coordinate gets stored as target
         goal_onramps = access_provider(goal_coords)
         assert len(goal_onramps) > 0, "Should generate onramps from goal coordinates"
-        assert len(access_provider._target_coordinates) >= 1, "Should store target coordinates"
+        assert len(access_provider._target_coordinates) >= 1, (
+            "Should store target coordinates"
+        )
 
         # 3. Verify offramps work - test with OSM nodes
         node1_vertex = Vertex({"osm_node_id": 1})
         node2_vertex = Vertex({"osm_node_id": 2})
-        
+
         offramps_from_1 = access_provider(node1_vertex)
         offramps_from_2 = access_provider(node2_vertex)
-        
+
         # Should have offramps to stored target coordinates
-        assert len(offramps_from_1) > 0 or len(offramps_from_2) > 0, "Should generate offramps to target coordinates"
+        assert len(offramps_from_1) > 0 or len(offramps_from_2) > 0, (
+            "Should generate offramps to target coordinates"
+        )
 
         # 4. Test complete routing using the engine
         # The engine will automatically set up the goal coordinate for access providers
         try:
             result = engine.plan(start=start_coords, goal=goal_coords)
-            
+
             # If planning succeeds, we have working coordinate-to-coordinate routing!
             assert result is not None, "Planning should return a result"
-            
+
             # For now, we accept either success or failure since the C extension
             # pathfinding may not be fully implemented
             if len(result) > 0:
-                print(f"✅ Successful coordinate-to-coordinate routing: {len(result)} edges")
-                
+                print(
+                    f"✅ Successful coordinate-to-coordinate routing: {len(result)} edges"
+                )
+
                 # Verify the path structure
                 for i, path_edge in enumerate(result):
                     assert "target" in path_edge, f"Path edge {i} should have target"
                     assert "cost" in path_edge, f"Path edge {i} should have cost"
-                    
+
         except (RuntimeError, NotImplementedError) as e:
             # Planning may fail if C extension pathfinding is not fully implemented
             # This is expected in the current state
             print(f"⚠️  Planning failed as expected: {e}")
-            
+
         # Clean up
         access_provider.clear_target_coordinates()
         simple_osm_file.unlink()

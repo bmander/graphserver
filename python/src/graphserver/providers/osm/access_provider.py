@@ -23,11 +23,11 @@ logger = logging.getLogger(__name__)
 
 class OSMAccessProvider:
     """OSM access provider for connecting coordinates to the OSM network.
-    
+
     This provider handles bidirectional connections between arbitrary geographic
     coordinates and nearby OSM nodes. It generates both "onramp" edges (coordinate
     to OSM nodes) and "offramp" edges (OSM nodes to coordinates).
-    
+
     The provider maintains a list of target coordinates to enable offramp generation
     during planning.
     """
@@ -60,7 +60,7 @@ class OSMAccessProvider:
         self.walking_profile = walking_profile or WalkingProfile()
         self.search_radius_m = search_radius_m
         self.max_nearby_nodes = max_nearby_nodes
-        
+
         # Target coordinates for offramp generation
         self._target_coordinates: list[tuple[float, float]] = []
 
@@ -85,6 +85,42 @@ class OSMAccessProvider:
             self.search_radius_m,
         )
 
+    def _create_coordinate_identity_hash(self, lat: float, lon: float) -> str:
+        """Create identity hash for coordinate vertices.
+
+        Rounds coordinates to ~1 meter precision for matching tolerance.
+
+        Args:
+            lat: Latitude
+            lon: Longitude
+
+        Returns:
+            Identity hash string
+        """
+        # Round to 5 decimal places (~1 meter precision)
+        rounded_lat = round(lat, 5)
+        rounded_lon = round(lon, 5)
+        return f"coord:{rounded_lat},{rounded_lon}"
+
+    def _add_identity_hash(self, vertex_data: dict) -> dict:
+        """Add identity hash to vertex data.
+
+        Args:
+            vertex_data: Dictionary of vertex data
+
+        Returns:
+            Updated vertex data with identity hash
+        """
+        # Prioritize OSM node ID over coordinates if both are present
+        if "osm_node_id" in vertex_data:
+            vertex_data["_id_hash"] = f"osm:{vertex_data['osm_node_id']}"
+        elif "lat" in vertex_data and "lon" in vertex_data:
+            vertex_data["_id_hash"] = self._create_coordinate_identity_hash(
+                vertex_data["lat"], vertex_data["lon"]
+            )
+
+        return vertex_data
+
     def _build_spatial_index(self) -> None:
         """Build spatial index for fast coordinate-based lookups."""
         logger.info("Building spatial index for OSM access")
@@ -93,7 +129,7 @@ class OSMAccessProvider:
 
     def add_target_coordinate(self, lat: float, lon: float) -> None:
         """Add a target coordinate for offramp generation.
-        
+
         Args:
             lat: Target latitude
             lon: Target longitude
@@ -106,7 +142,7 @@ class OSMAccessProvider:
 
     def set_target_coordinate(self, lat: float, lon: float) -> None:
         """Set a single target coordinate, clearing any existing targets.
-        
+
         Args:
             lat: Target latitude
             lon: Target longitude
@@ -174,14 +210,13 @@ class OSMAccessProvider:
             duration_s = distance_m / self.walking_profile.base_speed_ms
 
             # Create target vertex with OSM node information
-            target_vertex = Vertex(
-                {
-                    "osm_node_id": node.id,
-                    "lat": node.lat,
-                    "lon": node.lon,
-                    **node.tags,  # Include any relevant OSM tags
-                }
-            )
+            target_data = {
+                "osm_node_id": node.id,
+                "lat": node.lat,
+                "lon": node.lon,
+                **node.tags,  # Include any relevant OSM tags
+            }
+            target_vertex = Vertex(self._add_identity_hash(target_data))
 
             # Create edge with cost based on walking time
             edge = Edge(
@@ -200,7 +235,7 @@ class OSMAccessProvider:
 
     def _offramp_edges_from_node(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
         """Generate offramp edges from OSM nodes to nearby coordinates.
-        
+
         This enables the planner to reach arbitrary coordinate targets by providing
         edges from OSM nodes to coordinate vertices.
 
@@ -223,6 +258,7 @@ class OSMAccessProvider:
         for target_lat, target_lon in self._target_coordinates:
             # Calculate distance to target coordinate
             from .spatial import calculate_distance
+
             distance_m = calculate_distance(node.lat, node.lon, target_lat, target_lon)
 
             # Only create offramp if target is within reasonable range
@@ -231,7 +267,8 @@ class OSMAccessProvider:
                 duration_s = distance_m / self.walking_profile.base_speed_ms
 
                 # Create target vertex for the coordinate
-                target_vertex = Vertex({"lat": target_lat, "lon": target_lon})
+                target_data = {"lat": target_lat, "lon": target_lon}
+                target_vertex = Vertex(self._add_identity_hash(target_data))
 
                 # Create offramp edge
                 edge = Edge(
@@ -245,14 +282,14 @@ class OSMAccessProvider:
                 )
 
                 edges.append((target_vertex, edge))
-        
+
         return edges
 
     def get_offramp_edges_to_coordinate(
         self, node_id: int, target_lat: float, target_lon: float
     ) -> Sequence[VertexEdgePair]:
         """Generate offramp edges from an OSM node to a specific coordinate.
-        
+
         This method is called when the planner needs to create an offramp from an OSM node
         to reach a specific coordinate target.
 
@@ -271,6 +308,7 @@ class OSMAccessProvider:
 
         # Calculate distance to target coordinate
         from .spatial import calculate_distance
+
         distance_m = calculate_distance(node.lat, node.lon, target_lat, target_lon)
 
         # Only create offramp if target is within reasonable range
@@ -315,9 +353,13 @@ class OSMAccessProvider:
         if node is None:
             return None
 
-        return Vertex(
-            {"osm_node_id": node.id, "lat": node.lat, "lon": node.lon, **node.tags}
-        )
+        node_data = {
+            "osm_node_id": node.id,
+            "lat": node.lat,
+            "lon": node.lon,
+            **node.tags,
+        }
+        return Vertex(self._add_identity_hash(node_data))
 
     @property
     def node_count(self) -> int:

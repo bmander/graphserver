@@ -121,7 +121,7 @@ def main() -> None:
             osm_file,
             walking_profile=walking_profile,
         )
-        
+
         # Create access provider for coordinate-to-OSM connections (shares parser)
         access_provider = OSMAccessProvider(
             parser=network_provider.parser,
@@ -147,8 +147,8 @@ def main() -> None:
 
     print("\\nOSM Providers registered with Graphserver engine")
     print("Two providers handle different routing aspects:")
-    print('  1. osm_access: Connects coordinates to OSM network')
-    print('  2. osm_network: Navigates between OSM nodes via streets')
+    print("  1. osm_access: Connects coordinates to OSM network")
+    print("  2. osm_network: Navigates between OSM nodes via streets")
     print("Vertex types:")
     print('  - Geographic coordinates: {"lat": 47.6062, "lon": -122.3321}')
     print('  - OSM node IDs: {"osm_node_id": 12345}')
@@ -285,7 +285,9 @@ def main() -> None:
     print("- Experiment with different WalkingProfile settings")
     print("- Adjust search_radius_m and max_nearby_nodes for your use case")
     print("- Register both providers in your own pathfinding applications")
-    print("- Note: Both osm_network and osm_access providers are required for complete functionality")
+    print(
+        "- Note: Both osm_network and osm_access providers are required for complete functionality"
+    )
 
 
 if __name__ == "__main__":

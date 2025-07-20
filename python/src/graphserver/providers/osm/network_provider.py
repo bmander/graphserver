@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class OSMNetworkProvider:
     """OSM network provider for navigation between OSM nodes.
-    
+
     This provider handles movement between OSM nodes via the actual street/path
     network. It only accepts vertices with OSM node IDs and returns edges to
     connected nodes based on the walkable OSM ways.
@@ -63,6 +63,26 @@ class OSMNetworkProvider:
             len(self.parser.nodes),
             len(self.parser.edges),
         )
+
+    def _add_identity_hash(self, vertex_data: dict) -> dict:
+        """Add identity hash to vertex data.
+
+        Args:
+            vertex_data: Dictionary of vertex data
+
+        Returns:
+            Updated vertex data with identity hash
+        """
+        # Prioritize OSM node ID over coordinates if both are present
+        if "osm_node_id" in vertex_data:
+            vertex_data["_id_hash"] = f"osm:{vertex_data['osm_node_id']}"
+        elif "lat" in vertex_data and "lon" in vertex_data:
+            # Round coordinates to ~1 meter precision for matching tolerance
+            rounded_lat = round(vertex_data["lat"], 5)
+            rounded_lon = round(vertex_data["lon"], 5)
+            vertex_data["_id_hash"] = f"coord:{rounded_lat},{rounded_lon}"
+
+        return vertex_data
 
     def __call__(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
         """Generate edges from an OSM node (implements EdgeProvider protocol).
@@ -107,18 +127,19 @@ class OSMNetworkProvider:
             target_node = self.parser.nodes[target_node_id]
 
             # Create target vertex
-            target_vertex = Vertex(
-                {
-                    "osm_node_id": target_node.id,
-                    "lat": target_node.lat,
-                    "lon": target_node.lon,
-                    **target_node.tags,
-                }
-            )
+            target_data = {
+                "osm_node_id": target_node.id,
+                "lat": target_node.lat,
+                "lon": target_node.lon,
+                **target_node.tags,
+            }
+            target_vertex = Vertex(self._add_identity_hash(target_data))
 
             # Apply walking profile to get final cost
             way = self.parser.ways[osm_edge.way_id]
-            walking_profile = getattr(self, "walking_profile", None) or self.parser.walking_profile
+            walking_profile = (
+                getattr(self, "walking_profile", None) or self.parser.walking_profile
+            )
             final_cost = walking_profile.get_edge_cost(osm_edge, way)
 
             # Create edge
@@ -152,9 +173,13 @@ class OSMNetworkProvider:
             return None
 
         node = self.parser.nodes[node_id]
-        return Vertex(
-            {"osm_node_id": node.id, "lat": node.lat, "lon": node.lon, **node.tags}
-        )
+        node_data = {
+            "osm_node_id": node.id,
+            "lat": node.lat,
+            "lon": node.lon,
+            **node.tags,
+        }
+        return Vertex(self._add_identity_hash(node_data))
 
     @property
     def node_count(self) -> int:

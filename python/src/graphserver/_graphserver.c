@@ -158,11 +158,11 @@ static PyObject* py_plan(PyObject* self, PyObject* args, PyObject* kwargs) {
     GoalPredicateData goal_data;
     goal_data.goal_vertex = goal_vertex;
     
-    // Run planning using the simple planner interface
+    // Run planning using the identity-aware planner interface
     GraphserverPath* path = gs_plan_simple(
         engine,
         start_vertex,
-        simple_goal_predicate,
+        identity_aware_goal_predicate,
         &goal_data,
         NULL // No stats for now
     );
@@ -319,8 +319,8 @@ static int python_provider_wrapper(
     return result;
 }
 
-// Simple goal predicate that checks vertex equality
-static bool simple_goal_predicate(
+// Identity-aware goal predicate that uses _id_hash when available
+static bool identity_aware_goal_predicate(
     const GraphserverVertex* vertex,
     void* user_data) {
     
@@ -329,6 +329,20 @@ static bool simple_goal_predicate(
     }
     
     GoalPredicateData* goal_data = (GoalPredicateData*)user_data;
+    
+    // First try identity hash comparison if available on both vertices
+    GraphserverValue id_hash_val;
+    GraphserverValue goal_id_hash_val;
+    
+    bool has_id = gs_vertex_get_value(vertex, "_id_hash", &id_hash_val) == GS_SUCCESS;
+    bool goal_has_id = gs_vertex_get_value(goal_data->goal_vertex, "_id_hash", &goal_id_hash_val) == GS_SUCCESS;
+    
+    if (has_id && goal_has_id) {
+        // Compare identity hashes - this allows coordinate matching with tolerance
+        return gs_value_equals(&id_hash_val, &goal_id_hash_val);
+    }
+    
+    // Fall back to full vertex equality for vertices without identity hashes
     return gs_vertex_equals(vertex, goal_data->goal_vertex);
 }
 

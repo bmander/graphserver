@@ -39,7 +39,7 @@ def main():
         "uw_campus.osm",
         walking_profile=campus_profile,
     )
-    
+
     access_provider = OSMAccessProvider(
         parser=network_provider.parser,
         walking_profile=campus_profile,
@@ -73,7 +73,7 @@ def main():
         if tags:
             print(f"   Tags: {tags}")
 
-    # Demonstrate edge generation from coordinates  
+    # Demonstrate edge generation from coordinates
     print("\n🔗 Access Edge Generation from Coordinates")
     print("-" * 45)
 
