@@ -16,8 +16,8 @@ except ImportError:
     Engine = None
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
-    from typing import Any
+    from collections.abc import Sequence
+    from graphserver import Vertex, VertexEdgePair
 
 
 def test_engine_memory_management() -> None:
@@ -48,7 +48,7 @@ def test_provider_reference_counting() -> None:
         pytest.skip("C extension not built yet")
         return
 
-    def provider_func(_vertex: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
+    def provider_func(_vertex: Vertex) -> Sequence[VertexEdgePair]:
         return []
 
     # Create weak reference to track lifetime
@@ -81,7 +81,7 @@ def test_repeated_operations() -> None:
         pytest.skip("Python wrapper not available")
         return
 
-    def provider_func(_vertex: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
+    def provider_func(_vertex: Vertex) -> Sequence[VertexEdgePair]:
         return []
 
     # Perform many operations
@@ -91,7 +91,8 @@ def test_repeated_operations() -> None:
 
         # Try planning (will fail with no path found, but shouldn't leak)
         with contextlib.suppress(NotImplementedError, RuntimeError):
-            engine.plan(start={"x": i}, goal={"x": i + 1})
+            from graphserver import Vertex
+            engine.plan(start=Vertex({"x": i}), goal=Vertex({"x": i + 1}))
             # Expected - either Phase 1 (NotImplementedError) or Phase 2 (RuntimeError)
 
     # Force cleanup

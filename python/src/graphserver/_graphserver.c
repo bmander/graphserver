@@ -18,9 +18,12 @@ static PyObject* py_plan(PyObject* self, PyObject* args, PyObject* kwargs);
 // Utility functions for data conversion (implemented in Phase 2)
 static PyObject* vertex_to_python_dict(const GraphserverVertex* vertex);
 static PyObject* safe_vertex_to_python_dict(const GraphserverVertex* vertex);
+static PyObject* vertex_to_python_vertex_object(const GraphserverVertex* vertex);
 static GraphserverVertex* python_dict_to_vertex(PyObject* dict);
+static GraphserverVertex* python_vertex_object_to_vertex(PyObject* vertex_obj);
 static PyObject* path_to_python_list(const GraphserverPath* path);
 static int python_edges_to_c_edges(PyObject* edge_list, GraphserverEdgeList* out_edges);
+static int python_vertex_edge_pairs_to_c_edges(PyObject* pair_list, GraphserverEdgeList* out_edges);
 
 // Provider wrapper for calling Python functions from C
 static int python_provider_wrapper(
@@ -283,17 +286,17 @@ static int python_provider_wrapper(
     
     int result = -1; // Default to error
     
-    // Convert C vertex to Python dict
-    PyObject* vertex_dict = vertex_to_python_dict(current_vertex);
-    if (!vertex_dict) {
+    // Convert C vertex to Python Vertex object
+    PyObject* vertex_obj = vertex_to_python_vertex_object(current_vertex);
+    if (!vertex_obj) {
         PyErr_Print(); // Print the error for debugging
         PyGILState_Release(gstate);
         return -1;
     }
     
     // Call the Python provider function
-    PyObject* py_result = PyObject_CallFunctionObjArgs(python_function, vertex_dict, NULL);
-    Py_DECREF(vertex_dict);
+    PyObject* py_result = PyObject_CallFunctionObjArgs(python_function, vertex_obj, NULL);
+    Py_DECREF(vertex_obj);
     
     if (!py_result) {
         // Python function raised an exception
@@ -302,8 +305,8 @@ static int python_provider_wrapper(
         return -1;
     }
     
-    // Convert Python edge list back to C structures
-    if (python_edges_to_c_edges(py_result, out_edges) == 0) {
+    // Convert Python (Vertex, Edge) pairs back to C structures
+    if (python_vertex_edge_pairs_to_c_edges(py_result, out_edges) == 0) {
         result = 0; // Success
     } else {
         // Conversion failed
@@ -825,6 +828,264 @@ static int python_edges_to_c_edges(PyObject* edge_list, GraphserverEdgeList* out
                     return -1;
                 }
             }
+        }
+        
+        // Add edge to the list
+        GraphserverResult result = gs_edge_list_add_edge(out_edges, edge);
+        if (result != GS_SUCCESS) {
+            gs_edge_destroy(edge);
+            PyErr_SetString(PyExc_RuntimeError, "Failed to add edge to list");
+            return -1;
+        }
+    }
+    
+    return 0; // Success
+}
+
+// Helper function to convert C vertex to Python Vertex object
+static PyObject* vertex_to_python_vertex_object(const GraphserverVertex* vertex) {
+    if (!vertex) {
+        PyErr_SetString(PyExc_ValueError, "Vertex cannot be NULL");
+        return NULL;
+    }
+    
+    // First convert to dictionary
+    PyObject* dict = vertex_to_python_dict(vertex);
+    if (!dict) {
+        return NULL;
+    }
+    
+    // Import Vertex class from graphserver module
+    PyObject* graphserver_module = PyImport_ImportModule("graphserver");
+    if (!graphserver_module) {
+        Py_DECREF(dict);
+        return NULL;
+    }
+    
+    PyObject* vertex_class = PyObject_GetAttrString(graphserver_module, "Vertex");
+    Py_DECREF(graphserver_module);
+    if (!vertex_class) {
+        Py_DECREF(dict);
+        return NULL;
+    }
+    
+    // Create Vertex object: Vertex(data)
+    PyObject* vertex_obj = PyObject_CallFunctionObjArgs(vertex_class, dict, NULL);
+    Py_DECREF(vertex_class);
+    Py_DECREF(dict);
+    
+    return vertex_obj;
+}
+
+// Helper function to convert Python Vertex object to C vertex
+static GraphserverVertex* python_vertex_object_to_vertex(PyObject* vertex_obj) {
+    if (!vertex_obj) {
+        PyErr_SetString(PyExc_ValueError, "Vertex object cannot be NULL");
+        return NULL;
+    }
+    
+    // Call to_dict() method on Vertex object
+    PyObject* to_dict_method = PyObject_GetAttrString(vertex_obj, "to_dict");
+    if (!to_dict_method) {
+        PyErr_SetString(PyExc_TypeError, "Object is not a Vertex (missing to_dict method)");
+        return NULL;
+    }
+    
+    PyObject* dict = PyObject_CallObject(to_dict_method, NULL);
+    Py_DECREF(to_dict_method);
+    if (!dict) {
+        return NULL;
+    }
+    
+    // Convert dictionary to C vertex
+    GraphserverVertex* vertex = python_dict_to_vertex(dict);
+    Py_DECREF(dict);
+    
+    return vertex;
+}
+
+// Helper function to convert Python (Vertex, Edge) pairs to C edges
+static int python_vertex_edge_pairs_to_c_edges(PyObject* pair_list, GraphserverEdgeList* out_edges) {
+    if (!PyList_Check(pair_list)) {
+        PyErr_SetString(PyExc_TypeError, "Expected list of (Vertex, Edge) tuples");
+        return -1;
+    }
+    
+    Py_ssize_t list_size = PyList_Size(pair_list);
+    if (list_size == 0) {
+        // Empty list is valid - nothing to add
+        return 0;
+    }
+    
+    // Process each (vertex, edge) pair in the list
+    for (Py_ssize_t i = 0; i < list_size; i++) {
+        PyObject* pair = PyList_GetItem(pair_list, i);
+        if (!PyTuple_Check(pair) || PyTuple_Size(pair) != 2) {
+            PyErr_Format(PyExc_TypeError, "Item at index %zd is not a (Vertex, Edge) tuple", i);
+            return -1;
+        }
+        
+        PyObject* vertex_obj = PyTuple_GetItem(pair, 0);
+        PyObject* edge_obj = PyTuple_GetItem(pair, 1);
+        
+        // Convert Vertex object to C vertex
+        GraphserverVertex* target_vertex = python_vertex_object_to_vertex(vertex_obj);
+        if (!target_vertex) {
+            return -1; // Error already set
+        }
+        
+        // Extract cost from Edge object
+        PyObject* cost_attr = PyObject_GetAttrString(edge_obj, "cost");
+        if (!cost_attr) {
+            gs_vertex_destroy(target_vertex);
+            PyErr_Format(PyExc_TypeError, "Edge at index %zd missing cost attribute", i);
+            return -1;
+        }
+        
+        double* distance_vector = NULL;
+        size_t distance_vector_size = 0;
+        
+        if (PyFloat_Check(cost_attr) || PyLong_Check(cost_attr)) {
+            // Single cost value
+            double cost = PyFloat_AsDouble(cost_attr);
+            if (cost == -1.0 && PyErr_Occurred()) {
+                Py_DECREF(cost_attr);
+                gs_vertex_destroy(target_vertex);
+                return -1;
+            }
+            
+            distance_vector = malloc(sizeof(double));
+            if (!distance_vector) {
+                Py_DECREF(cost_attr);
+                gs_vertex_destroy(target_vertex);
+                PyErr_NoMemory();
+                return -1;
+            }
+            distance_vector[0] = cost;
+            distance_vector_size = 1;
+            
+        } else if (PyList_Check(cost_attr)) {
+            // Multi-objective cost vector
+            Py_ssize_t cost_list_size = PyList_Size(cost_attr);
+            if (cost_list_size <= 0) {
+                Py_DECREF(cost_attr);
+                gs_vertex_destroy(target_vertex);
+                PyErr_Format(PyExc_ValueError, "Cost vector cannot be empty for edge at index %zd", i);
+                return -1;
+            }
+            
+            distance_vector = malloc(cost_list_size * sizeof(double));
+            if (!distance_vector) {
+                Py_DECREF(cost_attr);
+                gs_vertex_destroy(target_vertex);
+                PyErr_NoMemory();
+                return -1;
+            }
+            
+            for (Py_ssize_t j = 0; j < cost_list_size; j++) {
+                PyObject* cost_item = PyList_GetItem(cost_attr, j);
+                if (!PyFloat_Check(cost_item) && !PyLong_Check(cost_item)) {
+                    free(distance_vector);
+                    Py_DECREF(cost_attr);
+                    gs_vertex_destroy(target_vertex);
+                    PyErr_Format(PyExc_TypeError, "Cost vector item %zd is not a number", j);
+                    return -1;
+                }
+                distance_vector[j] = PyFloat_AsDouble(cost_item);
+            }
+            distance_vector_size = cost_list_size;
+            
+        } else {
+            Py_DECREF(cost_attr);
+            gs_vertex_destroy(target_vertex);
+            PyErr_Format(PyExc_TypeError, "Cost must be a number or list of numbers for edge at index %zd", i);
+            return -1;
+        }
+        
+        Py_DECREF(cost_attr);
+        
+        // Create the edge
+        GraphserverEdge* edge = gs_edge_create(target_vertex, distance_vector, distance_vector_size);
+        free(distance_vector); // gs_edge_create copies the vector
+        
+        if (!edge) {
+            gs_vertex_destroy(target_vertex);
+            PyErr_SetString(PyExc_RuntimeError, "Failed to create edge");
+            return -1;
+        }
+        
+        // Set the edge to own the target vertex
+        gs_edge_set_owns_target_vertex(edge, true);
+        
+        // Handle optional metadata from Edge object
+        PyObject* metadata_attr = PyObject_GetAttrString(edge_obj, "metadata");
+        if (metadata_attr && PyDict_Check(metadata_attr)) {
+            PyObject* meta_key;
+            PyObject* meta_value;
+            Py_ssize_t meta_pos = 0;
+            
+            while (PyDict_Next(metadata_attr, &meta_pos, &meta_key, &meta_value)) {
+                if (!PyUnicode_Check(meta_key)) {
+                    Py_DECREF(metadata_attr);
+                    gs_edge_destroy(edge);
+                    PyErr_SetString(PyExc_TypeError, "Metadata keys must be strings");
+                    return -1;
+                }
+                
+                const char* meta_key_str = PyUnicode_AsUTF8(meta_key);
+                if (!meta_key_str) {
+                    Py_DECREF(metadata_attr);
+                    gs_edge_destroy(edge);
+                    return -1;
+                }
+                
+                // Convert metadata value to GraphserverValue
+                GraphserverValue meta_gs_value;
+                if (PyLong_Check(meta_value)) {
+                    long long val = PyLong_AsLongLong(meta_value);
+                    if (val == -1 && PyErr_Occurred()) {
+                        Py_DECREF(metadata_attr);
+                        gs_edge_destroy(edge);
+                        return -1;
+                    }
+                    meta_gs_value = gs_value_create_int((int64_t)val);
+                } else if (PyFloat_Check(meta_value)) {
+                    double val = PyFloat_AsDouble(meta_value);
+                    if (val == -1.0 && PyErr_Occurred()) {
+                        Py_DECREF(metadata_attr);
+                        gs_edge_destroy(edge);
+                        return -1;
+                    }
+                    meta_gs_value = gs_value_create_float(val);
+                } else if (PyUnicode_Check(meta_value)) {
+                    const char* val = PyUnicode_AsUTF8(meta_value);
+                    if (!val) {
+                        Py_DECREF(metadata_attr);
+                        gs_edge_destroy(edge);
+                        return -1;
+                    }
+                    meta_gs_value = gs_value_create_string(val);
+                } else if (PyBool_Check(meta_value)) {
+                    bool val = PyObject_IsTrue(meta_value);
+                    meta_gs_value = gs_value_create_bool(val);
+                } else {
+                    Py_DECREF(metadata_attr);
+                    gs_edge_destroy(edge);
+                    PyErr_Format(PyExc_TypeError, "Unsupported metadata value type for key '%s'", meta_key_str);
+                    return -1;
+                }
+                
+                GraphserverResult result = gs_edge_set_metadata(edge, meta_key_str, meta_gs_value);
+                if (result != GS_SUCCESS) {
+                    Py_DECREF(metadata_attr);
+                    gs_edge_destroy(edge);
+                    PyErr_Format(PyExc_RuntimeError, "Failed to set metadata for key '%s'", meta_key_str);
+                    return -1;
+                }
+            }
+        }
+        if (metadata_attr) {
+            Py_DECREF(metadata_attr);
         }
         
         // Add edge to the list
