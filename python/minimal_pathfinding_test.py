@@ -20,6 +20,7 @@ SIMPLE_OSM_XML = """<?xml version="1.0" encoding="UTF-8"?>
   </way>
 </osm>"""
 
+
 def minimal_pathfinding_test():
     print("🔬 Minimal Pathfinding Test")
     print("=" * 40)
@@ -33,7 +34,7 @@ def minimal_pathfinding_test():
     try:
         # Create providers
         walking_profile = WalkingProfile(base_speed_ms=1.0)
-        
+
         network_provider = OSMNetworkProvider(osm_file, walking_profile=walking_profile)
         access_provider = OSMAccessProvider(
             parser=network_provider.parser,
@@ -50,7 +51,7 @@ def minimal_pathfinding_test():
 
         # Define coordinates
         start_coords = Vertex({"lat": 0.0001, "lon": 0.0001})  # Near node 1
-        goal_coords = Vertex({"lat": 0.0001, "lon": 0.0011})   # Near node 2
+        goal_coords = Vertex({"lat": 0.0001, "lon": 0.0011})  # Near node 2
 
         print(f"Start: {start_coords._data}")
         print(f"Goal:  {goal_coords._data}")
@@ -66,6 +67,7 @@ def minimal_pathfinding_test():
 
     finally:
         osm_file.unlink()
+
 
 if __name__ == "__main__":
     minimal_pathfinding_test()

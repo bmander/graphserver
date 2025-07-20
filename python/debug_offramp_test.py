@@ -25,6 +25,7 @@ SIMPLE_OSM_XML = """<?xml version="1.0" encoding="UTF-8"?>
   </way>
 </osm>"""
 
+
 def debug_offramp_generation():
     print("🔍 Debug: Offramp Generation Detailed Analysis")
     print("=" * 60)
@@ -38,7 +39,7 @@ def debug_offramp_generation():
     try:
         # Create providers
         walking_profile = WalkingProfile(base_speed_ms=1.0)
-        
+
         network_provider = OSMNetworkProvider(osm_file, walking_profile=walking_profile)
         access_provider = OSMAccessProvider(
             parser=network_provider.parser,
@@ -52,31 +53,37 @@ def debug_offramp_generation():
         goal_lat, goal_lon = 0.0001, 0.0011
         print(f"Setting goal coordinate: ({goal_lat}, {goal_lon})")
         access_provider.set_target_coordinate(goal_lat, goal_lon)
-        
+
         print(f"Stored target coordinates: {access_provider._target_coordinates}")
 
         # Test offramps from each OSM node
         for node_id in [1, 2]:
             print(f"\n--- Testing offramps from OSM Node {node_id} ---")
-            
+
             osm_vertex = Vertex({"osm_node_id": node_id})
             offramps = access_provider(osm_vertex)
-            
+
             print(f"Generated {len(offramps)} offramps")
-            
+
             for i, (target_vertex, edge) in enumerate(offramps):
-                print(f"  Offramp {i+1}:")
+                print(f"  Offramp {i + 1}:")
                 print(f"    Target vertex keys: {list(target_vertex.keys())}")
-                print(f"    Target coordinates: ({target_vertex.get('lat', 'N/A')}, {target_vertex.get('lon', 'N/A')})")
-                print(f"    Target identity hash: {target_vertex.get('_id_hash', 'MISSING')}")
+                print(
+                    f"    Target coordinates: ({target_vertex.get('lat', 'N/A')}, {target_vertex.get('lon', 'N/A')})"
+                )
+                print(
+                    f"    Target identity hash: {target_vertex.get('_id_hash', 'MISSING')}"
+                )
                 print(f"    Edge cost: {edge.cost}")
                 print(f"    Edge distance: {edge.metadata.get('distance_m', 'N/A')}m")
-                
+
                 # Check if this target matches our goal
                 expected_goal_hash = f"coord:{round(goal_lat, 5)},{round(goal_lon, 5)}"
-                target_hash = target_vertex.get('_id_hash', '')
+                target_hash = target_vertex.get("_id_hash", "")
                 is_match = target_hash == expected_goal_hash
-                print(f"    Matches goal hash? {is_match} (expected: {expected_goal_hash})")
+                print(
+                    f"    Matches goal hash? {is_match} (expected: {expected_goal_hash})"
+                )
 
         # Test what happens when we add the goal vertex identity hash manually
         print(f"\n--- Manual Goal Hash Test ---")
@@ -87,6 +94,7 @@ def debug_offramp_generation():
 
     finally:
         osm_file.unlink()
+
 
 if __name__ == "__main__":
     debug_offramp_generation()
