@@ -27,6 +27,9 @@ class OSMAccessProvider:
     This provider handles bidirectional connections between arbitrary geographic
     coordinates and nearby OSM nodes. It generates both "onramp" edges (coordinate
     to OSM nodes) and "offramp" edges (OSM nodes to coordinates).
+    
+    The provider maintains a list of target coordinates to enable offramp generation
+    during planning.
     """
 
     def __init__(
@@ -57,6 +60,9 @@ class OSMAccessProvider:
         self.walking_profile = walking_profile or WalkingProfile()
         self.search_radius_m = search_radius_m
         self.max_nearby_nodes = max_nearby_nodes
+        
+        # Target coordinates for offramp generation
+        self._target_coordinates: list[tuple[float, float]] = []
 
         if parser is not None:
             self.parser = parser
@@ -85,6 +91,29 @@ class OSMAccessProvider:
         self.spatial_index = SpatialIndex()
         self.spatial_index.add_nodes(self.parser.nodes)
 
+    def add_target_coordinate(self, lat: float, lon: float) -> None:
+        """Add a target coordinate for offramp generation.
+        
+        Args:
+            lat: Target latitude
+            lon: Target longitude
+        """
+        self._target_coordinates.append((lat, lon))
+
+    def clear_target_coordinates(self) -> None:
+        """Clear all target coordinates."""
+        self._target_coordinates.clear()
+
+    def set_target_coordinate(self, lat: float, lon: float) -> None:
+        """Set a single target coordinate, clearing any existing targets.
+        
+        Args:
+            lat: Target latitude
+            lon: Target longitude
+        """
+        self.clear_target_coordinates()
+        self.add_target_coordinate(lat, lon)
+
     def __call__(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
         """Generate edges from a vertex (implements EdgeProvider protocol).
 
@@ -96,6 +125,10 @@ class OSMAccessProvider:
         """
         # Handle coordinate inputs (onramp: coordinate -> OSM nodes)
         if "lat" in vertex and "lon" in vertex:
+            # Store this coordinate as a potential target for offramps
+            lat, lon = float(vertex["lat"]), float(vertex["lon"])
+            if (lat, lon) not in self._target_coordinates:
+                self.add_target_coordinate(lat, lon)
             return self._edges_from_coordinates(vertex)
 
         # Handle OSM node inputs for offramp (OSM node -> coordinates)
@@ -185,16 +218,35 @@ class OSMAccessProvider:
 
         node = self.parser.nodes[node_id]
 
-        # For offramps, we need to find target coordinates within range
-        # In practice, this would be driven by the planner looking for paths to specific coordinates
-        # For now, we return an empty list since offramps are created dynamically during planning
-        # when the planner needs to reach a specific coordinate target
+        # Generate offramps to all target coordinates within range
+        edges = []
+        for target_lat, target_lon in self._target_coordinates:
+            # Calculate distance to target coordinate
+            from .spatial import calculate_distance
+            distance_m = calculate_distance(node.lat, node.lon, target_lat, target_lon)
 
-        # NOTE: This method will be called by the planner when it encounters an OSM node
-        # and is looking for ways to reach coordinate-based goals. The actual implementation
-        # would depend on the specific coordinate targets the planner is trying to reach.
+            # Only create offramp if target is within reasonable range
+            if distance_m <= self.search_radius_m:
+                # Calculate walking time
+                duration_s = distance_m / self.walking_profile.base_speed_ms
 
-        return []
+                # Create target vertex for the coordinate
+                target_vertex = Vertex({"lat": target_lat, "lon": target_lon})
+
+                # Create offramp edge
+                edge = Edge(
+                    cost=duration_s,
+                    metadata={
+                        "edge_type": "node_to_coordinate",
+                        "distance_m": distance_m,
+                        "duration_s": duration_s,
+                        "from_osm_node_id": node_id,
+                    },
+                )
+
+                edges.append((target_vertex, edge))
+        
+        return edges
 
     def get_offramp_edges_to_coordinate(
         self, node_id: int, target_lat: float, target_lon: float

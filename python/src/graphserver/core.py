@@ -247,11 +247,27 @@ class Engine:
             msg = "C extension not available"
             raise RuntimeError(msg)
 
-        # Convert Vertex objects to dictionaries for C extension
-        result_data = _graphserver.plan(
-            self._engine, start.to_dict(), goal.to_dict(), planner
-        )
-        return PathResult(result_data)
+        # Set up goal coordinates for access providers if goal has coordinates
+        access_providers = []
+        if "lat" in goal and "lon" in goal:
+            goal_lat, goal_lon = float(goal["lat"]), float(goal["lon"])
+            for provider in self._providers.values():
+                # Check if provider has target coordinate methods (duck typing)
+                if hasattr(provider, 'set_target_coordinate'):
+                    provider.set_target_coordinate(goal_lat, goal_lon)
+                    access_providers.append(provider)
+
+        try:
+            # Convert Vertex objects to dictionaries for C extension
+            result_data = _graphserver.plan(
+                self._engine, start.to_dict(), goal.to_dict(), planner
+            )
+            return PathResult(result_data)
+        finally:
+            # Clean up target coordinates in access providers
+            for provider in access_providers:
+                if hasattr(provider, 'clear_target_coordinates'):
+                    provider.clear_target_coordinates()
 
     @property
     def providers(self) -> Mapping[str, EdgeProvider]:
