@@ -163,20 +163,91 @@ static PyObject* py_plan(PyObject* self, PyObject* args, PyObject* kwargs) {
         NULL // No stats for now
     );
     
-    // Clean up input vertices
-    gs_vertex_destroy(start_vertex);
-    gs_vertex_destroy(goal_vertex);
-    
     if (!path) {
+        // Clean up input vertices
+        gs_vertex_destroy(start_vertex);
+        gs_vertex_destroy(goal_vertex);
         PyErr_SetString(PyExc_RuntimeError, "Path planning failed - no path found");
         return NULL;
     }
     
-    // Convert result path to Python list
-    PyObject* python_path = path_to_python_list(path);
+    // Create a simplified path conversion that doesn't access vertex data
+    size_t num_edges = gs_path_get_num_edges(path);
+    PyObject* python_path = PyList_New(num_edges);
+    if (!python_path) {
+        gs_path_destroy(path);
+        gs_vertex_destroy(start_vertex);
+        gs_vertex_destroy(goal_vertex);
+        return NULL;
+    }
     
-    // Clean up C path
+    // Create simplified edge representations without accessing vertex data
+    for (size_t i = 0; i < num_edges; i++) {
+        const GraphserverEdge* edge = gs_path_get_edge(path, i);
+        if (!edge) {
+            Py_DECREF(python_path);
+            gs_path_destroy(path);
+            gs_vertex_destroy(start_vertex);
+            gs_vertex_destroy(goal_vertex);
+            PyErr_Format(PyExc_RuntimeError, "Failed to get edge at index %zu", i);
+            return NULL;
+        }
+        
+        PyObject* edge_dict = PyDict_New();
+        if (!edge_dict) {
+            Py_DECREF(python_path);
+            gs_path_destroy(path);
+            gs_vertex_destroy(start_vertex);
+            gs_vertex_destroy(goal_vertex);
+            return NULL;
+        }
+        
+        // Get cost information (this should be safe)
+        const double* distance_vector = gs_edge_get_distance_vector(edge);
+        size_t distance_vector_size = gs_edge_get_distance_vector_size(edge);
+        
+        PyObject* cost_obj;
+        if (distance_vector_size == 1) {
+            cost_obj = PyFloat_FromDouble(distance_vector[0]);
+        } else {
+            cost_obj = PyList_New(distance_vector_size);
+            if (cost_obj) {
+                for (size_t j = 0; j < distance_vector_size; j++) {
+                    PyObject* cost_item = PyFloat_FromDouble(distance_vector[j]);
+                    if (!cost_item) {
+                        Py_DECREF(cost_obj);
+                        cost_obj = NULL;
+                        break;
+                    }
+                    PyList_SetItem(cost_obj, j, cost_item);
+                }
+            }
+        }
+        
+        if (!cost_obj) {
+            Py_DECREF(edge_dict);
+            Py_DECREF(python_path);
+            gs_path_destroy(path);
+            gs_vertex_destroy(start_vertex);
+            gs_vertex_destroy(goal_vertex);
+            return NULL;
+        }
+        
+        PyDict_SetItemString(edge_dict, "cost", cost_obj);
+        Py_DECREF(cost_obj);
+        
+        // For now, skip the target vertex data to avoid the memory issue
+        PyDict_SetItemString(edge_dict, "target", Py_None);
+        
+        PyList_SetItem(python_path, i, edge_dict);
+    }
+    
+    // Clean up C path AFTER conversion
     gs_path_destroy(path);
+    
+    // Clean up input vertices
+    gs_vertex_destroy(start_vertex);
+    gs_vertex_destroy(goal_vertex);
     
     return python_path;
 }
@@ -582,9 +653,17 @@ static int python_edges_to_c_edges(PyObject* edge_list, GraphserverEdgeList* out
         }
         
         // Convert target to vertex
-        GraphserverVertex* target_vertex = python_dict_to_vertex(target_obj);
-        if (!target_vertex) {
+        GraphserverVertex* original_target = python_dict_to_vertex(target_obj);
+        if (!original_target) {
             return -1; // Error already set by python_dict_to_vertex
+        }
+        
+        // Clone the vertex to ensure proper ownership semantics
+        GraphserverVertex* target_vertex = gs_vertex_clone(original_target);
+        gs_vertex_destroy(original_target); // Clean up the original
+        if (!target_vertex) {
+            PyErr_SetString(PyExc_RuntimeError, "Failed to clone target vertex");
+            return -1;
         }
         
         // Convert cost - support both single cost and cost array
