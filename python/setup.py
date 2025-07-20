@@ -8,13 +8,13 @@ core_build = os.path.join(core_path, "build")
 
 # Define the extension module
 extension = Extension(
-    '_graphserver',
-    sources=['src/graphserver/_graphserver.c'],
+    "_graphserver",
+    sources=["src/graphserver/_graphserver.c"],
     include_dirs=[core_include],
     library_dirs=[core_build],
-    libraries=['m'],
-    extra_objects=[os.path.join(core_build, 'libgraphserver_core.a')],
-    extra_compile_args=['-std=c99', '-Wall', '-Wextra'],
+    libraries=["m"],
+    extra_objects=[os.path.join(core_build, "libgraphserver_core.a")],
+    extra_compile_args=["-std=c99", "-Wall", "-Wextra"],
     extra_link_args=[],
 )
 
