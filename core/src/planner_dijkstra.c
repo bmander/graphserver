@@ -138,94 +138,134 @@ GraphserverResult dijkstra_init(
     return GS_SUCCESS;
 }
 
-// Reconstruct path from goal to start
-static GraphserverResult reconstruct_path(
+// Helper to count edges in the path by following parent pointers
+static GraphserverResult count_path_length(
     DijkstraState* state,
-    const GraphserverVertex* goal_vertex,
-    GraphserverPath** out_path) {
-    
-    if (!state || !goal_vertex || !out_path) {
+    DijkstraNode* goal_node,
+    size_t* out_length) {
+
+    if (!state || !goal_node || !out_length) {
         return GS_ERROR_NULL_POINTER;
     }
-    
-    // Find goal node
-    DijkstraNode* goal_node = find_dijkstra_node(state, goal_vertex);
-    if (!goal_node) {
-        return GS_ERROR_NO_PATH_FOUND;
-    }
-    
-    // Count path length by following parent chain
-    size_t path_length = 0;
+
+    size_t length = 0;
     DijkstraNode* current = goal_node;
     while (current->parent) {
-        path_length++;
+        length++;
         current = find_dijkstra_node(state, current->parent);
         if (!current) {
             return GS_ERROR_NO_PATH_FOUND; // Broken parent chain
         }
     }
-    
-    if (path_length == 0) {
-        // Start is goal, create empty path
-        GraphserverPath* path = gs_path_create(1);
-        if (!path) return GS_ERROR_OUT_OF_MEMORY;
-        *out_path = path;
-        return GS_SUCCESS;
+
+    *out_length = length;
+    return GS_SUCCESS;
+}
+
+// Helper to build path edges and clone vertices
+static GraphserverResult build_path_edges(
+    DijkstraState* state,
+    DijkstraNode* goal_node,
+    size_t path_length,
+    GraphserverEdge*** out_edges) {
+
+    if (!state || !goal_node || !out_edges) {
+        return GS_ERROR_NULL_POINTER;
     }
-    
-    // Create path with correct size
+
+    GraphserverEdge** edges = malloc(sizeof(GraphserverEdge*) * path_length);
+    if (!edges) {
+        return GS_ERROR_OUT_OF_MEMORY;
+    }
+
+    // Initialize to NULL for safe cleanup on failure
+    for (size_t i = 0; i < path_length; i++) {
+        edges[i] = NULL;
+    }
+
+    DijkstraNode* current = goal_node;
+    for (int i = (int)path_length - 1; i >= 0; i--) {
+        DijkstraNode* parent_node = find_dijkstra_node(state, current->parent);
+        if (!parent_node) {
+            // Cleanup any previously created edges
+            for (size_t j = 0; j < path_length; j++) {
+                if (edges[j]) gs_edge_destroy(edges[j]);
+            }
+            free(edges);
+            return GS_ERROR_NO_PATH_FOUND;
+        }
+
+        double edge_cost = current->cost - parent_node->cost;
+        GraphserverVertex* target_vertex_copy = gs_vertex_clone(current->vertex);
+        if (!target_vertex_copy) {
+            for (size_t j = 0; j < path_length; j++) {
+                if (edges[j]) gs_edge_destroy(edges[j]);
+            }
+            free(edges);
+            return GS_ERROR_OUT_OF_MEMORY;
+        }
+
+        GraphserverEdge* edge = gs_edge_create(target_vertex_copy, &edge_cost, 1);
+        if (!edge) {
+            gs_vertex_destroy(target_vertex_copy);
+            for (size_t j = 0; j < path_length; j++) {
+                if (edges[j]) gs_edge_destroy(edges[j]);
+            }
+            free(edges);
+            return GS_ERROR_OUT_OF_MEMORY;
+        }
+
+        gs_edge_set_owns_target_vertex(edge, true);
+        edges[i] = edge;
+        current = parent_node;
+    }
+
+    *out_edges = edges;
+    return GS_SUCCESS;
+}
+
+// Reconstruct path from goal to start
+static GraphserverResult reconstruct_path(
+    DijkstraState* state,
+    const GraphserverVertex* goal_vertex,
+    GraphserverPath** out_path) {
+
+    if (!state || !goal_vertex || !out_path) {
+        return GS_ERROR_NULL_POINTER;
+    }
+
+    // Find goal node
+    DijkstraNode* goal_node = find_dijkstra_node(state, goal_vertex);
+    if (!goal_node) {
+        return GS_ERROR_NO_PATH_FOUND;
+    }
+
+    size_t path_length = 0;
+    GraphserverResult result = count_path_length(state, goal_node, &path_length);
+    if (result != GS_SUCCESS) {
+        return result;
+    }
+
     GraphserverPath* path = gs_path_create(1);
     if (!path) {
         return GS_ERROR_OUT_OF_MEMORY;
     }
-    
-    // Allocate edges array
-    path->edges = malloc(sizeof(GraphserverEdge*) * path_length);
-    if (!path->edges) {
-        gs_path_destroy(path);
-        return GS_ERROR_OUT_OF_MEMORY;
+
+    if (path_length > 0) {
+        GraphserverEdge** edges = NULL;
+        result = build_path_edges(state, goal_node, path_length, &edges);
+        if (result != GS_SUCCESS) {
+            gs_path_destroy(path);
+            return result;
+        }
+        path->edges = edges;
     }
-    
-    // Build path by following parent chain backwards
-    current = goal_node;
-    for (int i = path_length - 1; i >= 0; i--) {
-        DijkstraNode* parent_node = find_dijkstra_node(state, current->parent);
-        if (!parent_node) {
-            gs_path_destroy(path);
-            return GS_ERROR_NO_PATH_FOUND;
-        }
-        
-        // Create edge from parent to current
-        double edge_cost = current->cost - parent_node->cost;
-        
-        // Clone the vertex to ensure data persistence after cleanup
-        GraphserverVertex* target_vertex_copy = gs_vertex_clone(current->vertex);
-        if (!target_vertex_copy) {
-            gs_path_destroy(path);
-            return GS_ERROR_OUT_OF_MEMORY;
-        }
-        
-        GraphserverEdge* edge = gs_edge_create(target_vertex_copy, &edge_cost, 1);
-        if (!edge) {
-            gs_vertex_destroy(target_vertex_copy);
-            gs_path_destroy(path);
-            return GS_ERROR_OUT_OF_MEMORY;
-        }
-        
-        // Set the edge to own the cloned vertex so it persists after path creation
-        gs_edge_set_owns_target_vertex(edge, true);
-        
-        path->edges[i] = edge;
-        current = parent_node;
-    }
-    
+
     path->num_edges = path_length;
-    
-    // Set total cost
     if (path->total_cost) {
         path->total_cost[0] = goal_node->cost;
     }
-    
+
     *out_path = path;
     return GS_SUCCESS;
 }
