@@ -72,6 +72,98 @@ def create_test_routes(
     return routes
 
 
+def _load_providers(
+    osm_file: Path, walking_profile: WalkingProfile
+) -> tuple[OSMNetworkProvider | None, OSMAccessProvider | None, float]:
+    """Load OSM providers for benchmarking."""
+
+    start_time = time.time()
+    try:
+        network_provider = OSMNetworkProvider(
+            osm_file,
+            walking_profile=walking_profile,
+        )
+        access_provider = OSMAccessProvider(
+            parser=network_provider.parser,
+            walking_profile=walking_profile,
+            search_radius_m=150.0,
+            max_nearby_nodes=5,
+            build_index=True,
+        )
+    except Exception as e:  # pragma: no cover - demo helper
+        print(f"❌ Error loading OSM data: {e}")
+        return None, None, 0.0
+
+    load_time = time.time() - start_time
+    print(f"✅ OSM data loaded in {load_time:.2f} seconds")
+    print(
+        f"   Network: {network_provider.node_count} nodes, {network_provider.way_count} ways"
+    )
+
+    return network_provider, access_provider, load_time
+
+
+def _benchmark_engine(
+    engine: Engine,
+    routes: list[tuple[Vertex, Vertex]],
+    repetitions: int,
+) -> tuple[list[float], int, dict]:
+    """Benchmark a planning engine."""
+
+    times: list[float] = []
+    successful = 0
+
+    for rep in range(repetitions):
+        print(f"   Repetition {rep + 1}/{repetitions}...")
+        rep_start = time.time()
+
+        for i, (start, goal) in enumerate(routes):
+            route_start = time.time()
+            try:
+                result = engine.plan(start=start, goal=goal)
+                if result.edges:
+                    successful += 1
+                times.append(time.time() - route_start)
+            except Exception as e:  # pragma: no cover - diagnostic
+                print(f"      Route {i + 1} failed: {e}")
+                continue
+
+        print(f"      Completed in {time.time() - rep_start:.3f}s")
+
+    return times, successful, engine.get_stats()
+
+
+def _calculate_metrics(
+    no_cache_times: list[float],
+    cache_times: list[float],
+    stats: dict[str, Any],
+) -> dict[str, Any]:
+    """Compute benchmark metrics."""
+
+    if not no_cache_times or not cache_times:
+        return {}
+
+    no_cache_mean = statistics.mean(no_cache_times)
+    cache_mean = statistics.mean(cache_times)
+    speedup = no_cache_mean / cache_mean if cache_mean > 0 else 0.0
+
+    return {
+        "no_cache": {
+            "mean_time": no_cache_mean,
+            "total_time": sum(no_cache_times),
+            "successful_routes": stats["no_cache"]["successful"],
+            "stats": stats["no_cache"]["stats"],
+        },
+        "cache": {
+            "mean_time": cache_mean,
+            "total_time": sum(cache_times),
+            "successful_routes": stats["cache"]["successful"],
+            "speedup": speedup,
+            "stats": stats["cache"]["stats"],
+        },
+    }
+
+
 def benchmark_routing_performance(
     osm_file: Path, num_routes: int = 10, repetitions: int = 3
 ) -> dict[str, Any]:
@@ -96,28 +188,11 @@ def benchmark_routing_performance(
     )
 
     # Load OSM data
-    start_time = time.time()
-    try:
-        network_provider = OSMNetworkProvider(
-            osm_file,
-            walking_profile=walking_profile,
-        )
-        access_provider = OSMAccessProvider(
-            parser=network_provider.parser,
-            walking_profile=walking_profile,
-            search_radius_m=150.0,
-            max_nearby_nodes=5,
-            build_index=True,
-        )
-    except Exception as e:
-        print(f"❌ Error loading OSM data: {e}")
-        return {}
-
-    load_time = time.time() - start_time
-    print(f"✅ OSM data loaded in {load_time:.2f} seconds")
-    print(
-        f"   Network: {network_provider.node_count} nodes, {network_provider.way_count} ways"
+    network_provider, access_provider, load_time = _load_providers(
+        osm_file, walking_profile
     )
+    if network_provider is None or access_provider is None:
+        return {}
 
     # Create test routes
     routes = create_test_routes(osm_file, num_routes)
@@ -140,84 +215,31 @@ def benchmark_routing_performance(
     no_cache_engine = Engine(enable_edge_caching=False)
     no_cache_engine.register_provider("osm_network", network_provider)
     no_cache_engine.register_provider("osm_access", access_provider)
-
-    no_cache_times = []
-    no_cache_successful = 0
-
-    for rep in range(repetitions):
-        print(f"   Repetition {rep + 1}/{repetitions}...")
-        rep_start = time.time()
-
-        for i, (start, goal) in enumerate(routes):
-            route_start = time.time()
-            try:
-                result = no_cache_engine.plan(start=start, goal=goal)
-                if result.edges:
-                    no_cache_successful += 1
-                route_time = time.time() - route_start
-                no_cache_times.append(route_time)
-            except Exception as e:
-                print(f"      Route {i + 1} failed: {e}")
-                continue
-
-        rep_time = time.time() - rep_start
-        print(f"      Completed in {rep_time:.3f}s")
-
-    no_cache_stats = no_cache_engine.get_stats()
+    no_cache_times, no_cache_successful, no_cache_stats = _benchmark_engine(
+        no_cache_engine, routes, repetitions
+    )
 
     # Benchmark WITH caching
     print("\\n✅ Benchmarking WITH cache...")
     cache_engine = Engine(enable_edge_caching=True)
     cache_engine.register_provider("osm_network", network_provider)
     cache_engine.register_provider("osm_access", access_provider)
-
-    cache_times = []
-    cache_successful = 0
-
-    for rep in range(repetitions):
-        print(f"   Repetition {rep + 1}/{repetitions}...")
-        rep_start = time.time()
-
-        for i, (start, goal) in enumerate(routes):
-            route_start = time.time()
-            try:
-                result = cache_engine.plan(start=start, goal=goal)
-                if result.edges:
-                    cache_successful += 1
-                route_time = time.time() - route_start
-                cache_times.append(route_time)
-            except Exception as e:
-                print(f"      Route {i + 1} failed: {e}")
-                continue
-
-        rep_time = time.time() - rep_start
-        print(f"      Completed in {rep_time:.3f}s")
-
-    cache_stats = cache_engine.get_stats()
+    cache_times, cache_successful, cache_stats = _benchmark_engine(
+        cache_engine, routes, repetitions
+    )
 
     # Calculate performance metrics
-    if no_cache_times and cache_times:
-        no_cache_mean = statistics.mean(no_cache_times)
-        cache_mean = statistics.mean(cache_times)
-        speedup = no_cache_mean / cache_mean if cache_mean > 0 else 0
-
-        results.update(
-            {
-                "no_cache": {
-                    "mean_time": no_cache_mean,
-                    "total_time": sum(no_cache_times),
-                    "successful_routes": no_cache_successful,
-                    "stats": no_cache_stats,
-                },
-                "cache": {
-                    "mean_time": cache_mean,
-                    "total_time": sum(cache_times),
-                    "successful_routes": cache_successful,
-                    "speedup": speedup,
-                    "stats": cache_stats,
-                },
-            }
-        )
+    stats = {
+        "no_cache": {
+            "successful": no_cache_successful,
+            "stats": no_cache_stats,
+        },
+        "cache": {
+            "successful": cache_successful,
+            "stats": cache_stats,
+        },
+    }
+    results.update(_calculate_metrics(no_cache_times, cache_times, stats))
 
     return results
 
