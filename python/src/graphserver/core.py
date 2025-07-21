@@ -180,7 +180,12 @@ class Engine:
     Python for maximum flexibility.
     """
 
-    def __init__(self, *, config: Mapping[str, Any] | None = None, enable_edge_caching: bool = False) -> None:
+    def __init__(
+        self,
+        *,
+        config: Mapping[str, Any] | None = None,
+        enable_edge_caching: bool = False,
+    ) -> None:
         """Create new planning engine.
 
         Args:
@@ -198,7 +203,9 @@ class Engine:
         merged_config = dict(config) if config else {}
         merged_config["enable_edge_caching"] = enable_edge_caching
 
-        self._engine = _graphserver.create_engine(enable_edge_caching=enable_edge_caching)
+        self._engine = _graphserver.create_engine(
+            enable_edge_caching=enable_edge_caching
+        )
         self._providers: dict[str, EdgeProvider] = {}
         self._config = merged_config
 

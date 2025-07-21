@@ -143,29 +143,31 @@ def main():
             print(
                 f"   Total time: {result.total_cost:.1f}s ({result.total_cost / 60:.1f} minutes)"
             )
-            
+
             # Print detailed path information
             print("\n📋 Path Details:")
             print("-" * 15)
             for i, path_edge in enumerate(result):
                 print(f"  Step {i + 1}:")
-                
+
                 # Access the actual edge object
                 edge = path_edge.edge
                 target = path_edge.target
-                
+
                 print(f"    Cost: {edge.cost:.1f}s")
-                print(f"    Target: Node {target.get('osm_node_id', 'N/A')} at ({target.get('lat', 'N/A'):.6f}, {target.get('lon', 'N/A'):.6f})")
-                
+                print(
+                    f"    Target: Node {target.get('osm_node_id', 'N/A')} at ({target.get('lat', 'N/A'):.6f}, {target.get('lon', 'N/A'):.6f})"
+                )
+
                 # Access edge metadata if available
-                if hasattr(edge, 'metadata') and edge.metadata:
+                if hasattr(edge, "metadata") and edge.metadata:
                     distance = edge.metadata.get("distance_m", "N/A")
                     highway = edge.metadata.get("highway", "unknown")
                     way_id = edge.metadata.get("way_id", "N/A")
                     print(f"    Distance: {distance}m")
                     print(f"    Highway type: {highway}")
                     print(f"    Way ID: {way_id}")
-                
+
                 print()
         else:
             print("⚠️  No path found (may be normal for disconnected areas)")
