@@ -1,27 +1,26 @@
-#!/usr/bin/env python3
 """Tests for GraphServer edge caching functionality.
 
 This module contains comprehensive tests for the edge caching system,
-including basic operations, statistics, provider integration, and error handling.
+including basic operations, statistics, provider integration, and error
+handling.
 """
 
 from __future__ import annotations
 
-import time
+import contextlib
 import gc
-from typing import Any, Sequence
-from unittest.mock import Mock
+import time
+from collections.abc import Sequence
 
 import pytest
 
-from graphserver import Engine, Vertex, Edge
-from graphserver.core import VertexEdgePair
+from graphserver import Edge, Engine, Vertex
 
 
 class MockProvider:
     """Mock edge provider for testing cache behavior."""
 
-    def __init__(self, edges_to_return: list[VertexEdgePair] | None = None):
+    def __init__(self, edges_to_return: list[tuple[Vertex, Edge]] | None = None):
         """Initialize mock provider.
 
         Args:
@@ -31,7 +30,7 @@ class MockProvider:
         self.call_count = 0
         self.called_with: list[Vertex] = []
 
-    def __call__(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+    def __call__(self, vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
         """Mock provider implementation."""
         self.call_count += 1
         self.called_with.append(vertex)
@@ -89,11 +88,9 @@ class TestEngineCache:
 
         # Multiple planning calls should not use cache
         for _ in range(3):
-            try:
-                engine.plan(start=start, goal=goal)
-            except Exception:
+            with contextlib.suppress(Exception):
                 # Planning may fail, but that's not what we're testing
-                pass
+                engine.plan(start=start, goal=goal)
 
         stats = engine.get_stats()
         assert stats["cache_hits"] == 0
@@ -116,13 +113,10 @@ class TestEngineCache:
         goal = Vertex({"id": "target1"})
 
         # Multiple planning calls may use cache for vertex expansion
-        initial_stats = engine.get_stats()
         for _ in range(3):
-            try:
-                engine.plan(start=start, goal=goal)
-            except Exception:
+            with contextlib.suppress(Exception):
                 # Planning may fail, but vertex expansion should still occur
-                pass
+                engine.plan(start=start, goal=goal)
 
         final_stats = engine.get_stats()
         # With cache enabled, there should be some cache activity
@@ -131,7 +125,7 @@ class TestEngineCache:
             + final_stats["cache_misses"]
             + final_stats["cache_puts"]
         )
-        assert total_cache_ops >= 0  # Cache may be used during vertex expansion
+        assert total_cache_ops >= 0  # Cache may be used during expansion
 
 
 class TestCacheStatistics:
@@ -183,7 +177,6 @@ class TestCacheStatistics:
     def test_statistics_after_provider_registration(self):
         """Test that statistics remain valid after provider operations."""
         engine = Engine(enable_edge_caching=True)
-        initial_stats = engine.get_stats()
 
         # Register a provider
         provider = MockProvider()
@@ -221,10 +214,8 @@ class TestCacheIntegration:
         goal = Vertex({"id": "goal"})
 
         # Attempt planning (may fail, but should exercise cache)
-        try:
+        with contextlib.suppress(Exception):
             engine.plan(start=start, goal=goal)
-        except Exception:
-            pass  # Planning failure is acceptable for this test
 
         final_stats = engine.get_stats()
 
@@ -251,10 +242,8 @@ class TestCacheIntegration:
         # Execute multiple plans and track statistics
         stats_history = []
         for i in range(3):
-            try:
+            with contextlib.suppress(Exception):
                 engine.plan(start=start, goal=goal)
-            except Exception:
-                pass  # Planning failure is acceptable
 
             stats = engine.get_stats()
             stats_history.append(stats)
@@ -270,9 +259,6 @@ class TestCacheIntegration:
     def test_provider_registration_cache_behavior(self):
         """Test cache behavior when providers are registered/unregistered."""
         engine = Engine(enable_edge_caching=True)
-
-        # Initial state
-        initial_stats = engine.get_stats()
 
         # Register provider
         provider = MockProvider()
@@ -303,10 +289,8 @@ class TestCacheErrorHandling:
         goal = Vertex({"id": "goal"})
 
         # Should not crash, even if planning fails
-        try:
-            result = engine.plan(start=start, goal=goal)
-        except Exception:
-            pass  # Expected for empty vertices
+        with contextlib.suppress(Exception):
+            engine.plan(start=start, goal=goal)
 
         # Statistics should still be accessible
         stats = engine.get_stats()
@@ -331,10 +315,8 @@ class TestCacheErrorHandling:
 
         # Multiple operations with large data
         for _ in range(5):
-            try:
+            with contextlib.suppress(Exception):
                 engine.plan(start=start, goal=goal)
-            except Exception:
-                pass
 
             # Force garbage collection
             gc.collect()
@@ -348,8 +330,9 @@ class TestCacheErrorHandling:
         engine = Engine(enable_edge_caching=True)
 
         # Create provider that raises exceptions
-        def failing_provider(vertex: Vertex) -> Sequence[VertexEdgePair]:
-            raise ValueError("Provider failure")
+        def failing_provider(_vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
+            msg = "Provider failure"
+            raise ValueError(msg)
 
         engine.register_provider("failing", failing_provider)
 
@@ -357,10 +340,8 @@ class TestCacheErrorHandling:
         goal = Vertex({"id": "goal"})
 
         # Planning should handle provider failures gracefully
-        try:
+        with contextlib.suppress(Exception):
             engine.plan(start=start, goal=goal)
-        except Exception:
-            pass  # Expected due to provider failure
 
         # Cache statistics should still be accessible
         stats = engine.get_stats()
@@ -415,10 +396,8 @@ class TestCachePerformance:
 
         # Warm up both engines
         for engine in [cached_engine, uncached_engine]:
-            try:
+            with contextlib.suppress(Exception):
                 engine.plan(start=start, goal=goal)
-            except Exception:
-                pass
 
         # Time multiple operations
         cached_times = []
@@ -427,30 +406,18 @@ class TestCachePerformance:
         for _ in range(5):
             # Time cached engine
             start_time = time.time()
-            try:
+            with contextlib.suppress(Exception):
                 cached_engine.plan(start=start, goal=goal)
-            except Exception:
-                pass
             cached_times.append(time.time() - start_time)
 
             # Time uncached engine
             start_time = time.time()
-            try:
+            with contextlib.suppress(Exception):
                 uncached_engine.plan(start=start, goal=goal)
-            except Exception:
-                pass
             uncached_times.append(time.time() - start_time)
 
         # Verify cache statistics show activity
-        cached_stats = cached_engine.get_stats()
         uncached_stats = uncached_engine.get_stats()
-
-        # Cached engine should have some cache operations
-        cached_total_ops = (
-            cached_stats["cache_hits"]
-            + cached_stats["cache_misses"]
-            + cached_stats["cache_puts"]
-        )
 
         # Uncached engine should have no cache operations
         uncached_total_ops = (
@@ -460,8 +427,8 @@ class TestCachePerformance:
         )
 
         assert uncached_total_ops == 0
-        # Note: cached_total_ops might be 0 if the specific test scenario
-        # doesn't trigger cache usage, which is acceptable
+        # Note: cached engine might not show cache activity in this test
+        # scenario, which is acceptable
 
     def test_cache_statistics_scale_with_usage(self):
         """Test that cache statistics scale appropriately with usage."""
@@ -482,11 +449,10 @@ class TestCachePerformance:
         initial_stats = engine.get_stats()
 
         # Perform multiple planning operations
-        for i in range(10):
-            try:
+        for _ in range(10):
+            with contextlib.suppress(Exception):
+                # Planning may fail, but stats should still update
                 engine.plan(start=start, goal=goal)
-            except Exception:
-                pass  # Planning may fail, but stats should still update
 
         final_stats = engine.get_stats()
 
@@ -527,11 +493,7 @@ class TestCacheOSMIntegration:
 
     def test_cache_with_osm_providers_if_available(self):
         """Test cache behavior with OSM providers if they're available."""
-        try:
-            from graphserver.providers.osm import OSMNetworkProvider, OSMAccessProvider
-            from graphserver.providers.osm.types import WalkingProfile
-        except ImportError:
-            pytest.skip("OSM providers not available")
+        pytest.importorskip("graphserver.providers.osm")
 
         # This test would require actual OSM data, so we'll just verify
         # that the cache functionality doesn't break with OSM provider types
@@ -541,12 +503,6 @@ class TestCacheOSMIntegration:
         assert engine.cache_enabled is True
         stats = engine.get_stats()
         assert isinstance(stats, dict)
-
-        # If we had OSM data, we could test:
-        # walking_profile = WalkingProfile()
-        # network_provider = OSMNetworkProvider(osm_file, walking_profile)
-        # engine.register_provider("osm", network_provider)
-        # [perform routing tests]
 
 
 if __name__ == "__main__":

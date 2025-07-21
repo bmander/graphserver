@@ -82,7 +82,7 @@ def main():
     try:
         result = engine.plan(start=start_vertex, goal=goal_vertex)
 
-        print(f"   ✅ Planning succeeded!")
+        print("   ✅ Planning succeeded!")
         print(f"   📊 Path found with {len(result)} edges")
 
         total_cost = sum(edge["cost"] for edge in result)

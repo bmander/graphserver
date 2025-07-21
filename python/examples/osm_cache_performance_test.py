@@ -18,9 +18,9 @@ Examples:
 
 from __future__ import annotations
 
+import statistics
 import sys
 import time
-import statistics
 from pathlib import Path
 from typing import Any
 
@@ -136,7 +136,7 @@ def benchmark_routing_performance(
     }
 
     # Benchmark WITHOUT caching
-    print(f"\\n🚫 Benchmarking WITHOUT cache...")
+    print("\\n🚫 Benchmarking WITHOUT cache...")
     no_cache_engine = Engine(enable_edge_caching=False)
     no_cache_engine.register_provider("osm_network", network_provider)
     no_cache_engine.register_provider("osm_access", access_provider)
@@ -166,7 +166,7 @@ def benchmark_routing_performance(
     no_cache_stats = no_cache_engine.get_stats()
 
     # Benchmark WITH caching
-    print(f"\\n✅ Benchmarking WITH cache...")
+    print("\\n✅ Benchmarking WITH cache...")
     cache_engine = Engine(enable_edge_caching=True)
     cache_engine.register_provider("osm_network", network_provider)
     cache_engine.register_provider("osm_access", access_provider)
@@ -232,18 +232,18 @@ def print_performance_results(results: dict[str, Any]) -> None:
         print("❌ No results to display")
         return
 
-    print(f"\\n" + "=" * 60)
-    print(f"🎯 OSM CACHE PERFORMANCE RESULTS")
-    print(f"=" * 60)
+    print("\\n" + "=" * 60)
+    print("🎯 OSM CACHE PERFORMANCE RESULTS")
+    print("=" * 60)
 
-    print(f"\\n📊 Test Configuration:")
+    print("\\n📊 Test Configuration:")
     print(f"   OSM file: {results['osm_file']}")
     print(f"   Test routes: {results['num_routes']}")
     print(f"   Repetitions: {results['repetitions']}")
     print(f"   OSM load time: {results['load_time']:.2f}s")
 
     network = results["network_stats"]
-    print(f"\\n🗺️  Network Statistics:")
+    print("\\n🗺️  Network Statistics:")
     print(f"   Nodes: {network['nodes']:,}")
     print(f"   Ways: {network['ways']:,}")
     print(f"   Edges: {network['edges']:,}")
@@ -252,19 +252,19 @@ def print_performance_results(results: dict[str, Any]) -> None:
         no_cache = results["no_cache"]
         cache = results["cache"]
 
-        print(f"\\n⏱️  Routing Performance:")
-        print(f"   WITHOUT Cache:")
+        print("\\n⏱️  Routing Performance:")
+        print("   WITHOUT Cache:")
         print(f"     Average route time: {no_cache['mean_time']:.4f}s")
         print(f"     Total time: {no_cache['total_time']:.3f}s")
         print(f"     Successful routes: {no_cache['successful_routes']}")
 
-        print(f"   WITH Cache:")
+        print("   WITH Cache:")
         print(f"     Average route time: {cache['mean_time']:.4f}s")
         print(f"     Total time: {cache['total_time']:.3f}s")
         print(f"     Successful routes: {cache['successful_routes']}")
         print(f"     🚀 Speedup: {cache['speedup']:.1f}x")
 
-        print(f"\\n📈 Cache Statistics:")
+        print("\\n📈 Cache Statistics:")
         cache_stats = cache["stats"]
         total_cache_ops = cache_stats["cache_hits"] + cache_stats["cache_misses"]
         hit_ratio = (
@@ -326,10 +326,10 @@ def main() -> None:
             print(f"❌ Invalid number of routes: {sys.argv[2]}")
             sys.exit(1)
 
-    print(f"🧪 Starting OSM Cache Performance Test")
+    print("🧪 Starting OSM Cache Performance Test")
     print(f"   OSM file: {osm_file}")
     print(f"   Routes to test: {num_routes}")
-    print(f"   Repetitions: 3")
+    print("   Repetitions: 3")
 
     # Run performance benchmark
     results = benchmark_routing_performance(osm_file, num_routes, repetitions=3)
@@ -337,7 +337,7 @@ def main() -> None:
     # Display results
     print_performance_results(results)
 
-    print(f"\\n🎉 Performance test completed!")
+    print("\\n🎉 Performance test completed!")
 
 
 if __name__ == "__main__":
