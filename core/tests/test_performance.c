@@ -309,6 +309,214 @@ static void benchmark_provider_performance(void) {
     }
 }
 
+// Helper function to create a test vertex for cache benchmarks
+static GraphserverVertex* create_cache_test_vertex(const char* name) {
+    GraphserverVertex* vertex = gs_vertex_create();
+    GraphserverValue name_val = gs_value_create_string(name);
+    gs_vertex_set_kv(vertex, "name", name_val);
+    return vertex;
+}
+
+// Cache performance benchmarks
+static void benchmark_cache_performance(void) {
+    printf("\nCache Performance Benchmarks\n");
+    printf("============================\n");
+    
+    // Test 1: Basic cache hit vs miss performance
+    printf("  Testing cache hit vs miss performance...\n");
+    
+    // Create engine with caching enabled
+    GraphserverEngineConfig cache_config = gs_engine_get_default_config();
+    cache_config.enable_edge_caching = true;
+    
+    GraphserverEngine* cache_engine = gs_engine_create_with_config(&cache_config);
+    WalkingConfig walking_config = walking_config_default();
+    gs_engine_register_provider(cache_engine, "walking", walking_provider, &walking_config);
+    
+    GraphserverVertex* test_vertex = create_cache_test_vertex("cache_perf_test");
+    
+    // First expansion (cache miss)
+    GraphserverEdgeList* edges1 = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(edges1, true);
+    
+    Timer miss_timer = timer_start();
+    GraphserverResult result1 = gs_engine_expand_vertex(cache_engine, test_vertex, edges1);
+    timer_end(&miss_timer);
+    
+    if (result1 != GS_SUCCESS) {
+        printf("    Cache miss expansion failed\n");
+        return;
+    }
+    
+    size_t first_edge_count = gs_edge_list_get_count(edges1);
+    
+    // Get statistics after cache miss
+    GraphserverPlanStats miss_stats;
+    gs_engine_get_stats(cache_engine, &miss_stats);
+    
+    // Second expansion (cache hit)
+    GraphserverEdgeList* edges2 = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(edges2, true);
+    
+    Timer hit_timer = timer_start();
+    GraphserverResult result2 = gs_engine_expand_vertex(cache_engine, test_vertex, edges2);
+    timer_end(&hit_timer);
+    
+    if (result2 != GS_SUCCESS) {
+        printf("    Cache hit expansion failed\n");
+        return;
+    }
+    
+    size_t second_edge_count = gs_edge_list_get_count(edges2);
+    
+    // Get statistics after cache hit
+    GraphserverPlanStats hit_stats;
+    gs_engine_get_stats(cache_engine, &hit_stats);
+    
+    // Calculate performance improvement
+    double improvement_ratio = miss_timer.elapsed_seconds / hit_timer.elapsed_seconds;
+    bool performance_pass = improvement_ratio >= 5.0; // Minimum 5x improvement
+    
+    printf("    Cache miss time: %.6f seconds (%zu edges)\n", 
+           miss_timer.elapsed_seconds, first_edge_count);
+    printf("    Cache hit time: %.6f seconds (%zu edges)\n", 
+           hit_timer.elapsed_seconds, second_edge_count);
+    printf("    Performance improvement: %.1fx %s\n", 
+           improvement_ratio, performance_pass ? "PASS" : "FAIL");
+    printf("    Cache statistics: %lu hits, %lu misses, %lu puts\n",
+           hit_stats.cache_hits, hit_stats.cache_misses, hit_stats.cache_puts);
+    
+    // Validate statistics are correct
+    bool stats_pass = (hit_stats.cache_hits == 1 && hit_stats.cache_misses == 1 && 
+                       hit_stats.cache_puts == 1);
+    printf("    Statistics validation: %s\n", stats_pass ? "PASS" : "FAIL");
+    
+    gs_edge_list_destroy(edges1);
+    gs_edge_list_destroy(edges2);
+    
+    // Test 2: Multi-vertex cache performance
+    printf("  Testing multi-vertex cache scalability...\n");
+    
+    Timer multi_timer = timer_start();
+    size_t total_cache_hits = 0;
+    
+    // Cache multiple vertices
+    for (int i = 0; i < 10; i++) {
+        char vertex_name[32];
+        snprintf(vertex_name, sizeof(vertex_name), "cache_test_%d", i);
+        
+        GraphserverVertex* vertex = create_cache_test_vertex(vertex_name);
+        GraphserverEdgeList* edges = gs_edge_list_create();
+        gs_edge_list_set_owns_edges(edges, true);
+        
+        // First expansion (cache miss)
+        gs_engine_expand_vertex(cache_engine, vertex, edges);
+        
+        // Second expansion (cache hit)
+        gs_edge_list_clear(edges);
+        gs_engine_expand_vertex(cache_engine, vertex, edges);
+        total_cache_hits++;
+        
+        gs_edge_list_destroy(edges);
+        gs_vertex_destroy(vertex);
+    }
+    
+    timer_end(&multi_timer);
+    
+    GraphserverPlanStats multi_stats;
+    gs_engine_get_stats(cache_engine, &multi_stats);
+    
+    printf("    Multi-vertex test time: %.6f seconds\n", multi_timer.elapsed_seconds);
+    printf("    Total cache operations: %zu vertices\n", total_cache_hits);
+    printf("    Final cache statistics: %lu hits, %lu misses\n",
+           multi_stats.cache_hits, multi_stats.cache_misses);
+    
+    // Test 3: Cache vs no-cache comparison
+    printf("  Testing cache vs no-cache performance...\n");
+    
+    // Create engine without caching
+    GraphserverEngine* no_cache_engine = gs_engine_create();
+    gs_engine_register_provider(no_cache_engine, "walking", walking_provider, &walking_config);
+    
+    // Repeat same vertex expansion 5 times with no cache
+    Timer no_cache_timer = timer_start();
+    for (int i = 0; i < 5; i++) {
+        GraphserverEdgeList* edges = gs_edge_list_create();
+        gs_edge_list_set_owns_edges(edges, true);
+        
+        gs_engine_expand_vertex(no_cache_engine, test_vertex, edges);
+        
+        gs_edge_list_destroy(edges);
+    }
+    timer_end(&no_cache_timer);
+    
+    // Repeat same vertex expansion 5 times with cache (1 miss + 4 hits)
+    Timer with_cache_timer = timer_start();
+    for (int i = 0; i < 5; i++) {
+        GraphserverEdgeList* edges = gs_edge_list_create();
+        gs_edge_list_set_owns_edges(edges, true);
+        
+        gs_engine_expand_vertex(cache_engine, test_vertex, edges);
+        
+        gs_edge_list_destroy(edges);
+    }
+    timer_end(&with_cache_timer);
+    
+    double cache_benefit = no_cache_timer.elapsed_seconds / with_cache_timer.elapsed_seconds;
+    bool cache_benefit_pass = cache_benefit >= 2.0; // Expect at least 2x improvement
+    
+    printf("    No-cache 5x expansion time: %.6f seconds\n", no_cache_timer.elapsed_seconds);
+    printf("    With-cache 5x expansion time: %.6f seconds\n", with_cache_timer.elapsed_seconds);
+    printf("    Cache benefit: %.1fx %s\n", 
+           cache_benefit, cache_benefit_pass ? "PASS" : "FAIL");
+    
+    // Test 4: Cache invalidation performance
+    printf("  Testing cache invalidation performance...\n");
+    
+    // Build up cache with multiple vertices
+    for (int i = 0; i < 20; i++) {
+        char vertex_name[32];
+        snprintf(vertex_name, sizeof(vertex_name), "invalidation_test_%d", i);
+        
+        GraphserverVertex* vertex = create_cache_test_vertex(vertex_name);
+        GraphserverEdgeList* edges = gs_edge_list_create();
+        gs_edge_list_set_owns_edges(edges, true);
+        
+        gs_engine_expand_vertex(cache_engine, vertex, edges);
+        
+        gs_edge_list_destroy(edges);
+        gs_vertex_destroy(vertex);
+    }
+    
+    // Measure cache invalidation time
+    Timer invalidation_timer = timer_start();
+    
+    GraphserverEngineConfig new_config = cache_config;
+    gs_engine_set_config(cache_engine, &new_config); // This should clear cache
+    
+    timer_end(&invalidation_timer);
+    
+    // Verify cache was cleared
+    GraphserverPlanStats invalidation_stats;
+    gs_engine_get_stats(cache_engine, &invalidation_stats);
+    
+    bool invalidation_pass = (invalidation_stats.cache_hits == 0 && 
+                             invalidation_stats.cache_misses == 0 && 
+                             invalidation_stats.cache_puts == 0);
+    
+    printf("    Cache invalidation time: %.6f seconds\n", invalidation_timer.elapsed_seconds);
+    printf("    Invalidation speed: %s (< 0.001s target)\n", 
+           invalidation_timer.elapsed_seconds < 0.001 ? "PASS" : "FAIL");
+    printf("    Cache cleared verification: %s\n", invalidation_pass ? "PASS" : "FAIL");
+    
+    // Cleanup
+    gs_vertex_destroy(test_vertex);
+    gs_engine_destroy(cache_engine);
+    gs_engine_destroy(no_cache_engine);
+    
+    printf("  Cache performance benchmarks completed!\n");
+}
+
 int main(void) {
     printf("Graphserver Performance Benchmarks\n");
     printf("===================================\n");
@@ -318,6 +526,7 @@ int main(void) {
     benchmark_memory_efficiency();
     benchmark_concurrent_planning();
     benchmark_provider_performance();
+    benchmark_cache_performance();
     
     printf("\n===================================\n");
     printf("Performance benchmarks completed!\n");
