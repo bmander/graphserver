@@ -11,9 +11,10 @@
  */
 
 // Forward declarations for module functions
-static PyObject* py_create_engine(PyObject* self, PyObject* args);
+static PyObject* py_create_engine(PyObject* self, PyObject* args, PyObject* kwargs);
 static PyObject* py_register_provider(PyObject* self, PyObject* args);
 static PyObject* py_plan(PyObject* self, PyObject* args, PyObject* kwargs);
+static PyObject* py_get_engine_stats(PyObject* self, PyObject* args);
 
 // Utility functions for data conversion (implemented in Phase 2)
 static PyObject* vertex_to_python_dict(const GraphserverVertex* vertex);
@@ -57,11 +58,29 @@ static void engine_capsule_destructor(PyObject* capsule) {
 
 // Module function implementations
 
-static PyObject* py_create_engine(PyObject* self, PyObject* args) {
+static PyObject* py_create_engine(PyObject* self, PyObject* args, PyObject* kwargs) {
     (void)self;  // Unused parameter
-    (void)args;  // No arguments expected
     
-    GraphserverEngine* engine = gs_engine_create();  // Default config
+    // Parse optional keyword arguments
+    static char* kwlist[] = {"enable_edge_caching", NULL};
+    int enable_edge_caching = 0;  // Default to false
+    
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|p", kwlist, &enable_edge_caching)) {
+        return NULL;
+    }
+    
+    GraphserverEngine* engine;
+    
+    if (enable_edge_caching) {
+        // Create engine with caching enabled
+        GraphserverEngineConfig config = gs_engine_get_default_config();
+        config.enable_edge_caching = true;
+        engine = gs_engine_create_with_config(&config);
+    } else {
+        // Use default config (caching disabled)
+        engine = gs_engine_create();
+    }
+    
     if (!engine) {
         PyErr_SetString(PyExc_RuntimeError, "Failed to create planning engine");
         return NULL;
@@ -1114,14 +1133,59 @@ static int python_vertex_edge_pairs_to_c_edges(PyObject* pair_list, GraphserverE
     return 0; // Success
 }
 
+static PyObject* py_get_engine_stats(PyObject* self, PyObject* args) {
+    (void)self;  // Unused parameter
+    
+    PyObject* engine_capsule;
+    
+    if (!PyArg_ParseTuple(args, "O!", &PyCapsule_Type, &engine_capsule)) {
+        return NULL;
+    }
+    
+    GraphserverEngine* engine = (GraphserverEngine*)
+        PyCapsule_GetPointer(engine_capsule, "GraphserverEngine");
+    if (!engine) {
+        return NULL;
+    }
+    
+    // Get statistics from the engine
+    GraphserverPlanStats stats;
+    GraphserverResult result = gs_engine_get_stats(engine, &stats);
+    if (result != GS_SUCCESS) {
+        PyErr_SetString(PyExc_RuntimeError, "Failed to get engine statistics");
+        return NULL;
+    }
+    
+    // Convert to Python dictionary
+    PyObject* stats_dict = PyDict_New();
+    if (!stats_dict) {
+        return NULL;
+    }
+    
+    // Add all statistics fields
+    PyDict_SetItemString(stats_dict, "vertices_expanded", PyLong_FromUnsignedLongLong(stats.vertices_expanded));
+    PyDict_SetItemString(stats_dict, "edges_generated", PyLong_FromUnsignedLongLong(stats.edges_generated));
+    PyDict_SetItemString(stats_dict, "providers_called", PyLong_FromUnsignedLongLong(stats.providers_called));
+    PyDict_SetItemString(stats_dict, "peak_memory_usage", PyLong_FromSize_t(stats.peak_memory_usage));
+    
+    // Add cache-specific statistics
+    PyDict_SetItemString(stats_dict, "cache_hits", PyLong_FromUnsignedLongLong(stats.cache_hits));
+    PyDict_SetItemString(stats_dict, "cache_misses", PyLong_FromUnsignedLongLong(stats.cache_misses));
+    PyDict_SetItemString(stats_dict, "cache_puts", PyLong_FromUnsignedLongLong(stats.cache_puts));
+    
+    return stats_dict;
+}
+
 // Method definitions with modern argument parsing
 static PyMethodDef GraphserverMethods[] = {
-    {"create_engine", py_create_engine, METH_NOARGS, 
-     "Create a new planning engine"},
+    {"create_engine", (PyCFunction)(void(*)(void))py_create_engine, METH_VARARGS | METH_KEYWORDS, 
+     "Create a new planning engine with optional configuration"},
     {"register_provider", py_register_provider, METH_VARARGS, 
      "Register a Python function as an edge provider"},
     {"plan", (PyCFunction)(void(*)(void))py_plan, METH_VARARGS | METH_KEYWORDS, 
      "Execute pathfinding from start to goal"},
+    {"get_engine_stats", py_get_engine_stats, METH_VARARGS, 
+     "Get engine statistics including cache performance metrics"},
     {NULL, NULL, 0, NULL}
 };
 
