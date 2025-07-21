@@ -230,6 +230,103 @@ static GraphserverResult reconstruct_path(
     return GS_SUCCESS;
 }
 
+// Relax all outgoing edges of the given vertex and update the open set
+static GraphserverResult relax_edges(
+    DijkstraState* state,
+    GraphserverEngine* engine,
+    GraphserverVertex* current_vertex,
+    double current_cost) {
+
+    GraphserverEdgeList* edges = gs_edge_list_create();
+    if (!edges) {
+        return GS_ERROR_OUT_OF_MEMORY;
+    }
+
+    // Providers create transient edges, so let the list own them
+    gs_edge_list_set_owns_edges(edges, true);
+
+    GraphserverResult expand_result =
+        gs_engine_expand_vertex(engine, current_vertex, edges);
+    if (expand_result != GS_SUCCESS) {
+        gs_edge_list_destroy(edges);
+        return GS_SUCCESS; // Skip this vertex on failure
+    }
+
+    size_t edge_count = gs_edge_list_get_count(edges);
+    for (size_t i = 0; i < edge_count; i++) {
+        GraphserverEdge* edge;
+        if (gs_edge_list_get_edge(edges, i, &edge) != GS_SUCCESS || !edge) {
+            continue;
+        }
+
+        state->edges_examined++;
+
+        const GraphserverVertex* target = gs_edge_get_target_vertex(edge);
+        if (!target) {
+            continue;
+        }
+
+        // Skip if in closed set
+        if (vertex_set_contains(state->closed_set, target)) {
+            continue;
+        }
+
+        const double* edge_distance = gs_edge_get_distance_vector(edge);
+        if (!edge_distance) {
+            continue;
+        }
+
+        double new_cost = current_cost + edge_distance[0];
+
+        GraphserverVertex* target_copy = gs_vertex_clone(target);
+        if (!target_copy) {
+            continue;
+        }
+
+        DijkstraNode* target_node =
+            get_or_create_dijkstra_node(state, target_copy);
+        if (!target_node) {
+            gs_vertex_destroy(target_copy);
+            continue;
+        }
+
+        if (new_cost < target_node->cost) {
+            target_node->cost = new_cost;
+            target_node->parent = current_vertex;
+
+            if (pq_contains(state->open_set, target_copy)) {
+                pq_decrease_key(state->open_set, target_copy, new_cost);
+            } else {
+                pq_insert(state->open_set, target_copy, new_cost);
+                state->nodes_generated++;
+            }
+        } else {
+            gs_vertex_destroy(target_copy);
+        }
+    }
+
+    gs_edge_list_destroy(edges);
+    return GS_SUCCESS;
+}
+
+// Process the current vertex: add to closed set, check goal and relax edges
+static GraphserverResult process_current_vertex(
+    DijkstraState* state,
+    GraphserverEngine* engine,
+    GraphserverVertex* current_vertex,
+    double current_cost,
+    GraphserverPath** out_path) {
+
+    vertex_set_add(state->closed_set, current_vertex);
+
+    if (state->is_goal(current_vertex, state->goal_user_data)) {
+        state->goal_found = true;
+        return reconstruct_path(state, current_vertex, out_path);
+    }
+
+    return relax_edges(state, engine, current_vertex, current_cost);
+}
+
 // Run Dijkstra search
 GraphserverResult dijkstra_search(
     DijkstraState* state,
@@ -266,107 +363,34 @@ GraphserverResult dijkstra_search(
     }
     
     GraphserverResult result = GS_ERROR_NO_PATH_FOUND;
-    
+
     // Main search loop
     while (!pq_is_empty(state->open_set)) {
         // Check timeout
         double current_time = get_current_time_seconds();
-        if (state->timeout_seconds > 0 && 
+        if (state->timeout_seconds > 0 &&
             (current_time - start_time) > state->timeout_seconds) {
             state->timeout_reached = true;
             result = GS_ERROR_TIMEOUT;
             break;
         }
-        
+
         // Extract minimum cost vertex
         GraphserverVertex* current_vertex;
         double current_cost;
         if (!pq_extract_min(state->open_set, &current_vertex, &current_cost)) {
             break; // Should not happen
         }
-        
+
         state->vertices_expanded++;
-        
-        // Add to closed set
-        vertex_set_add(state->closed_set, current_vertex);
-        
-        // Check if goal
-        if (state->is_goal(current_vertex, state->goal_user_data)) {
-            state->goal_found = true;
-            result = reconstruct_path(state, current_vertex, out_path);
+
+        GraphserverResult proc_result = process_current_vertex(
+            state, engine, current_vertex, current_cost, out_path);
+
+        if (state->goal_found || proc_result != GS_SUCCESS) {
+            result = proc_result;
             break;
         }
-        
-        // Expand current vertex
-        GraphserverEdgeList* edges = gs_edge_list_create();
-        if (!edges) {
-            result = GS_ERROR_OUT_OF_MEMORY;
-            break;
-        }
-        
-        // Set edge list to own its edges since providers create transient edges
-        gs_edge_list_set_owns_edges(edges, true);
-        
-        GraphserverResult expand_result = gs_engine_expand_vertex(engine, current_vertex, edges);
-        if (expand_result != GS_SUCCESS) {
-            gs_edge_list_destroy(edges);
-            continue; // Skip this vertex
-        }
-        
-        // Process each edge
-        size_t edge_count = gs_edge_list_get_count(edges);
-        for (size_t i = 0; i < edge_count; i++) {
-            GraphserverEdge* edge;
-            if (gs_edge_list_get_edge(edges, i, &edge) != GS_SUCCESS || !edge) {
-                continue;
-            }
-            
-            state->edges_examined++;
-            
-            const GraphserverVertex* target = gs_edge_get_target_vertex(edge);
-            if (!target) continue;
-            
-            // Skip if in closed set
-            if (vertex_set_contains(state->closed_set, target)) {
-                continue;
-            }
-            
-            // Calculate new cost
-            const double* edge_distance = gs_edge_get_distance_vector(edge);
-            if (!edge_distance) continue;
-            
-            double new_cost = current_cost + edge_distance[0];
-            
-            // Create target copy for our node table
-            GraphserverVertex* target_copy = gs_vertex_clone(target);
-            if (!target_copy) continue;
-            
-            // Get or create target node
-            DijkstraNode* target_node = get_or_create_dijkstra_node(state, target_copy);
-            if (!target_node) {
-                gs_vertex_destroy(target_copy);
-                continue;
-            }
-            
-            // Update if better path found
-            if (new_cost < target_node->cost) {
-                target_node->cost = new_cost;
-                target_node->parent = current_vertex;
-                
-                // Update priority queue
-                if (pq_contains(state->open_set, target_copy)) {
-                    pq_decrease_key(state->open_set, target_copy, new_cost);
-                } else {
-                    pq_insert(state->open_set, target_copy, new_cost);
-                    state->nodes_generated++;
-                }
-            } else {
-                // Destroy copy if not used
-                gs_vertex_destroy(target_copy);
-            }
-        }
-        
-        gs_edge_list_destroy(edges);
     }
     
     // Record search time
