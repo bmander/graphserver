@@ -159,12 +159,40 @@ This plan provides a clear path to implementing the edge caching feature, includ
 - ✅ Complete Valgrind validation: 0 errors, 0 memory leaks
 - ✅ Test suite: 19/19 engine tests passing, including 8 cache-specific tests
 
-### 🔄 **PENDING: Step 2.4 - Cache Invalidation**
+### ✅ **COMPLETED: Step 2.4 - Cache Invalidation**
 
-**Next Steps:**
-- Create `gs_engine_clear_cache()` internal function
-- Add cache invalidation to provider management functions
-- Ensure cache consistency when graph topology changes
+**Core Implementation:**
+- ✅ Created `gs_engine_clear_cache()` internal function with proper NULL checking
+- ✅ Clears cache contents via `edge_cache_clear()` when caching is enabled
+- ✅ Resets all cache statistics (cache_hits, cache_misses, cache_puts) to zero
+- ✅ Added cache invalidation to all provider management functions:
+  - `gs_engine_register_provider()` - Clears cache when new provider added
+  - `gs_engine_unregister_provider()` - Clears cache when provider removed
+  - `gs_engine_set_provider_enabled()` - Clears cache when provider enabled/disabled
+
+**Configuration Management:**
+- ✅ Enhanced `gs_engine_set_config()` with comprehensive cache state management:
+  - **Cache Disabling**: Destroys cache and resets statistics when caching disabled
+  - **Cache Enabling**: Creates new cache when caching enabled
+  - **Cache Clearing**: Clears cache when configuration changes while caching remains enabled
+- ✅ Proper memory management for cache creation/destruction during config changes
+- ✅ Graceful error handling with rollback on memory allocation failures
+
+**Comprehensive Testing:**
+- ✅ Added 4 comprehensive cache invalidation tests:
+  - `engine_cache_invalidation_on_provider_register` - Validates cache clears on provider registration
+  - `engine_cache_invalidation_on_provider_unregister` - Validates cache clears on provider removal
+  - `engine_cache_invalidation_on_provider_disable` - Validates cache clears on provider enable/disable
+  - `engine_cache_invalidation_on_config_change` - Validates cache behavior on configuration changes
+- ✅ All tests verify cache statistics reset and subsequent cache misses
+- ✅ Complete Valgrind validation: 0 errors, 0 memory leaks
+- ✅ Test suite: 23/23 engine tests passing, including 12 cache-specific tests
+
+**Memory Safety & Consistency:**
+- ✅ Zero memory leaks during cache invalidation cycles
+- ✅ Proper cleanup of all cached data during invalidation
+- ✅ Statistics consistency maintained across invalidation operations
+- ✅ Thread-safe cache invalidation operations
 
 ### 🔄 **PENDING: Step 2.5 - Performance Testing**
 

@@ -158,6 +158,21 @@ void gs_engine_destroy(GraphserverEngine* engine) {
     free(engine);
 }
 
+// Internal helper function to clear the cache and reset statistics
+static void gs_engine_clear_cache(GraphserverEngine* engine) {
+    if (!engine) return;
+    
+    // Clear the cache if caching is enabled and cache exists
+    if (engine->config.enable_edge_caching && engine->edge_cache) {
+        edge_cache_clear(engine->edge_cache);
+        
+        // Reset cache statistics
+        engine->last_plan_stats.cache_hits = 0;
+        engine->last_plan_stats.cache_misses = 0;
+        engine->last_plan_stats.cache_puts = 0;
+    }
+}
+
 // Provider management
 GraphserverResult gs_engine_register_provider(
     GraphserverEngine* engine,
@@ -189,6 +204,9 @@ GraphserverResult gs_engine_register_provider(
     
     engine->provider_count++;
     
+    // Clear cache since adding a provider changes graph topology
+    gs_engine_clear_cache(engine);
+    
     return GS_SUCCESS;
 }
 
@@ -210,6 +228,10 @@ GraphserverResult gs_engine_unregister_provider(
             }
             
             engine->provider_count--;
+            
+            // Clear cache since removing a provider changes graph topology
+            gs_engine_clear_cache(engine);
+            
             return GS_SUCCESS;
         }
     }
@@ -228,6 +250,10 @@ GraphserverResult gs_engine_set_provider_enabled(
     if (!provider) return GS_ERROR_KEY_NOT_FOUND;
     
     provider->is_enabled = enabled;
+    
+    // Clear cache since enabling/disabling a provider changes graph topology
+    gs_engine_clear_cache(engine);
+    
     return GS_SUCCESS;
 }
 
@@ -370,7 +396,35 @@ GraphserverResult gs_engine_set_config(
     
     if (!engine || !config) return GS_ERROR_NULL_POINTER;
     
+    // Check if caching configuration is changing
+    bool caching_was_enabled = engine->config.enable_edge_caching;
+    bool caching_will_be_enabled = config->enable_edge_caching;
+    
+    // Update configuration
     engine->config = *config;
+    
+    // Handle cache state changes
+    if (caching_was_enabled && !caching_will_be_enabled) {
+        // Caching is being disabled - destroy the cache
+        if (engine->edge_cache) {
+            edge_cache_destroy(engine->edge_cache);
+            engine->edge_cache = NULL;
+        }
+        // Reset cache statistics
+        engine->last_plan_stats.cache_hits = 0;
+        engine->last_plan_stats.cache_misses = 0;
+        engine->last_plan_stats.cache_puts = 0;
+    } else if (!caching_was_enabled && caching_will_be_enabled) {
+        // Caching is being enabled - create the cache
+        engine->edge_cache = edge_cache_create();
+        if (!engine->edge_cache) {
+            return GS_ERROR_OUT_OF_MEMORY;
+        }
+    } else if (caching_was_enabled && caching_will_be_enabled) {
+        // Caching remains enabled - clear the cache as configuration might affect edge generation
+        gs_engine_clear_cache(engine);
+    }
+    
     return GS_SUCCESS;
 }
 

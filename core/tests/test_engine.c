@@ -678,6 +678,257 @@ TEST(engine_mixed_cache_scenario) {
     gs_engine_destroy(engine);
 }
 
+// Test cache invalidation when provider is registered
+TEST(engine_cache_invalidation_on_provider_register) {
+    // Create engine with caching enabled
+    GraphserverEngineConfig config = gs_engine_get_default_config();
+    config.enable_edge_caching = true;
+    
+    GraphserverEngine* engine = gs_engine_create_with_config(&config);
+    ASSERT_NOT_NULL(engine);
+    
+    // Register initial provider
+    gs_engine_register_provider(engine, "test_provider", mock_provider_simple, NULL);
+    
+    GraphserverVertex* vertex = create_test_vertex("cache_test");
+    ASSERT_NOT_NULL(vertex);
+    
+    // First expansion - cache miss
+    GraphserverEdgeList* edges1 = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(edges1, true);
+    
+    GraphserverResult result1 = gs_engine_expand_vertex(engine, vertex, edges1);
+    ASSERT_EQ(GS_SUCCESS, result1);
+    
+    // Verify cache statistics
+    GraphserverPlanStats stats;
+    GraphserverResult stats_result = gs_engine_get_stats(engine, &stats);
+    ASSERT_EQ(GS_SUCCESS, stats_result);
+    ASSERT_EQ(1U, stats.cache_puts);
+    ASSERT_EQ(1U, stats.cache_misses);
+    
+    // Register another provider - this should clear the cache
+    GraphserverResult reg_result = gs_engine_register_provider(engine, "test_provider2", mock_provider_simple, NULL);
+    ASSERT_EQ(GS_SUCCESS, reg_result);
+    
+    // Verify cache statistics are reset
+    stats_result = gs_engine_get_stats(engine, &stats);
+    ASSERT_EQ(GS_SUCCESS, stats_result);
+    ASSERT_EQ(0U, stats.cache_hits);
+    ASSERT_EQ(0U, stats.cache_misses);
+    ASSERT_EQ(0U, stats.cache_puts);
+    
+    // Second expansion should be a cache miss (not a hit)
+    GraphserverEdgeList* edges2 = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(edges2, true);
+    
+    GraphserverResult result2 = gs_engine_expand_vertex(engine, vertex, edges2);
+    ASSERT_EQ(GS_SUCCESS, result2);
+    
+    // Verify it was a cache miss
+    stats_result = gs_engine_get_stats(engine, &stats);
+    ASSERT_EQ(GS_SUCCESS, stats_result);
+    ASSERT_EQ(0U, stats.cache_hits);
+    ASSERT_EQ(1U, stats.cache_misses);
+    ASSERT_EQ(1U, stats.cache_puts);
+    
+    gs_edge_list_destroy(edges1);
+    gs_edge_list_destroy(edges2);
+    gs_vertex_destroy(vertex);
+    gs_engine_destroy(engine);
+}
+
+// Test cache invalidation when provider is unregistered
+TEST(engine_cache_invalidation_on_provider_unregister) {
+    // Create engine with caching enabled
+    GraphserverEngineConfig config = gs_engine_get_default_config();
+    config.enable_edge_caching = true;
+    
+    GraphserverEngine* engine = gs_engine_create_with_config(&config);
+    ASSERT_NOT_NULL(engine);
+    
+    // Register providers
+    gs_engine_register_provider(engine, "test_provider1", mock_provider_simple, NULL);
+    gs_engine_register_provider(engine, "test_provider2", mock_provider_simple, NULL);
+    
+    GraphserverVertex* vertex = create_test_vertex("cache_test");
+    ASSERT_NOT_NULL(vertex);
+    
+    // First expansion - cache miss
+    GraphserverEdgeList* edges1 = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(edges1, true);
+    
+    GraphserverResult result1 = gs_engine_expand_vertex(engine, vertex, edges1);
+    ASSERT_EQ(GS_SUCCESS, result1);
+    
+    // Verify cache has data
+    GraphserverPlanStats stats;
+    GraphserverResult stats_result = gs_engine_get_stats(engine, &stats);
+    ASSERT_EQ(GS_SUCCESS, stats_result);
+    ASSERT_EQ(1U, stats.cache_puts);
+    
+    // Unregister a provider - this should clear the cache
+    GraphserverResult unreg_result = gs_engine_unregister_provider(engine, "test_provider1");
+    ASSERT_EQ(GS_SUCCESS, unreg_result);
+    
+    // Verify cache statistics are reset
+    stats_result = gs_engine_get_stats(engine, &stats);
+    ASSERT_EQ(GS_SUCCESS, stats_result);
+    ASSERT_EQ(0U, stats.cache_hits);
+    ASSERT_EQ(0U, stats.cache_misses);
+    ASSERT_EQ(0U, stats.cache_puts);
+    
+    // Second expansion should be a cache miss
+    GraphserverEdgeList* edges2 = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(edges2, true);
+    
+    GraphserverResult result2 = gs_engine_expand_vertex(engine, vertex, edges2);
+    ASSERT_EQ(GS_SUCCESS, result2);
+    
+    // Verify it was a cache miss
+    stats_result = gs_engine_get_stats(engine, &stats);
+    ASSERT_EQ(GS_SUCCESS, stats_result);
+    ASSERT_EQ(0U, stats.cache_hits);
+    ASSERT_EQ(1U, stats.cache_misses);
+    
+    gs_edge_list_destroy(edges1);
+    gs_edge_list_destroy(edges2);
+    gs_vertex_destroy(vertex);
+    gs_engine_destroy(engine);
+}
+
+// Test cache invalidation when provider is disabled
+TEST(engine_cache_invalidation_on_provider_disable) {
+    // Create engine with caching enabled
+    GraphserverEngineConfig config = gs_engine_get_default_config();
+    config.enable_edge_caching = true;
+    
+    GraphserverEngine* engine = gs_engine_create_with_config(&config);
+    ASSERT_NOT_NULL(engine);
+    
+    // Register provider
+    gs_engine_register_provider(engine, "test_provider", mock_provider_simple, NULL);
+    
+    GraphserverVertex* vertex = create_test_vertex("cache_test");
+    ASSERT_NOT_NULL(vertex);
+    
+    // First expansion - cache miss
+    GraphserverEdgeList* edges1 = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(edges1, true);
+    
+    GraphserverResult result1 = gs_engine_expand_vertex(engine, vertex, edges1);
+    ASSERT_EQ(GS_SUCCESS, result1);
+    
+    // Verify cache has data
+    GraphserverPlanStats stats;
+    GraphserverResult stats_result = gs_engine_get_stats(engine, &stats);
+    ASSERT_EQ(GS_SUCCESS, stats_result);
+    ASSERT_EQ(1U, stats.cache_puts);
+    
+    // Disable the provider - this should clear the cache
+    GraphserverResult disable_result = gs_engine_set_provider_enabled(engine, "test_provider", false);
+    ASSERT_EQ(GS_SUCCESS, disable_result);
+    
+    // Verify cache statistics are reset
+    stats_result = gs_engine_get_stats(engine, &stats);
+    ASSERT_EQ(GS_SUCCESS, stats_result);
+    ASSERT_EQ(0U, stats.cache_hits);
+    ASSERT_EQ(0U, stats.cache_misses);
+    ASSERT_EQ(0U, stats.cache_puts);
+    
+    // Re-enable the provider
+    GraphserverResult enable_result = gs_engine_set_provider_enabled(engine, "test_provider", true);
+    ASSERT_EQ(GS_SUCCESS, enable_result);
+    
+    // Verify cache is still cleared
+    stats_result = gs_engine_get_stats(engine, &stats);
+    ASSERT_EQ(GS_SUCCESS, stats_result);
+    ASSERT_EQ(0U, stats.cache_hits);
+    ASSERT_EQ(0U, stats.cache_misses);
+    ASSERT_EQ(0U, stats.cache_puts);
+    
+    gs_edge_list_destroy(edges1);
+    gs_vertex_destroy(vertex);
+    gs_engine_destroy(engine);
+}
+
+// Test cache invalidation on configuration changes
+TEST(engine_cache_invalidation_on_config_change) {
+    // Create engine with caching enabled
+    GraphserverEngineConfig config = gs_engine_get_default_config();
+    config.enable_edge_caching = true;
+    
+    GraphserverEngine* engine = gs_engine_create_with_config(&config);
+    ASSERT_NOT_NULL(engine);
+    
+    // Register provider
+    gs_engine_register_provider(engine, "test_provider", mock_provider_simple, NULL);
+    
+    GraphserverVertex* vertex = create_test_vertex("cache_test");
+    ASSERT_NOT_NULL(vertex);
+    
+    // First expansion - cache miss
+    GraphserverEdgeList* edges1 = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(edges1, true);
+    
+    GraphserverResult result1 = gs_engine_expand_vertex(engine, vertex, edges1);
+    ASSERT_EQ(GS_SUCCESS, result1);
+    
+    // Verify cache has data
+    GraphserverPlanStats stats;
+    GraphserverResult stats_result = gs_engine_get_stats(engine, &stats);
+    ASSERT_EQ(GS_SUCCESS, stats_result);
+    ASSERT_EQ(1U, stats.cache_puts);
+    
+    // Change configuration while keeping caching enabled - should clear cache
+    GraphserverEngineConfig new_config = config;
+    GraphserverResult config_result = gs_engine_set_config(engine, &new_config);
+    ASSERT_EQ(GS_SUCCESS, config_result);
+    
+    // Verify cache statistics are reset
+    stats_result = gs_engine_get_stats(engine, &stats);
+    ASSERT_EQ(GS_SUCCESS, stats_result);
+    ASSERT_EQ(0U, stats.cache_hits);
+    ASSERT_EQ(0U, stats.cache_misses);
+    ASSERT_EQ(0U, stats.cache_puts);
+    
+    // Test disabling caching - should destroy cache
+    new_config.enable_edge_caching = false;
+    config_result = gs_engine_set_config(engine, &new_config);
+    ASSERT_EQ(GS_SUCCESS, config_result);
+    
+    // Verify cache statistics remain zero
+    stats_result = gs_engine_get_stats(engine, &stats);
+    ASSERT_EQ(GS_SUCCESS, stats_result);
+    ASSERT_EQ(0U, stats.cache_hits);
+    ASSERT_EQ(0U, stats.cache_misses);
+    ASSERT_EQ(0U, stats.cache_puts);
+    
+    // Test re-enabling caching - should create new cache
+    new_config.enable_edge_caching = true;
+    config_result = gs_engine_set_config(engine, &new_config);
+    ASSERT_EQ(GS_SUCCESS, config_result);
+    
+    // Second expansion should be a cache miss
+    GraphserverEdgeList* edges2 = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(edges2, true);
+    
+    GraphserverResult result2 = gs_engine_expand_vertex(engine, vertex, edges2);
+    ASSERT_EQ(GS_SUCCESS, result2);
+    
+    // Verify it was a cache miss
+    stats_result = gs_engine_get_stats(engine, &stats);
+    ASSERT_EQ(GS_SUCCESS, stats_result);
+    ASSERT_EQ(0U, stats.cache_hits);
+    ASSERT_EQ(1U, stats.cache_misses);
+    ASSERT_EQ(1U, stats.cache_puts);
+    
+    gs_edge_list_destroy(edges1);
+    gs_edge_list_destroy(edges2);
+    gs_vertex_destroy(vertex);
+    gs_engine_destroy(engine);
+}
+
 // Test utility functions
 TEST(utility_functions) {
     // Test version string
@@ -718,6 +969,10 @@ int main(void) {
     run_test_engine_cache_miss_behavior();
     run_test_engine_cache_disabled_behavior();
     run_test_engine_mixed_cache_scenario();
+    run_test_engine_cache_invalidation_on_provider_register();
+    run_test_engine_cache_invalidation_on_provider_unregister();
+    run_test_engine_cache_invalidation_on_provider_disable();
+    run_test_engine_cache_invalidation_on_config_change();
     run_test_utility_functions();
     
     printf("\n=================================\n");
