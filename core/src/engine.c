@@ -296,6 +296,101 @@ bool gs_engine_has_provider(const GraphserverEngine* engine, const char* provide
     return find_provider((GraphserverEngine*)engine, provider_name) != NULL;
 }
 
+// Attempt to load edges from the cache. Returns GS_SUCCESS on cache hit and
+// GS_ERROR_KEY_NOT_FOUND on miss. Other errors are propagated so callers can
+// decide how to proceed.
+static GraphserverResult try_cache(
+    GraphserverEngine* engine,
+    const GraphserverVertex* vertex,
+    GraphserverEdgeList* out_edges)
+{
+    if (!engine || !vertex || !out_edges) {
+        return GS_ERROR_NULL_POINTER;
+    }
+
+    if (!engine->config.enable_edge_caching || !engine->edge_cache) {
+        return GS_ERROR_KEY_NOT_FOUND;
+    }
+
+    GraphserverEdgeList* cached_edges = NULL;
+    GraphserverResult cache_result = edge_cache_get(engine->edge_cache, vertex, &cached_edges);
+
+    if (cache_result == GS_SUCCESS && cached_edges) {
+        size_t cached_edge_count = gs_edge_list_get_count(cached_edges);
+        for (size_t i = 0; i < cached_edge_count; i++) {
+            GraphserverEdge* edge;
+            if (gs_edge_list_get_edge(cached_edges, i, &edge) == GS_SUCCESS && edge) {
+                GraphserverEdge* edge_clone = gs_edge_clone(edge);
+                if (edge_clone) {
+                    gs_edge_list_add_edge(out_edges, edge_clone);
+                }
+            }
+        }
+
+        engine->last_plan_stats.cache_hits++;
+        engine->last_plan_stats.edges_generated += cached_edge_count;
+
+        gs_edge_list_destroy(cached_edges);
+        return GS_SUCCESS;
+    }
+
+    if (cache_result == GS_ERROR_KEY_NOT_FOUND) {
+        engine->last_plan_stats.cache_misses++;
+    }
+
+    if (cached_edges) {
+        gs_edge_list_destroy(cached_edges);
+    }
+
+    return cache_result;
+}
+
+// Invoke all enabled providers to generate edges for a vertex.
+// Returns GS_SUCCESS unless a memory allocation failure occurs.
+static GraphserverResult call_providers(
+    GraphserverEngine* engine,
+    const GraphserverVertex* vertex,
+    GraphserverEdgeList* out_edges)
+{
+    if (!engine || !vertex || !out_edges) {
+        return GS_ERROR_NULL_POINTER;
+    }
+
+    GraphserverResult overall_result = GS_SUCCESS;
+
+    for (size_t i = 0; i < engine->provider_count; i++) {
+        Provider* provider = &engine->providers[i];
+        if (!provider->is_enabled) {
+            continue;
+        }
+
+        GraphserverEdgeList* provider_edges = gs_edge_list_create();
+        if (!provider_edges) {
+            overall_result = GS_ERROR_OUT_OF_MEMORY;
+            break;
+        }
+
+        int provider_result = provider->generator(vertex, provider_edges, provider->user_data);
+
+        if (provider_result == 0) {
+            size_t provider_edge_count = gs_edge_list_get_count(provider_edges);
+            for (size_t j = 0; j < provider_edge_count; j++) {
+                GraphserverEdge* edge;
+                if (gs_edge_list_get_edge(provider_edges, j, &edge) == GS_SUCCESS && edge) {
+                    gs_edge_list_add_edge(out_edges, edge);
+                }
+            }
+
+            engine->last_plan_stats.providers_called++;
+            engine->last_plan_stats.edges_generated += provider_edge_count;
+        }
+
+        gs_edge_list_destroy(provider_edges);
+    }
+
+    return overall_result;
+}
+
 // Graph expansion
 GraphserverResult gs_engine_expand_vertex(
     GraphserverEngine* engine,
@@ -307,85 +402,21 @@ GraphserverResult gs_engine_expand_vertex(
     // Clear the output edge list
     gs_edge_list_clear(out_edges);
     
-    // Check cache first if caching is enabled
-    if (engine->config.enable_edge_caching && engine->edge_cache) {
-        GraphserverEdgeList* cached_edges = NULL;
-        GraphserverResult cache_result = edge_cache_get(engine->edge_cache, vertex, &cached_edges);
-        
-        if (cache_result == GS_SUCCESS && cached_edges) {
-            // Cache hit! Clone all cached edges for output
-            size_t cached_edge_count = gs_edge_list_get_count(cached_edges);
-            for (size_t i = 0; i < cached_edge_count; i++) {
-                GraphserverEdge* edge;
-                GraphserverResult get_result = gs_edge_list_get_edge(cached_edges, i, &edge);
-                if (get_result == GS_SUCCESS && edge) {
-                    // Clone the edge so output list owns its own copy
-                    GraphserverEdge* edge_clone = gs_edge_clone(edge);
-                    if (edge_clone) {
-                        gs_edge_list_add_edge(out_edges, edge_clone);
-                    }
-                }
-            }
-            
-            // Update statistics
-            engine->last_plan_stats.cache_hits++;
-            engine->last_plan_stats.edges_generated += cached_edge_count;
-            
-            // Clean up cached edges and return early
-            gs_edge_list_destroy(cached_edges);
-            return GS_SUCCESS;
-        } else if (cache_result == GS_ERROR_KEY_NOT_FOUND) {
-            // Cache miss - proceed with provider calls
-            engine->last_plan_stats.cache_misses++;
-        }
-        // For other cache errors, just proceed with provider calls
+    // Try retrieving from cache first
+    GraphserverResult cache_result = try_cache(engine, vertex, out_edges);
+    if (cache_result == GS_SUCCESS) {
+        return GS_SUCCESS;
     }
-    
-    GraphserverResult overall_result = GS_SUCCESS;
-    
-    // Call each enabled provider
-    for (size_t i = 0; i < engine->provider_count; i++) {
-        Provider* provider = &engine->providers[i];
-        
-        if (!provider->is_enabled) continue;
-        
-        // Create a temporary edge list for this provider
-        GraphserverEdgeList* provider_edges = gs_edge_list_create();
-        if (!provider_edges) {
-            overall_result = GS_ERROR_OUT_OF_MEMORY;
-            break;
-        }
-        
-        // Call the provider
-        int provider_result = provider->generator(vertex, provider_edges, provider->user_data);
-        
-        if (provider_result == 0) { // Success
-            // Add all edges from this provider to the output
-            size_t provider_edge_count = gs_edge_list_get_count(provider_edges);
-            for (size_t j = 0; j < provider_edge_count; j++) {
-                GraphserverEdge* edge;
-                GraphserverResult get_result = gs_edge_list_get_edge(provider_edges, j, &edge);
-                if (get_result == GS_SUCCESS && edge) {
-                    gs_edge_list_add_edge(out_edges, edge);
-                }
-            }
-            
-            // Update statistics
-            engine->last_plan_stats.providers_called++;
-            engine->last_plan_stats.edges_generated += provider_edge_count;
-        }
-        
-        gs_edge_list_destroy(provider_edges);
-    }
-    
+
+    // Cache miss or error - generate edges using providers
+    GraphserverResult overall_result = call_providers(engine, vertex, out_edges);
+
     // Store results in cache if caching is enabled and providers succeeded
     if (engine->config.enable_edge_caching && engine->edge_cache && overall_result == GS_SUCCESS) {
         (void)edge_cache_put(engine->edge_cache, vertex, out_edges);
-        // Update cache_puts statistics regardless of success/failure
         engine->last_plan_stats.cache_puts++;
-        // Note: We don't fail the overall operation if cache storage fails
     }
-    
+
     return overall_result;
 }
 
