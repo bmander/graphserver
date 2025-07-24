@@ -4,7 +4,7 @@
 import tempfile
 from pathlib import Path
 
-from graphserver import Engine, Vertex
+from graphserver import Engine
 from graphserver.providers.osm import OSMAccessProvider, OSMNetworkProvider
 from graphserver.providers.osm.types import WalkingProfile
 
@@ -49,18 +49,24 @@ def minimal_pathfinding_test():
         engine.register_provider("osm_network", network_provider)
         engine.register_provider("osm_access", access_provider)
 
-        # Define coordinates
-        start_coords = Vertex({"lat": 0.0001, "lon": 0.0001})  # Near node 1
-        goal_coords = Vertex({"lat": 0.0001, "lon": 0.0011})  # Near node 2
+        # Register access points
+        start_ap_id = access_provider.register_access_point(0.0001, 0.0001)  # Near node 1
+        goal_ap_id = access_provider.register_access_point(0.0001, 0.0011)  # Near node 2
+        
+        # Get vertices from registered access points
+        start_vertex = access_provider.get_access_point_vertex(start_ap_id)
+        goal_vertex = access_provider.get_access_point_vertex(goal_ap_id)
 
-        print(f"Start: {start_coords._data}")
-        print(f"Goal:  {goal_coords._data}")
+        print(f"Start access point ID: {start_ap_id}")
+        print(f"Goal access point ID:  {goal_ap_id}")
+        print(f"Start vertex: {start_vertex}")
+        print(f"Goal vertex:  {goal_vertex}")
         print()
 
         # Execute pathfinding with C-level debug output
         print("🚀 Starting pathfinding...")
         try:
-            result = engine.plan(start=start_coords, goal=goal_coords)
+            result = engine.plan(start=start_vertex, goal=goal_vertex)
             print(f"✅ SUCCESS! Found {len(result)} edges")
         except Exception as e:
             print(f"❌ FAILED: {e}")

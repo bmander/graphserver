@@ -4,7 +4,7 @@
 import tempfile
 from pathlib import Path
 
-from graphserver import Engine, Vertex
+from graphserver import Engine
 from graphserver.providers.osm import OSMAccessProvider, OSMNetworkProvider
 from graphserver.providers.osm.types import WalkingProfile
 
@@ -49,48 +49,49 @@ def debug_offramp_generation():
             build_index=True,
         )
 
-        # Set up goal coordinate manually
+        # Register access point and analyze the process
         goal_lat, goal_lon = 0.0001, 0.0011
-        print(f"Setting goal coordinate: ({goal_lat}, {goal_lon})")
-        access_provider.set_target_coordinate(goal_lat, goal_lon)
+        print(f"Registering access point at: ({goal_lat}, {goal_lon})")
+        goal_ap_id = access_provider.register_access_point(goal_lat, goal_lon)
+        goal_vertex = access_provider.get_access_point_vertex(goal_ap_id)
+        
+        print(f"Goal access point ID: {goal_ap_id}")
+        print(f"Goal vertex: {goal_vertex}")
 
-        print(f"Stored target coordinates: {access_provider._target_coordinates}")
-
-        # Test offramps from each OSM node
-        for node_id in [1, 2]:
-            print(f"\n--- Testing offramps from OSM Node {node_id} ---")
-
-            osm_vertex = Vertex({"osm_node_id": node_id})
-            offramps = access_provider(osm_vertex)
-
-            print(f"Generated {len(offramps)} offramps")
-
-            for i, (target_vertex, edge) in enumerate(offramps):
-                print(f"  Offramp {i + 1}:")
-                print(f"    Target vertex keys: {list(target_vertex.keys())}")
-                print(
-                    f"    Target coordinates: ({target_vertex.get('lat', 'N/A')}, {target_vertex.get('lon', 'N/A')})"
-                )
-                print(
-                    f"    Target identity hash: {target_vertex.get('_id_hash', 'MISSING')}"
-                )
-                print(f"    Edge cost: {edge.cost}")
-                print(f"    Edge distance: {edge.metadata.get('distance_m', 'N/A')}m")
-
-                # Check if this target matches our goal
-                expected_goal_hash = f"coord:{round(goal_lat, 5)},{round(goal_lon, 5)}"
-                target_hash = target_vertex.get("_id_hash", "")
-                is_match = target_hash == expected_goal_hash
-                print(
-                    f"    Matches goal hash? {is_match} (expected: {expected_goal_hash})"
-                )
-
-        # Test what happens when we add the goal vertex identity hash manually
-        print("\n--- Manual Goal Hash Test ---")
+        # Register the engine with providers to enable routing
         engine = Engine()
-        goal_vertex = Vertex({"lat": goal_lat, "lon": goal_lon})
-        goal_with_hash = engine._add_identity_hash_to_vertex(goal_vertex)
-        print(f"Goal vertex with hash: {goal_with_hash.get('_id_hash', 'MISSING')}")
+        engine.register_provider("osm_network", network_provider)
+        engine.register_provider("osm_access", access_provider)
+
+        # Test access from each OSM node by getting their offramps
+        print("\n--- Testing access from OSM nodes ---")
+        for node_id in [1, 2]:
+            print(f"\n--- Node {node_id} Analysis ---")
+            
+            # Get the node's lat/lon from the network provider
+            node_data = network_provider.parser.nodes.get(node_id)
+            if node_data:
+                node_lat, node_lon = node_data.lat, node_data.lon
+                print(f"OSM Node {node_id} location: ({node_lat}, {node_lon})")
+                
+                # Register this as an access point too to test routing
+                start_ap_id = access_provider.register_access_point(node_lat, node_lon)
+                start_vertex = access_provider.get_access_point_vertex(start_ap_id)
+                
+                print(f"Start access point ID: {start_ap_id}")
+                print(f"Start vertex: {start_vertex}")
+                
+                # Try to find a route
+                try:
+                    result = engine.plan(start=start_vertex, goal=goal_vertex)
+                    print(f"✅ Route found with {len(result)} edges")
+                    for i, path_edge in enumerate(result):
+                        print(f"  Edge {i+1}: cost={path_edge.edge.cost}, metadata={path_edge.edge.metadata}")
+                        print(f"    Target vertex: {path_edge.target}")
+                except Exception as e:
+                    print(f"❌ No route found: {e}")
+            else:
+                print(f"Node {node_id} not found in network")
 
     finally:
         osm_file.unlink()
