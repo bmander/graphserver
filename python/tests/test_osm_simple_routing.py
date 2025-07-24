@@ -351,3 +351,231 @@ class TestSimpleOSMRouting:
         # Clean up
         access_provider.clear_access_points()
         simple_osm_file.unlink()
+
+    def test_minimal_pathfinding_workflow(
+        self, simple_osm_file: Path, simple_walking_profile: WalkingProfile
+    ) -> None:
+        """Test the complete minimal pathfinding workflow with detailed step validation.
+        
+        This test validates each step of the pathfinding process:
+        1. Provider setup and engine registration
+        2. Access point registration and vertex creation
+        3. Pathfinding execution and result validation
+        4. Path structure and cost validation
+        """
+        if not OSM_AVAILABLE:
+            pytest.skip("OSM dependencies not available")
+
+        import time
+
+        # Step 1: Create providers with exact same setup as minimal_pathfinding_test
+        network_provider = OSMNetworkProvider(
+            simple_osm_file,
+            walking_profile=simple_walking_profile,
+        )
+
+        access_provider = OSMAccessProvider(
+            parser=network_provider.parser,
+            walking_profile=simple_walking_profile,
+            search_radius_m=1000.0,
+            max_nearby_nodes=5,
+            build_index=True,
+        )
+
+        # Step 2: Register with engine
+        engine = Engine()
+        engine.register_provider("osm_network", network_provider)
+        engine.register_provider("osm_access", access_provider)
+
+        # Validate provider registration
+        assert "osm_network" in engine.providers
+        assert "osm_access" in engine.providers
+        assert len(engine.providers) == 2
+
+        # Step 3: Register access points with exact coordinates from minimal test
+        start_ap_id = access_provider.register_access_point(
+            0.0001, 0.0001
+        )  # Near node 1
+        goal_ap_id = access_provider.register_access_point(
+            0.0001, 0.0011
+        )  # Near node 2
+
+        # Validate access point registration
+        assert start_ap_id is not None
+        assert goal_ap_id is not None
+        assert start_ap_id != goal_ap_id
+        assert len(access_provider.list_access_points()) >= 2
+
+        # Step 4: Get vertices from registered access points
+        start_vertex = access_provider.get_access_point_vertex(start_ap_id)
+        goal_vertex = access_provider.get_access_point_vertex(goal_ap_id)
+
+        # Validate vertex creation
+        assert start_vertex is not None
+        assert goal_vertex is not None
+        assert "access_point_id" in start_vertex
+        assert "access_point_id" in goal_vertex
+        assert start_vertex["access_point_id"] == start_ap_id
+        assert goal_vertex["access_point_id"] == goal_ap_id
+        assert "lat" in start_vertex and "lon" in start_vertex
+        assert "lat" in goal_vertex and "lon" in goal_vertex
+        assert "_id_hash" in start_vertex and "_id_hash" in goal_vertex
+
+        # Step 5: Execute pathfinding with timing
+        planning_start = time.time()
+        result = engine.plan(start=start_vertex, goal=goal_vertex)
+        planning_time = time.time() - planning_start
+
+        # Validate pathfinding results
+        assert result is not None, "Planning should return a result"
+        assert len(result) > 0, "Should find a path between the access points"
+
+        # Validate performance (should be fast on simple data)
+        assert planning_time < 1.0, \
+            f"Pathfinding took too long: {planning_time:.3f}s"
+
+        # Step 6: Validate path structure in detail
+        assert hasattr(result, 'total_cost'), "Result should have total_cost property"
+        assert result.total_cost > 0, "Path should have positive cost"
+
+        # Validate each path edge
+        for i, path_edge in enumerate(result):
+            assert hasattr(path_edge, "target"), f"Path edge {i} should have target"
+            assert hasattr(path_edge, "edge"), f"Path edge {i} should have edge"
+            assert hasattr(path_edge.edge, "cost"), \
+                f"Path edge {i} should have cost"
+            assert hasattr(path_edge.edge, "metadata"), \
+                f"Path edge {i} should have metadata"
+
+            # Cost should be non-negative
+            assert path_edge.edge.cost >= 0, \
+                f"Path edge {i} cost should be non-negative"
+
+            # Target should be a valid vertex
+            assert hasattr(path_edge.target, '__getitem__'), \
+                f"Path edge {i} target should be dict-like"
+            assert "_id_hash" in path_edge.target, \
+                f"Path edge {i} target should have _id_hash"
+
+        # Step 7: Validate path connectivity (last should connect to access points)
+        last_edge = result[-1]
+
+        # The path should end at our goal access point
+        assert last_edge.target["_id_hash"] == goal_vertex["_id_hash"], \
+            "Path should end at goal vertex"
+
+        # Step 8: Validate specific path characteristics for this simple scenario
+        # With the simple OSM data (2 nodes, 1 way), we expect a short path
+        assert len(result) <= 5, \
+            f"Path should be short for simple data, got {len(result)} edges"
+
+        print("✅ Minimal pathfinding workflow validated successfully!")
+        print(f"   Path: {len(result)} edges, Cost: {result.total_cost:.1f}s")
+        print(f"   Planning time: {planning_time:.3f}s")
+
+        # Clean up
+        access_provider.clear_access_points()
+        simple_osm_file.unlink()
+
+    def test_pathfinding_edge_cases(
+        self, simple_osm_file: Path, simple_walking_profile: WalkingProfile
+    ) -> None:
+        """Test edge cases and failure scenarios in pathfinding workflow."""
+        if not OSM_AVAILABLE:
+            pytest.skip("OSM dependencies not available")
+
+        # Set up providers and engine
+        network_provider = OSMNetworkProvider(
+            simple_osm_file,
+            walking_profile=simple_walking_profile,
+        )
+
+        access_provider = OSMAccessProvider(
+            parser=network_provider.parser,
+            walking_profile=simple_walking_profile,
+            search_radius_m=50.0,  # Smaller radius to test "no nearby nodes" scenario
+            max_nearby_nodes=5,
+            build_index=True,
+        )
+
+        engine = Engine()
+        engine.register_provider("osm_network", network_provider)
+        engine.register_provider("osm_access", access_provider)
+
+        # Test Case 1: Coordinates too far from any OSM nodes
+        far_ap_id = access_provider.register_access_point(
+            10.0, 10.0
+        )  # Very far from (0,0)
+        near_ap_id = access_provider.register_access_point(
+            0.0001, 0.0001
+        )  # Near node 1
+
+        far_vertex = access_provider.get_access_point_vertex(far_ap_id)
+        near_vertex = access_provider.get_access_point_vertex(near_ap_id)
+
+        # Should still create vertices even if no nearby nodes
+        assert far_vertex is not None
+        assert "access_point_id" in far_vertex
+        assert far_vertex["lat"] == 10.0
+        assert far_vertex["lon"] == 10.0
+
+        # Test pathfinding with disconnected access point
+        try:
+            result = engine.plan(start=far_vertex, goal=near_vertex)
+            # If we get here, either the search radius was wider than expected
+            # or the pathfinding succeeded unexpectedly
+            if result is not None and len(result) == 0:
+                print("No path found as expected for disconnected coordinates")
+        except Exception as e:
+            # This is expected - should fail due to no connection
+            assert "no path found" in str(e).lower() or \
+                "planning failed" in str(e).lower()
+            print(f"Expected pathfinding failure: {e}")
+
+        # Test Case 2: Same start and goal coordinates
+        same_ap_id1 = access_provider.register_access_point(0.0001, 0.0001)
+        same_ap_id2 = access_provider.register_access_point(
+            0.0001, 0.0001
+        )  # Same coords
+
+        same_vertex1 = access_provider.get_access_point_vertex(same_ap_id1)
+        same_vertex2 = access_provider.get_access_point_vertex(same_ap_id2)
+
+        # Should have different access point IDs even with same coordinates
+        assert same_ap_id1 != same_ap_id2
+        assert same_vertex1["access_point_id"] != same_vertex2["access_point_id"]
+
+        # Pathfinding should work (or return empty path for same location)
+        result = engine.plan(start=same_vertex1, goal=same_vertex2)
+        assert result is not None  # Should return a result, even if empty
+
+        # Test Case 3: Invalid coordinate bounds (should still work, just be far)
+        # Note: We don't test truly invalid coordinates like lat > 90 since
+        # the access provider doesn't validate coordinate bounds
+
+        # Test Case 4: Multiple access points management
+        initial_count = len(access_provider.list_access_points())
+
+        # Register several access points
+        ap_ids = []
+        for i in range(3):
+            ap_id = access_provider.register_access_point(
+                0.0001 + i * 0.0001, 0.0001
+            )
+            ap_ids.append(ap_id)
+
+        # Should have more access points now
+        final_count = len(access_provider.list_access_points())
+        assert final_count >= initial_count + 3
+
+        # All access points should be retrievable
+        for ap_id in ap_ids:
+            vertex = access_provider.get_access_point_vertex(ap_id)
+            assert vertex is not None
+            assert vertex["access_point_id"] == ap_id
+
+        print("✅ Edge case testing completed successfully!")
+
+        # Clean up
+        access_provider.clear_access_points()
+        simple_osm_file.unlink()
