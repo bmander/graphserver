@@ -133,7 +133,7 @@ class TestSimpleOSMRouting:
     def test_access_provider_onramps(
         self, simple_osm_file: Path, simple_walking_profile: WalkingProfile
     ) -> None:
-        """Test access provider generates onramps from coordinates to OSM nodes."""
+        """Test access provider generates onramps from access points to OSM nodes."""
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
 
@@ -146,18 +146,20 @@ class TestSimpleOSMRouting:
             build_index=True,
         )
 
-        # Test onramp from coordinate near node 1
-        coord_near_1 = Vertex({"lat": 0.0001, "lon": 0.0001})  # Close to (0,0)
-        onramps = access_provider(coord_near_1)
+        # Register access point near node 1
+        ap1_id = access_provider.register_access_point(0.0001, 0.0001)  # Close to (0,0)
+        ap1_vertex = access_provider.get_access_point_vertex(ap1_id)
+        onramps = access_provider(ap1_vertex)
 
         assert len(onramps) > 0
         # Should find at least node 1
         found_node_1 = any(target["osm_node_id"] == 1 for target, _ in onramps)
         assert found_node_1
 
-        # Test onramp from coordinate near node 2
-        coord_near_2 = Vertex({"lat": 0.0001, "lon": 0.0011})  # Close to (0, 0.001)
-        onramps = access_provider(coord_near_2)
+        # Register access point near node 2
+        ap2_id = access_provider.register_access_point(0.0001, 0.0011)  # Close to (0, 0.001)
+        ap2_vertex = access_provider.get_access_point_vertex(ap2_id)
+        onramps = access_provider(ap2_vertex)
 
         assert len(onramps) > 0
         # Should find at least node 2
@@ -227,16 +229,19 @@ class TestSimpleOSMRouting:
         engine.register_provider("osm_network", network_provider)
         engine.register_provider("osm_access", access_provider)
 
-        # Define test coordinates
-        start_coords = Vertex({"lat": 0.0001, "lon": 0.0001})  # Near node 1
-        goal_coords = Vertex({"lat": 0.0001, "lon": 0.0011})  # Near node 2
+        # Register access points for test coordinates
+        start_ap_id = access_provider.register_access_point(0.0001, 0.0001)  # Near node 1
+        goal_ap_id = access_provider.register_access_point(0.0001, 0.0011)  # Near node 2
+        
+        start_vertex = access_provider.get_access_point_vertex(start_ap_id)
+        goal_vertex = access_provider.get_access_point_vertex(goal_ap_id)
 
-        # Verify that access provider can generate onramps for both coordinates
-        start_onramps = access_provider(start_coords)
-        goal_onramps = access_provider(goal_coords)
+        # Verify that access provider can generate onramps for both access points
+        start_onramps = access_provider(start_vertex)
+        goal_onramps = access_provider(goal_vertex)
 
-        assert len(start_onramps) > 0, "Should find onramps from start coordinates"
-        assert len(goal_onramps) > 0, "Should find onramps from goal coordinates"
+        assert len(start_onramps) > 0, "Should find onramps from start access point"
+        assert len(goal_onramps) > 0, "Should find onramps from goal access point"
 
         # Verify that network provider can navigate between OSM nodes
         node1_vertex = Vertex({"osm_node_id": 1})
@@ -279,22 +284,25 @@ class TestSimpleOSMRouting:
         engine.register_provider("osm_network", network_provider)
         engine.register_provider("osm_access", access_provider)
 
-        # Define test coordinates close to our simple road
-        start_coords = Vertex({"lat": 0.0001, "lon": 0.0001})  # Near node 1 (0,0)
-        goal_coords = Vertex({"lat": 0.0001, "lon": 0.0011})  # Near node 2 (0,0.001)
+        # Register access points for test coordinates
+        start_ap_id = access_provider.register_access_point(0.0001, 0.0001)  # Near node 1 (0,0)
+        goal_ap_id = access_provider.register_access_point(0.0001, 0.0011)  # Near node 2 (0,0.001)
+        
+        start_vertex = access_provider.get_access_point_vertex(start_ap_id)
+        goal_vertex = access_provider.get_access_point_vertex(goal_ap_id)
 
         # Manually test the bidirectional access provider functionality
         # 1. Verify onramps work
-        start_onramps = access_provider(start_coords)
-        assert len(start_onramps) > 0, "Should generate onramps from start coordinates"
+        start_onramps = access_provider(start_vertex)
+        assert len(start_onramps) > 0, "Should generate onramps from start access point"
 
-        # 2. Verify that goal coordinate gets stored as target
-        goal_onramps = access_provider(goal_coords)
-        assert len(goal_onramps) > 0, "Should generate onramps from goal coordinates"
-        # Check that target coordinates are stored (accessing for test purposes)
-        assert len(access_provider._target_coordinates) >= 1, (
-            "Should store target coordinates"
-        )  # noqa: SLF001
+        # 2. Verify that goal access point also generates onramps
+        goal_onramps = access_provider(goal_vertex)
+        assert len(goal_onramps) > 0, "Should generate onramps from goal access point"
+        # Check that access points are registered
+        assert len(access_provider.list_access_points()) >= 2, (
+            "Should have registered access points"
+        )
 
         # 3. Verify offramps work - test with OSM nodes
         node1_vertex = Vertex({"osm_node_id": 1})
@@ -303,15 +311,14 @@ class TestSimpleOSMRouting:
         offramps_from_1 = access_provider(node1_vertex)
         offramps_from_2 = access_provider(node2_vertex)
 
-        # Should have offramps to stored target coordinates
+        # Should have offramps to registered access points
         assert len(offramps_from_1) > 0 or len(offramps_from_2) > 0, (
-            "Should generate offramps to target coordinates"
+            "Should generate offramps to access points"
         )
 
         # 4. Test complete routing using the engine
-        # The engine will automatically set up the goal coordinate for access providers
         try:
-            result = engine.plan(start=start_coords, goal=goal_coords)
+            result = engine.plan(start=start_vertex, goal=goal_vertex)
 
             # If planning succeeds, we have working coordinate-to-coordinate routing!
             assert result is not None, "Planning should return a result"
@@ -338,5 +345,5 @@ class TestSimpleOSMRouting:
             pass
 
         # Clean up
-        access_provider.clear_target_coordinates()
+        access_provider.clear_access_points()
         simple_osm_file.unlink()

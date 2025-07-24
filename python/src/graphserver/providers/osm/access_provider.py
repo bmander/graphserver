@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class AccessPoint:
     """Represents a registered access point with cached nearby OSM nodes."""
-    
+
     id: str
     lat: float
     lon: float
@@ -269,7 +269,7 @@ class OSMAccessProvider:
         """
         access_point_id = vertex["access_point_id"]
         access_point = self._access_points.get(access_point_id)
-        
+
         if access_point is None:
             return []
 
