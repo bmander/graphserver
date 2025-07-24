@@ -50,9 +50,13 @@ def minimal_pathfinding_test():
         engine.register_provider("osm_access", access_provider)
 
         # Register access points
-        start_ap_id = access_provider.register_access_point(0.0001, 0.0001)  # Near node 1
-        goal_ap_id = access_provider.register_access_point(0.0001, 0.0011)  # Near node 2
-        
+        start_ap_id = access_provider.register_access_point(
+            0.0001, 0.0001
+        )  # Near node 1
+        goal_ap_id = access_provider.register_access_point(
+            0.0001, 0.0011
+        )  # Near node 2
+
         # Get vertices from registered access points
         start_vertex = access_provider.get_access_point_vertex(start_ap_id)
         goal_vertex = access_provider.get_access_point_vertex(goal_ap_id)

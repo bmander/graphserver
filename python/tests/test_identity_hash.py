@@ -52,7 +52,11 @@ def test_osm_node_identity_hash():
         # Test OSM node hash generation via _add_identity_hash
         node1_data = {"osm_node_id": 123, "lat": 47.6062, "lon": -122.3321}
         node2_data = {"osm_node_id": 123, "lat": 47.6062, "lon": -122.3321}  # Same node
-        node3_data = {"osm_node_id": 456, "lat": 47.6062, "lon": -122.3321}  # Different node
+        node3_data = {
+            "osm_node_id": 456,
+            "lat": 47.6062,
+            "lon": -122.3321,
+        }  # Different node
 
         node1_with_hash = access_provider._add_identity_hash(node1_data.copy())
         node2_with_hash = access_provider._add_identity_hash(node2_data.copy())

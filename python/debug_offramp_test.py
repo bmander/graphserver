@@ -54,7 +54,7 @@ def debug_offramp_generation():
         print(f"Registering access point at: ({goal_lat}, {goal_lon})")
         goal_ap_id = access_provider.register_access_point(goal_lat, goal_lon)
         goal_vertex = access_provider.get_access_point_vertex(goal_ap_id)
-        
+
         print(f"Goal access point ID: {goal_ap_id}")
         print(f"Goal vertex: {goal_vertex}")
 
@@ -67,26 +67,28 @@ def debug_offramp_generation():
         print("\n--- Testing access from OSM nodes ---")
         for node_id in [1, 2]:
             print(f"\n--- Node {node_id} Analysis ---")
-            
+
             # Get the node's lat/lon from the network provider
             node_data = network_provider.parser.nodes.get(node_id)
             if node_data:
                 node_lat, node_lon = node_data.lat, node_data.lon
                 print(f"OSM Node {node_id} location: ({node_lat}, {node_lon})")
-                
+
                 # Register this as an access point too to test routing
                 start_ap_id = access_provider.register_access_point(node_lat, node_lon)
                 start_vertex = access_provider.get_access_point_vertex(start_ap_id)
-                
+
                 print(f"Start access point ID: {start_ap_id}")
                 print(f"Start vertex: {start_vertex}")
-                
+
                 # Try to find a route
                 try:
                     result = engine.plan(start=start_vertex, goal=goal_vertex)
                     print(f"✅ Route found with {len(result)} edges")
                     for i, path_edge in enumerate(result):
-                        print(f"  Edge {i+1}: cost={path_edge.edge.cost}, metadata={path_edge.edge.metadata}")
+                        print(
+                            f"  Edge {i + 1}: cost={path_edge.edge.cost}, metadata={path_edge.edge.metadata}"
+                        )
                         print(f"    Target vertex: {path_edge.target}")
                 except Exception as e:
                     print(f"❌ No route found: {e}")

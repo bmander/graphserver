@@ -273,7 +273,6 @@ class Engine:
         """Get read-only view of registered providers."""
         return self._providers.copy()
 
-
     def get_stats(self) -> dict[str, int]:
         """Get engine statistics including cache performance metrics.
 

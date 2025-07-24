@@ -336,12 +336,10 @@ class TestSimpleOSMRouting:
         if len(result) > 0:
             # Successful coordinate-to-coordinate routing
             print(f"Route found with {len(result)} steps!")
-            
+
             # Verify the path structure
             for i, path_edge in enumerate(result):
-                assert hasattr(path_edge, "target"), (
-                    f"Path edge {i} should have target"
-                )
+                assert hasattr(path_edge, "target"), f"Path edge {i} should have target"
                 assert hasattr(path_edge, "edge"), f"Path edge {i} should have edge"
                 assert path_edge.edge.cost is not None, (
                     f"Path edge {i} should have cost"

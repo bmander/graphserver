@@ -32,13 +32,13 @@ except ImportError as e:
 
 def parse_coordinates(coord_str: str) -> tuple[float, float]:
     """Parse lat,lon coordinates from string.
-    
+
     Args:
         coord_str: String like "47.6540,-122.3100"
-        
+
     Returns:
         Tuple of (latitude, longitude)
-        
+
     Raises:
         ValueError: If coordinates are invalid
     """
@@ -46,25 +46,31 @@ def parse_coordinates(coord_str: str) -> tuple[float, float]:
         lat_str, lon_str = coord_str.split(",", 1)
         lat = float(lat_str.strip())
         lon = float(lon_str.strip())
-        
+
         # Basic validation
         if not (-90 <= lat <= 90):
             raise ValueError(f"Invalid latitude: {lat} (must be between -90 and 90)")
         if not (-180 <= lon <= 180):
             raise ValueError(f"Invalid longitude: {lon} (must be between -180 and 180)")
-            
+
         return lat, lon
     except ValueError as e:
         if "could not convert" in str(e) or "not enough values" in str(e):
-            raise ValueError(f"Invalid coordinate format: {coord_str} (expected: lat,lon)")
+            raise ValueError(
+                f"Invalid coordinate format: {coord_str} (expected: lat,lon)"
+            )
         raise
 
 
 def main() -> None:
     """Main pathfinding example."""
     if len(sys.argv) != 4:
-        print("Usage: python osm_routing_example.py <osm_file> <start_lat,start_lon> <end_lat,end_lon>")
-        print("Example: python osm_routing_example.py uw_campus.osm 47.65906510597771,-122.3043737809855 47.66006510597771,-122.3033737809855")
+        print(
+            "Usage: python osm_routing_example.py <osm_file> <start_lat,start_lon> <end_lat,end_lon>"
+        )
+        print(
+            "Example: python osm_routing_example.py uw_campus.osm 47.65906510597771,-122.3043737809855 47.66006510597771,-122.3033737809855"
+        )
         sys.exit(1)
 
     osm_file = Path(sys.argv[1])
@@ -112,7 +118,9 @@ def main() -> None:
 
     load_time = time.time() - start_time
     print(f"✅ OSM data loaded in {load_time:.2f}s")
-    print(f"   Network: {network_provider.node_count} nodes, {network_provider.way_count} ways, {network_provider.edge_count} edges")
+    print(
+        f"   Network: {network_provider.node_count} nodes, {network_provider.way_count} ways, {network_provider.edge_count} edges"
+    )
     print()
 
     # Create and configure the planning engine
@@ -124,10 +132,10 @@ def main() -> None:
     print("🔗 Registering access points...")
     start_ap_id = access_provider.register_access_point(start_lat, start_lon)
     goal_ap_id = access_provider.register_access_point(end_lat, end_lon)
-    
+
     start_vertex = access_provider.get_access_point_vertex(start_ap_id)
     goal_vertex = access_provider.get_access_point_vertex(goal_ap_id)
-    
+
     print(f"   Start access point: {start_ap_id}")
     print(f"   Goal access point:  {goal_ap_id}")
     print()
@@ -142,38 +150,44 @@ def main() -> None:
         if result and len(result) > 0:
             print(f"✅ Route found in {planning_time:.3f}s")
             print(f"   Path: {len(result)} edges")
-            print(f"   Total time: {result.total_cost:.1f}s ({result.total_cost / 60:.1f} minutes)")
+            print(
+                f"   Total time: {result.total_cost:.1f}s ({result.total_cost / 60:.1f} minutes)"
+            )
             print()
-            
+
             print("📋 Route details:")
             for i, path_edge in enumerate(result):
                 target = path_edge.target
                 edge = path_edge.edge
-                
+
                 # Determine target type
-                if 'osm_node_id' in target:
+                if "osm_node_id" in target:
                     target_desc = f"OSM node {target['osm_node_id']}"
-                elif 'access_point_id' in target:
+                elif "access_point_id" in target:
                     target_desc = f"access point {target['access_point_id']}"
                 else:
                     target_desc = "unknown target"
-                
-                print(f"   {i+1:2d}. → {target_desc}")
+
+                print(f"   {i + 1:2d}. → {target_desc}")
                 print(f"       Cost: {edge.cost:.1f}s")
-                
+
                 if edge.metadata:
-                    if 'distance_m' in edge.metadata:
+                    if "distance_m" in edge.metadata:
                         print(f"       Distance: {edge.metadata['distance_m']:.1f}m")
-                    if 'highway' in edge.metadata:
+                    if "highway" in edge.metadata:
                         print(f"       Highway: {edge.metadata['highway']}")
         else:
             print("❌ No route found between the coordinates")
-            print("   This may happen if the coordinates are in disconnected areas of the OSM network")
-            
+            print(
+                "   This may happen if the coordinates are in disconnected areas of the OSM network"
+            )
+
     except Exception as e:
         print(f"❌ Pathfinding failed: {e}")
         if "no path found" in str(e).lower():
-            print("   This may happen if the coordinates are in disconnected areas of the OSM network")
+            print(
+                "   This may happen if the coordinates are in disconnected areas of the OSM network"
+            )
         sys.exit(1)
 
     print()

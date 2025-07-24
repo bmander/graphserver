@@ -167,6 +167,7 @@ class OSMAccessProvider:
             nodes = nodes[: self.max_nearby_nodes]
             # Calculate distances for caching
             from .spatial import calculate_distance
+
             nearby_nodes = [
                 (node, calculate_distance(lat, lon, node.lat, node.lon))
                 for node in nodes
