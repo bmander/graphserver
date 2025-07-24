@@ -359,8 +359,6 @@ class TestOSMAccessProvider:
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
 
-        from graphserver import Vertex
-
         provider = OSMAccessProvider(
             sample_osm_file,
             search_radius_m=1000.0,
@@ -370,11 +368,11 @@ class TestOSMAccessProvider:
 
         # Register access point with coordinates near but not exactly at sample data
         access_point_id = provider.register_access_point(47.6063, -122.3322)
-        
+
         # Verify access point was registered
         assert access_point_id == "ap_001"
         assert access_point_id in provider.list_access_points()
-        
+
         # Get access point vertex
         access_point_vertex = provider.get_access_point_vertex(access_point_id)
         assert access_point_vertex is not None

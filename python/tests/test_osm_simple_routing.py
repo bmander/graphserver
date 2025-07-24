@@ -157,7 +157,9 @@ class TestSimpleOSMRouting:
         assert found_node_1
 
         # Register access point near node 2
-        ap2_id = access_provider.register_access_point(0.0001, 0.0011)  # Close to (0, 0.001)
+        ap2_id = access_provider.register_access_point(
+            0.0001, 0.0011
+        )  # Close to (0, 0.001)
         ap2_vertex = access_provider.get_access_point_vertex(ap2_id)
         onramps = access_provider(ap2_vertex)
 
@@ -230,9 +232,13 @@ class TestSimpleOSMRouting:
         engine.register_provider("osm_access", access_provider)
 
         # Register access points for test coordinates
-        start_ap_id = access_provider.register_access_point(0.0001, 0.0001)  # Near node 1
-        goal_ap_id = access_provider.register_access_point(0.0001, 0.0011)  # Near node 2
-        
+        start_ap_id = access_provider.register_access_point(
+            0.0001, 0.0001
+        )  # Near node 1
+        goal_ap_id = access_provider.register_access_point(
+            0.0001, 0.0011
+        )  # Near node 2
+
         start_vertex = access_provider.get_access_point_vertex(start_ap_id)
         goal_vertex = access_provider.get_access_point_vertex(goal_ap_id)
 
@@ -285,9 +291,13 @@ class TestSimpleOSMRouting:
         engine.register_provider("osm_access", access_provider)
 
         # Register access points for test coordinates
-        start_ap_id = access_provider.register_access_point(0.0001, 0.0001)  # Near node 1 (0,0)
-        goal_ap_id = access_provider.register_access_point(0.0001, 0.0011)  # Near node 2 (0,0.001)
-        
+        start_ap_id = access_provider.register_access_point(
+            0.0001, 0.0001
+        )  # Near node 1 (0,0)
+        goal_ap_id = access_provider.register_access_point(
+            0.0001, 0.0011
+        )  # Near node 2 (0,0.001)
+
         start_vertex = access_provider.get_access_point_vertex(start_ap_id)
         goal_vertex = access_provider.get_access_point_vertex(goal_ap_id)
 
@@ -317,32 +327,28 @@ class TestSimpleOSMRouting:
         )
 
         # 4. Test complete routing using the engine
-        try:
-            result = engine.plan(start=start_vertex, goal=goal_vertex)
+        result = engine.plan(start=start_vertex, goal=goal_vertex)
 
-            # If planning succeeds, we have working coordinate-to-coordinate routing!
-            assert result is not None, "Planning should return a result"
+        # If planning succeeds, we have working coordinate-to-coordinate routing!
+        assert result is not None, "Planning should return a result"
 
-            # For now, we accept either success or failure since the C extension
-            # pathfinding may not be fully implemented
-            if len(result) > 0:
-                # Successful coordinate-to-coordinate routing
-
-                # Verify the path structure
-                for i, path_edge in enumerate(result):
-                    assert hasattr(path_edge, "target"), (
-                        f"Path edge {i} should have target"
-                    )
-                    assert hasattr(path_edge, "edge"), f"Path edge {i} should have edge"
-                    assert path_edge.edge.cost is not None, (
-                        f"Path edge {i} should have cost"
-                    )
-
-        except (RuntimeError, NotImplementedError):
-            # Planning may fail if C extension pathfinding is not fully implemented
-            # This is expected in the current state
-            # Planning failed as expected
-            pass
+        # Verify the path structure if we got results
+        if len(result) > 0:
+            # Successful coordinate-to-coordinate routing
+            print(f"Route found with {len(result)} steps!")
+            
+            # Verify the path structure
+            for i, path_edge in enumerate(result):
+                assert hasattr(path_edge, "target"), (
+                    f"Path edge {i} should have target"
+                )
+                assert hasattr(path_edge, "edge"), f"Path edge {i} should have edge"
+                assert path_edge.edge.cost is not None, (
+                    f"Path edge {i} should have cost"
+                )
+                print(f"Step {i}: {path_edge.target} -> cost {path_edge.edge.cost}")
+        else:
+            print("No route found between access points")
 
         # Clean up
         access_provider.clear_access_points()
