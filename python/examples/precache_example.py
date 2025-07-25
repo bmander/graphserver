@@ -7,6 +7,7 @@ by pre-populating the edge cache with frequently used areas.
 
 from __future__ import annotations
 
+import sys
 import time
 from collections.abc import Sequence
 from typing import Any
@@ -99,19 +100,25 @@ def create_high_traffic_seeds(width: int, height: int) -> list[Vertex]:
     seeds = []
 
     # Downtown core area
-    for x in range(8, 13):
-        for y in range(8, 13):
-            seeds.append(Vertex({"x": x, "y": y, "type": "intersection"}))
+    seeds.extend(
+        Vertex({"x": x, "y": y, "type": "intersection"})
+        for x in range(8, 13)
+        for y in range(8, 13)
+    )
 
     # Business district
-    for x in range(13, 18):
-        for y in range(6, 11):
-            seeds.append(Vertex({"x": x, "y": y, "type": "intersection"}))
+    seeds.extend(
+        Vertex({"x": x, "y": y, "type": "intersection"})
+        for x in range(13, 18)
+        for y in range(6, 11)
+    )
 
     # Shopping area
-    for x in range(3, 8):
-        for y in range(13, 18):
-            seeds.append(Vertex({"x": x, "y": y, "type": "intersection"}))
+    seeds.extend(
+        Vertex({"x": x, "y": y, "type": "intersection"})
+        for x in range(3, 8)
+        for y in range(13, 18)
+    )
 
     return seeds
 
@@ -141,9 +148,9 @@ def benchmark_routing_performance(
             if len(result) > 0:
                 successful_routes += 1
                 total_route_length += len(result)
-        except Exception:
+        except Exception as e:
             # Route failed, continue with others
-            pass
+            print(f"Route planning failed: {e}", file=sys.stderr)
 
     end_time = time.time()
 
@@ -180,10 +187,10 @@ def create_test_routes(
     random.seed(42)  # For reproducible results
 
     for _ in range(num_routes):
-        start_x = random.randint(0, width - 1)
-        start_y = random.randint(0, height - 1)
-        goal_x = random.randint(0, width - 1)
-        goal_y = random.randint(0, height - 1)
+        start_x = random.randint(0, width - 1)  # noqa: S311
+        start_y = random.randint(0, height - 1)  # noqa: S311
+        goal_x = random.randint(0, width - 1)  # noqa: S311
+        goal_y = random.randint(0, height - 1)  # noqa: S311
 
         start = Vertex({"x": start_x, "y": start_y, "type": "intersection"})
         goal = Vertex({"x": goal_x, "y": goal_y, "type": "intersection"})

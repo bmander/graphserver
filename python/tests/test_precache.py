@@ -363,10 +363,9 @@ class TestPrecacheMemory:
         engine.register_provider("grid", provider)
 
         # Create many seed vertices
-        seeds = []
-        for x in range(0, 20, 2):
-            for y in range(0, 20, 2):
-                seeds.append(Vertex({"x": x, "y": y}))
+        seeds = [
+            Vertex({"x": x, "y": y}) for x in range(0, 20, 2) for y in range(0, 20, 2)
+        ]
 
         # Should handle large seed list without issues
         engine.precache_subgraph(

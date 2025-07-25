@@ -30,6 +30,26 @@ except ImportError as e:
     sys.exit(1)
 
 
+def _validate_latitude(lat: float) -> None:
+    """Validate latitude is in valid range."""
+    if not (-90 <= lat <= 90):
+        msg = f"Invalid latitude: {lat} (must be between -90 and 90)"
+        raise ValueError(msg)
+
+
+def _validate_longitude(lon: float) -> None:
+    """Validate longitude is in valid range."""
+    if not (-180 <= lon <= 180):
+        msg = f"Invalid longitude: {lon} (must be between -180 and 180)"
+        raise ValueError(msg)
+
+
+def _raise_coordinate_format_error(coord_str: str) -> None:
+    """Raise coordinate format error."""
+    msg = f"Invalid coordinate format: {coord_str} (expected: lat,lon)"
+    raise ValueError(msg)
+
+
 def parse_coordinates(coord_str: str) -> tuple[float, float]:
     """Parse lat,lon coordinates from string.
 
@@ -48,18 +68,14 @@ def parse_coordinates(coord_str: str) -> tuple[float, float]:
         lon = float(lon_str.strip())
 
         # Basic validation
-        if not (-90 <= lat <= 90):
-            raise ValueError(f"Invalid latitude: {lat} (must be between -90 and 90)")
-        if not (-180 <= lon <= 180):
-            raise ValueError(f"Invalid longitude: {lon} (must be between -180 and 180)")
-
-        return lat, lon
+        _validate_latitude(lat)
+        _validate_longitude(lon)
     except ValueError as e:
         if "could not convert" in str(e) or "not enough values" in str(e):
-            raise ValueError(
-                f"Invalid coordinate format: {coord_str} (expected: lat,lon)"
-            )
+            _raise_coordinate_format_error(coord_str)
         raise
+    else:
+        return lat, lon
 
 
 def main() -> None:
