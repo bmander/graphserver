@@ -700,6 +700,16 @@ static GraphserverResult bfs_precache(
     size_t max_vertices
 );
 
+// BFS precaching state structure
+typedef struct {
+    PriorityQueue* queue;
+    VertexSet* visited;
+    GraphserverArena* arena;
+    size_t vertices_discovered;
+    size_t max_depth;
+    size_t max_vertices;
+} BFSPrecacheState;
+
 // Pre-cache a subgraph using breadth-first discovery
 GraphserverResult gs_engine_precache_subgraph(
     GraphserverEngine* engine,
@@ -741,6 +751,151 @@ GraphserverResult gs_engine_precache_subgraph(
     );
 }
 
+// Helper: Initialize BFS precaching state
+static GraphserverResult bfs_precache_init_state(
+    BFSPrecacheState* state,
+    GraphserverEngine* engine,
+    GraphserverVertex** seed_vertices,
+    size_t num_seeds,
+    size_t max_depth,
+    size_t max_vertices) {
+    
+    // Initialize fields
+    state->vertices_discovered = 0;
+    state->max_depth = max_depth;
+    state->max_vertices = max_vertices;
+    
+    // Create arena for BFS operations
+    state->arena = gs_arena_create(engine->config.default_arena_size);
+    if (!state->arena) {
+        return GS_ERROR_OUT_OF_MEMORY;
+    }
+    
+    // Use priority queue with depth as priority for BFS ordering
+    state->queue = pq_create(state->arena);
+    if (!state->queue) {
+        gs_arena_destroy(state->arena);
+        return GS_ERROR_OUT_OF_MEMORY;
+    }
+    
+    // Use hash table (vertex set) for visited tracking
+    state->visited = vertex_set_create(state->arena);
+    if (!state->visited) {
+        gs_arena_destroy(state->arena);
+        return GS_ERROR_OUT_OF_MEMORY;
+    }
+    
+    // Initialize with seed vertices at depth 0
+    for (size_t i = 0; i < num_seeds; i++) {
+        if (!pq_insert(state->queue, seed_vertices[i], 0.0)) {
+            gs_arena_destroy(state->arena);
+            return GS_ERROR_OUT_OF_MEMORY;
+        }
+    }
+    
+    return GS_SUCCESS;
+}
+
+// Helper: Queue neighbors from an edge list
+static GraphserverResult bfs_precache_queue_neighbors(
+    BFSPrecacheState* state,
+    GraphserverEdgeList* edges,
+    double current_depth) {
+    
+    size_t edge_count = gs_edge_list_get_count(edges);
+    
+    for (size_t i = 0; i < edge_count; i++) {
+        GraphserverEdge* edge;
+        GraphserverResult get_result = gs_edge_list_get_edge(edges, i, &edge);
+        
+        if (get_result == GS_SUCCESS && edge) {
+            GraphserverVertex* dest = gs_edge_get_target_vertex(edge);
+            
+            if (dest && !vertex_set_contains(state->visited, dest)) {
+                if (!pq_insert(state->queue, dest, current_depth + 1.0)) {
+                    return GS_ERROR_OUT_OF_MEMORY;
+                }
+            }
+        }
+    }
+    
+    return GS_SUCCESS;
+}
+
+// Helper: Process edges that are already cached
+static GraphserverResult bfs_precache_process_cached_edges(
+    BFSPrecacheState* state,
+    GraphserverEdgeList* cached_edges,
+    double current_depth) {
+    
+    // Only queue neighbors if within depth limit
+    if (state->max_depth == 0 || current_depth < (double)state->max_depth) {
+        return bfs_precache_queue_neighbors(state, cached_edges, current_depth);
+    }
+    
+    return GS_SUCCESS;
+}
+
+// Helper: Generate and cache edges for a vertex
+static GraphserverEdgeList* bfs_precache_generate_and_cache_edges(
+    GraphserverEngine* engine,
+    Provider* provider,
+    GraphserverVertex* vertex) {
+    
+    GraphserverEdgeList* edges = gs_edge_list_create();
+    if (!edges) {
+        return NULL;
+    }
+    
+    // Call provider to generate edges
+    int provider_result = provider->generator(vertex, edges, provider->user_data);
+    
+    if (provider_result == 0) { // Success
+        // Cache the edges
+        edge_cache_put(engine->edge_cache, vertex, edges);
+        return edges;
+    }
+    
+    // Provider failed - clean up
+    gs_edge_list_destroy(edges);
+    return NULL;
+}
+
+// Helper: Process a single vertex during BFS
+static GraphserverResult bfs_precache_process_vertex(
+    BFSPrecacheState* state,
+    GraphserverEngine* engine,
+    Provider* provider,
+    GraphserverVertex* vertex,
+    double depth) {
+    
+    // Check if vertex is already cached
+    GraphserverEdgeList* cached_edges = NULL;
+    GraphserverResult cache_result = edge_cache_get(engine->edge_cache, vertex, &cached_edges);
+    
+    if (cache_result == GS_SUCCESS && cached_edges) {
+        // Already cached - use cached edges for expansion
+        GraphserverResult result = bfs_precache_process_cached_edges(state, cached_edges, depth);
+        gs_edge_list_destroy(cached_edges);
+        return result;
+    } else {
+        // Not cached - generate and cache edges
+        GraphserverEdgeList* edges = bfs_precache_generate_and_cache_edges(engine, provider, vertex);
+        if (!edges) {
+            return GS_SUCCESS; // Provider failed, but continue BFS
+        }
+        
+        // Add neighbors to queue if within depth limit
+        GraphserverResult result = GS_SUCCESS;
+        if (state->max_depth == 0 || depth < (double)state->max_depth) {
+            result = bfs_precache_queue_neighbors(state, edges, depth);
+        }
+        
+        gs_edge_list_destroy(edges);
+        return result;
+    }
+}
+
 // BFS implementation using priority queue for precaching
 static GraphserverResult bfs_precache(
     GraphserverEngine* engine,
@@ -750,129 +905,52 @@ static GraphserverResult bfs_precache(
     size_t max_depth,
     size_t max_vertices) {
     
-    // Create arena for BFS operations
-    GraphserverArena* arena = gs_arena_create(engine->config.default_arena_size);
-    if (!arena) {
-        return GS_ERROR_OUT_OF_MEMORY;
+    // Initialize BFS state
+    BFSPrecacheState state;
+    GraphserverResult result = bfs_precache_init_state(
+        &state, engine, seed_vertices, num_seeds, max_depth, max_vertices);
+    
+    if (result != GS_SUCCESS) {
+        return result;
     }
     
-    // Use priority queue with depth as priority for BFS ordering
-    PriorityQueue* queue = pq_create(arena);
-    if (!queue) {
-        gs_arena_destroy(arena);
-        return GS_ERROR_OUT_OF_MEMORY;
-    }
-    
-    // Use hash table (vertex set) for visited tracking
-    VertexSet* visited = vertex_set_create(arena);
-    if (!visited) {
-        gs_arena_destroy(arena);
-        return GS_ERROR_OUT_OF_MEMORY;
-    }
-    
-    // Initialize with seed vertices at depth 0
-    for (size_t i = 0; i < num_seeds; i++) {
-        if (!pq_insert(queue, seed_vertices[i], 0.0)) {
-            gs_arena_destroy(arena);
-            return GS_ERROR_OUT_OF_MEMORY;
-        }
-    }
-    
-    size_t vertices_discovered = 0;
     GraphserverResult overall_result = GS_SUCCESS;
     
-    // BFS loop
-    while (!pq_is_empty(queue) && 
-           (max_vertices == 0 || vertices_discovered < max_vertices)) {
+    // Main BFS loop
+    while (!pq_is_empty(state.queue) && 
+           (state.max_vertices == 0 || state.vertices_discovered < state.max_vertices)) {
         
         GraphserverVertex* vertex;
         double depth;
         
         // Get next vertex from queue
-        if (!pq_extract_min(queue, &vertex, &depth)) {
+        if (!pq_extract_min(state.queue, &vertex, &depth)) {
             break; // Queue is empty
         }
         
         // Skip if already visited
-        if (vertex_set_contains(visited, vertex)) {
+        if (vertex_set_contains(state.visited, vertex)) {
             continue;
         }
         
         // Mark as visited
-        if (!vertex_set_add(visited, vertex)) {
+        if (!vertex_set_add(state.visited, vertex)) {
             overall_result = GS_ERROR_OUT_OF_MEMORY;
             break;
         }
         
-        vertices_discovered++;
+        state.vertices_discovered++;
         
-        // Check if vertex is already cached
-        GraphserverEdgeList* cached_edges = NULL;
-        GraphserverResult cache_result = edge_cache_get(engine->edge_cache, vertex, &cached_edges);
-        
-        if (cache_result == GS_SUCCESS && cached_edges) {
-            // Already cached - use cached edges for expansion
-            if (max_depth == 0 || depth < (double)max_depth) {
-                size_t edge_count = gs_edge_list_get_count(cached_edges);
-                for (size_t i = 0; i < edge_count; i++) {
-                    GraphserverEdge* edge;
-                    GraphserverResult get_result = gs_edge_list_get_edge(cached_edges, i, &edge);
-                    if (get_result == GS_SUCCESS && edge) {
-                        GraphserverVertex* dest = gs_edge_get_target_vertex(edge);
-                        if (dest && !vertex_set_contains(visited, dest)) {
-                            if (!pq_insert(queue, dest, depth + 1.0)) {
-                                overall_result = GS_ERROR_OUT_OF_MEMORY;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            gs_edge_list_destroy(cached_edges);
-        } else {
-            // Not cached - generate and cache edges
-            GraphserverEdgeList* edges = gs_edge_list_create();
-            if (!edges) {
-                overall_result = GS_ERROR_OUT_OF_MEMORY;
-                break;
-            }
-            
-            // Call provider to generate edges
-            int provider_result = provider->generator(vertex, edges, provider->user_data);
-            
-            if (provider_result == 0) { // Success
-                // Cache the edges
-                edge_cache_put(engine->edge_cache, vertex, edges);
-                
-                // Add neighbors to queue if within depth limit
-                if (max_depth == 0 || depth < (double)max_depth) {
-                    size_t edge_count = gs_edge_list_get_count(edges);
-                    for (size_t i = 0; i < edge_count; i++) {
-                        GraphserverEdge* edge;
-                        GraphserverResult get_result = gs_edge_list_get_edge(edges, i, &edge);
-                        if (get_result == GS_SUCCESS && edge) {
-                            GraphserverVertex* dest = gs_edge_get_target_vertex(edge);
-                            if (dest && !vertex_set_contains(visited, dest)) {
-                                if (!pq_insert(queue, dest, depth + 1.0)) {
-                                    overall_result = GS_ERROR_OUT_OF_MEMORY;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            
-            gs_edge_list_destroy(edges);
-            
-            if (overall_result != GS_SUCCESS) {
-                break;
-            }
+        // Process the vertex
+        result = bfs_precache_process_vertex(&state, engine, provider, vertex, depth);
+        if (result != GS_SUCCESS) {
+            overall_result = result;
+            break;
         }
     }
     
     // Cleanup
-    gs_arena_destroy(arena);
+    gs_arena_destroy(state.arena);
     
     return overall_result;
 }
