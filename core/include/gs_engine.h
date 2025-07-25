@@ -198,6 +198,30 @@ GraphserverResult gs_engine_get_stats(
 );
 
 /**
+ * Pre-cache a subgraph using breadth-first discovery
+ * 
+ * This function performs a breadth-first search starting from the given seed
+ * vertices, caching all discovered edges up to the specified limits. This can
+ * significantly improve routing performance in frequently accessed areas.
+ * 
+ * @param engine Engine instance with edge caching enabled
+ * @param provider_name Name of the provider to cache from
+ * @param seed_vertices Array of vertices to start discovery from
+ * @param num_seeds Number of seed vertices
+ * @param max_depth Maximum depth to traverse (0 = unlimited)
+ * @param max_vertices Maximum vertices to discover (0 = unlimited)
+ * @return Result code
+ */
+GraphserverResult gs_engine_precache_subgraph(
+    GraphserverEngine* engine,
+    const char* provider_name,
+    GraphserverVertex** seed_vertices,
+    size_t num_seeds,
+    size_t max_depth,
+    size_t max_vertices
+);
+
+/**
  * Get the default engine configuration
  * @return Default configuration structure
  */

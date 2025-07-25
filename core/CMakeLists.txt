@@ -74,6 +74,10 @@ add_executable(test_planner tests/test_planner.c)
 target_link_libraries(test_planner graphserver_core)
 add_test(NAME planner_tests COMMAND test_planner)
 
+add_executable(test_precache tests/test_precache.c)
+target_link_libraries(test_precache graphserver_core)
+add_test(NAME precache_tests COMMAND test_precache)
+
 add_executable(test_integration tests/test_integration.c ${EXAMPLE_SOURCES})
 target_link_libraries(test_integration graphserver_core m)
 target_include_directories(test_integration PRIVATE ../examples/include)
@@ -88,7 +92,7 @@ target_include_directories(test_performance PRIVATE ../examples/include)
 # Custom target to run all tests
 add_custom_target(run_tests
     COMMAND ${CMAKE_CTEST_COMMAND} --verbose
-    DEPENDS test_vertex test_edge test_memory test_cache test_engine test_planner test_integration
+    DEPENDS test_vertex test_edge test_memory test_cache test_engine test_planner test_precache test_integration
     COMMENT "Running all tests"
 )
 

@@ -354,12 +354,10 @@ class TestOSMNetworkProvider:
 class TestOSMAccessProvider:
     """Test OSM access provider functionality."""
 
-    def test_coordinate_based_edges(self, sample_osm_file: Path) -> None:
-        """Test edge generation from geographic coordinates."""
+    def test_access_point_registration_and_edges(self, sample_osm_file: Path) -> None:
+        """Test access point registration and edge generation."""
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
-
-        from graphserver import Vertex
 
         provider = OSMAccessProvider(
             sample_osm_file,
@@ -368,11 +366,21 @@ class TestOSMAccessProvider:
             build_index=True,
         )
 
-        # Create vertex with coordinates near but not exactly at sample data
-        coord_vertex = Vertex({"lat": 47.6063, "lon": -122.3322})
+        # Register access point with coordinates near but not exactly at sample data
+        access_point_id = provider.register_access_point(47.6063, -122.3322)
 
-        # Generate edges
-        edges = provider(coord_vertex)
+        # Verify access point was registered
+        assert access_point_id == "ap_001"
+        assert access_point_id in provider.list_access_points()
+
+        # Get access point vertex
+        access_point_vertex = provider.get_access_point_vertex(access_point_id)
+        assert access_point_vertex is not None
+        assert "access_point_id" in access_point_vertex
+        assert access_point_vertex["access_point_id"] == access_point_id
+
+        # Generate edges from access point
+        edges = provider(access_point_vertex)
 
         assert len(edges) > 0
 
@@ -383,7 +391,9 @@ class TestOSMAccessProvider:
             assert "lon" in target_vertex
             assert edge.cost > 0
             assert "edge_type" in edge.metadata
-            assert edge.metadata["edge_type"] == "coordinate_to_node"
+            assert edge.metadata["edge_type"] == "access_point_to_node"
+            assert "access_point_id" in edge.metadata
+            assert edge.metadata["access_point_id"] == access_point_id
 
         # Clean up
         sample_osm_file.unlink()
