@@ -700,6 +700,12 @@ static GraphserverResult bfs_precache(
     size_t max_vertices
 );
 
+// Edge list node for tracking edge lists to destroy
+typedef struct EdgeListNode {
+    GraphserverEdgeList* edges;
+    struct EdgeListNode* next;
+} EdgeListNode;
+
 // BFS precaching state structure
 typedef struct {
     PriorityQueue* queue;
@@ -708,6 +714,7 @@ typedef struct {
     size_t vertices_discovered;
     size_t max_depth;
     size_t max_vertices;
+    EdgeListNode* edge_lists_to_destroy;  // Linked list of edge lists to destroy at end
 } BFSPrecacheState;
 
 // Pre-cache a subgraph using breadth-first discovery
@@ -764,6 +771,7 @@ static GraphserverResult bfs_precache_init_state(
     state->vertices_discovered = 0;
     state->max_depth = max_depth;
     state->max_vertices = max_vertices;
+    state->edge_lists_to_destroy = NULL;
     
     // Create arena for BFS operations
     state->arena = gs_arena_create(engine->config.default_arena_size);
@@ -794,6 +802,31 @@ static GraphserverResult bfs_precache_init_state(
     }
     
     return GS_SUCCESS;
+}
+
+// Helper: Add edge list to be destroyed later
+static void bfs_precache_defer_edge_list_destruction(
+    BFSPrecacheState* state,
+    GraphserverEdgeList* edges) {
+    
+    if (!edges) return;
+    
+    // Allocate node using arena if available, otherwise malloc
+    EdgeListNode* node;
+    if (state->arena) {
+        node = gs_arena_alloc_type(state->arena, EdgeListNode);
+    } else {
+        node = malloc(sizeof(EdgeListNode));
+    }
+    
+    if (node) {
+        node->edges = edges;
+        node->next = state->edge_lists_to_destroy;
+        state->edge_lists_to_destroy = node;
+    } else {
+        // If we can't defer destruction, destroy immediately (not ideal but safe)
+        gs_edge_list_destroy(edges);
+    }
 }
 
 // Helper: Queue neighbors from an edge list
@@ -847,6 +880,9 @@ static GraphserverEdgeList* bfs_precache_generate_and_cache_edges(
         return NULL;
     }
     
+    // Set the edge list to own its edges so they get properly destroyed
+    gs_edge_list_set_owns_edges(edges, true);
+    
     // Call provider to generate edges
     int provider_result = provider->generator(vertex, edges, provider->user_data);
     
@@ -876,7 +912,8 @@ static GraphserverResult bfs_precache_process_vertex(
     if (cache_result == GS_SUCCESS && cached_edges) {
         // Already cached - use cached edges for expansion
         GraphserverResult result = bfs_precache_process_cached_edges(state, cached_edges, depth);
-        gs_edge_list_destroy(cached_edges);
+        // Defer destruction of cached edges until BFS is complete
+        bfs_precache_defer_edge_list_destruction(state, cached_edges);
         return result;
     } else {
         // Not cached - generate and cache edges
@@ -891,7 +928,8 @@ static GraphserverResult bfs_precache_process_vertex(
             result = bfs_precache_queue_neighbors(state, edges, depth);
         }
         
-        gs_edge_list_destroy(edges);
+        // Defer destruction of edges until BFS is complete
+        bfs_precache_defer_edge_list_destruction(state, edges);
         return result;
     }
 }
@@ -949,7 +987,18 @@ static GraphserverResult bfs_precache(
         }
     }
     
-    // Cleanup
+    // Cleanup: destroy all deferred edge lists
+    EdgeListNode* node = state.edge_lists_to_destroy;
+    while (node) {
+        gs_edge_list_destroy(node->edges);
+        EdgeListNode* next = node->next;
+        if (!state.arena) {
+            free(node);
+        }
+        node = next;
+    }
+    
+    // Cleanup arena (this also frees EdgeListNodes if allocated with arena)
     gs_arena_destroy(state.arena);
     
     return overall_result;

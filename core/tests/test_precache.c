@@ -59,6 +59,8 @@ static int grid_provider_generate_edges(
             double cost[] = {1.0};
             GraphserverEdge* edge = gs_edge_create(target, cost, 1);
             if (edge) {
+                // Edge should own the target vertex since we created it for this edge
+                gs_edge_set_owns_target_vertex(edge, true);
                 gs_edge_list_add_edge(out_edges, edge);
             } else {
                 gs_vertex_destroy(target);
@@ -245,6 +247,9 @@ static void test_performance_comparison(void) {
     // Test vertex expansion (should use cached edges)
     GraphserverEdgeList* edges = gs_edge_list_create();
     assert(edges != NULL);
+    
+    // Set edge list to own edges so they get properly cleaned up
+    gs_edge_list_set_owns_edges(edges, true);
     
     start = clock();
     result = gs_engine_expand_vertex(engine, seed, edges);
