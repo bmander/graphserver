@@ -27,15 +27,13 @@ bool gs_value_equals(const GraphserverValue* a, const GraphserverValue* b);
 GraphserverValue gs_value_copy(const GraphserverValue* value);
 
 // Vertex lifecycle
-GraphserverVertex* gs_vertex_create(void);
+GraphserverVertex* gs_vertex_create(const GraphserverKeyPair* pairs, size_t num_pairs, const uint64_t* optional_hash);
 void gs_vertex_destroy(GraphserverVertex* vertex);
 GraphserverVertex* gs_vertex_clone(const GraphserverVertex* vertex);
 
-// Vertex manipulation
-GraphserverResult gs_vertex_set_kv(GraphserverVertex* vertex, const char* key, GraphserverValue value);
+// Vertex access (immutable - no mutation functions)
 GraphserverResult gs_vertex_get_value(const GraphserverVertex* vertex, const char* key, GraphserverValue* out_value);
 GraphserverResult gs_vertex_has_key(const GraphserverVertex* vertex, const char* key, bool* out_has_key);
-GraphserverResult gs_vertex_remove_key(GraphserverVertex* vertex, const char* key);
 
 // Vertex introspection
 size_t gs_vertex_get_key_count(const GraphserverVertex* vertex);

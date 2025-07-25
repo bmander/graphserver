@@ -8,7 +8,8 @@
 struct GraphserverVertex {
     GraphserverKeyPair* pairs;
     size_t num_pairs;
-    size_t capacity;
+    uint64_t hash;           // Stored hash value
+    bool hash_provided;      // Whether hash was provided at creation
 };
 
 // Hash function (FNV-1a)
@@ -68,6 +69,73 @@ static char** duplicate_string_array(const char* const* data, size_t count) {
     }
     
     return copy;
+}
+
+// Compare key-value pairs by key for sorting
+static int compare_key_pairs(const void* a, const void* b) {
+    const GraphserverKeyPair* pair_a = (const GraphserverKeyPair*)a;
+    const GraphserverKeyPair* pair_b = (const GraphserverKeyPair*)b;
+    return strcmp(pair_a->key, pair_b->key);
+}
+
+// Calculate hash for vertex data
+static uint64_t calculate_vertex_hash(const GraphserverKeyPair* pairs, size_t num_pairs) {
+    if (!pairs || num_pairs == 0) return 0;
+    
+    uint64_t hash = 14695981039346656037ULL;
+    
+    for (size_t i = 0; i < num_pairs; i++) {
+        // Hash the key
+        hash ^= hash_bytes(pairs[i].key, strlen(pairs[i].key));
+        hash *= 1099511628211ULL;
+        
+        // Hash the value based on its type
+        const GraphserverValue* value = &pairs[i].value;
+        hash ^= hash_bytes(&value->type, sizeof(value->type));
+        hash *= 1099511628211ULL;
+        
+        switch (value->type) {
+            case GS_VALUE_INT:
+                hash ^= hash_bytes(&value->as.i_val, sizeof(value->as.i_val));
+                break;
+            case GS_VALUE_FLOAT:
+                hash ^= hash_bytes(&value->as.f_val, sizeof(value->as.f_val));
+                break;
+            case GS_VALUE_BOOL:
+                hash ^= hash_bytes(&value->as.b_val, sizeof(value->as.b_val));
+                break;
+            case GS_VALUE_STRING:
+                if (value->as.s_val) {
+                    hash ^= hash_bytes(value->as.s_val, strlen(value->as.s_val));
+                }
+                break;
+            case GS_VALUE_INT_ARRAY:
+            case GS_VALUE_FLOAT_ARRAY:
+            case GS_VALUE_BOOL_ARRAY:
+                hash ^= hash_bytes(&value->as.array_val.size, sizeof(value->as.array_val.size));
+                if (value->as.array_val.data) {
+                    size_t element_size = (value->type == GS_VALUE_INT_ARRAY) ? sizeof(int64_t) :
+                                        (value->type == GS_VALUE_FLOAT_ARRAY) ? sizeof(double) : sizeof(bool);
+                    hash ^= hash_bytes(value->as.array_val.data, 
+                                    value->as.array_val.size * element_size);
+                }
+                break;
+            case GS_VALUE_STRING_ARRAY:
+                hash ^= hash_bytes(&value->as.array_val.size, sizeof(value->as.array_val.size));
+                if (value->as.array_val.data) {
+                    char** strings = (char**)value->as.array_val.data;
+                    for (size_t j = 0; j < value->as.array_val.size; j++) {
+                        if (strings[j]) {
+                            hash ^= hash_bytes(strings[j], strlen(strings[j]));
+                        }
+                    }
+                }
+                break;
+        }
+        hash *= 1099511628211ULL;
+    }
+    
+    return hash;
 }
 
 // Value creation functions
@@ -236,13 +304,56 @@ GraphserverValue gs_value_copy(const GraphserverValue* value) {
 }
 
 // Vertex lifecycle
-GraphserverVertex* gs_vertex_create(void) {
+GraphserverVertex* gs_vertex_create(const GraphserverKeyPair* pairs, size_t num_pairs, const uint64_t* optional_hash) {
     GraphserverVertex* vertex = malloc(sizeof(GraphserverVertex));
     if (!vertex) return NULL;
     
+    // Initialize vertex
     vertex->pairs = NULL;
-    vertex->num_pairs = 0;
-    vertex->capacity = 0;
+    vertex->num_pairs = num_pairs;
+    vertex->hash_provided = (optional_hash != NULL);
+    
+    // Handle empty vertex
+    if (num_pairs == 0) {
+        vertex->hash = optional_hash ? *optional_hash : 0;
+        return vertex;
+    }
+    
+    // Allocate memory for pairs
+    vertex->pairs = malloc(sizeof(GraphserverKeyPair) * num_pairs);
+    if (!vertex->pairs) {
+        free(vertex);
+        return NULL;
+    }
+    
+    // Copy and sort the pairs
+    for (size_t i = 0; i < num_pairs; i++) {
+        // Duplicate the key
+        vertex->pairs[i].key = duplicate_string(pairs[i].key);
+        if (!vertex->pairs[i].key) {
+            // Cleanup on failure
+            for (size_t j = 0; j < i; j++) {
+                free((void*)vertex->pairs[j].key);
+                gs_value_destroy(&vertex->pairs[j].value);
+            }
+            free(vertex->pairs);
+            free(vertex);
+            return NULL;
+        }
+        
+        // Copy the value
+        vertex->pairs[i].value = gs_value_copy(&pairs[i].value);
+    }
+    
+    // Sort pairs by key for consistent ordering
+    qsort(vertex->pairs, num_pairs, sizeof(GraphserverKeyPair), compare_key_pairs);
+    
+    // Set hash
+    if (optional_hash) {
+        vertex->hash = *optional_hash;
+    } else {
+        vertex->hash = calculate_vertex_hash(vertex->pairs, num_pairs);
+    }
     
     return vertex;
 }
@@ -262,20 +373,8 @@ void gs_vertex_destroy(GraphserverVertex* vertex) {
 GraphserverVertex* gs_vertex_clone(const GraphserverVertex* vertex) {
     if (!vertex) return NULL;
     
-    GraphserverVertex* clone = gs_vertex_create();
-    if (!clone) return NULL;
-    
-    for (size_t i = 0; i < vertex->num_pairs; i++) {
-        GraphserverValue value_copy = gs_value_copy(&vertex->pairs[i].value);
-        GraphserverResult result = gs_vertex_set_kv(clone, vertex->pairs[i].key, value_copy);
-        
-        if (result != GS_SUCCESS) {
-            gs_vertex_destroy(clone);
-            return NULL;
-        }
-    }
-    
-    return clone;
+    // Create clone with same pairs and hash
+    return gs_vertex_create(vertex->pairs, vertex->num_pairs, &vertex->hash);
 }
 
 // Binary search for key position
@@ -304,57 +403,6 @@ static size_t find_key_position(const GraphserverVertex* vertex, const char* key
     return left;
 }
 
-// Ensure vertex has enough capacity
-static GraphserverResult ensure_capacity(GraphserverVertex* vertex, size_t min_capacity) {
-    if (vertex->capacity >= min_capacity) return GS_SUCCESS;
-    
-    size_t new_capacity = vertex->capacity == 0 ? 4 : vertex->capacity * 2;
-    while (new_capacity < min_capacity) {
-        new_capacity *= 2;
-    }
-    
-    GraphserverKeyPair* new_pairs = realloc(vertex->pairs, 
-                                           sizeof(GraphserverKeyPair) * new_capacity);
-    if (!new_pairs) return GS_ERROR_OUT_OF_MEMORY;
-    
-    vertex->pairs = new_pairs;
-    vertex->capacity = new_capacity;
-    
-    return GS_SUCCESS;
-}
-
-// Vertex manipulation
-GraphserverResult gs_vertex_set_kv(GraphserverVertex* vertex, const char* key, GraphserverValue value) {
-    if (!vertex || !key) return GS_ERROR_NULL_POINTER;
-    
-    bool found;
-    size_t pos = find_key_position(vertex, key, &found);
-    
-    if (found) {
-        // Replace existing value
-        gs_value_destroy(&vertex->pairs[pos].value);
-        vertex->pairs[pos].value = value;
-        return GS_SUCCESS;
-    }
-    
-    // Insert new key-value pair
-    GraphserverResult result = ensure_capacity(vertex, vertex->num_pairs + 1);
-    if (result != GS_SUCCESS) return result;
-    
-    // Shift elements to make room
-    for (size_t i = vertex->num_pairs; i > pos; i--) {
-        vertex->pairs[i] = vertex->pairs[i - 1];
-    }
-    
-    // Insert new pair
-    vertex->pairs[pos].key = duplicate_string(key);
-    if (!vertex->pairs[pos].key) return GS_ERROR_OUT_OF_MEMORY;
-    
-    vertex->pairs[pos].value = value;
-    vertex->num_pairs++;
-    
-    return GS_SUCCESS;
-}
 
 GraphserverResult gs_vertex_get_value(const GraphserverVertex* vertex, const char* key, GraphserverValue* out_value) {
     if (!vertex || !key || !out_value) return GS_ERROR_NULL_POINTER;
@@ -375,26 +423,6 @@ GraphserverResult gs_vertex_has_key(const GraphserverVertex* vertex, const char*
     return GS_SUCCESS;
 }
 
-GraphserverResult gs_vertex_remove_key(GraphserverVertex* vertex, const char* key) {
-    if (!vertex || !key) return GS_ERROR_NULL_POINTER;
-    
-    bool found;
-    size_t pos = find_key_position(vertex, key, &found);
-    
-    if (!found) return GS_ERROR_KEY_NOT_FOUND;
-    
-    // Cleanup the removed pair
-    free((void*)vertex->pairs[pos].key);
-    gs_value_destroy(&vertex->pairs[pos].value);
-    
-    // Shift elements down
-    for (size_t i = pos; i < vertex->num_pairs - 1; i++) {
-        vertex->pairs[i] = vertex->pairs[i + 1];
-    }
-    
-    vertex->num_pairs--;
-    return GS_SUCCESS;
-}
 
 // Vertex introspection
 size_t gs_vertex_get_key_count(const GraphserverVertex* vertex) {
@@ -433,6 +461,12 @@ GraphserverResult gs_vertex_get_keys(const GraphserverVertex* vertex, const char
 // Vertex comparison and hashing
 bool gs_vertex_equals(const GraphserverVertex* a, const GraphserverVertex* b) {
     if (!a || !b) return false;
+    
+    // Fast hash-based comparison
+    if (a->hash != b->hash) return false;
+    
+    // If hashes match, we can be confident they're equal, but do a fallback check
+    // for the rare case of hash collisions
     if (a->num_pairs != b->num_pairs) return false;
     
     // Since keys are sorted, we can compare sequentially
@@ -445,59 +479,8 @@ bool gs_vertex_equals(const GraphserverVertex* a, const GraphserverVertex* b) {
 }
 
 uint64_t gs_vertex_hash(const GraphserverVertex* vertex) {
-    if (!vertex || vertex->num_pairs == 0) return 0;
-    
-    uint64_t hash = 14695981039346656037ULL;
-    
-    for (size_t i = 0; i < vertex->num_pairs; i++) {
-        // Hash the key
-        hash = hash_bytes(vertex->pairs[i].key, strlen(vertex->pairs[i].key));
-        
-        // Hash the value based on its type
-        const GraphserverValue* value = &vertex->pairs[i].value;
-        hash = hash_bytes(&value->type, sizeof(value->type));
-        
-        switch (value->type) {
-            case GS_VALUE_INT:
-                hash = hash_bytes(&value->as.i_val, sizeof(value->as.i_val));
-                break;
-            case GS_VALUE_FLOAT:
-                hash = hash_bytes(&value->as.f_val, sizeof(value->as.f_val));
-                break;
-            case GS_VALUE_BOOL:
-                hash = hash_bytes(&value->as.b_val, sizeof(value->as.b_val));
-                break;
-            case GS_VALUE_STRING:
-                if (value->as.s_val) {
-                    hash = hash_bytes(value->as.s_val, strlen(value->as.s_val));
-                }
-                break;
-            case GS_VALUE_INT_ARRAY:
-            case GS_VALUE_FLOAT_ARRAY:
-            case GS_VALUE_BOOL_ARRAY:
-                hash = hash_bytes(&value->as.array_val.size, sizeof(value->as.array_val.size));
-                if (value->as.array_val.data) {
-                    size_t element_size = (value->type == GS_VALUE_INT_ARRAY) ? sizeof(int64_t) :
-                                        (value->type == GS_VALUE_FLOAT_ARRAY) ? sizeof(double) : sizeof(bool);
-                    hash = hash_bytes(value->as.array_val.data, 
-                                    value->as.array_val.size * element_size);
-                }
-                break;
-            case GS_VALUE_STRING_ARRAY:
-                hash = hash_bytes(&value->as.array_val.size, sizeof(value->as.array_val.size));
-                if (value->as.array_val.data) {
-                    char** strings = (char**)value->as.array_val.data;
-                    for (size_t j = 0; j < value->as.array_val.size; j++) {
-                        if (strings[j]) {
-                            hash = hash_bytes(strings[j], strlen(strings[j]));
-                        }
-                    }
-                }
-                break;
-        }
-    }
-    
-    return hash;
+    if (!vertex) return 0;
+    return vertex->hash;
 }
 
 // Vertex serialization (for debugging)
