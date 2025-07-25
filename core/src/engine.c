@@ -689,3 +689,190 @@ GraphserverResult gs_initialize(void) {
 void gs_cleanup(void) {
     // Currently no global cleanup needed
 }
+
+// Forward declaration for BFS precaching helper
+static GraphserverResult bfs_precache(
+    GraphserverEngine* engine,
+    Provider* provider,
+    GraphserverVertex** seed_vertices,
+    size_t num_seeds,
+    size_t max_depth,
+    size_t max_vertices
+);
+
+// Pre-cache a subgraph using breadth-first discovery
+GraphserverResult gs_engine_precache_subgraph(
+    GraphserverEngine* engine,
+    const char* provider_name,
+    GraphserverVertex** seed_vertices,
+    size_t num_seeds,
+    size_t max_depth,
+    size_t max_vertices) {
+    
+    // 1. Validate inputs
+    if (!engine || !provider_name || !seed_vertices || num_seeds == 0) {
+        return GS_ERROR_NULL_POINTER;
+    }
+    
+    // 2. Find provider
+    Provider* provider = find_provider(engine, provider_name);
+    if (!provider) {
+        return GS_ERROR_KEY_NOT_FOUND;
+    }
+    
+    // 3. Check if provider is enabled
+    if (!provider->is_enabled) {
+        return GS_ERROR_INVALID_ARGUMENT;
+    }
+    
+    // 4. Check edge caching is enabled
+    if (!engine->config.enable_edge_caching || !engine->edge_cache) {
+        return GS_ERROR_INVALID_ARGUMENT;
+    }
+    
+    // 5. Perform BFS using priority queue
+    return bfs_precache(
+        engine,
+        provider,
+        seed_vertices,
+        num_seeds,
+        max_depth,
+        max_vertices
+    );
+}
+
+// BFS implementation using priority queue for precaching
+static GraphserverResult bfs_precache(
+    GraphserverEngine* engine,
+    Provider* provider,
+    GraphserverVertex** seed_vertices,
+    size_t num_seeds,
+    size_t max_depth,
+    size_t max_vertices) {
+    
+    // Create arena for BFS operations
+    GraphserverArena* arena = gs_arena_create(engine->config.default_arena_size);
+    if (!arena) {
+        return GS_ERROR_OUT_OF_MEMORY;
+    }
+    
+    // Use priority queue with depth as priority for BFS ordering
+    PriorityQueue* queue = pq_create(arena);
+    if (!queue) {
+        gs_arena_destroy(arena);
+        return GS_ERROR_OUT_OF_MEMORY;
+    }
+    
+    // Use hash table (vertex set) for visited tracking
+    VertexSet* visited = vertex_set_create(arena);
+    if (!visited) {
+        gs_arena_destroy(arena);
+        return GS_ERROR_OUT_OF_MEMORY;
+    }
+    
+    // Initialize with seed vertices at depth 0
+    for (size_t i = 0; i < num_seeds; i++) {
+        if (!pq_insert(queue, seed_vertices[i], 0.0)) {
+            gs_arena_destroy(arena);
+            return GS_ERROR_OUT_OF_MEMORY;
+        }
+    }
+    
+    size_t vertices_discovered = 0;
+    GraphserverResult overall_result = GS_SUCCESS;
+    
+    // BFS loop
+    while (!pq_is_empty(queue) && 
+           (max_vertices == 0 || vertices_discovered < max_vertices)) {
+        
+        GraphserverVertex* vertex;
+        double depth;
+        
+        // Get next vertex from queue
+        if (!pq_extract_min(queue, &vertex, &depth)) {
+            break; // Queue is empty
+        }
+        
+        // Skip if already visited
+        if (vertex_set_contains(visited, vertex)) {
+            continue;
+        }
+        
+        // Mark as visited
+        if (!vertex_set_add(visited, vertex)) {
+            overall_result = GS_ERROR_OUT_OF_MEMORY;
+            break;
+        }
+        
+        vertices_discovered++;
+        
+        // Check if vertex is already cached
+        GraphserverEdgeList* cached_edges = NULL;
+        GraphserverResult cache_result = edge_cache_get(engine->edge_cache, vertex, &cached_edges);
+        
+        if (cache_result == GS_SUCCESS && cached_edges) {
+            // Already cached - use cached edges for expansion
+            if (max_depth == 0 || depth < (double)max_depth) {
+                size_t edge_count = gs_edge_list_get_count(cached_edges);
+                for (size_t i = 0; i < edge_count; i++) {
+                    GraphserverEdge* edge;
+                    GraphserverResult get_result = gs_edge_list_get_edge(cached_edges, i, &edge);
+                    if (get_result == GS_SUCCESS && edge) {
+                        GraphserverVertex* dest = gs_edge_get_target_vertex(edge);
+                        if (dest && !vertex_set_contains(visited, dest)) {
+                            if (!pq_insert(queue, dest, depth + 1.0)) {
+                                overall_result = GS_ERROR_OUT_OF_MEMORY;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            gs_edge_list_destroy(cached_edges);
+        } else {
+            // Not cached - generate and cache edges
+            GraphserverEdgeList* edges = gs_edge_list_create();
+            if (!edges) {
+                overall_result = GS_ERROR_OUT_OF_MEMORY;
+                break;
+            }
+            
+            // Call provider to generate edges
+            int provider_result = provider->generator(vertex, edges, provider->user_data);
+            
+            if (provider_result == 0) { // Success
+                // Cache the edges
+                edge_cache_put(engine->edge_cache, vertex, edges);
+                
+                // Add neighbors to queue if within depth limit
+                if (max_depth == 0 || depth < (double)max_depth) {
+                    size_t edge_count = gs_edge_list_get_count(edges);
+                    for (size_t i = 0; i < edge_count; i++) {
+                        GraphserverEdge* edge;
+                        GraphserverResult get_result = gs_edge_list_get_edge(edges, i, &edge);
+                        if (get_result == GS_SUCCESS && edge) {
+                            GraphserverVertex* dest = gs_edge_get_target_vertex(edge);
+                            if (dest && !vertex_set_contains(visited, dest)) {
+                                if (!pq_insert(queue, dest, depth + 1.0)) {
+                                    overall_result = GS_ERROR_OUT_OF_MEMORY;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            gs_edge_list_destroy(edges);
+            
+            if (overall_result != GS_SUCCESS) {
+                break;
+            }
+        }
+    }
+    
+    // Cleanup
+    gs_arena_destroy(arena);
+    
+    return overall_result;
+}
