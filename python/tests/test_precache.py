@@ -204,7 +204,9 @@ class TestPrecacheErrors:
         engine.register_provider("grid", provider)
 
         # Should raise TypeError for non-Vertex objects
-        with pytest.raises(TypeError, match="Seed vertex at index 0 must be a Vertex object"):
+        with pytest.raises(
+            TypeError, match="Seed vertex at index 0 must be a Vertex object"
+        ):
             engine.precache_subgraph(
                 provider_name="grid",
                 seed_vertices=[{"x": 0, "y": 0}],  # Dictionary instead of Vertex
@@ -218,11 +220,13 @@ class TestPrecacheErrors:
 
         seeds = [
             Vertex({"x": 0, "y": 0}),  # Valid
-            {"x": 1, "y": 1},          # Invalid - dictionary
+            {"x": 1, "y": 1},  # Invalid - dictionary
         ]
 
         # Should raise TypeError for the invalid seed
-        with pytest.raises(TypeError, match="Seed vertex at index 1 must be a Vertex object"):
+        with pytest.raises(
+            TypeError, match="Seed vertex at index 1 must be a Vertex object"
+        ):
             engine.precache_subgraph(
                 provider_name="grid",
                 seed_vertices=seeds,

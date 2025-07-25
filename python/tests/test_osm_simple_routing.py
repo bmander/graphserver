@@ -356,7 +356,7 @@ class TestSimpleOSMRouting:
         self, simple_osm_file: Path, simple_walking_profile: WalkingProfile
     ) -> None:
         """Test the complete minimal pathfinding workflow with detailed step validation.
-        
+
         This test validates each step of the pathfinding process:
         1. Provider setup and engine registration
         2. Access point registration and vertex creation
@@ -431,43 +431,47 @@ class TestSimpleOSMRouting:
         assert len(result) > 0, "Should find a path between the access points"
 
         # Validate performance (should be fast on simple data)
-        assert planning_time < 1.0, \
-            f"Pathfinding took too long: {planning_time:.3f}s"
+        assert planning_time < 1.0, f"Pathfinding took too long: {planning_time:.3f}s"
 
         # Step 6: Validate path structure in detail
-        assert hasattr(result, 'total_cost'), "Result should have total_cost property"
+        assert hasattr(result, "total_cost"), "Result should have total_cost property"
         assert result.total_cost > 0, "Path should have positive cost"
 
         # Validate each path edge
         for i, path_edge in enumerate(result):
             assert hasattr(path_edge, "target"), f"Path edge {i} should have target"
             assert hasattr(path_edge, "edge"), f"Path edge {i} should have edge"
-            assert hasattr(path_edge.edge, "cost"), \
-                f"Path edge {i} should have cost"
-            assert hasattr(path_edge.edge, "metadata"), \
+            assert hasattr(path_edge.edge, "cost"), f"Path edge {i} should have cost"
+            assert hasattr(path_edge.edge, "metadata"), (
                 f"Path edge {i} should have metadata"
+            )
 
             # Cost should be non-negative
-            assert path_edge.edge.cost >= 0, \
+            assert path_edge.edge.cost >= 0, (
                 f"Path edge {i} cost should be non-negative"
+            )
 
             # Target should be a valid vertex
-            assert hasattr(path_edge.target, '__getitem__'), \
+            assert hasattr(path_edge.target, "__getitem__"), (
                 f"Path edge {i} target should be dict-like"
-            assert "_id_hash" in path_edge.target, \
+            )
+            assert "_id_hash" in path_edge.target, (
                 f"Path edge {i} target should have _id_hash"
+            )
 
         # Step 7: Validate path connectivity (last should connect to access points)
         last_edge = result[-1]
 
         # The path should end at our goal access point
-        assert last_edge.target["_id_hash"] == goal_vertex["_id_hash"], \
+        assert last_edge.target["_id_hash"] == goal_vertex["_id_hash"], (
             "Path should end at goal vertex"
+        )
 
         # Step 8: Validate specific path characteristics for this simple scenario
         # With the simple OSM data (2 nodes, 1 way), we expect a short path
-        assert len(result) <= 5, \
+        assert len(result) <= 5, (
             f"Path should be short for simple data, got {len(result)} edges"
+        )
 
         print("✅ Minimal pathfinding workflow validated successfully!")
         print(f"   Path: {len(result)} edges, Cost: {result.total_cost:.1f}s")
@@ -528,8 +532,9 @@ class TestSimpleOSMRouting:
                 print("No path found as expected for disconnected coordinates")
         except Exception as e:
             # This is expected - should fail due to no connection
-            assert "no path found" in str(e).lower() or \
-                "planning failed" in str(e).lower()
+            assert (
+                "no path found" in str(e).lower() or "planning failed" in str(e).lower()
+            )
             print(f"Expected pathfinding failure: {e}")
 
         # Test Case 2: Same start and goal coordinates
@@ -559,9 +564,7 @@ class TestSimpleOSMRouting:
         # Register several access points
         ap_ids = []
         for i in range(3):
-            ap_id = access_provider.register_access_point(
-                0.0001 + i * 0.0001, 0.0001
-            )
+            ap_id = access_provider.register_access_point(0.0001 + i * 0.0001, 0.0001)
             ap_ids.append(ap_id)
 
         # Should have more access points now
