@@ -889,6 +889,14 @@ static GraphserverEdgeList* bfs_precache_generate_and_cache_edges(
     if (provider_result == 0) { // Success
         // Cache the edges
         edge_cache_put(engine->edge_cache, vertex, edges);
+        
+        // Update statistics
+        engine->last_plan_stats.providers_called++;
+        engine->last_plan_stats.cache_puts++;
+        
+        size_t edge_count = gs_edge_list_get_count(edges);
+        engine->last_plan_stats.edges_generated += edge_count;
+        
         return edges;
     }
     
@@ -912,11 +920,20 @@ static GraphserverResult bfs_precache_process_vertex(
     if (cache_result == GS_SUCCESS && cached_edges) {
         // Already cached - use cached edges for expansion
         GraphserverResult result = bfs_precache_process_cached_edges(state, cached_edges, depth);
+        
+        // Update cache hit statistics
+        engine->last_plan_stats.cache_hits++;
+        
         // Defer destruction of cached edges until BFS is complete
         bfs_precache_defer_edge_list_destruction(state, cached_edges);
         return result;
     } else {
         // Not cached - generate and cache edges
+        if (cache_result == GS_ERROR_KEY_NOT_FOUND) {
+            // Track cache miss
+            engine->last_plan_stats.cache_misses++;
+        }
+        
         GraphserverEdgeList* edges = bfs_precache_generate_and_cache_edges(engine, provider, vertex);
         if (!edges) {
             return GS_SUCCESS; // Provider failed, but continue BFS
@@ -978,6 +995,9 @@ static GraphserverResult bfs_precache(
         }
         
         state.vertices_discovered++;
+        
+        // Update vertices expanded count
+        engine->last_plan_stats.vertices_expanded++;
         
         // Process the vertex
         result = bfs_precache_process_vertex(&state, engine, provider, vertex, depth);

@@ -304,6 +304,72 @@ class Engine:
         """
         return self._config.get("enable_edge_caching", False)
 
+    def precache_subgraph(
+        self,
+        *,
+        provider_name: str,
+        seed_vertices: Sequence[Vertex],
+        max_depth: int = 0,
+        max_vertices: int = 0,
+    ) -> None:
+        """Pre-cache a subgraph using breadth-first discovery.
+
+        This method performs a breadth-first search starting from the given seed
+        vertices, caching all discovered edges up to the specified limits.
+
+        Args:
+            provider_name: Name of the provider to cache from
+            seed_vertices: Sequence of vertices to start discovery from
+            max_depth: Maximum depth to traverse (0 = unlimited)
+            max_vertices: Maximum vertices to discover (0 = unlimited)
+
+        Raises:
+            ValueError: If no seed vertices provided, provider not found,
+                       or caching is disabled
+            RuntimeError: If C extension is not available or precaching fails
+            TypeError: If seed_vertices contains non-Vertex objects
+
+        Example:
+            >>> engine = Engine(enable_edge_caching=True)
+            >>> engine.register_provider("grid", grid_provider)
+            >>> seeds = [Vertex({"x": 0, "y": 0}), Vertex({"x": 10, "y": 10})]
+            >>> engine.precache_subgraph(
+            ...     provider_name="grid",
+            ...     seed_vertices=seeds,
+            ...     max_depth=5,
+            ...     max_vertices=1000
+            ... )
+        """
+        if not seed_vertices:
+            msg = "At least one seed vertex is required"
+            raise ValueError(msg)
+
+        if not self.cache_enabled:
+            msg = "Edge caching must be enabled to use precaching"
+            raise ValueError(msg)
+
+        # Validate that all seeds are Vertex objects
+        for i, vertex in enumerate(seed_vertices):
+            if not isinstance(vertex, Vertex):
+                msg = f"Seed vertex at index {i} must be a Vertex object"
+                raise TypeError(msg)
+
+        if _graphserver is None:
+            msg = "C extension not available"
+            raise RuntimeError(msg)
+
+        # Convert to list for C extension
+        seed_list = list(seed_vertices)
+
+        # Call C extension function
+        _graphserver.precache_subgraph(
+            engine=self._engine,
+            provider_name=provider_name,
+            seed_vertices=seed_list,
+            max_depth=max_depth,
+            max_vertices=max_vertices,
+        )
+
 
 class PathResult:
     """Result of a pathfinding operation.

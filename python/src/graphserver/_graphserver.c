@@ -15,6 +15,7 @@ static PyObject* py_create_engine(PyObject* self, PyObject* args, PyObject* kwar
 static PyObject* py_register_provider(PyObject* self, PyObject* args);
 static PyObject* py_plan(PyObject* self, PyObject* args, PyObject* kwargs);
 static PyObject* py_get_engine_stats(PyObject* self, PyObject* args);
+static PyObject* py_precache_subgraph(PyObject* self, PyObject* args, PyObject* kwargs);
 
 // Utility functions for data conversion (implemented in Phase 2)
 static PyObject* vertex_to_python_dict(const GraphserverVertex* vertex);
@@ -1176,6 +1177,144 @@ static PyObject* py_get_engine_stats(PyObject* self, PyObject* args) {
     return stats_dict;
 }
 
+static PyObject* py_precache_subgraph(PyObject* self, PyObject* args, PyObject* kwargs) {
+    (void)self;  // Unused parameter
+    
+    PyObject* engine_capsule;
+    const char* provider_name;
+    PyObject* seed_vertices_list;
+    unsigned long max_depth = 0;    // Default: unlimited depth
+    unsigned long max_vertices = 0; // Default: unlimited vertices
+    
+    // Parse arguments with optional parameters
+    static char* kwlist[] = {"engine", "provider_name", "seed_vertices", "max_depth", "max_vertices", NULL};
+    
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!sO!|kk", kwlist,
+                                     &PyCapsule_Type, &engine_capsule,
+                                     &provider_name,
+                                     &PyList_Type, &seed_vertices_list,
+                                     &max_depth,
+                                     &max_vertices)) {
+        return NULL;
+    }
+    
+    // Get engine from capsule
+    GraphserverEngine* engine = (GraphserverEngine*)
+        PyCapsule_GetPointer(engine_capsule, "GraphserverEngine");
+    if (!engine) {
+        return NULL;
+    }
+    
+    // Validate seed vertices list
+    Py_ssize_t num_seeds = PyList_Size(seed_vertices_list);
+    if (num_seeds == 0) {
+        PyErr_SetString(PyExc_ValueError, "At least one seed vertex is required");
+        return NULL;
+    }
+    
+    // Convert Python vertex objects to C vertices
+    GraphserverVertex** c_vertices = malloc(num_seeds * sizeof(GraphserverVertex*));
+    if (!c_vertices) {
+        PyErr_NoMemory();
+        return NULL;
+    }
+    
+    // Initialize to NULL for cleanup
+    for (Py_ssize_t i = 0; i < num_seeds; i++) {
+        c_vertices[i] = NULL;
+    }
+    
+    // Convert each vertex
+    for (Py_ssize_t i = 0; i < num_seeds; i++) {
+        PyObject* vertex_obj = PyList_GetItem(seed_vertices_list, i);
+        if (!vertex_obj) {
+            // Cleanup and return error
+            for (Py_ssize_t j = 0; j < i; j++) {
+                if (c_vertices[j]) {
+                    gs_vertex_destroy(c_vertices[j]);
+                }
+            }
+            free(c_vertices);
+            return NULL;
+        }
+        
+        // Check if it's a dictionary (legacy format) or Vertex object
+        if (PyDict_Check(vertex_obj)) {
+            c_vertices[i] = python_dict_to_vertex(vertex_obj);
+        } else {
+            // Assume it's a Vertex object with to_dict() method
+            PyObject* dict_repr = PyObject_CallMethod(vertex_obj, "to_dict", NULL);
+            if (!dict_repr) {
+                // Cleanup and return error
+                for (Py_ssize_t j = 0; j < i; j++) {
+                    if (c_vertices[j]) {
+                        gs_vertex_destroy(c_vertices[j]);
+                    }
+                }
+                free(c_vertices);
+                return NULL;
+            }
+            
+            c_vertices[i] = python_dict_to_vertex(dict_repr);
+            Py_DECREF(dict_repr);
+        }
+        
+        if (!c_vertices[i]) {
+            // Cleanup and return error
+            for (Py_ssize_t j = 0; j < i; j++) {
+                if (c_vertices[j]) {
+                    gs_vertex_destroy(c_vertices[j]);
+                }
+            }
+            free(c_vertices);
+            return NULL;
+        }
+    }
+    
+    // Call the C precaching function
+    GraphserverResult result = gs_engine_precache_subgraph(
+        engine,
+        provider_name,
+        c_vertices,
+        (size_t)num_seeds,
+        (size_t)max_depth,
+        (size_t)max_vertices
+    );
+    
+    // Cleanup C vertices
+    for (Py_ssize_t i = 0; i < num_seeds; i++) {
+        if (c_vertices[i]) {
+            gs_vertex_destroy(c_vertices[i]);
+        }
+    }
+    free(c_vertices);
+    
+    // Handle result
+    if (result != GS_SUCCESS) {
+        switch (result) {
+            case GS_ERROR_NULL_POINTER:
+                PyErr_SetString(PyExc_ValueError, "Invalid null pointer argument");
+                break;
+            case GS_ERROR_KEY_NOT_FOUND:
+                PyErr_Format(PyExc_ValueError, "Provider '%s' not found", provider_name);
+                break;
+            case GS_ERROR_INVALID_ARGUMENT:
+                PyErr_SetString(PyExc_ValueError, "Edge caching is disabled or provider is disabled");
+                break;
+            case GS_ERROR_OUT_OF_MEMORY:
+                PyErr_NoMemory();
+                break;
+            default:
+                PyErr_Format(PyExc_RuntimeError, "Precaching failed with error code %d", result);
+                break;
+        }
+        return NULL;
+    }
+    
+    // Success - return None
+    Py_RETURN_NONE;
+}
+
 // Method definitions with modern argument parsing
 static PyMethodDef GraphserverMethods[] = {
     {"create_engine", (PyCFunction)(void(*)(void))py_create_engine, METH_VARARGS | METH_KEYWORDS, 
@@ -1186,6 +1325,8 @@ static PyMethodDef GraphserverMethods[] = {
      "Execute pathfinding from start to goal"},
     {"get_engine_stats", py_get_engine_stats, METH_VARARGS, 
      "Get engine statistics including cache performance metrics"},
+    {"precache_subgraph", (PyCFunction)(void(*)(void))py_precache_subgraph, METH_VARARGS | METH_KEYWORDS,
+     "Pre-cache a subgraph using breadth-first discovery"},
     {NULL, NULL, 0, NULL}
 };
 
