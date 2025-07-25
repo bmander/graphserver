@@ -66,13 +66,22 @@ struct GraphserverVertex {
 
 **Status**: Core C library compiles successfully. All Phase 1 objectives completed and tested.
 
-### Phase 2: Update C Tests
+### Phase 2: Update C Tests ✅ COMPLETED
 
-1. **Rewrite creation tests** to use new API
-2. **Remove mutation tests**
-3. **Add hash-based equality tests**
-4. **Add tests for optional hash parameter**
-5. **Verify immutability** (no way to modify after creation)
+1. ✅ **Rewrite creation tests** to use new API - Updated all vertex creation calls
+2. ✅ **Remove mutation tests** - Removed all gs_vertex_set_kv/remove_key tests
+3. ✅ **Add hash-based equality tests** - Updated vertex_equality_and_hashing test
+4. ✅ **Add tests for optional hash parameter** - Added vertex_custom_hash test
+5. ✅ **Verify immutability** - Added vertex_immutability test
+
+**Additional New Tests Added:**
+- `test_vertex_custom_hash` - Tests custom hash parameter functionality
+- `test_vertex_hash_consistency` - Verifies same data produces same hash
+- `test_vertex_empty_vertex_hash` - Tests hash behavior for empty vertices
+- `test_vertex_immutability` - Verifies no mutation capabilities exist
+
+**Status**: All C tests updated and passing (14/14 tests passed)  
+**Memory Safety**: ✅ Valgrind clean - no memory leaks detected
 
 ### Phase 3: Update Python Bindings
 
@@ -180,7 +189,7 @@ v = Vertex({"x": 10, "y": 20}, hash_value=12345)
 ## Estimated Timeline
 
 - ✅ Phase 1 (Core C): 2-3 hours **COMPLETED**
-- Phase 2 (C Tests): 1-2 hours  
+- ✅ Phase 2 (C Tests): 1-2 hours **COMPLETED** 
 - Phase 3 (Python Bindings): 2-3 hours
 - Phase 4 (Python Tests): 1-2 hours
 - Phase 5 (Usage Updates): 3-4 hours
@@ -206,5 +215,27 @@ Total: 11-17 hours of implementation work
 - Vertex cloning ✓
 - Custom hash values ✓
 
+### ✅ Phase 2 Complete - C Tests Updated
+**Completed**: All C tests updated for immutable vertex API
+- Updated existing tests to use new gs_vertex_create() API
+- Removed all mutation-based tests (set_kv, remove_key)
+- Added comprehensive tests for immutable features
+- All 14 tests passing successfully
+
+**Tests Updated:**
+- `test_vertex_lifecycle` - Uses new empty vertex creation
+- `test_vertex_immutable_access` - Replaces old key-value ops test
+- `test_vertex_key_ordering` - Tests automatic key sorting
+- `test_vertex_equality_and_hashing` - Tests hash-based equality
+- `test_vertex_cloning` - Tests hash preservation in clones
+- `test_vertex_string_representation` - Updated for new API
+- `test_vertex_error_conditions` - Removed mutation error tests
+
+**New Tests Added:**
+- `test_vertex_custom_hash` - Custom hash parameter functionality
+- `test_vertex_hash_consistency` - Hash consistency verification
+- `test_vertex_empty_vertex_hash` - Empty vertex hash behavior
+- `test_vertex_immutability` - Immutability verification
+
 ### 🔄 Next Phase
-Phase 2 ready to begin: Update C tests to use new immutable API (test_vertex.c currently fails compilation as expected)
+Phase 3 ready to begin: Update Python bindings to use new immutable API
