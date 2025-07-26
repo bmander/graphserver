@@ -1,0 +1,41 @@
+$config_info
+<div class="usage">
+    <h2>How to Use</h2>
+    <p>Add query parameters to explore vertices. Parameters are automatically
+    converted to appropriate types:</p>
+    <ul>
+        <li><strong>Numbers with decimals</strong> become floats
+            (e.g., lat=47.6)</li>
+        <li><strong>Whole numbers</strong> become integers
+            (e.g., osm_node_id=12345)</li>
+        <li><strong>Everything else</strong> becomes strings
+            (e.g., mode=walk)</li>
+    </ul>
+</div>
+
+<div class="edges">
+    <h2>Example Queries</h2>
+
+    <div class="example">
+        <strong>Coordinate-based vertex:</strong><br>
+        <a href="/?lat=47.6&lon=-122.3" class="link">
+            /?lat=47.6&lon=-122.3</a>
+    </div>
+
+    <div class="example">
+        <strong>OSM node vertex:</strong><br>
+        <a href="/?osm_node_id=12345" class="link">/?osm_node_id=12345</a>
+    </div>
+
+    <div class="example">
+        <strong>Transit stop with time:</strong><br>
+        <a href="/?stop_id=STOP123&time=1234567890" class="link">
+            /?stop_id=STOP123&time=1234567890</a>
+    </div>
+
+    <div class="example">
+        <strong>Mixed parameters:</strong><br>
+        <a href="/?lat=47.6&lon=-122.3&mode=walk" class="link">
+            /?lat=47.6&lon=-122.3&mode=walk</a>
+    </div>
+</div>

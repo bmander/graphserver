@@ -1,0 +1,81 @@
+/* Graph Browser Styles */
+
+/* Base Layout */
+body {
+    font-family: monospace;
+    margin: 20px;
+    background-color: #fafafa;
+}
+
+/* Header Section */
+.header {
+    border-bottom: 2px solid #333;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+/* Vertex Display */
+.vertex {
+    background: #f0f0f0;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+/* Edges Section */
+.edges {
+    margin-left: 20px;
+}
+
+.edge {
+    margin: 5px 0;
+    padding: 5px;
+    background: #fff;
+    border-left: 3px solid #007acc;
+    padding-left: 10px;
+}
+
+/* Links */
+.link {
+    color: #007acc;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.link:hover {
+    background-color: #e6f3ff;
+}
+
+/* Usage Instructions */
+.usage {
+    background: #e8f4f8;
+    padding: 15px;
+    border-radius: 5px;
+    border: 1px solid #b8dce8;
+    margin-bottom: 20px;
+}
+
+/* Examples */
+.example {
+    background: #fff;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 3px;
+    border: 1px solid #ddd;
+}
+
+/* Configuration Display */
+.config {
+    background: #fff3cd;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ffeaa7;
+    margin-bottom: 20px;
+}
+
+/* Code/JSON Display */
+pre {
+    margin: 0;
+    white-space: pre-wrap;
+}
