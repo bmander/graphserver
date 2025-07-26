@@ -75,12 +75,21 @@ class GTFSParser:
                 ):
                     stop_timezone = str(stop_row["stop_timezone"])
 
+                # Handle NaN values in GTFS data
+                location_type_value = stop_row.get("location_type", 0)
+                try:
+                    # Try to convert directly first
+                    location_type_value = int(location_type_value)
+                except (ValueError, TypeError):
+                    # If conversion fails, use default value
+                    location_type_value = 0
+                
                 stop = Stop(
                     stop_id=str(stop_row["stop_id"]),
                     stop_name=str(stop_row.get("stop_name", "")),
                     lat=float(stop_row["stop_lat"]),
                     lon=float(stop_row["stop_lon"]),
-                    location_type=int(stop_row.get("location_type", 0)),
+                    location_type=location_type_value,
                     parent_station=parent_station,
                     stop_timezone=stop_timezone,
                 )
@@ -115,11 +124,11 @@ class GTFSParser:
                     trip_headsign = str(trip_row["trip_headsign"])
 
                 direction_id = None
-                if (
-                    "direction_id" in trip_row
-                    and str(trip_row["direction_id"]) != "nan"
-                ):
-                    direction_id = int(trip_row["direction_id"])
+                if "direction_id" in trip_row:
+                    try:
+                        direction_id = int(trip_row["direction_id"])
+                    except (ValueError, TypeError):
+                        direction_id = None
 
                 shape_id = None
                 if "shape_id" in trip_row and str(trip_row["shape_id"]) != "nan":
@@ -139,14 +148,27 @@ class GTFSParser:
         """Parse stop times from GTFS data."""
         if self.feed.stop_times is not None:
             for _, st_row in self.feed.stop_times.iterrows():
+                # Handle NaN values in GTFS data
+                pickup_type_value = st_row.get("pickup_type", 0)
+                try:
+                    pickup_type_value = int(pickup_type_value)
+                except (ValueError, TypeError):
+                    pickup_type_value = 0
+                    
+                drop_off_type_value = st_row.get("drop_off_type", 0)
+                try:
+                    drop_off_type_value = int(drop_off_type_value)
+                except (ValueError, TypeError):
+                    drop_off_type_value = 0
+                
                 stop_time = StopTime(
                     trip_id=str(st_row["trip_id"]),
                     stop_id=str(st_row["stop_id"]),
                     stop_sequence=int(st_row["stop_sequence"]),
                     arrival_time=str(st_row["arrival_time"]),
                     departure_time=str(st_row["departure_time"]),
-                    pickup_type=int(st_row.get("pickup_type", 0)),
-                    drop_off_type=int(st_row.get("drop_off_type", 0)),
+                    pickup_type=pickup_type_value,
+                    drop_off_type=drop_off_type_value,
                 )
 
                 if stop_time.trip_id not in self.stop_times:
