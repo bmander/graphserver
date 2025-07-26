@@ -119,9 +119,11 @@ def _generate_edges_section(edges_data: list[dict] | None,
     
     # Generate edge list
     edges_html = []
-    for i, edge_info in enumerate(edges_data):
+    for edge_info in edges_data:
         target = edge_info['target_vertex']
         cost = edge_info.get('cost', 'Unknown')
+        metadata = edge_info.get('metadata', {})
+        provider = edge_info.get('provider', 'unknown')
         
         # Create query string for target vertex
         query_params = []
@@ -137,10 +139,36 @@ def _generate_edges_section(edges_data: list[dict] | None,
         # Format cost display
         cost_display = f"cost: {cost}" if cost is not None else "cost: unknown"
         
+        # Get edge type and icon
+        edge_type = metadata.get('edge_type', 'unknown')
+        
+        # Generate metadata display
+        metadata_html = ""
+        if metadata:
+            metadata_items = []
+            for key, value in metadata.items():
+                if key != 'edge_type':  # Don't duplicate edge type
+                    metadata_items.append(f"<li><strong>{key}:</strong> {value}</li>")
+            
+            if metadata_items:
+                metadata_html = f"""
+                <div class="edge-metadata">
+                    <div class="edge-type-badge edge-{provider}">
+                        {edge_type}
+                    </div>
+                    <ul class="metadata-list">
+                        {''.join(metadata_items)}
+                        <li><strong>provider:</strong> {provider}</li>
+                    </ul>
+                </div>"""
+        
         edges_html.append(f"""
-        <div class="edge">
-            → <a href="/?{query_string}" class="link">{target_json}</a>
-            <small>({cost_display})</small>
+        <div class="edge edge-{provider}">
+            <div class="edge-link">
+                → <a href="/?{query_string}" class="link">{target_json}</a>
+                <small>({cost_display})</small>
+            </div>
+            {metadata_html}
         </div>""")
     
     edges_list = "".join(edges_html)

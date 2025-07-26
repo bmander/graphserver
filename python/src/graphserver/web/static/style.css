@@ -29,11 +29,77 @@ body {
 }
 
 .edge {
-    margin: 5px 0;
-    padding: 5px;
+    margin: 10px 0;
+    padding: 10px;
     background: #fff;
     border-left: 3px solid #007acc;
-    padding-left: 10px;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.edge-link {
+    margin-bottom: 8px;
+}
+
+/* Provider-specific edge styling */
+.edge-osm_network {
+    border-left-color: #28a745;
+}
+
+.edge-osm_access {
+    border-left-color: #17a2b8;
+}
+
+.edge-transit {
+    border-left-color: #ffc107;
+}
+
+/* Edge Metadata Section */
+.edge-metadata {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
+}
+
+.edge-type-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.edge-type-badge.edge-osm_network {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.edge-type-badge.edge-osm_access {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.edge-type-badge.edge-transit {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.metadata-list {
+    margin: 6px 0 0 0;
+    padding-left: 16px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.metadata-list li {
+    margin: 2px 0;
+    line-height: 1.3;
+}
+
+.metadata-list strong {
+    color: #333;
+    font-weight: 600;
 }
 
 /* Links */
