@@ -156,26 +156,30 @@ def main() -> None:
 
     print(f"   Start vertex: ({start_lat}, {start_lon})")
     print(f"   Goal vertex:  ({end_lat}, {end_lon})")
-    
+
     # Get nearby OSM nodes for coordinate-to-coordinate routing
     start_edges = access_provider(start_vertex)
     goal_edges = access_provider(goal_vertex)
-    print(f"   Found {len(start_edges)} nearby OSM nodes for start, {len(goal_edges)} for goal")
+    print(
+        f"   Found {len(start_edges)} nearby OSM nodes for start, {len(goal_edges)} for goal"
+    )
     print()
 
     # Execute pathfinding with coordinate-to-coordinate routing workaround
     print("🚀 Planning route...")
     try:
         planning_start = time.time()
-        
+
         # Since direct coordinate-to-coordinate routing isn't fully supported yet,
         # we'll find nearby OSM nodes and try routing between them
         if not start_edges or not goal_edges:
-            raise RuntimeError("Could not find nearby OSM nodes for start or goal coordinates")
-        
+            raise RuntimeError(
+                "Could not find nearby OSM nodes for start or goal coordinates"
+            )
+
         result = None
-        best_cost = float('inf')
-        
+        best_cost = float("inf")
+
         # Try all combinations of nearby start and goal OSM nodes
         attempts = 0
         for start_osm_vertex, start_edge in start_edges:
@@ -183,10 +187,14 @@ def main() -> None:
                 attempts += 1
                 try:
                     # Try routing between OSM nodes
-                    osm_result = engine.plan(start=start_osm_vertex, goal=goal_osm_vertex)
+                    osm_result = engine.plan(
+                        start=start_osm_vertex, goal=goal_osm_vertex
+                    )
                     if osm_result and len(osm_result) > 0:
                         # Calculate total cost including access edges
-                        total_cost = start_edge.cost + osm_result.total_cost + goal_edge.cost
+                        total_cost = (
+                            start_edge.cost + osm_result.total_cost + goal_edge.cost
+                        )
                         if total_cost < best_cost:
                             result = osm_result
                             best_cost = total_cost
@@ -199,17 +207,19 @@ def main() -> None:
                     continue
             if result:
                 break
-        
+
         if attempts > 1:
             print(f"   Tested {attempts} OSM node combinations")
-        
+
         planning_time = time.time() - planning_start
 
         if result and len(result) > 0:
             # Calculate total cost including access edges
-            access_cost = getattr(result, '_start_access_cost', 0) + getattr(result, '_goal_access_cost', 0)
+            access_cost = getattr(result, "_start_access_cost", 0) + getattr(
+                result, "_goal_access_cost", 0
+            )
             total_cost_with_access = result.total_cost + access_cost
-            
+
             print(f"✅ Route found in {planning_time:.3f}s")
             print(f"   Path: {len(result)} OSM edges + access")
             print(

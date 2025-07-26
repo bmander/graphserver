@@ -124,9 +124,9 @@ def _benchmark_engine(
 
     times: list[float] = []
     successful = 0
-    
+
     # Get access provider to register offramps
-    access_provider = engine.providers.get('osm_access')
+    access_provider = engine.providers.get("osm_access")
 
     for rep in range(repetitions):
         print(f"   Repetition {rep + 1}/{repetitions}...")
@@ -139,26 +139,34 @@ def _benchmark_engine(
 
                 start_vertex = Vertex({"lat": start_coords[0], "lon": start_coords[1]})
                 goal_vertex = Vertex({"lat": goal_coords[0], "lon": goal_coords[1]})
-                
+
                 # Register goal as offramp for coordinate-to-coordinate routing
                 if access_provider:
-                    access_provider.register_offramp_point(goal_coords[0], goal_coords[1], {"route": i})
-                
+                    access_provider.register_offramp_point(
+                        goal_coords[0], goal_coords[1], {"route": i}
+                    )
+
                 # Use OSM node pathfinding workaround like in osm_routing_example.py
                 result = None
                 if access_provider:
                     start_edges = access_provider(start_vertex)
                     goal_edges = access_provider(goal_vertex)
-                    
+
                     if start_edges and goal_edges:
-                        best_cost = float('inf')
+                        best_cost = float("inf")
                         # Try combinations of nearby OSM nodes
                         for start_osm_vertex, start_edge in start_edges:
                             for goal_osm_vertex, goal_edge in goal_edges:
                                 try:
-                                    osm_result = engine.plan(start=start_osm_vertex, goal=goal_osm_vertex)
+                                    osm_result = engine.plan(
+                                        start=start_osm_vertex, goal=goal_osm_vertex
+                                    )
                                     if osm_result and len(osm_result) > 0:
-                                        total_cost = start_edge.cost + osm_result.total_cost + goal_edge.cost
+                                        total_cost = (
+                                            start_edge.cost
+                                            + osm_result.total_cost
+                                            + goal_edge.cost
+                                        )
                                         if total_cost < best_cost:
                                             result = osm_result
                                             best_cost = total_cost
@@ -167,7 +175,7 @@ def _benchmark_engine(
                                     continue
                             if result:
                                 break
-                
+
                 if result and len(result) > 0:
                     successful += 1
                 times.append(time.time() - route_start)
@@ -176,7 +184,7 @@ def _benchmark_engine(
                 continue
 
         print(f"      Completed in {time.time() - rep_start:.3f}s")
-        
+
         # Clear offramps after each repetition to avoid conflicts
         if access_provider:
             access_provider.clear_offramp_points()

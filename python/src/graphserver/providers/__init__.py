@@ -12,13 +12,15 @@ __all__ = []
 # Import OSM providers if available
 try:
     from .osm import OSMAccessProvider, OSMNetworkProvider
+
     __all__.extend(["OSMAccessProvider", "OSMNetworkProvider"])
 except ImportError:
     pass
 
-# Import transit providers if available  
+# Import transit providers if available
 try:
     from .transit import TransitProvider
+
     __all__.extend(["TransitProvider"])
 except ImportError:
     pass

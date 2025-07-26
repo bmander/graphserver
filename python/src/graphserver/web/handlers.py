@@ -14,7 +14,7 @@ def parse_value(value_str: str) -> str | int | float:
     """Convert string to appropriate type (float, int, or str)."""
     try:
         # Try float first (handles decimals)
-        if '.' in value_str:
+        if "." in value_str:
             return float(value_str)
         # Try int if no decimal point
         return int(value_str)
@@ -26,8 +26,7 @@ def parse_value(value_str: str) -> str | int | float:
 class GraphRequestHandler(BaseHTTPRequestHandler):
     """HTTP request handler for graph browsing."""
 
-    def __init__(self, *args, server_config: dict[str, Any] | None = None,
-                 **kwargs):
+    def __init__(self, *args, server_config: dict[str, Any] | None = None, **kwargs):
         self.server_config = server_config or {}
         super().__init__(*args, **kwargs)
 
@@ -37,7 +36,7 @@ class GraphRequestHandler(BaseHTTPRequestHandler):
             # Parse the URL
             parsed_url = urlparse(self.path)
 
-            if parsed_url.path != '/':
+            if parsed_url.path != "/":
                 self.send_error(404, "Only / endpoint is supported")
                 return
 
@@ -53,47 +52,56 @@ class GraphRequestHandler(BaseHTTPRequestHandler):
             # Get edges for this vertex if providers are available
             edges_data = None
             vertex_validation = None
-            
-            provider_manager = self.server_config.get('provider_manager')
+
+            provider_manager = self.server_config.get("provider_manager")
             if provider_manager and vertex_props:
                 try:
                     # Validate vertex properties against available providers
-                    is_valid, validation_msg = provider_manager.validate_vertex_for_providers(vertex_props)
+                    is_valid, validation_msg = (
+                        provider_manager.validate_vertex_for_providers(vertex_props)
+                    )
                     vertex_validation = {
-                        'is_valid': is_valid,
-                        'message': validation_msg
+                        "is_valid": is_valid,
+                        "message": validation_msg,
                     }
-                    
+
                     if is_valid:
                         # Create vertex and get edges from all providers
                         vertex = Vertex(vertex_props)
                         edges_data = []
-                        
+
                         # Try each provider to get edges
-                        for provider_name, provider in provider_manager.providers.items():
+                        for (
+                            provider_name,
+                            provider,
+                        ) in provider_manager.providers.items():
                             try:
                                 provider_edges = list(provider(vertex))
-                                
+
                                 for target_vertex, edge in provider_edges:
                                     # Extract edge information
                                     edge_info = {
-                                        'target_vertex': dict(target_vertex),
-                                        'cost': getattr(edge, 'cost', None),
-                                        'metadata': getattr(edge, 'metadata', {}),
-                                        'provider': provider_name
+                                        "target_vertex": dict(target_vertex),
+                                        "cost": getattr(edge, "cost", None),
+                                        "metadata": getattr(edge, "metadata", {}),
+                                        "provider": provider_name,
                                     }
                                     edges_data.append(edge_info)
-                                    
+
                             except Exception as provider_error:
-                                print(f"Provider {provider_name} error: {provider_error}")
-                                
-                        print(f"Found {len(edges_data)} total edges for vertex {vertex_props}")
-                        
+                                print(
+                                    f"Provider {provider_name} error: {provider_error}"
+                                )
+
+                        print(
+                            f"Found {len(edges_data)} total edges for vertex {vertex_props}"
+                        )
+
                 except Exception as e:
                     print(f"Error getting edges: {e}")
                     vertex_validation = {
-                        'is_valid': False,
-                        'message': f"Error processing vertex: {e}"
+                        "is_valid": False,
+                        "message": f"Error processing vertex: {e}",
                     }
 
             # Generate HTML response with edge data
@@ -101,14 +109,14 @@ class GraphRequestHandler(BaseHTTPRequestHandler):
                 vertex_props,
                 self.server_config,
                 edges_data=edges_data,
-                vertex_validation=vertex_validation
+                vertex_validation=vertex_validation,
             )
 
             # Send response
             self.send_response(200)
-            self.send_header('Content-type', 'text/html; charset=utf-8')
+            self.send_header("Content-type", "text/html; charset=utf-8")
             self.end_headers()
-            self.wfile.write(html_content.encode('utf-8'))
+            self.wfile.write(html_content.encode("utf-8"))
 
         except Exception as e:
             self.send_error(500, f"Internal server error: {str(e)}")

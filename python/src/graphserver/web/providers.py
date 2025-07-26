@@ -11,14 +11,18 @@ from graphserver.core import EdgeProvider
 
 class ProviderError(Exception):
     """Raised when provider initialization fails."""
+
     pass
 
 
 class ProviderManager:
     """Manages provider initialization and engine configuration."""
 
-    def __init__(self, osm_files: Sequence[str] | None = None,
-                 gtfs_files: Sequence[str] | None = None):
+    def __init__(
+        self,
+        osm_files: Sequence[str] | None = None,
+        gtfs_files: Sequence[str] | None = None,
+    ):
         self.osm_files = list(osm_files or [])
         self.gtfs_files = list(gtfs_files or [])
         self.engine: Engine | None = None
@@ -34,13 +38,13 @@ class ProviderManager:
 
         # Initialize and register providers in order of specificity
         # More specific providers first (transit, then OSM access, then OSM network)
-        
+
         try:
             # Initialize Transit providers if GTFS files specified
             if self.gtfs_files:
                 self._initialize_transit_providers()
 
-            # Initialize OSM providers if OSM files specified  
+            # Initialize OSM providers if OSM files specified
             if self.osm_files:
                 self._initialize_osm_providers()
 
@@ -67,20 +71,18 @@ class ProviderManager:
 
         for i, gtfs_file in enumerate(self.gtfs_files):
             gtfs_path = Path(gtfs_file)
-            
+
             if not gtfs_path.exists():
                 raise ProviderError(f"GTFS file not found: {gtfs_file}")
-            
-            if not (gtfs_path.is_file() and gtfs_path.suffix.lower() == '.zip'):
-                raise ProviderError(
-                    f"GTFS file must be a .zip file: {gtfs_file}"
-                )
+
+            if not (gtfs_path.is_file() and gtfs_path.suffix.lower() == ".zip"):
+                raise ProviderError(f"GTFS file must be a .zip file: {gtfs_file}")
 
             try:
                 # Create transit provider for this GTFS feed
                 provider_name = f"transit_{i}" if i > 0 else "transit"
                 transit_provider = TransitProvider(str(gtfs_path))
-                
+
                 self.providers[provider_name] = transit_provider
                 self.engine.register_provider(provider_name, transit_provider)
                 print(f"Registered transit provider: {gtfs_file}")
@@ -93,10 +95,7 @@ class ProviderManager:
     def _initialize_osm_providers(self) -> None:
         """Initialize OSM routing providers."""
         try:
-            from graphserver.providers.osm import (
-                OSMNetworkProvider, 
-                OSMAccessProvider
-            )
+            from graphserver.providers.osm import OSMNetworkProvider, OSMAccessProvider
         except ImportError as e:
             raise ProviderError(
                 "OSM providers not available. Install with: "
@@ -124,14 +123,12 @@ class ProviderManager:
             # Create OSM access provider (handles lat/lon vertices)
             # This uses the same parser as the network provider for efficiency
             osm_access = OSMAccessProvider(parser=osm_network.parser)
-            self.providers["osm_access"] = osm_access  
+            self.providers["osm_access"] = osm_access
             self.engine.register_provider("osm_access", osm_access)
             print(f"Registered OSM access provider: {osm_file}")
 
         except Exception as e:
-            raise ProviderError(
-                f"Failed to initialize OSM file {osm_file}: {e}"
-            ) from e
+            raise ProviderError(f"Failed to initialize OSM file {osm_file}: {e}") from e
 
         # Log additional OSM files that aren't yet supported
         if len(self.osm_files) > 1:
@@ -141,13 +138,15 @@ class ProviderManager:
     def get_provider_info(self) -> dict[str, str]:
         """Get information about initialized providers for display."""
         info = {}
-        
+
         if self.osm_files:
             info["OSM"] = f"{len(self.osm_files)} file(s): {', '.join(self.osm_files)}"
-            
+
         if self.gtfs_files:
-            info["GTFS"] = f"{len(self.gtfs_files)} file(s): {', '.join(self.gtfs_files)}"
-            
+            info["GTFS"] = (
+                f"{len(self.gtfs_files)} file(s): {', '.join(self.gtfs_files)}"
+            )
+
         return info
 
     def validate_vertex_for_providers(self, vertex_props: dict) -> tuple[bool, str]:
@@ -157,18 +156,17 @@ class ProviderManager:
 
         # Check for supported vertex patterns
         supported_patterns = []
-        
+
         if "osm_network" in self.providers:
             supported_patterns.append("osm_node_id (integer)")
-            
+
         if "osm_access" in self.providers:
             supported_patterns.append("lat, lon (floats)")
-            
+
         if any(name.startswith("transit") for name in self.providers):
-            supported_patterns.extend([
-                "lat, lon, time (floats, integer)",
-                "stop_id, time (string, integer)"
-            ])
+            supported_patterns.extend(
+                ["lat, lon, time (floats, integer)", "stop_id, time (string, integer)"]
+            )
 
         # Check if vertex matches any supported pattern
         has_osm_node = "osm_node_id" in vertex_props
@@ -177,19 +175,25 @@ class ProviderManager:
         has_stop = "stop_id" in vertex_props
 
         valid_patterns = []
-        
+
         if has_osm_node and "osm_network" in self.providers:
             valid_patterns.append("OSM node routing")
-            
+
         if has_coords and "osm_access" in self.providers:
             valid_patterns.append("coordinate-based routing")
-            
-        if has_coords and has_time and any(name.startswith("transit") 
-                                           for name in self.providers):
+
+        if (
+            has_coords
+            and has_time
+            and any(name.startswith("transit") for name in self.providers)
+        ):
             valid_patterns.append("transit routing from coordinates")
-            
-        if has_stop and has_time and any(name.startswith("transit") 
-                                         for name in self.providers):
+
+        if (
+            has_stop
+            and has_time
+            and any(name.startswith("transit") for name in self.providers)
+        ):
             valid_patterns.append("transit routing from stop")
 
         if valid_patterns:

@@ -63,7 +63,7 @@ class Departure:
     stop_id: str
     stop_sequence: int
     departure_time: int  # Unix timestamp
-    arrival_time: int    # Unix timestamp (at this stop)
+    arrival_time: int  # Unix timestamp (at this stop)
     next_stop_id: str | None = None
     next_stop_sequence: int | None = None
     next_arrival_time: int | None = None

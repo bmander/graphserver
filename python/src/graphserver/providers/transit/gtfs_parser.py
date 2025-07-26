@@ -62,13 +62,17 @@ class GTFSParser:
         if self.feed.stops is not None:
             for _, stop_row in self.feed.stops.iterrows():
                 parent_station = None
-                if ("parent_station" in stop_row
-                    and str(stop_row["parent_station"]) != "nan"):
+                if (
+                    "parent_station" in stop_row
+                    and str(stop_row["parent_station"]) != "nan"
+                ):
                     parent_station = str(stop_row["parent_station"])
 
                 stop_timezone = None
-                if ("stop_timezone" in stop_row
-                    and str(stop_row["stop_timezone"]) != "nan"):
+                if (
+                    "stop_timezone" in stop_row
+                    and str(stop_row["stop_timezone"]) != "nan"
+                ):
                     stop_timezone = str(stop_row["stop_timezone"])
 
                 stop = Stop(
@@ -87,8 +91,7 @@ class GTFSParser:
         if self.feed.routes is not None:
             for _, route_row in self.feed.routes.iterrows():
                 agency_id = None
-                if ("agency_id" in route_row
-                    and str(route_row["agency_id"]) != "nan"):
+                if "agency_id" in route_row and str(route_row["agency_id"]) != "nan":
                     agency_id = str(route_row["agency_id"])
 
                 route = Route(
@@ -105,18 +108,21 @@ class GTFSParser:
         if self.feed.trips is not None:
             for _, trip_row in self.feed.trips.iterrows():
                 trip_headsign = None
-                if ("trip_headsign" in trip_row
-                    and str(trip_row["trip_headsign"]) != "nan"):
+                if (
+                    "trip_headsign" in trip_row
+                    and str(trip_row["trip_headsign"]) != "nan"
+                ):
                     trip_headsign = str(trip_row["trip_headsign"])
 
                 direction_id = None
-                if ("direction_id" in trip_row
-                    and str(trip_row["direction_id"]) != "nan"):
+                if (
+                    "direction_id" in trip_row
+                    and str(trip_row["direction_id"]) != "nan"
+                ):
                     direction_id = int(trip_row["direction_id"])
 
                 shape_id = None
-                if ("shape_id" in trip_row
-                    and str(trip_row["shape_id"]) != "nan"):
+                if "shape_id" in trip_row and str(trip_row["shape_id"]) != "nan":
                     shape_id = str(trip_row["shape_id"])
 
                 trip = Trip(
@@ -202,8 +208,7 @@ class GTFSParser:
                 )
 
                 # Check if departure is within our time window
-                if (departure_timestamp < start_time
-                    or departure_timestamp > end_time):
+                if departure_timestamp < start_time or departure_timestamp > end_time:
                     continue
 
                 # Find next stop in sequence

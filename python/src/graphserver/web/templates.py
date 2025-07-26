@@ -20,18 +20,19 @@ def _load_css() -> str:
     return css_path.read_text()
 
 
-def generate_html_response(vertex_props: dict[str, Any],
-                           server_config: dict[str, Any],
-                           edges_data: list[dict] | None = None,
-                           vertex_validation: dict[str, Any] | None = None) -> str:
+def generate_html_response(
+    vertex_props: dict[str, Any],
+    server_config: dict[str, Any],
+    edges_data: list[dict] | None = None,
+    vertex_validation: dict[str, Any] | None = None,
+) -> str:
     """Generate complete HTML response for the given vertex properties."""
     # Load templates
     base_template = _load_template("base")
     css_content = _load_css()
 
     # Format vertex properties as JSON
-    vertex_json = (json.dumps(vertex_props, indent=4)
-                   if vertex_props else "{}")
+    vertex_json = json.dumps(vertex_props, indent=4) if vertex_props else "{}"
 
     # Determine page content
     if not vertex_props:
@@ -40,24 +41,19 @@ def generate_html_response(vertex_props: dict[str, Any],
     else:
         # Vertex page - show vertex and edges
         content_section = generate_vertex_content(
-            vertex_json, 
-            edges_data, 
-            vertex_validation
+            vertex_json, edges_data, vertex_validation
         )
 
     # Render the complete page
-    return base_template.substitute(
-        css_content=css_content,
-        content=content_section
-    )
+    return base_template.substitute(css_content=css_content, content=content_section)
 
 
 def generate_usage_content(server_config: dict[str, Any]) -> str:
     """Generate usage instructions for the root page."""
     usage_template = _load_template("usage")
 
-    osm_files = server_config.get('osm_files', [])
-    gtfs_files = server_config.get('gtfs_files', [])
+    osm_files = server_config.get("osm_files", [])
+    gtfs_files = server_config.get("gtfs_files", [])
 
     config_info = ""
     if osm_files or gtfs_files:
@@ -69,15 +65,17 @@ def generate_usage_content(server_config: dict[str, Any]) -> str:
         config_info = f"""
     <div class="config">
         <h3>Server Configuration</h3>
-        <p>{' | '.join(config_items)}</p>
+        <p>{" | ".join(config_items)}</p>
     </div>"""
 
     return usage_template.substitute(config_info=config_info)
 
 
-def generate_vertex_content(vertex_json: str,
-                            edges_data: list[dict] | None = None,
-                            vertex_validation: dict[str, Any] | None = None) -> str:
+def generate_vertex_content(
+    vertex_json: str,
+    edges_data: list[dict] | None = None,
+    vertex_validation: dict[str, Any] | None = None,
+) -> str:
     """Generate content for a specific vertex."""
     vertex_template = _load_template("vertex")
 
@@ -85,24 +83,24 @@ def generate_vertex_content(vertex_json: str,
     edges_section = _generate_edges_section(edges_data, vertex_validation)
 
     return vertex_template.substitute(
-        vertex_json=vertex_json,
-        edges_section=edges_section
+        vertex_json=vertex_json, edges_section=edges_section
     )
 
 
-def _generate_edges_section(edges_data: list[dict] | None,
-                           vertex_validation: dict[str, Any] | None) -> str:
+def _generate_edges_section(
+    edges_data: list[dict] | None, vertex_validation: dict[str, Any] | None
+) -> str:
     """Generate the edges section of the vertex page."""
-    if vertex_validation and not vertex_validation.get('is_valid', True):
+    if vertex_validation and not vertex_validation.get("is_valid", True):
         # Show validation error
         return f"""
     <div class="edges">
         <h2>Vertex Validation</h2>
         <div class="error">
-            <p><strong>❌ Invalid vertex:</strong> {vertex_validation['message']}</p>
+            <p><strong>❌ Invalid vertex:</strong> {vertex_validation["message"]}</p>
         </div>
     </div>"""
-    
+
     if not edges_data:
         # No edges found
         return """
@@ -116,15 +114,15 @@ def _generate_edges_section(edges_data: list[dict] | None,
             <li>The location is outside the loaded data bounds</li>
         </ul>
     </div>"""
-    
+
     # Generate edge list
     edges_html = []
     for edge_info in edges_data:
-        target = edge_info['target_vertex']
-        cost = edge_info.get('cost', 'Unknown')
-        metadata = edge_info.get('metadata', {})
-        provider = edge_info.get('provider', 'unknown')
-        
+        target = edge_info["target_vertex"]
+        cost = edge_info.get("cost", "Unknown")
+        metadata = edge_info.get("metadata", {})
+        provider = edge_info.get("provider", "unknown")
+
         # Create query string for target vertex
         query_params = []
         for key, value in target.items():
@@ -132,24 +130,24 @@ def _generate_edges_section(edges_data: list[dict] | None,
                 query_params.append(f"{key}={value}")
             else:
                 query_params.append(f"{key}={value}")
-        
+
         query_string = "&".join(query_params)
-        target_json = json.dumps(target, separators=(',', ': '))
-        
+        target_json = json.dumps(target, separators=(",", ": "))
+
         # Format cost display
         cost_display = f"cost: {cost}" if cost is not None else "cost: unknown"
-        
+
         # Get edge type and icon
-        edge_type = metadata.get('edge_type', 'unknown')
-        
+        edge_type = metadata.get("edge_type", "unknown")
+
         # Generate metadata display
         metadata_html = ""
         if metadata:
             metadata_items = []
             for key, value in metadata.items():
-                if key != 'edge_type':  # Don't duplicate edge type
+                if key != "edge_type":  # Don't duplicate edge type
                     metadata_items.append(f"<li><strong>{key}:</strong> {value}</li>")
-            
+
             if metadata_items:
                 metadata_html = f"""
                 <div class="edge-metadata">
@@ -157,11 +155,11 @@ def _generate_edges_section(edges_data: list[dict] | None,
                         {edge_type}
                     </div>
                     <ul class="metadata-list">
-                        {''.join(metadata_items)}
+                        {"".join(metadata_items)}
                         <li><strong>provider:</strong> {provider}</li>
                     </ul>
                 </div>"""
-        
+
         edges_html.append(f"""
         <div class="edge edge-{provider}">
             <div class="edge-link">
@@ -170,9 +168,9 @@ def _generate_edges_section(edges_data: list[dict] | None,
             </div>
             {metadata_html}
         </div>""")
-    
+
     edges_list = "".join(edges_html)
-    
+
     return f"""
     <div class="edges">
         <h2>Outbound Edges ({len(edges_data)} found)</h2>
