@@ -49,7 +49,7 @@ def test_osm_node_identity_hash():
 
         access_provider = OSMAccessProvider(parser=parser)
 
-        # Test OSM node hash generation via _add_identity_hash
+        # Test OSM node hash generation via vertex creation
         node1_data = {"osm_node_id": 123, "lat": 47.6062, "lon": -122.3321}
         node2_data = {"osm_node_id": 123, "lat": 47.6062, "lon": -122.3321}  # Same node
         node3_data = {
@@ -58,18 +58,19 @@ def test_osm_node_identity_hash():
             "lon": -122.3321,
         }  # Different node
 
-        node1_with_hash = access_provider._add_identity_hash(node1_data.copy())
-        node2_with_hash = access_provider._add_identity_hash(node2_data.copy())
-        node3_with_hash = access_provider._add_identity_hash(node3_data.copy())
+        # Create vertices with identity hashes
+        hash1 = access_provider._get_identity_hash(node1_data)
+        hash2 = access_provider._get_identity_hash(node2_data)
+        hash3 = access_provider._get_identity_hash(node3_data)
 
         # Same OSM node ID should get same hash
-        assert node1_with_hash["_id_hash"] == node2_with_hash["_id_hash"]
+        assert hash1 == hash2
 
         # Different OSM node IDs should get different hashes
-        assert node1_with_hash["_id_hash"] != node3_with_hash["_id_hash"]
+        assert hash1 != hash3
 
-        print(f"Node 123 hash: {node1_with_hash['_id_hash']}")
-        print(f"Node 456 hash: {node3_with_hash['_id_hash']}")
+        print(f"Node 123 hash: {hash1}")
+        print(f"Node 456 hash: {hash3}")
 
     except ImportError:
         pytest.skip("OSM dependencies not available")
@@ -96,22 +97,22 @@ def test_provider_generated_identity_hashes():
         )
         assert coord_hash == "coord:47.6062,-122.3321"
 
-        # Test adding identity hash to vertex data
+        # Test generating identity hash for vertex data
         coord_data = {
             "lat": 47.606201,
             "lon": -122.332102,
         }  # Slightly different precision
-        coord_with_hash = access_provider._add_identity_hash(coord_data)
-        assert (
-            coord_with_hash["_id_hash"] == "coord:47.6062,-122.3321"
-        )  # Should round to same value
+        coord_identity_hash = access_provider._get_identity_hash(coord_data)
+        expected_coord_hash = hash("coord:47.6062,-122.3321") & 0xFFFFFFFFFFFFFFFF
+        assert coord_identity_hash == expected_coord_hash  # Should round to same value
 
         osm_data = {"osm_node_id": 12345, "lat": 47.6062, "lon": -122.3321}
-        osm_with_hash = access_provider._add_identity_hash(osm_data)
-        assert osm_with_hash["_id_hash"] == "osm:12345"  # OSM node ID takes priority
+        osm_identity_hash = access_provider._get_identity_hash(osm_data)
+        expected_osm_hash = hash("osm:12345") & 0xFFFFFFFFFFFFFFFF
+        assert osm_identity_hash == expected_osm_hash  # OSM node ID takes priority
 
-        print(f"Coordinate hash: {coord_with_hash['_id_hash']}")
-        print(f"OSM node hash (priority): {osm_with_hash['_id_hash']}")
+        print(f"Coordinate hash: {coord_identity_hash}")
+        print(f"OSM node hash (priority): {osm_identity_hash}")
 
     except ImportError:
         pytest.skip("OSM dependencies not available")

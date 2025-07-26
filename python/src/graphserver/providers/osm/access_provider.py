@@ -117,24 +117,27 @@ class OSMAccessProvider:
         rounded_lon = round(lon, 5)
         return f"coord:{rounded_lat},{rounded_lon}"
 
-    def _add_identity_hash(self, vertex_data: dict) -> dict:
-        """Add identity hash to vertex data.
+    def _get_identity_hash(self, vertex_data: dict) -> int | None:
+        """Generate identity hash for vertex data.
 
         Args:
             vertex_data: Dictionary of vertex data
 
         Returns:
-            Updated vertex data with identity hash
+            Identity hash value or None if no hashable identity found
         """
         # Prioritize OSM node ID over coordinates if both are present
         if "osm_node_id" in vertex_data:
-            vertex_data["_id_hash"] = f"osm:{vertex_data['osm_node_id']}"
+            hash_string = f"osm:{vertex_data['osm_node_id']}"
         elif "lat" in vertex_data and "lon" in vertex_data:
-            vertex_data["_id_hash"] = self._create_coordinate_identity_hash(
+            hash_string = self._create_coordinate_identity_hash(
                 vertex_data["lat"], vertex_data["lon"]
             )
+        else:
+            return None
 
-        return vertex_data
+        # Convert string to stable unsigned integer hash
+        return hash(hash_string) & 0xFFFFFFFFFFFFFFFF
 
     def _build_spatial_index(self) -> None:
         """Build spatial index for fast coordinate-based lookups."""
@@ -175,7 +178,8 @@ class OSMAccessProvider:
 
         # Create vertex for this access point
         vertex_data = {"lat": lat, "lon": lon, "access_point_id": access_point_id}
-        vertex = Vertex(self._add_identity_hash(vertex_data))
+        identity_hash = self._get_identity_hash(vertex_data)
+        vertex = Vertex(vertex_data, hash_value=identity_hash)
 
         # Create and store access point
         access_point = AccessPoint(
@@ -287,7 +291,8 @@ class OSMAccessProvider:
                 "lon": node.lon,
                 **node.tags,  # Include any relevant OSM tags
             }
-            target_vertex = Vertex(self._add_identity_hash(target_data))
+            identity_hash = self._get_identity_hash(target_data)
+            target_vertex = Vertex(target_data, hash_value=identity_hash)
 
             # Create edge with cost based on walking time
             edge = Edge(
@@ -430,7 +435,8 @@ class OSMAccessProvider:
             "lon": node.lon,
             **node.tags,
         }
-        return Vertex(self._add_identity_hash(node_data))
+        identity_hash = self._get_identity_hash(node_data)
+        return Vertex(node_data, hash_value=identity_hash)
 
     @property
     def node_count(self) -> int:

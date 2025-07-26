@@ -416,8 +416,9 @@ class TestSimpleOSMRouting:
         assert "lon" in start_vertex
         assert "lat" in goal_vertex
         assert "lon" in goal_vertex
-        assert "_id_hash" in start_vertex
-        assert "_id_hash" in goal_vertex
+        # Verify vertices have consistent hashes
+        assert hash(start_vertex) != 0  # Should have a meaningful hash
+        assert hash(goal_vertex) != 0  # Should have a meaningful hash
 
         return start_vertex, goal_vertex
 
@@ -455,15 +456,17 @@ class TestSimpleOSMRouting:
             assert hasattr(path_edge.target, "__getitem__"), (
                 f"Path edge {i} target should be dict-like"
             )
-            assert "_id_hash" in path_edge.target, (
-                f"Path edge {i} target should have _id_hash"
+            # Verify path edge target has a meaningful hash
+            assert hash(path_edge.target) != 0, (
+                f"Path edge {i} target should have a meaningful hash"
             )
 
     def _validate_path_connectivity(self, result: object, goal_vertex: Vertex) -> None:
         """Validate that the path connects properly to the goal."""
         last_edge = result[-1]
-        assert last_edge.target["_id_hash"] == goal_vertex["_id_hash"], (
-            "Path should end at goal vertex"
+        # Verify path ends at goal vertex by checking hash equality
+        assert hash(last_edge.target) == hash(goal_vertex), (
+            "Path should end at goal vertex with matching hash"
         )
 
         # With the simple OSM data (2 nodes, 1 way), we expect a short path

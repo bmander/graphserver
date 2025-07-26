@@ -65,25 +65,28 @@ class OSMNetworkProvider:
             len(self.parser.edges),
         )
 
-    def _add_identity_hash(self, vertex_data: dict) -> dict:
-        """Add identity hash to vertex data.
+    def _get_identity_hash(self, vertex_data: dict) -> int | None:
+        """Generate identity hash for vertex data.
 
         Args:
             vertex_data: Dictionary of vertex data
 
         Returns:
-            Updated vertex data with identity hash
+            Identity hash value or None if no hashable identity found
         """
         # Prioritize OSM node ID over coordinates if both are present
         if "osm_node_id" in vertex_data:
-            vertex_data["_id_hash"] = f"osm:{vertex_data['osm_node_id']}"
+            hash_string = f"osm:{vertex_data['osm_node_id']}"
         elif "lat" in vertex_data and "lon" in vertex_data:
             # Round coordinates to ~1 meter precision for matching tolerance
             rounded_lat = round(vertex_data["lat"], 5)
             rounded_lon = round(vertex_data["lon"], 5)
-            vertex_data["_id_hash"] = f"coord:{rounded_lat},{rounded_lon}"
+            hash_string = f"coord:{rounded_lat},{rounded_lon}"
+        else:
+            return None
 
-        return vertex_data
+        # Convert string to stable unsigned integer hash
+        return hash(hash_string) & 0xFFFFFFFFFFFFFFFF
 
     def __call__(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
         """Generate edges from an OSM node (implements EdgeProvider protocol).
@@ -134,7 +137,9 @@ class OSMNetworkProvider:
                 "lon": target_node.lon,
                 **target_node.tags,
             }
-            target_vertex = Vertex(self._add_identity_hash(target_data))
+            # Create target vertex with identity hash
+            identity_hash = self._get_identity_hash(target_data)
+            target_vertex = Vertex(target_data, hash_value=identity_hash)
 
             # Apply walking profile to get final cost
             way = self.parser.ways[osm_edge.way_id]
@@ -180,7 +185,9 @@ class OSMNetworkProvider:
             "lon": node.lon,
             **node.tags,
         }
-        return Vertex(self._add_identity_hash(node_data))
+        # Create vertex with identity hash
+        identity_hash = self._get_identity_hash(node_data)
+        return Vertex(node_data, hash_value=identity_hash)
 
     @property
     def node_count(self) -> int:
