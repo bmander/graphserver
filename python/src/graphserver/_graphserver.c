@@ -378,10 +378,24 @@ static PyObject* vertex_to_python_dict(const GraphserverVertex* vertex) {
         return NULL; // PyDict_New sets error on failure
     }
     
-    // Get key count first
+    // Add the vertex hash as a special _hash key
+    uint64_t vertex_hash = gs_vertex_hash(vertex);
+    PyObject* hash_obj = PyLong_FromUnsignedLongLong(vertex_hash);
+    if (!hash_obj) {
+        Py_DECREF(dict);
+        return NULL;
+    }
+    if (PyDict_SetItemString(dict, "_hash", hash_obj) < 0) {
+        Py_DECREF(hash_obj);
+        Py_DECREF(dict);
+        return NULL;
+    }
+    Py_DECREF(hash_obj);
+    
+    // Get key count for regular data
     size_t key_count = gs_vertex_get_key_count(vertex);
     if (key_count == 0) {
-        return dict; // Empty vertex, return empty dict
+        return dict; // Empty vertex, return dict with just hash
     }
     
     // Convert each key-value pair using index-based access
@@ -450,6 +464,11 @@ static PyObject* vertex_to_python_dict(const GraphserverVertex* vertex) {
         }
         
         Py_DECREF(py_value); // PyDict_SetItemString increments reference
+        
+        // Clean up retrieved value if it was a string (gets copied by C API)
+        if (gs_value.type == GS_VALUE_STRING) {
+            gs_value_destroy((GraphserverValue*)&gs_value);
+        }
     }
     
     return dict;
@@ -483,28 +502,69 @@ static GraphserverVertex* python_dict_to_vertex(PyObject* dict) {
         return NULL;
     }
     
-    GraphserverVertex* vertex = gs_vertex_create();
-    if (!vertex) {
-        PyErr_SetString(PyExc_MemoryError, "Failed to create vertex");
-        return NULL;
+    Py_ssize_t dict_size = PyDict_Size(dict);
+    
+    // Handle empty dictionary case
+    if (dict_size == 0) {
+        return gs_vertex_create(NULL, 0, NULL);
     }
     
+    // Check for optional hash parameter
+    uint64_t custom_hash = 0;
+    uint64_t* hash_ptr = NULL;
+    PyObject* hash_obj = PyDict_GetItemString(dict, "_hash");
+    if (hash_obj && PyLong_Check(hash_obj)) {
+        custom_hash = PyLong_AsUnsignedLongLong(hash_obj);
+        if (custom_hash == (uint64_t)-1 && PyErr_Occurred()) {
+            return NULL;
+        }
+        hash_ptr = &custom_hash;
+        dict_size--; // Don't include _hash in the key-value pairs
+    }
+    
+    // Allocate array for key-value pairs
+    GraphserverKeyPair* pairs = NULL;
+    if (dict_size > 0) {
+        pairs = malloc(dict_size * sizeof(GraphserverKeyPair));
+        if (!pairs) {
+            PyErr_NoMemory();
+            return NULL;
+        }
+    }
+    
+    // Convert Python dict to key-value pairs
     PyObject* key;
     PyObject* value;
     Py_ssize_t pos = 0;
+    size_t pair_index = 0;
     
-    // Iterate through all key-value pairs in the dictionary
     while (PyDict_Next(dict, &pos, &key, &value)) {
+        // Skip the _hash key if present
+        if (PyUnicode_Check(key)) {
+            const char* key_str = PyUnicode_AsUTF8(key);
+            if (key_str && strcmp(key_str, "_hash") == 0) {
+                continue;
+            }
+        }
+        
         // Key must be a string
         if (!PyUnicode_Check(key)) {
             PyErr_SetString(PyExc_TypeError, "Dictionary keys must be strings");
-            gs_vertex_destroy(vertex);
+            // Clean up any values we've already created
+            for (size_t i = 0; i < pair_index; i++) {
+                gs_value_destroy((GraphserverValue*)&pairs[i].value);
+            }
+            free(pairs);
             return NULL;
         }
         
         const char* key_str = PyUnicode_AsUTF8(key);
         if (!key_str) {
-            gs_vertex_destroy(vertex);
+            // Clean up and return error
+            for (size_t i = 0; i < pair_index; i++) {
+                gs_value_destroy((GraphserverValue*)&pairs[i].value);
+            }
+            free(pairs);
             return NULL;
         }
         
@@ -515,7 +575,11 @@ static GraphserverVertex* python_dict_to_vertex(PyObject* dict) {
             // Python int -> GraphserverValue int
             long long int_val = PyLong_AsLongLong(value);
             if (int_val == -1 && PyErr_Occurred()) {
-                gs_vertex_destroy(vertex);
+                // Clean up and return error
+                for (size_t i = 0; i < pair_index; i++) {
+                    gs_value_destroy((GraphserverValue*)&pairs[i].value);
+                }
+                free(pairs);
                 return NULL;
             }
             gs_value = gs_value_create_int((int64_t)int_val);
@@ -524,7 +588,11 @@ static GraphserverVertex* python_dict_to_vertex(PyObject* dict) {
             // Python float -> GraphserverValue float
             double float_val = PyFloat_AsDouble(value);
             if (float_val == -1.0 && PyErr_Occurred()) {
-                gs_vertex_destroy(vertex);
+                // Clean up and return error
+                for (size_t i = 0; i < pair_index; i++) {
+                    gs_value_destroy((GraphserverValue*)&pairs[i].value);
+                }
+                free(pairs);
                 return NULL;
             }
             gs_value = gs_value_create_float(float_val);
@@ -533,7 +601,11 @@ static GraphserverVertex* python_dict_to_vertex(PyObject* dict) {
             // Python str -> GraphserverValue string
             const char* str_val = PyUnicode_AsUTF8(value);
             if (!str_val) {
-                gs_vertex_destroy(vertex);
+                // Clean up and return error
+                for (size_t i = 0; i < pair_index; i++) {
+                    gs_value_destroy((GraphserverValue*)&pairs[i].value);
+                }
+                free(pairs);
                 return NULL;
             }
             gs_value = gs_value_create_string(str_val);
@@ -548,13 +620,21 @@ static GraphserverVertex* python_dict_to_vertex(PyObject* dict) {
             // Convert list to a simple string representation
             PyObject* str_repr = PyObject_Str(value);
             if (!str_repr) {
-                gs_vertex_destroy(vertex);
+                // Clean up and return error
+                for (size_t i = 0; i < pair_index; i++) {
+                    gs_value_destroy((GraphserverValue*)&pairs[i].value);
+                }
+                free(pairs);
                 return NULL;
             }
             const char* str_val = PyUnicode_AsUTF8(str_repr);
             if (!str_val) {
                 Py_DECREF(str_repr);
-                gs_vertex_destroy(vertex);
+                // Clean up and return error
+                for (size_t i = 0; i < pair_index; i++) {
+                    gs_value_destroy((GraphserverValue*)&pairs[i].value);
+                }
+                free(pairs);
                 return NULL;
             }
             gs_value = gs_value_create_string(str_val);
@@ -562,17 +642,32 @@ static GraphserverVertex* python_dict_to_vertex(PyObject* dict) {
             
         } else {
             PyErr_Format(PyExc_TypeError, "Unsupported value type for key '%s'", key_str);
-            gs_vertex_destroy(vertex);
+            // Clean up and return error
+            for (size_t i = 0; i < pair_index; i++) {
+                gs_value_destroy((GraphserverValue*)&pairs[i].value);
+            }
+            free(pairs);
             return NULL;
         }
         
-        // Set the key-value pair in the vertex
-        GraphserverResult result = gs_vertex_set_kv(vertex, key_str, gs_value);
-        if (result != GS_SUCCESS) {
-            PyErr_SetString(PyExc_RuntimeError, "Failed to set vertex key-value pair");
-            gs_vertex_destroy(vertex);
-            return NULL;
-        }
+        // Store the key-value pair
+        pairs[pair_index].key = key_str;
+        pairs[pair_index].value = gs_value;
+        pair_index++;
+    }
+    
+    // Create immutable vertex with all pairs at once
+    GraphserverVertex* vertex = gs_vertex_create(pairs, pair_index, hash_ptr);
+    
+    // Clean up the pairs array (vertex makes its own copies)
+    for (size_t i = 0; i < pair_index; i++) {
+        gs_value_destroy((GraphserverValue*)&pairs[i].value);
+    }
+    free(pairs);
+    
+    if (!vertex) {
+        PyErr_SetString(PyExc_MemoryError, "Failed to create vertex");
+        return NULL;
     }
     
     return vertex;
@@ -929,6 +1024,23 @@ static GraphserverVertex* python_vertex_object_to_vertex(PyObject* vertex_obj) {
     Py_DECREF(to_dict_method);
     if (!dict) {
         return NULL;
+    }
+    
+    // Check if the Vertex object has a custom hash attribute
+    PyObject* hash_attr = PyObject_GetAttrString(vertex_obj, "_custom_hash");
+    if (hash_attr && PyLong_Check(hash_attr)) {
+        // Add the hash to the dictionary for python_dict_to_vertex to use
+        if (PyDict_SetItemString(dict, "_hash", hash_attr) < 0) {
+            Py_DECREF(hash_attr);
+            Py_DECREF(dict);
+            return NULL;
+        }
+    }
+    if (hash_attr) {
+        Py_DECREF(hash_attr);
+    } else {
+        // Clear the AttributeError from trying to get _custom_hash
+        PyErr_Clear();
     }
     
     // Convert dictionary to C vertex

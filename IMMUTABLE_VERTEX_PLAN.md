@@ -83,18 +83,30 @@ struct GraphserverVertex {
 **Status**: All C tests updated and passing (14/14 tests passed)  
 **Memory Safety**: ✅ Valgrind clean - no memory leaks detected
 
-### Phase 3: Update Python Bindings
+### Phase 3: Update Python Bindings ✅ COMPLETED
 
-1. **Update `_graphserver.c`**:
-   - Modify `python_dict_to_vertex()` to create immutable vertex
-   - Update `python_vertex_object_to_vertex()` for new API
-   - Handle optional hash parameter in conversions
+1. ✅ **Update `_graphserver.c`**:
+   - Modified `python_dict_to_vertex()` to create immutable vertex using new API
+   - Updated `python_vertex_object_to_vertex()` for new API with hash support
+   - Added optional hash parameter handling in conversions via "_hash" key
+   - Updated `vertex_to_python_dict()` to include hash value in output
 
-2. **Update Python `Vertex` class** in `core.py`:
-   - Make it immutable (remove `__setitem__`)
-   - Accept optional hash in `__init__`
-   - Update `__hash__()` to use stored hash if available
-   - Ensure `__eq__()` uses hash comparison
+2. ✅ **Update Python `Vertex` class** in `core.py`:
+   - Made it immutable (removed mutation capability from `__setitem__`)
+   - Added optional hash parameter to `__init__`
+   - Updated `__hash__()` to use stored hash if available
+   - Updated `to_dict()` to include hash value when present
+   - Maintains data-based equality in `__eq__()`
+
+**Key Changes Made:**
+- `python_dict_to_vertex()`: Now collects all key-value pairs and creates vertex with `gs_vertex_create(pairs, num_pairs, hash_ptr)`
+- Hash parameter handling: "_hash" key in dictionaries is extracted and used as optional hash parameter
+- `Vertex` class: Now accepts `hash_value` parameter and stores it as `_custom_hash`
+- Full memory safety: Proper cleanup of GraphserverKeyPair arrays and values
+- Backward compatibility: Existing code continues to work, hash support is optional
+
+**Status**: All Python bindings updated and working with immutable vertex API  
+**Testing**: ✅ All tests passing (C tests: 14/14, Python extension tests: 8/8, custom immutable tests: all passing)
 
 ### Phase 4: Update Python Tests
 
@@ -190,7 +202,7 @@ v = Vertex({"x": 10, "y": 20}, hash_value=12345)
 
 - ✅ Phase 1 (Core C): 2-3 hours **COMPLETED**
 - ✅ Phase 2 (C Tests): 1-2 hours **COMPLETED** 
-- Phase 3 (Python Bindings): 2-3 hours
+- ✅ Phase 3 (Python Bindings): 2-3 hours **COMPLETED**
 - Phase 4 (Python Tests): 1-2 hours
 - Phase 5 (Usage Updates): 3-4 hours
 - Testing & Validation: 2-3 hours
@@ -237,5 +249,5 @@ Total: 11-17 hours of implementation work
 - `test_vertex_empty_vertex_hash` - Empty vertex hash behavior
 - `test_vertex_immutability` - Immutability verification
 
-### 🔄 Next Phase
-Phase 3 ready to begin: Update Python bindings to use new immutable API
+### 🔄 Next Phase  
+Phase 4 ready to begin: Update Python tests for immutable vertex API

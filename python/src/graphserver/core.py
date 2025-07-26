@@ -12,19 +12,30 @@ except ImportError:
 
 
 class Vertex:
-    """Vertex object representing a state in the planning graph.
+    """Immutable vertex object representing a state in the planning graph.
 
-    Provides dictionary-like access with square bracket syntax for
-    getting and setting vertex attributes.
+    Provides dictionary-like read-only access with square bracket syntax for
+    getting vertex attributes. Once created, vertex data cannot be modified.
     """
 
-    def __init__(self, data: Mapping[str, Any] | None = None) -> None:
-        """Initialize vertex with optional data.
+    def __init__(
+        self, data: Mapping[str, Any] | None = None, *, hash_value: int | None = None
+    ) -> None:
+        """Initialize immutable vertex with optional data and hash.
 
         Args:
             data: Initial vertex attributes as key-value pairs
+            hash_value: Optional pre-computed hash value for this vertex
         """
-        self._data: dict[str, Any] = dict(data) if data else {}
+        # Extract _hash from data if present and hash_value not explicitly provided
+        if data and "_hash" in data and hash_value is None:
+            data_dict = dict(data)
+            hash_value = data_dict.pop("_hash")
+            self._data: dict[str, Any] = data_dict
+        else:
+            self._data: dict[str, Any] = dict(data) if data else {}
+
+        self._custom_hash: int | None = hash_value
 
     def __getitem__(self, key: str) -> Any:
         """Get vertex attribute using square bracket syntax.
@@ -41,13 +52,13 @@ class Vertex:
         return self._data[key]
 
     def __setitem__(self, key: str, value: Any) -> None:
-        """Set vertex attribute using square bracket syntax.
+        """Vertex is immutable - setting attributes is not allowed.
 
-        Args:
-            key: Attribute name
-            value: Attribute value
+        Raises:
+            TypeError: Always, since vertices are immutable
         """
-        self._data[key] = value
+        msg = "Vertex objects are immutable"
+        raise TypeError(msg)
 
     def __contains__(self, key: str) -> bool:
         """Check if vertex has attribute."""
@@ -77,9 +88,12 @@ class Vertex:
         """Convert to plain dictionary.
 
         Returns:
-            Copy of vertex data as dictionary
+            Copy of vertex data as dictionary, including _hash if present
         """
-        return self._data.copy()
+        result = self._data.copy()
+        if self._custom_hash is not None:
+            result["_hash"] = self._custom_hash
+        return result
 
     def __repr__(self) -> str:
         """String representation of vertex."""
@@ -92,7 +106,9 @@ class Vertex:
         return self._data == other._data
 
     def __hash__(self) -> int:
-        """Hash value for vertex based on its data."""
+        """Hash value for vertex based on its data or custom hash."""
+        if self._custom_hash is not None:
+            return self._custom_hash
         return hash(tuple(sorted(self._data.items())))
 
 
