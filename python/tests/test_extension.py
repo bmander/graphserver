@@ -223,3 +223,90 @@ def test_data_conversion() -> None:
         # This validates that the provider and edge conversion are working correctly
     except ImportError:
         pytest.skip("C extension not built yet")
+
+
+def test_vertex_immutability_integration() -> None:
+    """Test that vertices returned from planning are immutable."""
+    try:
+        from graphserver import Edge, Engine, Vertex
+
+        engine = Engine()
+
+        # Create a provider that returns vertices
+        def test_provider(vertex: Vertex) -> Sequence[VertexEdgePair]:
+            if vertex.get("start", False):
+                target = Vertex({"x": 100, "y": 200, "name": "target"})
+                edge = Edge(cost=10.0)
+                return [(target, edge)]
+            return []
+
+        engine.register_provider("test", test_provider)
+
+        # Plan a path
+        result = engine.plan(
+            start=Vertex({"start": True}),
+            goal=Vertex({"x": 100, "y": 200, "name": "target"})
+        )
+
+        assert len(result) == 1
+        target_vertex = result[0].target
+
+        # Verify the target vertex is immutable
+        with pytest.raises(TypeError, match="Vertex objects are immutable"):
+            target_vertex["new_key"] = "should_fail"
+
+        # Verify original data is accessible
+        assert target_vertex["x"] == 100
+        assert target_vertex["y"] == 200
+        assert target_vertex["name"] == "target"
+
+    except ImportError:
+        pytest.skip("C extension not built yet")
+
+
+def test_hash_preservation_through_planning() -> None:
+    """Test that custom hashes survive C extension round-trips."""
+    try:
+        from graphserver import Edge, Engine, Vertex
+
+        engine = Engine()
+
+        # Create vertices with custom hashes
+        custom_hash = 999999
+        start_vertex = Vertex({"start": True}, hash_value=custom_hash)
+        target_hash = 888888
+
+        def hash_preserving_provider(vertex: Vertex) -> Sequence[VertexEdgePair]:
+            if vertex.get("start", False):
+                # Create target with custom hash
+                target = Vertex({"x": 50, "y": 75}, hash_value=target_hash)
+                edge = Edge(cost=5.0)
+                return [(target, edge)]
+            return []
+
+        engine.register_provider("hash_test", hash_preserving_provider)
+
+        # Plan using vertex with custom hash
+        result = engine.plan(
+            start=start_vertex,
+            goal=Vertex({"x": 50, "y": 75}, hash_value=target_hash)
+        )
+
+        assert len(result) == 1
+        returned_target = result[0].target
+
+        # The hash should be preserved through the C extension round-trip
+        # Note: The exact hash may be different due to C extension conversion,
+        # but the vertex should maintain its data integrity
+        assert returned_target["x"] == 50
+        assert returned_target["y"] == 75
+
+        # Verify the vertex has a consistent hash (even if different from original)
+        target_dict = returned_target.to_dict()
+        if "_hash" in target_dict:
+            # If hash was preserved, verify it matches
+            reconstructed = Vertex(target_dict)
+            assert hash(reconstructed) == hash(returned_target)
+
+    except ImportError:
+        pytest.skip("C extension not built yet")

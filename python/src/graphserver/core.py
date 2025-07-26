@@ -403,7 +403,7 @@ class PathResult:
         self._edges: list[PathEdge] = []
         for edge_data in path_data:
             target_data = edge_data.get("target", {})
-            target_vertex = Vertex(target_data) if target_data else Vertex()
+            target_vertex = Vertex(target_data or {})
             cost = edge_data.get("cost", 0.0)
             metadata = {
                 k: v for k, v in edge_data.items() if k not in ("target", "cost")

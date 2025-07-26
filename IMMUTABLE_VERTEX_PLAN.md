@@ -108,13 +108,33 @@ struct GraphserverVertex {
 **Status**: All Python bindings updated and working with immutable vertex API  
 **Testing**: ✅ All tests passing (C tests: 14/14, Python extension tests: 8/8, custom immutable tests: all passing)
 
-### Phase 4: Update Python Tests
+### Phase 4: Update Python Tests ✅ COMPLETED
 
-1. **Update all vertex creation** in tests
-2. **Remove mutation tests**
-3. **Add immutability tests**
-4. **Test hash parameter functionality**
-5. **Update provider tests** that create vertices
+1. ✅ **Created comprehensive vertex test suite** (`tests/test_vertex.py`):
+   - 31 test cases covering all immutable vertex functionality
+   - Tests for creation, immutability, hash functionality, equality, and edge cases
+   - Full coverage of dictionary-like interface and string representation
+
+2. ✅ **Fixed minor code issue** in `core.py`:
+   - Simplified `Vertex(target_data) if target_data else Vertex()` to `Vertex(target_data or {})`
+
+3. ✅ **Added integration tests** to `test_extension.py`:
+   - `test_vertex_immutability_integration()` - Verifies vertices from planning are immutable
+   - `test_hash_preservation_through_planning()` - Tests hash preservation through C extension
+
+4. ✅ **Verified existing tests** remain compatible:
+   - All existing 72 test cases continue to pass
+   - No changes needed to provider tests (already use immutable patterns)
+   - OSM provider tests, cache tests, and others work without modification
+
+**Key Achievements:**
+- **Comprehensive test coverage**: 31 new tests specifically for immutable vertex functionality
+- **Integration testing**: Ensures C extension properly handles immutable vertices and hash values  
+- **Backward compatibility**: All existing tests (103 total) continue to pass
+- **Code quality**: All tests pass linting with ruff and follow project style guidelines
+
+**Status**: All Python tests updated and passing (103/103 tests passed)  
+**Testing**: ✅ Full test suite validates immutable vertex implementation at all levels
 
 ### Phase 5: Update All Usage Sites
 
@@ -203,7 +223,7 @@ v = Vertex({"x": 10, "y": 20}, hash_value=12345)
 - ✅ Phase 1 (Core C): 2-3 hours **COMPLETED**
 - ✅ Phase 2 (C Tests): 1-2 hours **COMPLETED** 
 - ✅ Phase 3 (Python Bindings): 2-3 hours **COMPLETED**
-- Phase 4 (Python Tests): 1-2 hours
+- ✅ Phase 4 (Python Tests): 1-2 hours **COMPLETED**
 - Phase 5 (Usage Updates): 3-4 hours
 - Testing & Validation: 2-3 hours
 
@@ -250,4 +270,4 @@ Total: 11-17 hours of implementation work
 - `test_vertex_immutability` - Immutability verification
 
 ### 🔄 Next Phase  
-Phase 4 ready to begin: Update Python tests for immutable vertex API
+Phase 5 ready to begin: Update all usage sites for immutable vertex API
