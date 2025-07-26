@@ -19,6 +19,7 @@ dev = [
     "ruff",
     "black",
 ]
+web = []
 osm = [
     "osmium>=4.0.2",
     "shapely>=2.0",
@@ -30,6 +31,9 @@ transit = [
     "rtree>=1.4.0",
     "pyproj>=3.7",
 ]
+
+[project.scripts]
+graphserver-web = "graphserver.web:main"
 
 [tool.scikit-build]
 cmake.build-type = "Release"
