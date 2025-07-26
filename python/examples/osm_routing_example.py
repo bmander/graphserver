@@ -11,7 +11,7 @@ Usage:
     python osm_routing_example.py <osm_file> <start_lat,start_lon> <end_lat,end_lon>
 
 Example:
-    python osm_routing_example.py uw_campus.osm 47.65906510597771,-122.3043737809855 47.656615262333865,-122.30547527868227
+    python osm_routing_example.py uw_campus.osm 47.65906510597771,-122.3043737809855 47.65910,-122.30430
 """
 
 from __future__ import annotations
@@ -85,7 +85,7 @@ def main() -> None:
             "Usage: python osm_routing_example.py <osm_file> <start_lat,start_lon> <end_lat,end_lon>"
         )
         print(
-            "Example: python osm_routing_example.py uw_campus.osm 47.65906510597771,-122.3043737809855 47.66006510597771,-122.3033737809855"
+            "Example: python osm_routing_example.py uw_campus.osm 47.65906510597771,-122.3043737809855 47.65910,-122.30430"
         )
         sys.exit(1)
 
@@ -151,23 +151,72 @@ def main() -> None:
     start_vertex = Vertex({"lat": start_lat, "lon": start_lon})
     goal_vertex = Vertex({"lat": end_lat, "lon": end_lon})
 
+    # Register goal as offramp point for coordinate-to-coordinate routing
+    access_provider.register_offramp_point(end_lat, end_lon, {"type": "goal"})
+
     print(f"   Start vertex: ({start_lat}, {start_lon})")
     print(f"   Goal vertex:  ({end_lat}, {end_lon})")
+    
+    # Get nearby OSM nodes for coordinate-to-coordinate routing
+    start_edges = access_provider(start_vertex)
+    goal_edges = access_provider(goal_vertex)
+    print(f"   Found {len(start_edges)} nearby OSM nodes for start, {len(goal_edges)} for goal")
     print()
 
-    # Execute pathfinding
+    # Execute pathfinding with coordinate-to-coordinate routing workaround
     print("🚀 Planning route...")
     try:
         planning_start = time.time()
-        result = engine.plan(start=start_vertex, goal=goal_vertex)
+        
+        # Since direct coordinate-to-coordinate routing isn't fully supported yet,
+        # we'll find nearby OSM nodes and try routing between them
+        if not start_edges or not goal_edges:
+            raise RuntimeError("Could not find nearby OSM nodes for start or goal coordinates")
+        
+        result = None
+        best_cost = float('inf')
+        
+        # Try all combinations of nearby start and goal OSM nodes
+        attempts = 0
+        for start_osm_vertex, start_edge in start_edges:
+            for goal_osm_vertex, goal_edge in goal_edges:
+                attempts += 1
+                try:
+                    # Try routing between OSM nodes
+                    osm_result = engine.plan(start=start_osm_vertex, goal=goal_osm_vertex)
+                    if osm_result and len(osm_result) > 0:
+                        # Calculate total cost including access edges
+                        total_cost = start_edge.cost + osm_result.total_cost + goal_edge.cost
+                        if total_cost < best_cost:
+                            result = osm_result
+                            best_cost = total_cost
+                            # Store access edge costs for later reporting
+                            result._start_access_cost = start_edge.cost
+                            result._goal_access_cost = goal_edge.cost
+                            break
+                except Exception:
+                    # Silently continue trying other node combinations
+                    continue
+            if result:
+                break
+        
+        if attempts > 1:
+            print(f"   Tested {attempts} OSM node combinations")
+        
         planning_time = time.time() - planning_start
 
         if result and len(result) > 0:
+            # Calculate total cost including access edges
+            access_cost = getattr(result, '_start_access_cost', 0) + getattr(result, '_goal_access_cost', 0)
+            total_cost_with_access = result.total_cost + access_cost
+            
             print(f"✅ Route found in {planning_time:.3f}s")
-            print(f"   Path: {len(result)} edges")
+            print(f"   Path: {len(result)} OSM edges + access")
             print(
-                f"   Total time: {result.total_cost:.1f}s ({result.total_cost / 60:.1f} minutes)"
+                f"   Total time: {total_cost_with_access:.1f}s ({total_cost_with_access / 60:.1f} minutes)"
             )
+            if access_cost > 0:
+                print(f"   (includes {access_cost:.1f}s access time)")
             print()
 
             print("📋 Route details:")

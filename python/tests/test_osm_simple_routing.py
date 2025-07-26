@@ -548,7 +548,8 @@ class TestSimpleOSMRouting:
         # Both vertices should generate the same edges (same nearby nodes)
         edges1 = access_provider(same_vertex1)
         edges2 = access_provider(same_vertex2)
-        assert len(edges1) > 0 and len(edges2) > 0
+        assert len(edges1) > 0
+        assert len(edges2) > 0
 
         # Pathfinding should work (or return empty path for same location)
         result = engine.plan(start=same_vertex1, goal=same_vertex2)
