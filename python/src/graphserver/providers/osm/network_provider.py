@@ -77,11 +77,6 @@ class OSMNetworkProvider:
         # Prioritize OSM node ID over coordinates if both are present
         if "osm_node_id" in vertex_data:
             hash_string = f"osm:{vertex_data['osm_node_id']}"
-        elif "lat" in vertex_data and "lon" in vertex_data:
-            # Round coordinates to ~1 meter precision for matching tolerance
-            rounded_lat = round(vertex_data["lat"], 5)
-            rounded_lon = round(vertex_data["lon"], 5)
-            hash_string = f"coord:{rounded_lat},{rounded_lon}"
         else:
             return None
 
@@ -133,8 +128,6 @@ class OSMNetworkProvider:
             # Create target vertex
             target_data = {
                 "osm_node_id": target_node.id,
-                "lat": target_node.lat,
-                "lon": target_node.lon,
                 **target_node.tags,
             }
             # Create target vertex with identity hash
@@ -181,8 +174,6 @@ class OSMNetworkProvider:
         node = self.parser.nodes[node_id]
         node_data = {
             "osm_node_id": node.id,
-            "lat": node.lat,
-            "lon": node.lon,
             **node.tags,
         }
         # Create vertex with identity hash

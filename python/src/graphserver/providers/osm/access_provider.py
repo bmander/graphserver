@@ -227,8 +227,6 @@ class OSMAccessProvider:
             # Create target vertex with OSM node information
             target_data = {
                 "osm_node_id": node.id,
-                "lat": node.lat,
-                "lon": node.lon,
                 **node.tags,  # Include any relevant OSM tags
             }
             identity_hash = self._get_identity_hash(target_data)
@@ -308,6 +306,8 @@ class OSMAccessProvider:
         Returns:
             Vertex for nearest node or None if no node found
         """
+
+        # TODO use this method in __call__ for coordinate vertices
         if self.spatial_index is not None:
             node = self.spatial_index.find_nearest_node(lat, lon, self.search_radius_m)
         else:
@@ -319,8 +319,6 @@ class OSMAccessProvider:
 
         node_data = {
             "osm_node_id": node.id,
-            "lat": node.lat,
-            "lon": node.lon,
             **node.tags,
         }
         identity_hash = self._get_identity_hash(node_data)
