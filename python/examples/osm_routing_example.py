@@ -144,16 +144,15 @@ def main() -> None:
     engine.register_provider("osm_network", network_provider)
     engine.register_provider("osm_access", access_provider)
 
-    # Register access points
-    print("🔗 Registering access points...")
-    start_ap_id = access_provider.register_access_point(start_lat, start_lon)
-    goal_ap_id = access_provider.register_access_point(end_lat, end_lon)
+    # Create vertices directly from coordinates (new simplified API)
+    print("🔗 Creating route vertices...")
+    from graphserver import Vertex
+    
+    start_vertex = Vertex({"lat": start_lat, "lon": start_lon})
+    goal_vertex = Vertex({"lat": end_lat, "lon": end_lon})
 
-    start_vertex = access_provider.get_access_point_vertex(start_ap_id)
-    goal_vertex = access_provider.get_access_point_vertex(goal_ap_id)
-
-    print(f"   Start access point: {start_ap_id}")
-    print(f"   Goal access point:  {goal_ap_id}")
+    print(f"   Start vertex: ({start_lat}, {start_lon})")
+    print(f"   Goal vertex:  ({end_lat}, {end_lon})")
     print()
 
     # Execute pathfinding
@@ -179,8 +178,8 @@ def main() -> None:
                 # Determine target type
                 if "osm_node_id" in target:
                     target_desc = f"OSM node {target['osm_node_id']}"
-                elif "access_point_id" in target:
-                    target_desc = f"access point {target['access_point_id']}"
+                elif "lat" in target and "lon" in target:
+                    target_desc = f"coordinate ({target['lat']:.5f}, {target['lon']:.5f})"
                 else:
                     target_desc = "unknown target"
 

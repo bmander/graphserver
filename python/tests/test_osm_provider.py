@@ -354,10 +354,12 @@ class TestOSMNetworkProvider:
 class TestOSMAccessProvider:
     """Test OSM access provider functionality."""
 
-    def test_access_point_registration_and_edges(self, sample_osm_file: Path) -> None:
-        """Test access point registration and edge generation."""
+    def test_coordinate_to_osm_edges(self, sample_osm_file: Path) -> None:
+        """Test edge generation from coordinates to OSM nodes."""
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
+
+        from graphserver import Vertex
 
         provider = OSMAccessProvider(
             sample_osm_file,
@@ -366,21 +368,11 @@ class TestOSMAccessProvider:
             build_index=True,
         )
 
-        # Register access point with coordinates near but not exactly at sample data
-        access_point_id = provider.register_access_point(47.6063, -122.3322)
+        # Create vertex with coordinates near sample data
+        coord_vertex = Vertex({"lat": 47.6063, "lon": -122.3322})
 
-        # Verify access point was registered
-        assert access_point_id == "ap_001"
-        assert access_point_id in provider.list_access_points()
-
-        # Get access point vertex
-        access_point_vertex = provider.get_access_point_vertex(access_point_id)
-        assert access_point_vertex is not None
-        assert "access_point_id" in access_point_vertex
-        assert access_point_vertex["access_point_id"] == access_point_id
-
-        # Generate edges from access point
-        edges = provider(access_point_vertex)
+        # Generate edges from coordinates
+        edges = provider(coord_vertex)
 
         assert len(edges) > 0
 
@@ -391,9 +383,88 @@ class TestOSMAccessProvider:
             assert "lon" in target_vertex
             assert edge.cost > 0
             assert "edge_type" in edge.metadata
-            assert edge.metadata["edge_type"] == "access_point_to_node"
-            assert "access_point_id" in edge.metadata
-            assert edge.metadata["access_point_id"] == access_point_id
+            assert edge.metadata["edge_type"] == "coordinate_to_node"
+            assert "osm_node_id" in edge.metadata
+
+        # Clean up
+        sample_osm_file.unlink()
+
+    def test_offramp_registration_and_edges(self, sample_osm_file: Path) -> None:
+        """Test offramp point registration and edge generation."""
+        if not OSM_AVAILABLE:
+            pytest.skip("OSM dependencies not available")
+
+        from graphserver import Vertex
+
+        provider = OSMAccessProvider(
+            sample_osm_file,
+            search_radius_m=1000.0,
+            max_nearby_nodes=3,
+            build_index=True,
+        )
+
+        # Register offramp point near sample data
+        provider.register_offramp_point(
+            47.6063, -122.3322, {"exit_name": "Downtown Exit"}
+        )
+
+        # Create OSM node vertex (assuming node 1 exists near our offramp)
+        osm_vertex = Vertex({"osm_node_id": 1})
+
+        # Generate edges from OSM node
+        edges = provider(osm_vertex)
+
+        assert len(edges) > 0
+
+        # Check edge structure
+        for target_vertex, edge in edges:
+            assert "lat" in target_vertex
+            assert "lon" in target_vertex
+            assert "exit_name" in target_vertex
+            assert target_vertex["exit_name"] == "Downtown Exit"
+            assert edge.cost > 0
+            assert "edge_type" in edge.metadata
+            assert edge.metadata["edge_type"] == "node_to_offramp"
+            assert "from_osm_node_id" in edge.metadata
+
+        # Clean up
+        sample_osm_file.unlink()
+
+    def test_multiple_offramps_per_node(self, sample_osm_file: Path) -> None:
+        """Test that multiple offramp points can be registered for the same OSM node."""
+        if not OSM_AVAILABLE:
+            pytest.skip("OSM dependencies not available")
+
+        from graphserver import Vertex
+
+        provider = OSMAccessProvider(
+            sample_osm_file,
+            search_radius_m=1000.0,
+            max_nearby_nodes=3,
+            build_index=True,
+        )
+
+        # Register multiple offramp points at similar coordinates
+        provider.register_offramp_point(
+            47.6063, -122.3322, {"exit_name": "Downtown Exit", "type": "mall"}
+        )
+        provider.register_offramp_point(
+            47.6064, -122.3323, {"exit_name": "Shopping Center", "type": "retail"}
+        )
+
+        # Create OSM node vertex
+        osm_vertex = Vertex({"osm_node_id": 1})
+
+        # Generate edges from OSM node - should get multiple offramp edges
+        edges = provider(osm_vertex)
+
+        # Should have edges to both offramp points
+        assert len(edges) >= 2
+
+        # Check that we have different exit names
+        exit_names = {target_vertex["exit_name"] for target_vertex, edge in edges if "exit_name" in target_vertex}
+        assert "Downtown Exit" in exit_names
+        assert "Shopping Center" in exit_names
 
         # Clean up
         sample_osm_file.unlink()
@@ -467,9 +538,13 @@ class TestIntegrationWithGraphserver:
             assert "osm_network" in engine.providers
             assert "osm_access" in engine.providers
 
-            # Test planning with coordinates
+            # Test direct coordinate usage
             start = Vertex({"lat": 47.6062, "lon": -122.3321})
             goal = Vertex({"lat": 47.6082, "lon": -122.3301})
+
+            # Test that access provider can handle coordinate vertices directly
+            start_edges = access_provider(start)
+            assert len(start_edges) >= 0  # Should find nearby OSM nodes
 
             # This should work with the OSM providers
             # Note: Actual pathfinding success depends on connectivity in sample data

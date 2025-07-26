@@ -35,16 +35,15 @@ except ImportError as e:
 
 
 def create_test_routes(
-    access_provider: OSMAccessProvider, num_routes: int = 10
-) -> list[tuple[str, str]]:
+    num_routes: int = 10
+) -> list[tuple[tuple[float, float], tuple[float, float]]]:
     """Create test route pairs for benchmarking.
 
     Args:
-        access_provider: Access provider to register access points with
         num_routes: Number of route pairs to create
 
     Returns:
-        List of (start_ap_id, goal_ap_id) access point ID pairs
+        List of ((start_lat, start_lon), (goal_lat, goal_lon)) coordinate pairs
     """
     # For UW campus, use coordinates in connected areas based on working examples
     campus_routes = [
@@ -80,13 +79,7 @@ def create_test_routes(
     routes = []
     for i in range(min(num_routes, len(campus_routes))):
         start_coords, goal_coords = campus_routes[i]
-        start_ap_id = access_provider.register_access_point(
-            start_coords[0], start_coords[1]
-        )
-        goal_ap_id = access_provider.register_access_point(
-            goal_coords[0], goal_coords[1]
-        )
-        routes.append((start_ap_id, goal_ap_id))
+        routes.append((start_coords, goal_coords))
 
     return routes
 
@@ -124,8 +117,7 @@ def _load_providers(
 
 def _benchmark_engine(
     engine: Engine,
-    access_provider: OSMAccessProvider,
-    routes: list[tuple[str, str]],
+    routes: list[tuple[tuple[float, float], tuple[float, float]]],
     repetitions: int,
 ) -> tuple[list[float], int, dict]:
     """Benchmark a planning engine."""
@@ -137,11 +129,12 @@ def _benchmark_engine(
         print(f"   Repetition {rep + 1}/{repetitions}...")
         rep_start = time.time()
 
-        for i, (start_ap_id, goal_ap_id) in enumerate(routes):
+        for i, (start_coords, goal_coords) in enumerate(routes):
             route_start = time.time()
             try:
-                start_vertex = access_provider.get_access_point_vertex(start_ap_id)
-                goal_vertex = access_provider.get_access_point_vertex(goal_ap_id)
+                from graphserver import Vertex
+                start_vertex = Vertex({"lat": start_coords[0], "lon": start_coords[1]})
+                goal_vertex = Vertex({"lat": goal_coords[0], "lon": goal_coords[1]})
                 result = engine.plan(start=start_vertex, goal=goal_vertex)
                 if result and len(result) > 0:
                     successful += 1
@@ -217,7 +210,7 @@ def benchmark_routing_performance(
         return {}
 
     # Create test routes
-    routes = create_test_routes(access_provider, num_routes)
+    routes = create_test_routes(num_routes)
     print(f"\\n📍 Created {len(routes)} test routes for benchmarking")
 
     results = {
@@ -238,7 +231,7 @@ def benchmark_routing_performance(
     no_cache_engine.register_provider("osm_network", network_provider)
     no_cache_engine.register_provider("osm_access", access_provider)
     no_cache_times, no_cache_successful, no_cache_stats = _benchmark_engine(
-        no_cache_engine, access_provider, routes, repetitions
+        no_cache_engine, routes, repetitions
     )
 
     # Benchmark WITH caching
@@ -247,7 +240,7 @@ def benchmark_routing_performance(
     cache_engine.register_provider("osm_network", network_provider)
     cache_engine.register_provider("osm_access", access_provider)
     cache_times, cache_successful, cache_stats = _benchmark_engine(
-        cache_engine, access_provider, routes, repetitions
+        cache_engine, routes, repetitions
     )
 
     # Calculate performance metrics
