@@ -286,7 +286,9 @@ class TestSimpleOSMRouting:
         # Test the new simplified access provider functionality
         # 1. Verify coordinate-to-OSM-node edges work
         start_onramps = access_provider(start_vertex)
-        assert len(start_onramps) > 0, "Should generate edges from start coordinate to OSM nodes"
+        assert len(start_onramps) > 0, (
+            "Should generate edges from start coordinate to OSM nodes"
+        )
 
         # 2. Verify that goal coordinate also generates edges to OSM nodes
         goal_onramps = access_provider(goal_vertex)
@@ -295,16 +297,12 @@ class TestSimpleOSMRouting:
         )
 
         # 3. For coordinate-to-coordinate routing, register goal as offramp
-        access_provider.register_offramp_point(
-            0.0001, 0.0011, {"destination": "goal"}
-        )
+        access_provider.register_offramp_point(0.0001, 0.0011, {"destination": "goal"})
 
         # Test that OSM nodes near the goal now have offramp edges
         node2_vertex = Vertex({"osm_node_id": 2})
         offramps_from_2 = access_provider(node2_vertex)
-        assert len(offramps_from_2) > 0, (
-            "Node 2 should have offramp to goal coordinate"
-        )
+        assert len(offramps_from_2) > 0, "Node 2 should have offramp to goal coordinate"
 
         # Clean up
         access_provider.clear_offramp_points()
@@ -349,7 +347,7 @@ class TestSimpleOSMRouting:
         # Validate that both vertices can generate edges to OSM nodes
         start_edges = access_provider(start_vertex)
         goal_edges = access_provider(goal_vertex)
-        
+
         assert len(start_edges) > 0, "Start vertex should generate edges to OSM nodes"
         assert len(goal_edges) > 0, "Goal vertex should generate edges to OSM nodes"
 
@@ -452,15 +450,13 @@ class TestSimpleOSMRouting:
         self._validate_coordinate_vertices(start_vertex, goal_coordinate_vertex)
 
         # Step 5: Register goal as offramp point for routing
-        access_provider.register_offramp_point(
-            0.0001, 0.0011, {"destination": "goal"}
-        )
-        
+        access_provider.register_offramp_point(0.0001, 0.0011, {"destination": "goal"})
+
         # Verify offramp registration worked by checking OSM node 2 has offramps
         node2_vertex = Vertex({"osm_node_id": 2})
         offramps = access_provider(node2_vertex)
         assert len(offramps) > 0, "Node 2 should have offramp edges"
-        
+
         # Use the original coordinate vertex for engine.plan() to demonstrate
         # direct coordinate-to-coordinate routing
         goal_vertex = goal_coordinate_vertex
@@ -468,36 +464,37 @@ class TestSimpleOSMRouting:
         # Step 6: Debug the routing components before pathfinding
         print(f"Start coordinate vertex: {start_vertex.to_dict()}")
         print(f"Goal coordinate vertex: {goal_vertex.to_dict()}")
-        
+
         # Check start vertex edges
         start_edges = access_provider(start_vertex)
         print(f"Start coordinate has {len(start_edges)} edges to OSM nodes")
-        
+
         # Check if we can route between OSM nodes
         if start_edges:
             first_osm_vertex = start_edges[0][0]
             print(f"First OSM vertex: {first_osm_vertex.to_dict()}")
             osm_edges = network_provider(first_osm_vertex)
             print(f"First OSM node has {len(osm_edges)} network edges")
-        
+
         # Try direct coordinate-to-coordinate pathfinding
         try:
             import time
+
             planning_start = time.time()
             result = engine.plan(start=start_vertex, goal=goal_vertex)
             planning_time = time.time() - planning_start
-            
+
             print("✅ Direct coordinate-to-coordinate pathfinding succeeded!")
             print(f"   Path: {len(result)} edges, Cost: {result.total_cost:.1f}s")
             print(f"   Planning time: {planning_time:.3f}s")
-            
+
         except RuntimeError as e:
             print(f"❌ Direct coordinate pathfinding failed: {e}")
             print("   This demonstrates the components work individually")
             print("   Direct coord-to-coord routing may need engine-level work")
 
         print("✅ Minimal workflow components validated successfully!")
-        
+
         # Clean up
         access_provider.clear_offramp_points()
         simple_osm_file.unlink()
@@ -552,7 +549,7 @@ class TestSimpleOSMRouting:
         edges1 = access_provider(same_vertex1)
         edges2 = access_provider(same_vertex2)
         assert len(edges1) > 0 and len(edges2) > 0
-        
+
         # Pathfinding should work (or return empty path for same location)
         result = engine.plan(start=same_vertex1, goal=same_vertex2)
         assert result is not None  # Should return a result, even if empty

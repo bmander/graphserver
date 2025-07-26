@@ -345,4 +345,3 @@ class TestVertexEdgeCases:
 
         assert hash(vertex) == 0
         assert vertex.to_dict()["_hash"] == 0
-

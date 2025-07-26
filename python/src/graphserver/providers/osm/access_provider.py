@@ -145,7 +145,7 @@ class OSMAccessProvider:
         vertex_data = {"lat": lat, "lon": lon}
         if offramp_vertex_data:
             vertex_data.update(offramp_vertex_data)
-        
+
         identity_hash = self._get_identity_hash(vertex_data)
         offramp_vertex = Vertex(vertex_data, hash_value=identity_hash)
 

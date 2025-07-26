@@ -245,7 +245,7 @@ def test_vertex_immutability_integration() -> None:
         # Plan a path
         result = engine.plan(
             start=Vertex({"start": True}),
-            goal=Vertex({"x": 100, "y": 200, "name": "target"})
+            goal=Vertex({"x": 100, "y": 200, "name": "target"}),
         )
 
         assert len(result) == 1
@@ -288,8 +288,7 @@ def test_hash_preservation_through_planning() -> None:
 
         # Plan using vertex with custom hash
         result = engine.plan(
-            start=start_vertex,
-            goal=Vertex({"x": 50, "y": 75}, hash_value=target_hash)
+            start=start_vertex, goal=Vertex({"x": 50, "y": 75}, hash_value=target_hash)
         )
 
         assert len(result) == 1

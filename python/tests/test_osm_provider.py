@@ -462,7 +462,11 @@ class TestOSMAccessProvider:
         assert len(edges) >= 2
 
         # Check that we have different exit names
-        exit_names = {target_vertex["exit_name"] for target_vertex, edge in edges if "exit_name" in target_vertex}
+        exit_names = {
+            target_vertex["exit_name"]
+            for target_vertex, edge in edges
+            if "exit_name" in target_vertex
+        }
         assert "Downtown Exit" in exit_names
         assert "Shopping Center" in exit_names
 

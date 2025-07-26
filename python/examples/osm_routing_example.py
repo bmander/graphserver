@@ -147,7 +147,7 @@ def main() -> None:
     # Create vertices directly from coordinates (new simplified API)
     print("🔗 Creating route vertices...")
     from graphserver import Vertex
-    
+
     start_vertex = Vertex({"lat": start_lat, "lon": start_lon})
     goal_vertex = Vertex({"lat": end_lat, "lon": end_lon})
 
@@ -179,7 +179,9 @@ def main() -> None:
                 if "osm_node_id" in target:
                     target_desc = f"OSM node {target['osm_node_id']}"
                 elif "lat" in target and "lon" in target:
-                    target_desc = f"coordinate ({target['lat']:.5f}, {target['lon']:.5f})"
+                    target_desc = (
+                        f"coordinate ({target['lat']:.5f}, {target['lon']:.5f})"
+                    )
                 else:
                     target_desc = "unknown target"
 

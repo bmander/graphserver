@@ -35,7 +35,7 @@ except ImportError as e:
 
 
 def create_test_routes(
-    num_routes: int = 10
+    num_routes: int = 10,
 ) -> list[tuple[tuple[float, float], tuple[float, float]]]:
     """Create test route pairs for benchmarking.
 
@@ -133,6 +133,7 @@ def _benchmark_engine(
             route_start = time.time()
             try:
                 from graphserver import Vertex
+
                 start_vertex = Vertex({"lat": start_coords[0], "lon": start_coords[1]})
                 goal_vertex = Vertex({"lat": goal_coords[0], "lon": goal_coords[1]})
                 result = engine.plan(start=start_vertex, goal=goal_vertex)
