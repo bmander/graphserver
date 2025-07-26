@@ -116,18 +116,18 @@ static GraphserverEdge* create_walk_to_stop_edge(
     double distance = calculate_distance_meters(current_lat, current_lon, stop->lat, stop->lon);
     double walk_time_minutes = (distance / WALKING_SPEED_MPS) / 60.0;
     
-    // Create target vertex at the stop
-    GraphserverVertex* stop_vertex = create_location_vertex(stop->lat, stop->lon, current_time + (time_t)(walk_time_minutes * 60));
+    // Create target vertex at the stop with all information
+    time_t arrival_time = current_time + (time_t)(walk_time_minutes * 60);
+    GraphserverKeyPair pairs[] = {
+        {"lat", gs_value_create_float(stop->lat)},
+        {"lon", gs_value_create_float(stop->lon)},
+        {"time", gs_value_create_int((int64_t)arrival_time)},
+        {"stop_id", gs_value_create_int(stop->stop_id)},
+        {"stop_name", gs_value_create_string(stop->stop_name)},
+        {"mode", gs_value_create_string("walking")}
+    };
+    GraphserverVertex* stop_vertex = gs_vertex_create(pairs, 6, NULL);
     if (!stop_vertex) return NULL;
-    
-    // Add stop information
-    GraphserverValue stop_id = gs_value_create_int(stop->stop_id);
-    GraphserverValue stop_name = gs_value_create_string(stop->stop_name);
-    GraphserverValue mode = gs_value_create_string("walking");
-    
-    gs_vertex_set_kv(stop_vertex, "stop_id", stop_id);
-    gs_vertex_set_kv(stop_vertex, "stop_name", stop_name);
-    gs_vertex_set_kv(stop_vertex, "mode", mode);
     
     // Create edge with walk time as cost
     double cost = walk_time_minutes;
@@ -174,21 +174,19 @@ static GraphserverEdge* create_transit_edge(
     
     double total_time = wait_time + travel_time_minutes;
     
-    // Create target vertex
+    // Create target vertex with all information
     time_t arrival_time = current_time + (time_t)(total_time * 60);
-    GraphserverVertex* target_vertex = create_location_vertex(to_stop->lat, to_stop->lon, arrival_time);
+    GraphserverKeyPair pairs[] = {
+        {"lat", gs_value_create_float(to_stop->lat)},
+        {"lon", gs_value_create_float(to_stop->lon)},
+        {"time", gs_value_create_int((int64_t)arrival_time)},
+        {"stop_id", gs_value_create_int(to_stop->stop_id)},
+        {"stop_name", gs_value_create_string(to_stop->stop_name)},
+        {"mode", gs_value_create_string(route->route_type)},
+        {"route_name", gs_value_create_string(route->route_name)}
+    };
+    GraphserverVertex* target_vertex = gs_vertex_create(pairs, 7, NULL);
     if (!target_vertex) return NULL;
-    
-    // Add stop and route information
-    GraphserverValue stop_id = gs_value_create_int(to_stop->stop_id);
-    GraphserverValue stop_name = gs_value_create_string(to_stop->stop_name);
-    GraphserverValue mode = gs_value_create_string(route->route_type);
-    GraphserverValue route_name = gs_value_create_string(route->route_name);
-    
-    gs_vertex_set_kv(target_vertex, "stop_id", stop_id);
-    gs_vertex_set_kv(target_vertex, "stop_name", stop_name);
-    gs_vertex_set_kv(target_vertex, "mode", mode);
-    gs_vertex_set_kv(target_vertex, "route_name", route_name);
     
     // Create edge with multi-objective cost: [time, fare]
     double costs[2] = {total_time, route->fare_cost};
@@ -283,10 +281,14 @@ int transit_provider(
         }
         
         // Also allow walking away from the stop
-        GraphserverVertex* walk_vertex = create_location_vertex(current_lat, current_lon, current_time);
+        GraphserverKeyPair pairs[] = {
+            {"lat", gs_value_create_float(current_lat)},
+            {"lon", gs_value_create_float(current_lon)},
+            {"time", gs_value_create_int((int64_t)current_time)},
+            {"mode", gs_value_create_string("walking")}
+        };
+        GraphserverVertex* walk_vertex = gs_vertex_create(pairs, 4, NULL);
         if (walk_vertex) {
-            GraphserverValue mode = gs_value_create_string("walking");
-            gs_vertex_set_kv(walk_vertex, "mode", mode);
             
             double cost = 0.0; // No cost to start walking
             GraphserverEdge* walk_edge = gs_edge_create(walk_vertex, &cost, 1);

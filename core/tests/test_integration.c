@@ -6,6 +6,7 @@
 #include <time.h>
 #include "../include/graphserver.h"
 #include "../../examples/include/example_providers.h"
+#include "test_utils.h"
 
 // Simple test framework
 static int tests_run = 0;
@@ -189,10 +190,30 @@ TEST(road_network_provider_basic) {
         engine, "road", road_network_provider, network);
     ASSERT_EQ(GS_SUCCESS, result);
     
-    // Create start vertex near road segments
+    // Create start vertex near road segments with mode
     GraphserverVertex* start = create_location_vertex(40.7074, -74.0113, time(NULL));
-    GraphserverValue mode = gs_value_create_string("car");
-    gs_vertex_set_kv(start, "mode", mode);
+    
+    // For now, create a new vertex with mode by extracting location and adding mode
+    GraphserverValue lat_val, lon_val, time_val, mode_val;
+    gs_vertex_get_value(start, "lat", &lat_val);
+    gs_vertex_get_value(start, "lon", &lon_val);
+    bool has_time = (gs_vertex_get_value(start, "time", &time_val) == GS_SUCCESS);
+    mode_val = gs_value_create_string("car");
+    
+    GraphserverKeyPair pairs[4];
+    size_t pair_count = 3;
+    pairs[0] = (GraphserverKeyPair){"lat", lat_val};
+    pairs[1] = (GraphserverKeyPair){"lon", lon_val};
+    pairs[2] = (GraphserverKeyPair){"mode", mode_val};
+    
+    if (has_time) {
+        pairs[3] = (GraphserverKeyPair){"time", time_val};
+        pair_count = 4;
+    }
+    
+    // Replace start vertex with new one that includes mode
+    gs_vertex_destroy(start);
+    start = create_vertex_safe(pairs, pair_count, NULL);
     
     // Test vertex expansion
     GraphserverEdgeList* edges = gs_edge_list_create();

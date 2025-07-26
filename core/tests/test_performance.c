@@ -5,6 +5,7 @@
 #include <math.h>
 #include "../include/graphserver.h"
 #include "../../examples/include/example_providers.h"
+#include "test_utils.h"
 
 /**
  * @file test_performance.c
@@ -273,9 +274,22 @@ static void benchmark_provider_performance(void) {
         }
         
         GraphserverVertex* start = create_location_vertex(40.7074, -74.0113, time(NULL));
-        if (p == 2) { // Add car mode for road network
-            GraphserverValue mode = gs_value_create_string("car");
-            gs_vertex_set_kv(start, "mode", mode);
+        if (p == 2) { // Add car mode for road network - create new vertex with mode
+            // Extract data from existing vertex and create new one with mode
+            GraphserverValue lat_val, lon_val, time_val;
+            gs_vertex_get_value(start, "lat", &lat_val);
+            gs_vertex_get_value(start, "lon", &lon_val);
+            gs_vertex_get_value(start, "time", &time_val);
+            
+            GraphserverKeyPair pairs[] = {
+                {"lat", lat_val},
+                {"lon", lon_val},
+                {"time", time_val},
+                {"mode", gs_value_create_string("car")}
+            };
+            
+            gs_vertex_destroy(start);
+            start = create_vertex_safe(pairs, 4, NULL);
         }
         
         // Test vertex expansion performance
@@ -311,10 +325,7 @@ static void benchmark_provider_performance(void) {
 
 // Helper function to create a test vertex for cache benchmarks
 static GraphserverVertex* create_cache_test_vertex(const char* name) {
-    GraphserverVertex* vertex = gs_vertex_create();
-    GraphserverValue name_val = gs_value_create_string(name);
-    gs_vertex_set_kv(vertex, "name", name_val);
-    return vertex;
+    return create_named_vertex_safe(name);
 }
 
 // Cache performance benchmarks

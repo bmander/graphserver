@@ -49,11 +49,12 @@ static int grid_provider_generate_edges(
         // Check bounds
         if (new_x >= 0 && new_x < grid->width && new_y >= 0 && new_y < grid->height) {
             // Create target vertex
-            GraphserverVertex* target = gs_vertex_create();
+            GraphserverKeyPair pairs[] = {
+                {"x", gs_value_create_int(new_x)},
+                {"y", gs_value_create_int(new_y)}
+            };
+            GraphserverVertex* target = gs_vertex_create(pairs, 2, NULL);
             if (!target) continue;
-            
-            gs_vertex_set_kv(target, "x", gs_value_create_int(new_x));
-            gs_vertex_set_kv(target, "y", gs_value_create_int(new_y));
             
             // Create edge with cost 1.0
             double cost[] = {1.0};
@@ -73,12 +74,12 @@ static int grid_provider_generate_edges(
 
 // Helper function to create a grid vertex
 static GraphserverVertex* create_grid_vertex(int x, int y) {
-    GraphserverVertex* vertex = gs_vertex_create();
-    if (!vertex) return NULL;
+    GraphserverKeyPair pairs[] = {
+        {"x", gs_value_create_int(x)},
+        {"y", gs_value_create_int(y)}
+    };
     
-    gs_vertex_set_kv(vertex, "x", gs_value_create_int(x));
-    gs_vertex_set_kv(vertex, "y", gs_value_create_int(y));
-    
+    GraphserverVertex* vertex = gs_vertex_create(pairs, 2, NULL);
     return vertex;
 }
 

@@ -82,14 +82,17 @@ static void generate_walking_edges_grid(
                 if (distance > 200.0) continue; // Shorter max distance
             }
             
-            // Create destination vertex
+            // Create destination vertex with mode
             time_t arrival_time = current_time + (time_t)walk_time_seconds;
-            GraphserverVertex* dest_vertex = create_location_vertex(dest_lat, dest_lon, arrival_time);
-            if (!dest_vertex) continue;
             
-            // Add walking mode information
-            GraphserverValue mode = gs_value_create_string("walking");
-            gs_vertex_set_kv(dest_vertex, "mode", mode);
+            GraphserverKeyPair pairs[] = {
+                {"lat", gs_value_create_float(dest_lat)},
+                {"lon", gs_value_create_float(dest_lon)},
+                {"time", gs_value_create_int((int64_t)arrival_time)},
+                {"mode", gs_value_create_string("walking")}
+            };
+            GraphserverVertex* dest_vertex = gs_vertex_create(pairs, 4, NULL);
+            if (!dest_vertex) continue;
             
             // Create edge with walking time as cost
             double cost_minutes = walk_time_seconds / 60.0;
@@ -165,19 +168,19 @@ static void generate_walking_edges_poi(
             walk_time_seconds *= 1.3;
         }
         
-        // Create destination vertex
+        // Create destination vertex with POI information
         time_t arrival_time = current_time + (time_t)walk_time_seconds;
-        GraphserverVertex* dest_vertex = create_location_vertex(pois[i].lat, pois[i].lon, arrival_time);
+        
+        GraphserverKeyPair pairs[] = {
+            {"lat", gs_value_create_float(pois[i].lat)},
+            {"lon", gs_value_create_float(pois[i].lon)},
+            {"time", gs_value_create_int((int64_t)arrival_time)},
+            {"mode", gs_value_create_string("walking")},
+            {"poi_name", gs_value_create_string(pois[i].name)},
+            {"poi_type", gs_value_create_string(pois[i].type)}
+        };
+        GraphserverVertex* dest_vertex = gs_vertex_create(pairs, 6, NULL);
         if (!dest_vertex) continue;
-        
-        // Add POI information
-        GraphserverValue mode = gs_value_create_string("walking");
-        GraphserverValue poi_name = gs_value_create_string(pois[i].name);
-        GraphserverValue poi_type = gs_value_create_string(pois[i].type);
-        
-        gs_vertex_set_kv(dest_vertex, "mode", mode);
-        gs_vertex_set_kv(dest_vertex, "poi_name", poi_name);
-        gs_vertex_set_kv(dest_vertex, "poi_type", poi_type);
         
         // Create edge
         double cost_minutes = walk_time_seconds / 60.0;

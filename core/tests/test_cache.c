@@ -5,6 +5,7 @@
 #include "../include/gs_cache.h"
 #include "../include/gs_vertex.h"
 #include "../include/gs_edge.h"
+#include "test_utils.h"
 
 /**
  * @file test_cache.c
@@ -64,27 +65,12 @@ static int tests_passed = 0;
 
 // Helper function to create a test vertex with a name
 static GraphserverVertex* create_test_vertex(const char* name) {
-    GraphserverVertex* vertex = gs_vertex_create();
-    if (!vertex) return NULL;
-    
-    GraphserverValue name_val = gs_value_create_string(name);
-    gs_vertex_set_kv(vertex, "name", name_val);
-    
-    return vertex;
+    return create_named_vertex_safe(name);
 }
 
 // Helper function to create a test vertex with coordinates
 static GraphserverVertex* create_location_vertex(double lat, double lon) {
-    GraphserverVertex* vertex = gs_vertex_create();
-    if (!vertex) return NULL;
-    
-    GraphserverValue lat_val = gs_value_create_float(lat);
-    GraphserverValue lon_val = gs_value_create_float(lon);
-    
-    gs_vertex_set_kv(vertex, "lat", lat_val);
-    gs_vertex_set_kv(vertex, "lon", lon_val);
-    
-    return vertex;
+    return create_location_vertex_safe(lat, lon, 0);
 }
 
 // Helper function to create a test edge list with specified number of edges
@@ -363,18 +349,15 @@ TEST(cache_complex_vertex_data) {
     ASSERT_NOT_NULL(cache);
     
     // Create vertex with multiple attributes
-    GraphserverVertex* complex_vertex = gs_vertex_create();
+    GraphserverKeyPair pairs[] = {
+        {"name", gs_value_create_string("complex_vertex")},
+        {"latitude", gs_value_create_float(40.7128)},
+        {"longitude", gs_value_create_float(-74.0060)},
+        {"id", gs_value_create_int(12345)}
+    };
+    
+    GraphserverVertex* complex_vertex = create_vertex_safe(pairs, 4, NULL);
     ASSERT_NOT_NULL(complex_vertex);
-    
-    GraphserverValue name_val = gs_value_create_string("complex_vertex");
-    GraphserverValue lat_val = gs_value_create_float(40.7128);
-    GraphserverValue lon_val = gs_value_create_float(-74.0060);
-    GraphserverValue id_val = gs_value_create_int(12345);
-    
-    gs_vertex_set_kv(complex_vertex, "name", name_val);
-    gs_vertex_set_kv(complex_vertex, "latitude", lat_val);
-    gs_vertex_set_kv(complex_vertex, "longitude", lon_val);
-    gs_vertex_set_kv(complex_vertex, "id", id_val);
     
     GraphserverEdgeList* edges = create_test_edge_list(4);
     ASSERT_NOT_NULL(edges);

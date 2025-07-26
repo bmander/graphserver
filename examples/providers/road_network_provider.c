@@ -167,20 +167,18 @@ static void generate_road_edges(
             double travel_time_hours = segment->length_meters / 1000.0 / effective_speed;
             double travel_time_minutes = travel_time_hours * 60.0;
             
-            // Create destination vertex
+            // Create destination vertex with all information
             time_t arrival_time = current_time + (time_t)(travel_time_minutes * 60);
-            GraphserverVertex* dest_vertex = create_location_vertex(
-                segment->end_lat, segment->end_lon, arrival_time);
+            GraphserverKeyPair pairs[] = {
+                {"lat", gs_value_create_float(segment->end_lat)},
+                {"lon", gs_value_create_float(segment->end_lon)},
+                {"time", gs_value_create_int((int64_t)arrival_time)},
+                {"mode", gs_value_create_string(network->vehicle_type)},
+                {"road_type", gs_value_create_string(segment->road_type)},
+                {"segment_id", gs_value_create_int(segment->segment_id)}
+            };
+            GraphserverVertex* dest_vertex = gs_vertex_create(pairs, 6, NULL);
             if (!dest_vertex) continue;
-            
-            // Add segment information
-            GraphserverValue mode = gs_value_create_string(network->vehicle_type);
-            GraphserverValue road_type = gs_value_create_string(segment->road_type);
-            GraphserverValue segment_id = gs_value_create_int(segment->segment_id);
-            
-            gs_vertex_set_kv(dest_vertex, "mode", mode);
-            gs_vertex_set_kv(dest_vertex, "road_type", road_type);
-            gs_vertex_set_kv(dest_vertex, "segment_id", segment_id);
             
             // Create edge with travel time and fuel cost
             double fuel_cost = segment->length_meters / 1000.0 * 0.15; // $0.15 per km
@@ -223,18 +221,16 @@ static void generate_road_edges(
                 double travel_time_minutes = travel_time_hours * 60.0;
                 
                 time_t arrival_time = current_time + (time_t)(travel_time_minutes * 60);
-                GraphserverVertex* dest_vertex = create_location_vertex(
-                    segment->start_lat, segment->start_lon, arrival_time);
+                GraphserverKeyPair pairs[] = {
+                    {"lat", gs_value_create_float(segment->start_lat)},
+                    {"lon", gs_value_create_float(segment->start_lon)},
+                    {"time", gs_value_create_int((int64_t)arrival_time)},
+                    {"mode", gs_value_create_string(network->vehicle_type)},
+                    {"road_type", gs_value_create_string(segment->road_type)},
+                    {"segment_id", gs_value_create_int(segment->segment_id)}
+                };
+                GraphserverVertex* dest_vertex = gs_vertex_create(pairs, 6, NULL);
                 if (!dest_vertex) continue;
-                
-                // Add segment information
-                GraphserverValue mode = gs_value_create_string(network->vehicle_type);
-                GraphserverValue road_type = gs_value_create_string(segment->road_type);
-                GraphserverValue segment_id = gs_value_create_int(segment->segment_id);
-                
-                gs_vertex_set_kv(dest_vertex, "mode", mode);
-                gs_vertex_set_kv(dest_vertex, "road_type", road_type);
-                gs_vertex_set_kv(dest_vertex, "segment_id", segment_id);
                 
                 // Create edge
                 double fuel_cost = segment->length_meters / 1000.0 * 0.15;

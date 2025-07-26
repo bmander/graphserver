@@ -63,15 +63,12 @@ static int tests_passed = 0;
 
 // Helper function to create a test vertex with x,y coordinates
 static GraphserverVertex* create_coordinate_vertex(int x, int y) {
-    GraphserverVertex* vertex = gs_vertex_create();
-    if (!vertex) return NULL;
+    GraphserverKeyPair pairs[] = {
+        {"x", gs_value_create_int(x)},
+        {"y", gs_value_create_int(y)}
+    };
     
-    GraphserverValue x_val = gs_value_create_int(x);
-    GraphserverValue y_val = gs_value_create_int(y);
-    
-    gs_vertex_set_kv(vertex, "x", x_val);
-    gs_vertex_set_kv(vertex, "y", y_val);
-    
+    GraphserverVertex* vertex = gs_vertex_create(pairs, 2, NULL);
     return vertex;
 }
 
@@ -330,9 +327,10 @@ static int linear_provider(const GraphserverVertex* current_vertex,
     int max_id = 10;
     
     if (id < max_id) {
-        GraphserverVertex* next = gs_vertex_create();
-        GraphserverValue next_id = gs_value_create_int(id + 1);
-        gs_vertex_set_kv(next, "id", next_id);
+        GraphserverKeyPair pairs[] = {
+            {"id", gs_value_create_int(id + 1)}
+        };
+        GraphserverVertex* next = gs_vertex_create(pairs, 1, NULL);
         
         double distance = 1.0;
         GraphserverEdge* edge = gs_edge_create(next, &distance, 1);
@@ -362,9 +360,10 @@ TEST(dijkstra_long_path) {
     GraphserverEngine* engine = gs_engine_create();
     gs_engine_register_provider(engine, "linear", linear_provider, NULL);
     
-    GraphserverVertex* start = gs_vertex_create();
-    GraphserverValue start_id = gs_value_create_int(0);
-    gs_vertex_set_kv(start, "id", start_id);
+    GraphserverKeyPair pairs[] = {
+        {"id", gs_value_create_int(0)}
+    };
+    GraphserverVertex* start = gs_vertex_create(pairs, 1, NULL);
     
     int target_id = 8;
     

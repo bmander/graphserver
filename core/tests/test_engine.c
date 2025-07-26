@@ -3,6 +3,7 @@
 #include <string.h>
 #include <assert.h>
 #include "../include/graphserver.h"
+#include "test_utils.h"
 
 // Simple test framework
 static int tests_run = 0;
@@ -63,19 +64,12 @@ static int tests_passed = 0;
 static int mock_provider_simple(const GraphserverVertex* current_vertex,
                                 GraphserverEdgeList* out_edges,
                                 void* user_data) {
+    (void)current_vertex; // Unused
     (void)user_data; // Unused
     
     // Create a simple target vertex
-    GraphserverVertex* target = gs_vertex_create();
+    GraphserverVertex* target = create_named_vertex_safe("target");
     if (!target) return -1;
-    
-    // Copy the current vertex and modify slightly
-    GraphserverValue name_val;
-    if (gs_vertex_get_value(current_vertex, "name", &name_val) == GS_SUCCESS) {
-        GraphserverValue new_name = gs_value_create_string("target");
-        gs_vertex_set_kv(target, "name", new_name);
-        gs_value_destroy(&name_val);
-    }
     
     // Create an edge with distance 1.0
     double distance = 1.0;
@@ -102,13 +96,11 @@ static int mock_provider_multiple(const GraphserverVertex* current_vertex,
     int edges_to_create = num_edges ? *num_edges : 3;
     
     for (int i = 0; i < edges_to_create; i++) {
-        GraphserverVertex* target = gs_vertex_create();
-        if (!target) return -1;
-        
         char name[32];
         snprintf(name, sizeof(name), "target_%d", i);
-        GraphserverValue name_val = gs_value_create_string(name);
-        gs_vertex_set_kv(target, "name", name_val);
+        
+        GraphserverVertex* target = create_named_vertex_safe(name);
+        if (!target) return -1;
         
         double distance = (double)(i + 1);
         GraphserverEdge* edge = gs_edge_create(target, &distance, 1);
@@ -138,10 +130,7 @@ static int mock_provider_failing(const GraphserverVertex* current_vertex,
 
 // Helper function to create a test vertex
 GraphserverVertex* create_test_vertex(const char* name) {
-    GraphserverVertex* vertex = gs_vertex_create();
-    GraphserverValue name_val = gs_value_create_string(name);
-    gs_vertex_set_kv(vertex, "name", name_val);
-    return vertex;
+    return create_named_vertex_safe(name);
 }
 
 // Simple goal predicate that's never satisfied (for testing)

@@ -35,32 +35,20 @@ double calculate_distance_meters(double lat1, double lon1, double lat2, double l
 }
 
 GraphserverVertex* create_location_vertex(double lat, double lon, time_t time_seconds) {
-    GraphserverVertex* vertex = gs_vertex_create();
-    if (!vertex) return NULL;
+    GraphserverKeyPair pairs[3];
+    size_t pair_count = 2;
     
     // Add latitude and longitude
-    GraphserverValue lat_val = gs_value_create_float(lat);
-    GraphserverValue lon_val = gs_value_create_float(lon);
-    
-    GraphserverResult lat_result = gs_vertex_set_kv(vertex, "lat", lat_val);
-    GraphserverResult lon_result = gs_vertex_set_kv(vertex, "lon", lon_val);
-    
-    if (lat_result != GS_SUCCESS || lon_result != GS_SUCCESS) {
-        gs_vertex_destroy(vertex);
-        return NULL;
-    }
+    pairs[0] = (GraphserverKeyPair){"lat", gs_value_create_float(lat)};
+    pairs[1] = (GraphserverKeyPair){"lon", gs_value_create_float(lon)};
     
     // Add time if provided
     if (time_seconds > 0) {
-        GraphserverValue time_val = gs_value_create_int((int64_t)time_seconds);
-        GraphserverResult time_result = gs_vertex_set_kv(vertex, "time", time_val);
-        
-        if (time_result != GS_SUCCESS) {
-            gs_vertex_destroy(vertex);
-            return NULL;
-        }
+        pairs[2] = (GraphserverKeyPair){"time", gs_value_create_int((int64_t)time_seconds)};
+        pair_count = 3;
     }
     
+    GraphserverVertex* vertex = gs_vertex_create(pairs, pair_count, NULL);
     return vertex;
 }
 

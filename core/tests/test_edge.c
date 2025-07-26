@@ -4,6 +4,7 @@
 #include <assert.h>
 #include "../include/gs_edge.h"
 #include "../include/gs_vertex.h"
+#include "test_utils.h"
 
 // Simple test framework (same as vertex tests)
 static int tests_run = 0;
@@ -72,18 +73,7 @@ static int tests_passed = 0;
 
 // Helper function to create a test vertex
 GraphserverVertex* create_test_vertex(const char* name, double lat, double lon) {
-    GraphserverVertex* vertex = gs_vertex_create();
-    
-    GraphserverValue name_val = gs_value_create_string(name);
-    gs_vertex_set_kv(vertex, "name", name_val);
-    
-    GraphserverValue lat_val = gs_value_create_float(lat);
-    gs_vertex_set_kv(vertex, "lat", lat_val);
-    
-    GraphserverValue lon_val = gs_value_create_float(lon);
-    gs_vertex_set_kv(vertex, "lon", lon_val);
-    
-    return vertex;
+    return create_test_vertex_safe(name, lat, lon);
 }
 
 // Test edge creation and basic properties
