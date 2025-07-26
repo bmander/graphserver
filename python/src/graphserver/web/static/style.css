@@ -79,3 +79,17 @@ pre {
     margin: 0;
     white-space: pre-wrap;
 }
+
+/* Error States */
+.error {
+    background: #ffe6e6;
+    padding: 15px;
+    border-radius: 5px;
+    border: 1px solid #ffcccc;
+    margin: 10px 0;
+}
+
+.error p {
+    margin: 0;
+    color: #cc0000;
+}

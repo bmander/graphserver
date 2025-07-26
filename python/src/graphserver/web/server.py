@@ -9,6 +9,7 @@ from http.server import HTTPServer
 from typing import Sequence
 
 from .handlers import GraphRequestHandler
+from .providers import ProviderManager, ProviderError
 
 
 class GraphWebServer:
@@ -19,13 +20,33 @@ class GraphWebServer:
         self.port = port
         self.osm_files = list(osm_files or [])
         self.gtfs_files = list(gtfs_files or [])
+        
+        # Initialize provider manager
+        self.provider_manager = ProviderManager(
+            osm_files=self.osm_files,
+            gtfs_files=self.gtfs_files
+        )
+        
+        # Server configuration for handlers
         self.server_config = {
             'osm_files': self.osm_files,
-            'gtfs_files': self.gtfs_files
+            'gtfs_files': self.gtfs_files,
+            'provider_manager': self.provider_manager
         }
 
     def run(self) -> None:
         """Start the HTTP server."""
+        # Initialize providers before starting server
+        try:
+            print("Initializing graph providers...")
+            self.provider_manager.initialize_engine()
+            print("✅ Provider initialization complete")
+            
+        except ProviderError as e:
+            print(f"❌ Provider initialization failed: {e}")
+            print("\nPlease check your file paths and try again.")
+            sys.exit(1)
+        
         # Create a handler class with server config
         def handler_factory(*args, **kwargs):
             return GraphRequestHandler(*args,
@@ -34,21 +55,24 @@ class GraphWebServer:
 
         try:
             server = HTTPServer(('localhost', self.port), handler_factory)
-            print(f"Graph Web Browser started on "
+            print(f"\n🌐 Graph Web Browser started on "
                   f"http://localhost:{self.port}")
 
-            if self.osm_files:
-                print(f"OSM files: {', '.join(self.osm_files)}")
-            if self.gtfs_files:
-                print(f"GTFS files: {', '.join(self.gtfs_files)}")
+            # Show provider information
+            provider_info = self.provider_manager.get_provider_info()
+            if provider_info:
+                print("\n📊 Active Providers:")
+                for provider_type, info in provider_info.items():
+                    print(f"  • {provider_type}: {info}")
 
+            print(f"\n🚀 Ready to explore! Visit http://localhost:{self.port}")
             print("Press Ctrl+C to stop the server")
             server.serve_forever()
 
         except KeyboardInterrupt:
-            print("\nServer stopped by user")
+            print("\n👋 Server stopped by user")
         except OSError as e:
-            print(f"Error starting server: {e}")
+            print(f"❌ Error starting server: {e}")
             sys.exit(1)
 
 
