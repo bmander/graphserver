@@ -25,6 +25,11 @@ osm = [
     "pyproj>=3.7",
     "rtree>=1.4.0",
 ]
+transit = [
+    "gtfs-kit>=4.0.0",
+    "rtree>=1.4.0",
+    "pyproj>=3.7",
+]
 
 [tool.scikit-build]
 cmake.build-type = "Release"
