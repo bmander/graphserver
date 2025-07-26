@@ -28,8 +28,14 @@ class TransitProvider:
     This provider supports several types of vertex inputs:
     1. Geographic coordinates with time: {"lat": float, "lon": float, "time": int}
     2. Stop with time: {"stop_id": str, "time": int}
-    3. Boarding vertex: {"time": int, "trip_id": str, "stop_sequence": int, "vehicle_state": "boarding"}
-    4. Alright vertex: {"time": int, "trip_id": str, "stop_sequence": int, "vehicle_state": "alright"}
+    3. Boarding vertex: {
+        "time": int, "trip_id": str, "stop_sequence": int,
+        "vehicle_state": "boarding"
+    }
+    4. Alright vertex: {
+        "time": int, "trip_id": str, "stop_sequence": int,
+        "vehicle_state": "alright"
+    }
 
     Edge expansion specification:
     - [lat/lon/time] -> nearby stops with arrival time
@@ -263,7 +269,9 @@ class TransitProvider:
 
         boarding_datetime = datetime.fromtimestamp(boarding_time)
         service_date = int(
-            boarding_datetime.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+            boarding_datetime.replace(
+                hour=0, minute=0, second=0, microsecond=0
+            ).timestamp()
         )
 
         # Convert GTFS time to timestamp

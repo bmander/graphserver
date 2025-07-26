@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 
 @dataclass(frozen=True)
 class Stop:
     """Represents a transit stop from GTFS data."""
-    
+
     stop_id: str
     stop_name: str
     lat: float
@@ -22,7 +21,7 @@ class Stop:
 @dataclass(frozen=True)
 class Route:
     """Represents a transit route from GTFS data."""
-    
+
     route_id: str
     route_short_name: str
     route_long_name: str
@@ -33,7 +32,7 @@ class Route:
 @dataclass(frozen=True)
 class Trip:
     """Represents a transit trip from GTFS data."""
-    
+
     trip_id: str
     route_id: str
     service_id: str
@@ -45,7 +44,7 @@ class Trip:
 @dataclass(frozen=True)
 class StopTime:
     """Represents a stop time from GTFS data."""
-    
+
     trip_id: str
     stop_id: str
     stop_sequence: int
@@ -58,7 +57,7 @@ class StopTime:
 @dataclass(frozen=True)
 class Departure:
     """Represents a scheduled departure from a stop."""
-    
+
     trip_id: str
     route_id: str
     stop_id: str
@@ -72,7 +71,7 @@ class Departure:
 
 class TransitConfig:
     """Configuration for transit provider."""
-    
+
     def __init__(
         self,
         *,
@@ -83,7 +82,7 @@ class TransitConfig:
         max_transfer_walk_time: int = 300,  # seconds
     ) -> None:
         """Initialize transit configuration.
-        
+
         Args:
             search_radius_m: Search radius for finding nearby stops from coordinates
             max_nearby_stops: Maximum number of nearby stops to consider
@@ -100,15 +99,15 @@ class TransitConfig:
 
 def parse_gtfs_time(time_str: str) -> int:
     """Parse GTFS time string (HH:MM:SS) to seconds since midnight.
-    
+
     Args:
         time_str: Time string in HH:MM:SS format
-        
+
     Returns:
         Seconds since midnight
     """
     try:
-        hours, minutes, seconds = map(int, time_str.split(':'))
+        hours, minutes, seconds = map(int, time_str.split(":"))
         return hours * 3600 + minutes * 60 + seconds
     except (ValueError, AttributeError):
         return 0
@@ -116,11 +115,11 @@ def parse_gtfs_time(time_str: str) -> int:
 
 def gtfs_time_to_timestamp(time_str: str, service_date: int) -> int:
     """Convert GTFS time to Unix timestamp.
-    
+
     Args:
         time_str: Time string in HH:MM:SS format
         service_date: Service date as Unix timestamp (midnight)
-        
+
     Returns:
         Unix timestamp
     """
