@@ -173,9 +173,6 @@ class TransitProvider:
                 {
                     "stop_id": stop.stop_id,
                     "time": arrival_time,
-                    "lat": stop.lat,
-                    "lon": stop.lon,
-                    "stop_name": stop.stop_name,
                 }
             )
 
@@ -185,8 +182,6 @@ class TransitProvider:
                 metadata={
                     "edge_type": "walk_to_stop",
                     "distance_m": distance_m,
-                    "walking_time_s": walking_time_s,
-                    "stop_id": stop.stop_id,
                 },
             )
 
@@ -224,8 +219,6 @@ class TransitProvider:
                     "trip_id": departure.trip_id,
                     "stop_sequence": departure.stop_sequence,
                     "vehicle_state": "boarding",
-                    "stop_id": departure.stop_id,
-                    "route_id": departure.route_id,
                 }
             )
 
@@ -236,9 +229,6 @@ class TransitProvider:
                 metadata={
                     "edge_type": "wait_for_departure",
                     "waiting_time_s": waiting_time,
-                    "trip_id": departure.trip_id,
-                    "route_id": departure.route_id,
-                    "departure_time": departure.departure_time,
                 },
             )
 
@@ -330,8 +320,6 @@ class TransitProvider:
                 "trip_id": trip_id,
                 "stop_sequence": stop_sequence,
                 "vehicle_state": "boarding",
-                "stop_id": stop_id,
-                "route_id": vertex.get("route_id", ""),
             }
         )
 
@@ -339,8 +327,6 @@ class TransitProvider:
             cost=0,  # No cost to change state
             metadata={
                 "edge_type": "alright_to_boarding",
-                "trip_id": trip_id,
-                "stop_id": stop_id,
             },
         )
 
@@ -348,14 +334,10 @@ class TransitProvider:
 
         # Edge 2: To stop vertex (for alighting)
         if stop_id in self.parser.stops:
-            stop = self.parser.stops[stop_id]
             stop_vertex = Vertex(
                 {
                     "stop_id": stop_id,
                     "time": arrival_time,
-                    "lat": stop.lat,
-                    "lon": stop.lon,
-                    "stop_name": stop.stop_name,
                 }
             )
 
@@ -363,8 +345,6 @@ class TransitProvider:
                 cost=0,  # No cost to alight
                 metadata={
                     "edge_type": "alight_at_stop",
-                    "trip_id": trip_id,
-                    "stop_id": stop_id,
                 },
             )
 
