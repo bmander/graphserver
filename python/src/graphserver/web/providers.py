@@ -150,72 +150,35 @@ class ProviderManager:
         return info
 
     def validate_vertex_for_providers(self, vertex_props: dict) -> tuple[bool, str]:
-        """Validate that vertex properties are compatible with providers."""
+        """Validate that vertex properties are compatible with providers.
+        
+        Tests the vertex with actual providers to determine if any can handle it.
+        """
         if not vertex_props:
             return False, "Empty vertex properties"
 
-        # Check for supported vertex patterns
-        supported_patterns = []
+        if not self.providers:
+            return False, "No providers available"
 
-        if "osm_network" in self.providers:
-            supported_patterns.append("osm_node_id (integer)")
+        from graphserver import Vertex
+        
+        vertex = Vertex(vertex_props)
+        compatible_providers = []
+        provider_results = []
 
-        if "osm_access" in self.providers:
-            supported_patterns.append("lat, lon (floats)")
+        # Test vertex with each provider
+        for provider_name, provider in self.providers.items():
+            try:
+                edges = list(provider(vertex))
+                if edges:
+                    compatible_providers.append(provider_name)
+                    provider_results.append(f"{provider_name}: {len(edges)} edges")
+                else:
+                    provider_results.append(f"{provider_name}: no edges")
+            except Exception as e:
+                provider_results.append(f"{provider_name}: error ({str(e)[:50]}...)")
 
-        if any(name.startswith("transit") for name in self.providers):
-            supported_patterns.extend(
-                [
-                    "lat, lon, time (floats, integer)",
-                    "stop_id, time (string, integer)",
-                    "time, trip_id, stop_sequence, vehicle_state (for boarding/alight)",
-                ]
-            )
-
-        # Check if vertex matches any supported pattern
-        has_osm_node = "osm_node_id" in vertex_props
-        has_coords = "lat" in vertex_props and "lon" in vertex_props
-        has_time = "time" in vertex_props
-        has_stop = "stop_id" in vertex_props
-        has_trip_info = (
-            "trip_id" in vertex_props
-            and "stop_sequence" in vertex_props
-            and "vehicle_state" in vertex_props
-        )
-
-        valid_patterns = []
-
-        if has_osm_node and "osm_network" in self.providers:
-            valid_patterns.append("OSM node routing")
-
-        if has_coords and "osm_access" in self.providers:
-            valid_patterns.append("coordinate-based routing")
-
-        if (
-            has_coords
-            and has_time
-            and any(name.startswith("transit") for name in self.providers)
-        ):
-            valid_patterns.append("transit routing from coordinates")
-
-        if (
-            has_stop
-            and has_time
-            and any(name.startswith("transit") for name in self.providers)
-        ):
-            valid_patterns.append("transit routing from stop")
-
-        if (
-            has_time
-            and has_trip_info
-            and any(name.startswith("transit") for name in self.providers)
-        ):
-            valid_patterns.append("transit trip routing (boarding/alight)")
-
-        if valid_patterns:
-            return True, f"Compatible with: {', '.join(valid_patterns)}"
+        if compatible_providers:
+            return True, f"Compatible with: {', '.join(compatible_providers)}"
         else:
-            return False, (
-                f"Vertex properties don't match any provider patterns. "
-                f"Supported: {', '.join(supported_patterns)}"
-            )
+            return False, f"No providers can handle this vertex. Results: {'; '.join(provider_results)}"
