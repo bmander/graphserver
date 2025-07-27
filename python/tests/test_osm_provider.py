@@ -550,6 +550,157 @@ class TestOSMAccessProvider:
         # Clean up
         sample_osm_file.unlink()
 
+    def test_time_aware_linking(self, sample_osm_file: Path) -> None:
+        """Test that vertices with same properties but different times link to same OSM node."""
+        if not OSM_AVAILABLE:
+            pytest.skip("OSM dependencies not available")
+
+        from graphserver import Vertex
+
+        provider = OSMAccessProvider(
+            sample_osm_file,
+            search_radius_m=1000.0,
+            max_nearby_nodes=3,
+            build_index=True,
+        )
+
+        # Create two vertices with same properties but different times
+        vertex1 = Vertex(
+            {"lat": 47.6063, "lon": -122.3322, "name": "test", "time": 1000}
+        )
+        vertex2 = Vertex(
+            {"lat": 47.6063, "lon": -122.3322, "name": "test", "time": 2000}
+        )
+
+        # Link both vertices - should link to same OSM node
+        provider.link(vertex1, 47.6063, -122.3322)
+        provider.link(vertex2, 47.6063, -122.3322)
+
+        # Both should generate edges to the same OSM node
+        edges1 = provider(vertex1)
+        edges2 = provider(vertex2)
+
+        assert len(edges1) == 1
+        assert len(edges2) == 1
+
+        # Should be linked to same OSM node
+        osm_node_id1 = edges1[0][0]["osm_node_id"]
+        osm_node_id2 = edges2[0][0]["osm_node_id"]
+        assert osm_node_id1 == osm_node_id2
+
+        # Target vertices should preserve original times
+        assert edges1[0][0]["time"] == 1000
+        assert edges2[0][0]["time"] == 2000
+
+        # Clean up
+        sample_osm_file.unlink()
+
+    def test_time_preservation_vertex_to_node(self, sample_osm_file: Path) -> None:
+        """Test that time is preserved when transitioning from vertex to OSM node."""
+        if not OSM_AVAILABLE:
+            pytest.skip("OSM dependencies not available")
+
+        from graphserver import Vertex
+
+        provider = OSMAccessProvider(
+            sample_osm_file,
+            search_radius_m=1000.0,
+            max_nearby_nodes=3,
+            build_index=True,
+        )
+
+        # Create vertex with time and link it
+        vertex_with_time = Vertex(
+            {"lat": 47.6063, "lon": -122.3322, "stop_id": "STOP123", "time": 12345}
+        )
+        provider.link(vertex_with_time, 47.6063, -122.3322)
+
+        # Generate edges - should preserve time in target OSM node
+        edges = provider(vertex_with_time)
+        assert len(edges) == 1
+
+        target_vertex, edge = edges[0]
+        assert "osm_node_id" in target_vertex
+        assert target_vertex["time"] == 12345
+        assert edge.metadata["edge_type"] == "linked_vertex_to_node"
+
+        # Clean up
+        sample_osm_file.unlink()
+
+    def test_time_preservation_node_to_vertex(self, sample_osm_file: Path) -> None:
+        """Test that time is preserved when transitioning from OSM node to linked vertex."""
+        if not OSM_AVAILABLE:
+            pytest.skip("OSM dependencies not available")
+
+        from graphserver import Vertex
+
+        provider = OSMAccessProvider(
+            sample_osm_file,
+            search_radius_m=1000.0,
+            max_nearby_nodes=3,
+            build_index=True,
+        )
+
+        # Create and link a vertex (without time for the template)
+        linked_vertex = Vertex({"lat": 47.6063, "lon": -122.3322, "stop_id": "STOP123"})
+        provider.link(linked_vertex, 47.6063, -122.3322)
+
+        # Get the OSM node ID that was linked
+        edges = provider(linked_vertex)
+        osm_node_id = edges[0][0]["osm_node_id"]
+
+        # Create OSM node vertex with time
+        osm_vertex_with_time = Vertex({"osm_node_id": osm_node_id, "time": 54321})
+
+        # Generate edges from OSM node - should preserve time in target linked vertex
+        back_edges = provider(osm_vertex_with_time)
+
+        # Find the edge to our linked vertex
+        linked_back_edges = [
+            (vertex_target, edge)
+            for vertex_target, edge in back_edges
+            if edge.metadata.get("edge_type") == "node_to_linked_vertex"
+        ]
+        assert len(linked_back_edges) >= 1
+
+        target_vertex, edge = linked_back_edges[0]
+        assert target_vertex["stop_id"] == "STOP123"
+        assert target_vertex["time"] == 54321  # Time should be preserved
+
+        # Clean up
+        sample_osm_file.unlink()
+
+    def test_vertices_without_coordinates(self, sample_osm_file: Path) -> None:
+        """Test linking vertices that don't have lat/lon coordinates."""
+        if not OSM_AVAILABLE:
+            pytest.skip("OSM dependencies not available")
+
+        from graphserver import Vertex
+
+        provider = OSMAccessProvider(
+            sample_osm_file,
+            search_radius_m=1000.0,
+            max_nearby_nodes=3,
+            build_index=True,
+        )
+
+        # Create vertex without coordinates (location provided via link method)
+        vertex_no_coords = Vertex({"stop_id": "STOP456", "name": "Test Stop"})
+        provider.link(
+            vertex_no_coords, 47.6062, -122.3321
+        )  # Close to node 1 in test data
+
+        # Should still generate edges (using node coordinates as fallback)
+        edges = provider(vertex_no_coords)
+        assert len(edges) == 1
+
+        target_vertex, edge = edges[0]
+        assert "osm_node_id" in target_vertex
+        assert edge.metadata["edge_type"] == "linked_vertex_to_node"
+
+        # Clean up
+        sample_osm_file.unlink()
+
     def test_multiple_offramps_per_node(self, sample_osm_file: Path) -> None:
         """Test that multiple offramp points can be registered for the same OSM node."""
         if not OSM_AVAILABLE:

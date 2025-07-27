@@ -129,6 +129,24 @@ class OSMAccessProvider:
         # Convert string to stable unsigned integer hash
         return hash(hash_string) & 0xFFFFFFFFFFFFFFFF
 
+    def _get_time_agnostic_hash(self, vertex: Vertex) -> int:
+        """Generate hash for vertex excluding time property.
+
+        This allows vertices with the same properties but different times
+        to be linked to the same OSM node.
+
+        Args:
+            vertex: Vertex to hash
+
+        Returns:
+            Hash value based on all properties except time
+        """
+        # Create dictionary of all vertex data except time
+        vertex_data = {k: v for k, v in vertex.items() if k != "time"}
+
+        # Create stable hash from sorted items
+        return hash(tuple(sorted(vertex_data.items())))
+
     def _build_spatial_index(self) -> None:
         """Build spatial index for fast coordinate-based lookups."""
         logger.info("Building spatial index for OSM access")
@@ -180,6 +198,9 @@ class OSMAccessProvider:
         OSM node. Subsequently, the access provider will expand edges between
         the vertex and the linked OSM node.
 
+        The linking is time-agnostic: vertices with the same properties but
+        different times will link to the same OSM node.
+
         Args:
             vertex: The vertex to link
             lat: Latitude of the coordinates to link to
@@ -201,20 +222,38 @@ class OSMAccessProvider:
             msg = f"No OSM node found within {self.search_radius_m}m of ({lat}, {lon})"
             raise ValueError(msg)
 
-        # Get vertex identity hash
-        vertex_hash = hash(vertex)
+        # Get time-agnostic vertex hash (excludes time property)
+        vertex_hash = self._get_time_agnostic_hash(vertex)
 
         # Store bidirectional mapping
         self._vertex_to_osm_node[vertex_hash] = nearest_node.id
 
+        # Create vertex template without time for storage
+        vertex_template_data = {k: v for k, v in vertex.items() if k != "time"}
+        vertex_template = Vertex(vertex_template_data)
+
+        # Calculate and cache distance for this link
+        from .spatial import calculate_distance
+
+        distance_m = calculate_distance(
+            lat, lon, nearest_node.lat, nearest_node.lon
+        )
+
+        # Store cached distance
+        if not hasattr(self, "_link_distances"):
+            self._link_distances = {}
+        self._link_distances[vertex_hash] = distance_m
+
         if nearest_node.id not in self._linked_vertices:
             self._linked_vertices[nearest_node.id] = []
-        self._linked_vertices[nearest_node.id].append(vertex)
+        self._linked_vertices[nearest_node.id].append(vertex_template)
 
     def clear_links(self) -> None:
         """Clear all vertex-OSM node links."""
         self._linked_vertices.clear()
         self._vertex_to_osm_node.clear()
+        if hasattr(self, "_link_distances"):
+            self._link_distances.clear()
 
     def __call__(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
         """Generate edges from a vertex (implements EdgeProvider protocol).
@@ -225,7 +264,7 @@ class OSMAccessProvider:
         Returns:
             List of (target_vertex, edge) tuples
         """
-        # Handle linked coordinate vertices - return edges to linked OSM nodes
+        # Handle coordinate vertices - return edges to linked OSM nodes if linked
         if "lat" in vertex and "lon" in vertex:
             return self._edges_from_linked_vertex(vertex)
 
@@ -235,6 +274,11 @@ class OSMAccessProvider:
             edges.extend(self._edges_to_linked_vertices(vertex))
             edges.extend(self._edges_to_offramp_points(vertex))
             return edges
+
+        # Handle other linked vertices (without coordinates) - check if linked
+        vertex_hash = self._get_time_agnostic_hash(vertex)
+        if vertex_hash in self._vertex_to_osm_node:
+            return self._edges_from_linked_vertex(vertex)
 
         # Unknown vertex type
         return []
@@ -248,8 +292,8 @@ class OSMAccessProvider:
         Returns:
             List of edges to the linked OSM node, or empty if not linked
         """
-        # Check if this vertex is linked to an OSM node
-        vertex_hash = hash(vertex)
+        # Check if this vertex is linked to an OSM node using time-agnostic hash
+        vertex_hash = self._get_time_agnostic_hash(vertex)
 
         if vertex_hash not in self._vertex_to_osm_node:
             # Vertex is not linked - return no edges
@@ -262,13 +306,22 @@ class OSMAccessProvider:
             return []
 
         node = self.parser.nodes[osm_node_id]
-        lat = float(vertex["lat"])
-        lon = float(vertex["lon"])
 
-        # Calculate distance to linked OSM node
-        from .spatial import calculate_distance
+        # Get cached distance for this link
+        if hasattr(self, "_link_distances") and vertex_hash in self._link_distances:
+            distance_m = self._link_distances[vertex_hash]
+        else:
+            # Fallback: calculate distance if not cached (shouldn't happen for properly linked vertices)
+            from .spatial import calculate_distance
 
-        distance_m = calculate_distance(lat, lon, node.lat, node.lon)
+            if "lat" in vertex and "lon" in vertex:
+                lat = float(vertex["lat"])
+                lon = float(vertex["lon"])
+            else:
+                # Final fallback - use node coordinates (zero distance)
+                lat, lon = node.lat, node.lon
+
+            distance_m = calculate_distance(lat, lon, node.lat, node.lon)
 
         # Calculate walking time
         duration_s = distance_m / self.walking_profile.base_speed_ms
@@ -278,6 +331,11 @@ class OSMAccessProvider:
             "osm_node_id": node.id,
             **node.tags,  # Include any relevant OSM tags
         }
+
+        # Preserve time from origin vertex if present
+        if "time" in vertex:
+            target_data["time"] = vertex["time"]
+
         identity_hash = self._get_identity_hash(target_data)
         target_vertex = Vertex(target_data, hash_value=identity_hash)
 
@@ -317,16 +375,41 @@ class OSMAccessProvider:
         edges = []
 
         # Generate edges to all linked vertices for this node
-        for linked_vertex in self._linked_vertices[node_id]:
-            # Calculate distance to linked vertex
-            from .spatial import calculate_distance
+        for linked_vertex_template in self._linked_vertices[node_id]:
+            # Get cached distance for this template
+            template_hash = self._get_time_agnostic_hash(linked_vertex_template)
 
-            distance_m = calculate_distance(
-                node.lat, node.lon, linked_vertex["lat"], linked_vertex["lon"]
-            )
+            if (
+                hasattr(self, "_link_distances")
+                and template_hash in self._link_distances
+            ):
+                distance_m = self._link_distances[template_hash]
+            else:
+                # Fallback: calculate distance if not cached (shouldn't happen for properly linked vertices)
+                from .spatial import calculate_distance
+
+                if "lat" in linked_vertex_template and "lon" in linked_vertex_template:
+                    target_lat = float(linked_vertex_template["lat"])
+                    target_lon = float(linked_vertex_template["lon"])
+                else:
+                    # Final fallback - use node coordinates (zero distance)
+                    target_lat, target_lon = node.lat, node.lon
+
+                distance_m = calculate_distance(
+                    node.lat, node.lon, target_lat, target_lon
+                )
 
             # Calculate walking time
             duration_s = distance_m / self.walking_profile.base_speed_ms
+
+            # Create target vertex with time preserved from origin
+            target_data = dict(linked_vertex_template.items())
+
+            # Preserve time from origin OSM node vertex if present
+            if "time" in vertex:
+                target_data["time"] = vertex["time"]
+
+            target_vertex = Vertex(target_data)
 
             # Create edge to linked vertex
             edge = Edge(
@@ -339,7 +422,7 @@ class OSMAccessProvider:
                 },
             )
 
-            edges.append((linked_vertex, edge))
+            edges.append((target_vertex, edge))
 
         return edges
 
