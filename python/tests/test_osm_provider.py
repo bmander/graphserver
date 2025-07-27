@@ -350,8 +350,8 @@ class TestOSMNetworkProvider:
 class TestOSMAccessProvider:
     """Test OSM access provider functionality."""
 
-    def test_coordinate_to_osm_edges(self, sample_osm_file: Path) -> None:
-        """Test edge generation from coordinates to OSM nodes."""
+    def test_linked_vertex_edges(self, sample_osm_file: Path) -> None:
+        """Test edge generation from linked vertices to OSM nodes."""
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
 
@@ -367,18 +367,48 @@ class TestOSMAccessProvider:
         # Create vertex with coordinates near sample data
         coord_vertex = Vertex({"lat": 47.6063, "lon": -122.3322})
 
-        # Generate edges from coordinates
+        # Initially, unlinked vertex should produce no edges
         edges = provider(coord_vertex)
+        assert len(edges) == 0
 
-        assert len(edges) > 0
+        # Link the vertex to nearest OSM node
+        provider.link(coord_vertex, 47.6063, -122.3322)
+
+        # Now it should generate edges
+        edges = provider(coord_vertex)
+        assert len(edges) == 1  # Should have one edge to linked OSM node
 
         # Check edge structure
-        for target_vertex, edge in edges:
-            assert "osm_node_id" in target_vertex
-            assert edge.cost > 0
-            assert "edge_type" in edge.metadata
-            assert edge.metadata["edge_type"] == "coordinate_to_node"
-            assert "osm_node_id" in edge.metadata
+        target_vertex, edge = edges[0]
+        assert "osm_node_id" in target_vertex
+        assert edge.cost > 0
+        assert "edge_type" in edge.metadata
+        assert edge.metadata["edge_type"] == "linked_vertex_to_node"
+        assert "osm_node_id" in edge.metadata
+
+        # Clean up
+        sample_osm_file.unlink()
+
+    def test_unlinked_coordinate_vertex(self, sample_osm_file: Path) -> None:
+        """Test that unlinked coordinate vertices produce no edges."""
+        if not OSM_AVAILABLE:
+            pytest.skip("OSM dependencies not available")
+
+        from graphserver import Vertex
+
+        provider = OSMAccessProvider(
+            sample_osm_file,
+            search_radius_m=1000.0,
+            max_nearby_nodes=3,
+            build_index=True,
+        )
+
+        # Create vertex with coordinates that is not linked
+        coord_vertex = Vertex({"lat": 47.6063, "lon": -122.3322})
+
+        # Should generate no edges since vertex is not linked
+        edges = provider(coord_vertex)
+        assert len(edges) == 0
 
         # Clean up
         sample_osm_file.unlink()
@@ -420,6 +450,102 @@ class TestOSMAccessProvider:
             assert "edge_type" in edge.metadata
             assert edge.metadata["edge_type"] == "node_to_offramp"
             assert "from_osm_node_id" in edge.metadata
+
+        # Clean up
+        sample_osm_file.unlink()
+
+    def test_link_method(self, sample_osm_file: Path) -> None:
+        """Test the link() method functionality."""
+        if not OSM_AVAILABLE:
+            pytest.skip("OSM dependencies not available")
+
+        from graphserver import Vertex
+
+        provider = OSMAccessProvider(
+            sample_osm_file,
+            search_radius_m=1000.0,
+            max_nearby_nodes=3,
+            build_index=True,
+        )
+
+        # Create vertex to link
+        vertex = Vertex({"lat": 47.6063, "lon": -122.3322, "name": "test_vertex"})
+
+        # Link vertex to nearest OSM node
+        provider.link(vertex, 47.6063, -122.3322)
+
+        # Test that the vertex is now linked
+        edges = provider(vertex)
+        assert len(edges) == 1
+        assert edges[0][1].metadata["edge_type"] == "linked_vertex_to_node"
+
+        # Test that the OSM node now has an edge back to the vertex
+        osm_node_id = edges[0][0]["osm_node_id"]
+        osm_vertex = Vertex({"osm_node_id": osm_node_id})
+        back_edges = provider(osm_vertex)
+
+        # Should have at least one edge back to our linked vertex
+        linked_back_edges = [
+            edge
+            for vertex_target, edge in back_edges
+            if edge.metadata.get("edge_type") == "node_to_linked_vertex"
+        ]
+        assert len(linked_back_edges) >= 1
+
+        # Clean up
+        sample_osm_file.unlink()
+
+    def test_link_method_error_cases(self, sample_osm_file: Path) -> None:
+        """Test error cases for the link() method."""
+        if not OSM_AVAILABLE:
+            pytest.skip("OSM dependencies not available")
+
+        from graphserver import Vertex
+
+        provider = OSMAccessProvider(
+            sample_osm_file,
+            search_radius_m=100.0,  # Small radius
+            max_nearby_nodes=3,
+            build_index=True,
+        )
+
+        # Test linking to coordinates outside search radius
+        vertex = Vertex({"lat": 0.0, "lon": 0.0, "name": "far_vertex"})
+
+        with pytest.raises(ValueError, match="No OSM node found within"):
+            provider.link(vertex, 0.0, 0.0)
+
+        # Clean up
+        sample_osm_file.unlink()
+
+    def test_clear_links(self, sample_osm_file: Path) -> None:
+        """Test the clear_links() method."""
+        if not OSM_AVAILABLE:
+            pytest.skip("OSM dependencies not available")
+
+        from graphserver import Vertex
+
+        provider = OSMAccessProvider(
+            sample_osm_file,
+            search_radius_m=1000.0,
+            max_nearby_nodes=3,
+            build_index=True,
+        )
+
+        # Create and link a vertex
+        vertex = Vertex({"lat": 47.6063, "lon": -122.3322, "name": "test_vertex"})
+        provider.link(vertex, 47.6063, -122.3322)
+
+        # Verify it's linked
+        edges = provider(vertex)
+        assert len(edges) == 1
+
+        # Clear all links
+        provider.clear_links()
+
+        # Verify vertex is no longer linked
+        edges = provider(vertex)
+        assert len(edges) == 0
 
         # Clean up
         sample_osm_file.unlink()

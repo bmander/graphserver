@@ -151,17 +151,18 @@ def main() -> None:
     start_vertex = Vertex({"lat": start_lat, "lon": start_lon})
     goal_vertex = Vertex({"lat": end_lat, "lon": end_lon})
 
-    # Register goal as offramp point for coordinate-to-coordinate routing
-    access_provider.register_offramp_point(end_lat, end_lon, {"type": "goal"})
+    # Link both vertices to the OSM network for coordinate-to-coordinate routing
+    access_provider.link(start_vertex, start_lat, start_lon)
+    access_provider.link(goal_vertex, end_lat, end_lon)
 
     print(f"   Start vertex: ({start_lat}, {start_lon})")
     print(f"   Goal vertex:  ({end_lat}, {end_lon})")
 
-    # Get nearby OSM nodes for coordinate-to-coordinate routing
+    # Verify vertices are linked to OSM nodes
     start_edges = access_provider(start_vertex)
     goal_edges = access_provider(goal_vertex)
     print(
-        f"   Found {len(start_edges)} nearby OSM nodes for start, {len(goal_edges)} for goal"
+        f"   Linked start to {len(start_edges)} OSM nodes, goal to {len(goal_edges)} OSM nodes"
     )
     print()
 

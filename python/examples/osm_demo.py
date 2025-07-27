@@ -67,25 +67,30 @@ def main():
         # Note: vertex only contains osm_node_id, not coordinates
 
         # Show any tags
-        tags = {
-            k: v for k, v in nearest.items() if k != "osm_node_id"
-        }
+        tags = {k: v for k, v in nearest.items() if k != "osm_node_id"}
         if tags:
             print(f"   Tags: {tags}")
 
-    # Demonstrate edge generation from coordinates
-    print("\n🔗 Access Edge Generation from Coordinates")
-    print("-" * 45)
+    # Demonstrate vertex linking and edge generation
+    print("\n🔗 Vertex Linking and Edge Generation")
+    print("-" * 40)
 
     coord_vertex = Vertex({"lat": test_lat, "lon": test_lon})
+
+    # Show that unlinked vertices produce no edges
+    edges = access_provider(coord_vertex)
+    print(f"Unlinked vertex generates {len(edges)} edges")
+
+    # Link the vertex to the OSM network
+    access_provider.link(coord_vertex, test_lat, test_lon)
     edges = access_provider(coord_vertex)
 
-    print(f"Generated {len(edges)} edges from coordinates:")
+    print(f"Linked vertex generates {len(edges)} edges:")
     for i, (target, edge) in enumerate(edges):
         distance = edge.metadata.get("distance_m", 0)
         print(f"  {i + 1}. → Node {target['osm_node_id']}")
         print(f"     Distance: {distance:.1f}m, Time: {edge.cost:.1f}s")
-        # Note: target vertex only contains osm_node_id, not coordinates
+        print(f"     Edge type: {edge.metadata.get('edge_type', 'unknown')}")
 
     # Demonstrate edge generation from node ID
     if nearest:
@@ -132,9 +137,14 @@ def main():
     start_coord = Vertex({"lat": test_lat, "lon": test_lon})
     goal_coord = Vertex({"lat": test_lat + 0.001, "lon": test_lon + 0.001})
 
+    # Link both vertices to the OSM network
+    access_provider.link(start_coord, test_lat, test_lon)
+    access_provider.link(goal_coord, test_lat + 0.001, test_lon + 0.001)
+
     print("Attempting to plan route:")
     print(f"  From: ({start_coord['lat']}, {start_coord['lon']})")
     print(f"  To:   ({goal_coord['lat']}, {goal_coord['lon']})")
+    print("  (Both vertices linked to OSM network)")
 
     try:
         result = engine.plan(start=start_coord, goal=goal_coord)
@@ -155,9 +165,7 @@ def main():
                 target = path_edge.target
 
                 print(f"    Cost: {edge.cost:.1f}s")
-                print(
-                    f"    Target: Node {target.get('osm_node_id', 'N/A')}"
-                )
+                print(f"    Target: Node {target.get('osm_node_id', 'N/A')}")
 
                 # Access edge metadata if available
                 if hasattr(edge, "metadata") and edge.metadata:

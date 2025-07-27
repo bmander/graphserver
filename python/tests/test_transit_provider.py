@@ -306,7 +306,9 @@ def test_first_and_last_stop_behavior() -> None:
 
         # Should have TWO edges: to boarding vertex and to stop vertex
         assert len(first_stop_alight_edges) == 2
-        edge_types = [edge.get_metadata("edge_type") for _, edge in first_stop_alight_edges]
+        edge_types = [
+            edge.get_metadata("edge_type") for _, edge in first_stop_alight_edges
+        ]
         assert "alight_at_stop" in edge_types
         assert "alight_to_boarding" in edge_types
 
@@ -327,7 +329,9 @@ def test_first_and_last_stop_behavior() -> None:
 
         # Should have TWO edges: to boarding vertex and to stop vertex
         assert len(middle_stop_alight_edges) == 2
-        edge_types = [edge.get_metadata("edge_type") for _, edge in middle_stop_alight_edges]
+        edge_types = [
+            edge.get_metadata("edge_type") for _, edge in middle_stop_alight_edges
+        ]
         assert "alight_to_boarding" in edge_types
         assert "alight_at_stop" in edge_types
 
@@ -348,7 +352,9 @@ def test_first_and_last_stop_behavior() -> None:
 
         # Should have only ONE edge: to stop vertex (no alight_to_boarding)
         assert len(last_stop_alight_edges) == 1
-        edge_types = [edge.get_metadata("edge_type") for _, edge in last_stop_alight_edges]
+        edge_types = [
+            edge.get_metadata("edge_type") for _, edge in last_stop_alight_edges
+        ]
         assert "alight_at_stop" in edge_types
         assert "alight_to_boarding" not in edge_types
 

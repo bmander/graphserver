@@ -85,7 +85,9 @@ def main() -> None:
         print("🔧 Initializing transit provider...")
         provider = TransitProvider(gtfs_file)
 
-        print(f"📊 Loaded transit network: {provider.stop_count} stops, {provider.route_count} routes, {provider.trip_count} trips")
+        print(
+            f"📊 Loaded transit network: {provider.stop_count} stops, {provider.route_count} routes, {provider.trip_count} trips"
+        )
 
         # Create and register with engine
         engine = Engine(enable_edge_caching=True)
@@ -114,7 +116,9 @@ def main() -> None:
             }
         )
 
-        print(f"Route from ({start_vertex['lat']:.4f}, {start_vertex['lon']:.4f}) to ({goal_vertex['lat']:.4f}, {goal_vertex['lon']:.4f})")
+        print(
+            f"Route from ({start_vertex['lat']:.4f}, {start_vertex['lon']:.4f}) to ({goal_vertex['lat']:.4f}, {goal_vertex['lon']:.4f})"
+        )
 
         # Example 2: Test edge expansion from coordinates
         print("\n🔍 Example 2: Edge expansion from coordinates")

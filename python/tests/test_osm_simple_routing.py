@@ -144,6 +144,13 @@ class TestSimpleOSMRouting:
 
         # Test coordinate vertex near node 1
         ap1_vertex = Vertex({"lat": 0.0001, "lon": 0.0001})  # Close to (0,0)
+
+        # Initially should have no edges (not linked)
+        onramps = access_provider(ap1_vertex)
+        assert len(onramps) == 0
+
+        # Link the vertex and test again
+        access_provider.link(ap1_vertex, 0.0001, 0.0001)
         onramps = access_provider(ap1_vertex)
 
         assert len(onramps) > 0
@@ -153,6 +160,7 @@ class TestSimpleOSMRouting:
 
         # Test coordinate vertex near node 2
         ap2_vertex = Vertex({"lat": 0.0001, "lon": 0.0011})  # Close to (0, 0.001)
+        access_provider.link(ap2_vertex, 0.0001, 0.0011)
         onramps = access_provider(ap2_vertex)
 
         assert len(onramps) > 0
@@ -227,6 +235,10 @@ class TestSimpleOSMRouting:
         start_vertex = Vertex({"lat": 0.0001, "lon": 0.0001})  # Near node 1
         goal_vertex = Vertex({"lat": 0.0001, "lon": 0.0011})  # Near node 2
 
+        # Link vertices to OSM network
+        access_provider.link(start_vertex, 0.0001, 0.0001)
+        access_provider.link(goal_vertex, 0.0001, 0.0011)
+
         # Verify that access provider can generate onramps for both coordinate vertices
         start_onramps = access_provider(start_vertex)
         goal_onramps = access_provider(goal_vertex)
@@ -278,6 +290,10 @@ class TestSimpleOSMRouting:
         # Create coordinate vertices for test coordinates
         start_vertex = Vertex({"lat": 0.0001, "lon": 0.0001})  # Near node 1 (0,0)
         goal_vertex = Vertex({"lat": 0.0001, "lon": 0.0011})  # Near node 2 (0,0.001)
+
+        # Link vertices to OSM network
+        access_provider.link(start_vertex, 0.0001, 0.0001)
+        access_provider.link(goal_vertex, 0.0001, 0.0011)
 
         # Test the new simplified access provider functionality
         # 1. Verify coordinate-to-OSM-node edges work
@@ -339,6 +355,10 @@ class TestSimpleOSMRouting:
         """Create coordinate vertices and validate they generate edges."""
         start_vertex = Vertex({"lat": 0.0001, "lon": 0.0001})  # Near node 1
         goal_vertex = Vertex({"lat": 0.0001, "lon": 0.0011})  # Near node 2
+
+        # Link vertices to OSM network
+        access_provider.link(start_vertex, 0.0001, 0.0001)
+        access_provider.link(goal_vertex, 0.0001, 0.0011)
 
         # Validate that both vertices can generate edges to OSM nodes
         start_edges = access_provider(start_vertex)
@@ -524,13 +544,21 @@ class TestSimpleOSMRouting:
         far_vertex = Vertex({"lat": 10.0, "lon": 10.0})  # Very far from (0,0)
         near_vertex = Vertex({"lat": 0.0001, "lon": 0.0001})  # Near node 1
 
-        # Far vertex should not generate any edges (no nearby nodes)
+        # Unlinked vertices should not generate any edges
         far_edges = access_provider(far_vertex)
-        assert len(far_edges) == 0, "Far vertex should not find nearby OSM nodes"
+        assert len(far_edges) == 0, "Unlinked vertex should not find any edges"
 
-        # Near vertex should generate edges
         near_edges = access_provider(near_vertex)
-        assert len(near_edges) > 0, "Near vertex should find nearby OSM nodes"
+        assert len(near_edges) == 0, "Unlinked vertex should not find any edges"
+
+        # Attempting to link far vertex should raise error (no nearby nodes)
+        with pytest.raises(ValueError, match="No OSM node found within"):
+            access_provider.link(far_vertex, 10.0, 10.0)
+
+        # Linking near vertex should work
+        access_provider.link(near_vertex, 0.0001, 0.0001)
+        near_edges = access_provider(near_vertex)
+        assert len(near_edges) > 0, "Linked near vertex should find nearby OSM nodes"
 
         # Test pathfinding with disconnected coordinate
         # This should raise an exception for disconnected coordinates

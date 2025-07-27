@@ -65,6 +65,10 @@ class OSMAccessProvider:
         # Offramp points: mapping from OSM node ID to list of offramp vertices
         self._offramp_points: dict[int, list[Vertex]] = {}
 
+        # Linked vertices: bidirectional mapping between vertices and OSM nodes
+        self._linked_vertices: dict[int, list[Vertex]] = {}  # OSM node ID -> vertices
+        self._vertex_to_osm_node: dict[int, int] = {}  # vertex hash -> OSM node ID
+
         if parser is not None:
             self.parser = parser
         elif osm_file is not None:
@@ -169,81 +173,173 @@ class OSMAccessProvider:
         """Clear all registered offramp points."""
         self._offramp_points.clear()
 
+    def link(self, vertex: Vertex, lat: float, lon: float) -> None:
+        """Link a vertex to the nearest OSM node at given coordinates.
+
+        This creates a bidirectional connection between the vertex and the nearest
+        OSM node. Subsequently, the access provider will expand edges between
+        the vertex and the linked OSM node.
+
+        Args:
+            vertex: The vertex to link
+            lat: Latitude of the coordinates to link to
+            lon: Longitude of the coordinates to link to
+
+        Raises:
+            ValueError: If no OSM node is found within search radius
+        """
+        # Find nearest OSM node
+        if self.spatial_index is not None:
+            nearest_node = self.spatial_index.find_nearest_node(
+                lat, lon, self.search_radius_m
+            )
+        else:
+            nearby_nodes = self.parser.get_nearby_nodes(lat, lon, self.search_radius_m)
+            nearest_node = nearby_nodes[0] if nearby_nodes else None
+
+        if nearest_node is None:
+            msg = f"No OSM node found within {self.search_radius_m}m of ({lat}, {lon})"
+            raise ValueError(msg)
+
+        # Get vertex identity hash
+        vertex_hash = hash(vertex)
+
+        # Store bidirectional mapping
+        self._vertex_to_osm_node[vertex_hash] = nearest_node.id
+
+        if nearest_node.id not in self._linked_vertices:
+            self._linked_vertices[nearest_node.id] = []
+        self._linked_vertices[nearest_node.id].append(vertex)
+
+    def clear_links(self) -> None:
+        """Clear all vertex-OSM node links."""
+        self._linked_vertices.clear()
+        self._vertex_to_osm_node.clear()
+
     def __call__(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
         """Generate edges from a vertex (implements EdgeProvider protocol).
 
         Args:
-            vertex: Input vertex containing either lat/lon coordinates or OSM node ID
+            vertex: Input vertex containing either linked coordinates or OSM node ID
 
         Returns:
             List of (target_vertex, edge) tuples
         """
-        # Handle lat/lon vertices - return edges to nearby OSM nodes
+        # Handle linked coordinate vertices - return edges to linked OSM nodes
         if "lat" in vertex and "lon" in vertex:
-            return self._edges_from_coordinates(vertex)
+            return self._edges_from_linked_vertex(vertex)
 
-        # Handle OSM node vertices - return edges to registered offramp points
+        # Handle OSM node vertices - return edges to linked vertices and offramp points
         if "osm_node_id" in vertex:
-            return self._edges_to_offramp_points(vertex)
+            edges = []
+            edges.extend(self._edges_to_linked_vertices(vertex))
+            edges.extend(self._edges_to_offramp_points(vertex))
+            return edges
 
         # Unknown vertex type
         return []
 
-    def _edges_from_coordinates(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
-        """Generate edges from coordinates to nearby OSM nodes.
+    def _edges_from_linked_vertex(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+        """Generate edges from a linked coordinate vertex to its linked OSM node.
 
         Args:
-            vertex: Vertex containing "lat" and "lon" keys
+            vertex: Vertex containing "lat" and "lon" keys that has been linked
 
         Returns:
-            List of edges to nearby OSM nodes
+            List of edges to the linked OSM node, or empty if not linked
         """
+        # Check if this vertex is linked to an OSM node
+        vertex_hash = hash(vertex)
+
+        if vertex_hash not in self._vertex_to_osm_node:
+            # Vertex is not linked - return no edges
+            return []
+
+        osm_node_id = self._vertex_to_osm_node[vertex_hash]
+
+        # Check if the OSM node exists in our data
+        if osm_node_id not in self.parser.nodes:
+            return []
+
+        node = self.parser.nodes[osm_node_id]
         lat = float(vertex["lat"])
         lon = float(vertex["lon"])
 
-        # Find nearby OSM nodes
-        if self.spatial_index is not None:
-            nearby_results = self.spatial_index.find_nearest_nodes(
-                lat, lon, self.search_radius_m, self.max_nearby_nodes
-            )
-            nearby_nodes = [(node, distance) for node, distance in nearby_results]
-        else:
-            nodes = self.parser.get_nearby_nodes(lat, lon, self.search_radius_m)
-            nodes = nodes[: self.max_nearby_nodes]
-            # Calculate distances
+        # Calculate distance to linked OSM node
+        from .spatial import calculate_distance
+
+        distance_m = calculate_distance(lat, lon, node.lat, node.lon)
+
+        # Calculate walking time
+        duration_s = distance_m / self.walking_profile.base_speed_ms
+
+        # Create target vertex with OSM node information
+        target_data = {
+            "osm_node_id": node.id,
+            **node.tags,  # Include any relevant OSM tags
+        }
+        identity_hash = self._get_identity_hash(target_data)
+        target_vertex = Vertex(target_data, hash_value=identity_hash)
+
+        # Create edge with cost based on walking time
+        edge = Edge(
+            cost=duration_s,
+            metadata={
+                "edge_type": "linked_vertex_to_node",
+                "distance_m": distance_m,
+                "duration_s": duration_s,
+                "osm_node_id": node.id,
+            },
+        )
+
+        return [(target_vertex, edge)]
+
+    def _edges_to_linked_vertices(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+        """Generate edges from OSM node to linked vertices.
+
+        Args:
+            vertex: Vertex containing "osm_node_id" key
+
+        Returns:
+            List of edges to linked vertices
+        """
+        node_id = int(vertex["osm_node_id"])
+
+        # Check if this node has any linked vertices
+        if node_id not in self._linked_vertices:
+            return []
+
+        # Check if node exists in our data
+        if node_id not in self.parser.nodes:
+            return []
+
+        node = self.parser.nodes[node_id]
+        edges = []
+
+        # Generate edges to all linked vertices for this node
+        for linked_vertex in self._linked_vertices[node_id]:
+            # Calculate distance to linked vertex
             from .spatial import calculate_distance
 
-            nearby_nodes = [
-                (node, calculate_distance(lat, lon, node.lat, node.lon))
-                for node in nodes
-            ]
+            distance_m = calculate_distance(
+                node.lat, node.lon, linked_vertex["lat"], linked_vertex["lon"]
+            )
 
-        # Generate edges to nearby nodes
-        edges = []
-        for node, distance_m in nearby_nodes:
-            # Use base walking speed for coordinate-to-node edges
+            # Calculate walking time
             duration_s = distance_m / self.walking_profile.base_speed_ms
 
-            # Create target vertex with OSM node information
-            target_data = {
-                "osm_node_id": node.id,
-                **node.tags,  # Include any relevant OSM tags
-            }
-            identity_hash = self._get_identity_hash(target_data)
-            target_vertex = Vertex(target_data, hash_value=identity_hash)
-
-            # Create edge with cost based on walking time
+            # Create edge to linked vertex
             edge = Edge(
                 cost=duration_s,
                 metadata={
-                    "edge_type": "coordinate_to_node",
+                    "edge_type": "node_to_linked_vertex",
                     "distance_m": distance_m,
                     "duration_s": duration_s,
-                    "osm_node_id": node.id,
+                    "from_osm_node_id": node_id,
                 },
             )
 
-            edges.append((target_vertex, edge))
+            edges.append((linked_vertex, edge))
 
         return edges
 
@@ -306,8 +402,6 @@ class OSMAccessProvider:
         Returns:
             Vertex for nearest node or None if no node found
         """
-
-        # TODO use this method in __call__ for coordinate vertices
         if self.spatial_index is not None:
             node = self.spatial_index.find_nearest_node(lat, lon, self.search_radius_m)
         else:
