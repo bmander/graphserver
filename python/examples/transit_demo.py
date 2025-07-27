@@ -85,18 +85,14 @@ def main() -> None:
         print("🔧 Initializing transit provider...")
         provider = TransitProvider(gtfs_file)
 
-        print(f"📊 Provider stats:")
-        print(f"   • Stops: {provider.stop_count}")
-        print(f"   • Routes: {provider.route_count}")
-        print(f"   • Trips: {provider.trip_count}")
+        print(f"📊 Loaded transit network: {provider.stop_count} stops, {provider.route_count} routes, {provider.trip_count} trips")
 
         # Create and register with engine
-        print("🏗️  Setting up planning engine...")
         engine = Engine(enable_edge_caching=True)
         engine.register_provider("transit", provider)
 
         # Example 1: Coordinate to coordinate routing
-        print("\\n🗺️  Example 1: Coordinate-based routing")
+        print("\n🗺️  Example 1: Coordinate-based routing")
         print("-" * 40)
 
         # Start near downtown (at 8:55 AM)
@@ -118,11 +114,10 @@ def main() -> None:
             }
         )
 
-        print(f"Start: {start_vertex['lat']:.4f}, {start_vertex['lon']:.4f}")
-        print(f"Goal:  {goal_vertex['lat']:.4f}, {goal_vertex['lon']:.4f}")
+        print(f"Route from ({start_vertex['lat']:.4f}, {start_vertex['lon']:.4f}) to ({goal_vertex['lat']:.4f}, {goal_vertex['lon']:.4f})")
 
         # Example 2: Test edge expansion from coordinates
-        print("\\n🔍 Example 2: Edge expansion from coordinates")
+        print("\n🔍 Example 2: Edge expansion from coordinates")
         print("-" * 40)
 
         coord_vertex = Vertex(
@@ -139,10 +134,10 @@ def main() -> None:
             stop_name = target.get("stop_name", "Unknown")
             distance = edge.get_metadata("distance_m", 0)
             walking_time = edge.get_metadata("walking_time_s", 0)
-            print(f"  {i + 1}. {stop_name} ({distance:.0f}m, {walking_time:.0f}s walk)")
+            print(f"  • {stop_name} ({distance:.0f}m, {walking_time:.0f}s walk)")
 
         # Example 3: Test departures from a stop
-        print("\\n🚌 Example 3: Departures from downtown stop")
+        print("\n🚌 Example 3: Departures from downtown stop")
         print("-" * 40)
 
         stop_vertex = Vertex({"stop_id": "downtown", "time": start_time})
@@ -152,12 +147,11 @@ def main() -> None:
         for i, (target, edge) in enumerate(departure_edges):
             trip_id = target.get("trip_id", "Unknown")
             route_id = target.get("route_id", "Unknown")
-            departure_time = target.get("time", 0)
             waiting_time = edge.get_metadata("waiting_time_s", 0)
-            print(f"  {i + 1}. {route_id} (Trip: {trip_id}) - wait {waiting_time:.0f}s")
+            print(f"  • {route_id} (Trip: {trip_id}) - wait {waiting_time:.0f}s")
 
         # Example 4: Test vehicle state transitions
-        print("\\n🎭 Example 4: Vehicle state transitions")
+        print("\n🎭 Example 4: Vehicle state transitions")
         print("-" * 40)
 
         # Boarding vertex
@@ -199,7 +193,7 @@ def main() -> None:
             stop_id = target.get("stop_id", "unknown")
             print(f"  → {state} at {stop_id} ({edge_type})")
 
-        print("\\n✅ Transit provider example completed successfully!")
+        print("\n✅ Transit provider example completed successfully!")
 
     except Exception as e:
         print(f"❌ Error: {e}")
@@ -209,10 +203,8 @@ def main() -> None:
 
     finally:
         # Clean up
-        print("🧹 Cleaning up...")
         gtfs_file.unlink()
         gtfs_file.parent.rmdir()
-        print("Done!")
 
 
 if __name__ == "__main__":
