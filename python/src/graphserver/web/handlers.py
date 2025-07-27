@@ -13,10 +13,11 @@ from graphserver import Vertex
 def parse_value(value_str: str) -> str | int | float:
     """Convert string to appropriate type (float, int, or str)."""
     # If value is quoted, treat as string and strip quotes
-    if (value_str.startswith('"') and value_str.endswith('"')) or \
-       (value_str.startswith("'") and value_str.endswith("'")):
+    if (value_str.startswith('"') and value_str.endswith('"')) or (
+        value_str.startswith("'") and value_str.endswith("'")
+    ):
         return value_str[1:-1]
-    
+
     try:
         # Try float first (handles decimals)
         if "." in value_str:

@@ -83,7 +83,7 @@ class GTFSParser:
                 except (ValueError, TypeError):
                     # If conversion fails, use default value
                     location_type_value = 0
-                
+
                 stop = Stop(
                     stop_id=str(stop_row["stop_id"]),
                     stop_name=str(stop_row.get("stop_name", "")),
@@ -154,13 +154,13 @@ class GTFSParser:
                     pickup_type_value = int(pickup_type_value)
                 except (ValueError, TypeError):
                     pickup_type_value = 0
-                    
+
                 drop_off_type_value = st_row.get("drop_off_type", 0)
                 try:
                     drop_off_type_value = int(drop_off_type_value)
                 except (ValueError, TypeError):
                     drop_off_type_value = 0
-                
+
                 stop_time = StopTime(
                     trip_id=str(st_row["trip_id"]),
                     stop_id=str(st_row["stop_id"]),

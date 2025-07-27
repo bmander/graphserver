@@ -151,7 +151,7 @@ class ProviderManager:
 
     def validate_vertex_for_providers(self, vertex_props: dict) -> tuple[bool, str]:
         """Validate that vertex properties are compatible with providers.
-        
+
         Tests the vertex with actual providers to determine if any can handle it.
         """
         if not vertex_props:
@@ -161,7 +161,7 @@ class ProviderManager:
             return False, "No providers available"
 
         from graphserver import Vertex
-        
+
         vertex = Vertex(vertex_props)
         compatible_providers = []
         provider_results = []
@@ -181,4 +181,7 @@ class ProviderManager:
         if compatible_providers:
             return True, f"Compatible with: {', '.join(compatible_providers)}"
         else:
-            return False, f"No providers can handle this vertex. Results: {'; '.join(provider_results)}"
+            return (
+                False,
+                f"No providers can handle this vertex. Results: {'; '.join(provider_results)}",
+            )
