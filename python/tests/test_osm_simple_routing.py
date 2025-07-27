@@ -87,10 +87,6 @@ class TestSimpleOSMRouting:
 
         assert node1 is not None
         assert node2 is not None
-        assert node1["lat"] == 0.0
-        assert node1["lon"] == 0.0
-        assert node2["lat"] == 0.0
-        assert node2["lon"] == 0.001
 
         # Clean up
         simple_osm_file.unlink()

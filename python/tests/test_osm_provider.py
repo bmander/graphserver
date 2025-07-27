@@ -319,8 +319,6 @@ class TestOSMNetworkProvider:
         # Check edge structure
         for target_vertex, edge in edges:
             assert "osm_node_id" in target_vertex
-            assert "lat" in target_vertex
-            assert "lon" in target_vertex
             assert edge.cost > 0
             assert "edge_type" in edge.metadata
             assert edge.metadata["edge_type"] == "osm_way"
@@ -340,8 +338,6 @@ class TestOSMNetworkProvider:
         node_vertex = provider.get_node_by_id(1)
         assert node_vertex is not None
         assert node_vertex["osm_node_id"] == 1
-        assert "lat" in node_vertex
-        assert "lon" in node_vertex
 
         # Test non-existent node
         missing_vertex = provider.get_node_by_id(999)
@@ -379,8 +375,6 @@ class TestOSMAccessProvider:
         # Check edge structure
         for target_vertex, edge in edges:
             assert "osm_node_id" in target_vertex
-            assert "lat" in target_vertex
-            assert "lon" in target_vertex
             assert edge.cost > 0
             assert "edge_type" in edge.metadata
             assert edge.metadata["edge_type"] == "coordinate_to_node"

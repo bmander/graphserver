@@ -64,11 +64,11 @@ def main():
     if nearest:
         print(f"📍 Nearest node to ({test_lat}, {test_lon}):")
         print(f"   Node ID: {nearest['osm_node_id']}")
-        print(f"   Location: ({nearest['lat']:.6f}, {nearest['lon']:.6f})")
+        # Note: vertex only contains osm_node_id, not coordinates
 
         # Show any tags
         tags = {
-            k: v for k, v in nearest.items() if k not in {"osm_node_id", "lat", "lon"}
+            k: v for k, v in nearest.items() if k != "osm_node_id"
         }
         if tags:
             print(f"   Tags: {tags}")
@@ -85,7 +85,7 @@ def main():
         distance = edge.metadata.get("distance_m", 0)
         print(f"  {i + 1}. → Node {target['osm_node_id']}")
         print(f"     Distance: {distance:.1f}m, Time: {edge.cost:.1f}s")
-        print(f"     Target: ({target['lat']:.6f}, {target['lon']:.6f})")
+        # Note: target vertex only contains osm_node_id, not coordinates
 
     # Demonstrate edge generation from node ID
     if nearest:
@@ -156,7 +156,7 @@ def main():
 
                 print(f"    Cost: {edge.cost:.1f}s")
                 print(
-                    f"    Target: Node {target.get('osm_node_id', 'N/A')} at ({target.get('lat', 'N/A'):.6f}, {target.get('lon', 'N/A'):.6f})"
+                    f"    Target: Node {target.get('osm_node_id', 'N/A')}"
                 )
 
                 # Access edge metadata if available
