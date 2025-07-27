@@ -212,6 +212,12 @@ class TransitProvider:
             if departure.departure_time < time:
                 continue
 
+            # Check if this departure is at the last stop of the trip
+            # Don't create boarding edges for trips at their terminus
+            trip_bounds = self.parser.get_trip_stop_bounds(departure.trip_id)
+            if trip_bounds is not None and departure.stop_sequence == trip_bounds[1]:
+                continue  # Skip boarding at last stop
+
             # Create boarding vertex
             target_vertex = Vertex(
                 {
@@ -313,24 +319,30 @@ class TransitProvider:
 
         edges = []
 
+        # Check if this is the first stop in the trip
+        trip_bounds = self.parser.get_trip_stop_bounds(trip_id)
+        is_last_stop = trip_bounds is not None and stop_sequence == trip_bounds[1]
+
         # Edge 1: To boarding vertex at same stop (for continuing on vehicle)
-        boarding_vertex = Vertex(
-            {
-                "time": arrival_time,
-                "trip_id": trip_id,
-                "stop_sequence": stop_sequence,
-                "vehicle_state": "boarding",
-            }
-        )
+        # Skip this edge if it's the last stop in the trip (can't board at terminus)
+        if not is_last_stop:
+            boarding_vertex = Vertex(
+                {
+                    "time": arrival_time,
+                    "trip_id": trip_id,
+                    "stop_sequence": stop_sequence,
+                    "vehicle_state": "boarding",
+                }
+            )
 
-        boarding_edge = Edge(
-            cost=0,  # No cost to change state
-            metadata={
-                "edge_type": "alight_to_boarding",
-            },
-        )
+            boarding_edge = Edge(
+                cost=0,  # No cost to change state
+                metadata={
+                    "edge_type": "alight_to_boarding",
+                },
+            )
 
-        edges.append((boarding_vertex, boarding_edge))
+            edges.append((boarding_vertex, boarding_edge))
 
         # Edge 2: To stop vertex (for alighting)
         if stop_id in self.parser.stops:

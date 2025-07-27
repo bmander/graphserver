@@ -287,6 +287,25 @@ class GTFSParser:
 
         return None
 
+    def get_trip_stop_bounds(self, trip_id: str) -> tuple[int, int] | None:
+        """Get the first and last stop sequences for a trip.
+
+        Args:
+            trip_id: Trip ID
+
+        Returns:
+            Tuple of (min_sequence, max_sequence) or None if trip not found
+        """
+        if trip_id not in self.stop_times:
+            return None
+
+        stop_times_list = self.stop_times[trip_id]
+        if not stop_times_list:
+            return None
+
+        sequences = [st.stop_sequence for st in stop_times_list]
+        return (min(sequences), max(sequences))
+
     def is_service_active(self, service_id: str, date_obj: date) -> bool:  # noqa: ARG002
         """Check if a service is active on a given date.
 

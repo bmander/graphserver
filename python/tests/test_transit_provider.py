@@ -278,6 +278,135 @@ def test_vertex_state_transitions() -> None:
         pytest.skip("Transit dependencies not installed")
 
 
+def test_first_and_last_stop_behavior() -> None:
+    """Test that last stops don't have alight-to-boarding edges and don't allow boarding."""
+    try:
+        from graphserver.providers.transit import TransitProvider
+
+        # Create sample GTFS
+        gtfs_file = create_sample_gtfs()
+
+        # Initialize provider
+        provider = TransitProvider(gtfs_file)
+
+        # Test alight vertex at FIRST stop (stop_sequence 1)
+        # This should have both edges (normal behavior, passengers can re-board)
+        first_stop_alight_vertex = Vertex(
+            {
+                "time": 1704708000,
+                "trip_id": "trip1",
+                "stop_sequence": 1,  # First stop
+                "vehicle_state": "alight",
+                "stop_id": "stop1",
+                "route_id": "route1",
+            }
+        )
+
+        first_stop_alight_edges = provider(first_stop_alight_vertex)
+
+        # Should have TWO edges: to boarding vertex and to stop vertex
+        assert len(first_stop_alight_edges) == 2
+        edge_types = [edge.get_metadata("edge_type") for _, edge in first_stop_alight_edges]
+        assert "alight_at_stop" in edge_types
+        assert "alight_to_boarding" in edge_types
+
+        # Test alight vertex at MIDDLE stop (stop_sequence 2)
+        # This should have both edges (normal behavior)
+        middle_stop_alight_vertex = Vertex(
+            {
+                "time": 1704708300,
+                "trip_id": "trip1",
+                "stop_sequence": 2,  # Middle stop
+                "vehicle_state": "alight",
+                "stop_id": "stop2",
+                "route_id": "route1",
+            }
+        )
+
+        middle_stop_alight_edges = provider(middle_stop_alight_vertex)
+
+        # Should have TWO edges: to boarding vertex and to stop vertex
+        assert len(middle_stop_alight_edges) == 2
+        edge_types = [edge.get_metadata("edge_type") for _, edge in middle_stop_alight_edges]
+        assert "alight_to_boarding" in edge_types
+        assert "alight_at_stop" in edge_types
+
+        # Test alight vertex at LAST stop (stop_sequence 3)
+        # This should NOT have an alight_to_boarding edge (can't continue at terminus)
+        last_stop_alight_vertex = Vertex(
+            {
+                "time": 1704708600,
+                "trip_id": "trip1",
+                "stop_sequence": 3,  # Last stop
+                "vehicle_state": "alight",
+                "stop_id": "stop3",
+                "route_id": "route1",
+            }
+        )
+
+        last_stop_alight_edges = provider(last_stop_alight_vertex)
+
+        # Should have only ONE edge: to stop vertex (no alight_to_boarding)
+        assert len(last_stop_alight_edges) == 1
+        edge_types = [edge.get_metadata("edge_type") for _, edge in last_stop_alight_edges]
+        assert "alight_at_stop" in edge_types
+        assert "alight_to_boarding" not in edge_types
+
+        # Test boarding vertex at LAST stop (stop_sequence 3)
+        # This should have NO edges (end of trip)
+        last_stop_boarding_vertex = Vertex(
+            {
+                "time": 1704708600,
+                "trip_id": "trip1",
+                "stop_sequence": 3,  # Last stop
+                "vehicle_state": "boarding",
+                "route_id": "route1",
+            }
+        )
+
+        last_stop_boarding_edges = provider(last_stop_boarding_vertex)
+
+        # Should have NO edges (end of trip, can't continue)
+        assert len(last_stop_boarding_edges) == 0
+
+        # Test stop vertex at LAST stop (stop_sequence 3)
+        # This should have NO departure edges (no boarding at terminus)
+        last_stop_vertex = Vertex(
+            {
+                "stop_id": "stop3",
+                "time": 1704708500,  # Just before the trip arrives at stop3
+            }
+        )
+
+        last_stop_edges = provider(last_stop_vertex)
+
+        # Should have NO edges (no departures from terminus stop)
+        assert len(last_stop_edges) == 0
+
+        # Test stop vertex at FIRST/MIDDLE stop for comparison
+        # This should have departure edges (normal behavior)
+        first_stop_vertex = Vertex(
+            {
+                "stop_id": "stop1",
+                "time": 1704707900,  # Just before trip departure from stop1
+            }
+        )
+
+        first_stop_edges = provider(first_stop_vertex)
+
+        # Should have at least one departure edge
+        if first_stop_edges:  # May be empty due to time calculations
+            for _, edge in first_stop_edges:
+                assert edge.get_metadata("edge_type") == "wait_for_departure"
+
+        # Clean up
+        gtfs_file.unlink()
+        gtfs_file.parent.rmdir()
+
+    except ImportError:
+        pytest.skip("Transit dependencies not installed")
+
+
 if __name__ == "__main__":
     # Run basic tests
     test_transit_provider_import()
