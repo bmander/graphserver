@@ -165,7 +165,11 @@ class ProviderManager:
 
         if any(name.startswith("transit") for name in self.providers):
             supported_patterns.extend(
-                ["lat, lon, time (floats, integer)", "stop_id, time (string, integer)"]
+                [
+                    "lat, lon, time (floats, integer)",
+                    "stop_id, time (string, integer)",
+                    "time, trip_id, stop_sequence, vehicle_state (for boarding/alight)",
+                ]
             )
 
         # Check if vertex matches any supported pattern
@@ -173,6 +177,11 @@ class ProviderManager:
         has_coords = "lat" in vertex_props and "lon" in vertex_props
         has_time = "time" in vertex_props
         has_stop = "stop_id" in vertex_props
+        has_trip_info = (
+            "trip_id" in vertex_props
+            and "stop_sequence" in vertex_props
+            and "vehicle_state" in vertex_props
+        )
 
         valid_patterns = []
 
@@ -195,6 +204,13 @@ class ProviderManager:
             and any(name.startswith("transit") for name in self.providers)
         ):
             valid_patterns.append("transit routing from stop")
+
+        if (
+            has_time
+            and has_trip_info
+            and any(name.startswith("transit") for name in self.providers)
+        ):
+            valid_patterns.append("transit trip routing (boarding/alight)")
 
         if valid_patterns:
             return True, f"Compatible with: {', '.join(valid_patterns)}"
