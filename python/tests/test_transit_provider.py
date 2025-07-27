@@ -243,31 +243,31 @@ def test_vertex_state_transitions() -> None:
 
         boarding_edges = provider(boarding_vertex)
 
-        # Should transition to alright vertex at next stop
+        # Should transition to alight vertex at next stop
         if boarding_edges:  # May be empty due to time calculations
             target_vertex, edge = boarding_edges[0]
-            assert target_vertex.get("vehicle_state") == "alright"
+            assert target_vertex.get("vehicle_state") == "alight"
             assert edge.get_metadata("edge_type") == "in_vehicle_travel"
 
-        # Test alright vertex expansion
-        alright_vertex = Vertex(
+        # Test alight vertex expansion
+        alight_vertex = Vertex(
             {
                 "time": 1704708300,
                 "trip_id": "trip1",
                 "stop_sequence": 2,
-                "vehicle_state": "alright",
+                "vehicle_state": "alight",
                 "stop_id": "stop2",
                 "route_id": "route1",
             }
         )
 
-        alright_edges = provider(alright_vertex)
+        alight_edges = provider(alight_vertex)
 
         # Should have two edges: to boarding vertex and to stop vertex
-        assert len(alright_edges) == 2
+        assert len(alight_edges) == 2
 
-        edge_types = [edge.get_metadata("edge_type") for _, edge in alright_edges]
-        assert "alright_to_boarding" in edge_types
+        edge_types = [edge.get_metadata("edge_type") for _, edge in alight_edges]
+        assert "alight_to_boarding" in edge_types
         assert "alight_at_stop" in edge_types
 
         # Clean up

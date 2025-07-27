@@ -179,21 +179,21 @@ def main() -> None:
             edge_type = edge.get_metadata("edge_type", "unknown")
             print(f"  → {state} state ({edge_type})")
 
-        # Alright vertex
-        alright_vertex = Vertex(
+        # Alight vertex
+        alight_vertex = Vertex(
             {
                 "time": start_time + 2100,  # 35 minutes later
                 "trip_id": "red_trip_1",
                 "stop_sequence": 2,
-                "vehicle_state": "alright",
+                "vehicle_state": "alight",
                 "stop_id": "midtown",
                 "route_id": "red_line",
             }
         )
 
-        alright_edges = provider(alright_vertex)
-        print(f"From alright vertex: {len(alright_edges)} transitions")
-        for target, edge in alright_edges:
+        alight_edges = provider(alight_vertex)
+        print(f"From alight vertex: {len(alight_edges)} transitions")
+        for target, edge in alight_edges:
             state = target.get("vehicle_state", "stop")
             edge_type = edge.get_metadata("edge_type", "unknown")
             stop_id = target.get("stop_id", "unknown")

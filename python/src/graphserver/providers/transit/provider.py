@@ -32,16 +32,16 @@ class TransitProvider:
         "time": int, "trip_id": str, "stop_sequence": int,
         "vehicle_state": "boarding"
     }
-    4. Alright vertex: {
+    4. Alight vertex: {
         "time": int, "trip_id": str, "stop_sequence": int,
-        "vehicle_state": "alright"
+        "vehicle_state": "alight"
     }
 
     Edge expansion specification:
     - [lat/lon/time] -> nearby stops with arrival time
     - [stop_id/time] -> boarding vertices for departures
-    - [boarding vertex] -> alright vertex at next stop
-    - [alright vertex] -> boarding vertex at same stop + stop vertex at same stop
+    - [boarding vertex] -> alight vertex at next stop
+    - [alight vertex] -> boarding vertex at same stop + stop vertex at same stop
     """
 
     def __init__(
@@ -106,14 +106,14 @@ class TransitProvider:
         ):
             return self._edges_from_boarding(vertex)
 
-        # Check if vertex is an alright vertex
+        # Check if vertex is an alight vertex
         if (
             "time" in vertex
             and "trip_id" in vertex
             and "stop_sequence" in vertex
-            and vertex.get("vehicle_state") == "alright"
+            and vertex.get("vehicle_state") == "alight"
         ):
-            return self._edges_from_alright(vertex)
+            return self._edges_from_alight(vertex)
 
         # Check if vertex contains geographic coordinates with time
         if "lat" in vertex and "lon" in vertex and "time" in vertex:
@@ -243,7 +243,7 @@ class TransitProvider:
             vertex: Boarding vertex
 
         Returns:
-            List of edges to alright vertex at next stop
+            List of edges to alight vertex at next stop
         """
         trip_id = str(vertex["trip_id"])
         stop_sequence = int(vertex["stop_sequence"])
@@ -269,13 +269,13 @@ class TransitProvider:
 
         arrival_time = gtfs_time_to_timestamp(next_stop_time.arrival_time, service_date)
 
-        # Create alright vertex at next stop
+        # Create alight vertex at next stop
         target_vertex = Vertex(
             {
                 "time": arrival_time,
                 "trip_id": trip_id,
                 "stop_sequence": next_stop_time.stop_sequence,
-                "vehicle_state": "alright",
+                "vehicle_state": "alight",
                 "stop_id": next_stop_time.stop_id,
                 "route_id": vertex.get("route_id", ""),
             }
@@ -297,11 +297,11 @@ class TransitProvider:
 
         return [(target_vertex, edge)]
 
-    def _edges_from_alright(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
-        """Generate edges from alright vertex.
+    def _edges_from_alight(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+        """Generate edges from alight vertex.
 
         Args:
-            vertex: Alright vertex
+            vertex: Alight vertex
 
         Returns:
             List of edges to boarding vertex at same stop and stop vertex
@@ -326,7 +326,7 @@ class TransitProvider:
         boarding_edge = Edge(
             cost=0,  # No cost to change state
             metadata={
-                "edge_type": "alright_to_boarding",
+                "edge_type": "alight_to_boarding",
             },
         )
 
