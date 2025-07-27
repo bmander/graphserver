@@ -308,16 +308,19 @@ class TestSimpleOSMRouting:
             "Should generate edges from goal coordinate to OSM nodes"
         )
 
-        # 3. For coordinate-to-coordinate routing, register goal as offramp
-        access_provider.register_offramp_point(0.0001, 0.0011, {"destination": "goal"})
+        # 3. For coordinate-to-coordinate routing, link goal vertex
+        goal_link_vertex = Vertex({"lat": 0.0001, "lon": 0.0011, "destination": "goal"})
+        access_provider.link(goal_link_vertex, 0.0001, 0.0011)
 
-        # Test that OSM nodes near the goal now have offramp edges
+        # Test that OSM nodes near the goal now have edges to linked vertex
         node2_vertex = Vertex({"osm_node_id": 2})
-        offramps_from_2 = access_provider(node2_vertex)
-        assert len(offramps_from_2) > 0, "Node 2 should have offramp to goal coordinate"
+        linked_vertex_edges = access_provider(node2_vertex)
+        assert len(linked_vertex_edges) > 0, (
+            "Node 2 should have edge to goal linked vertex"
+        )
 
         # Clean up
-        access_provider.clear_offramp_points()
+        access_provider.clear_links()
         simple_osm_file.unlink()
 
     def _create_providers_and_engine(
@@ -465,13 +468,14 @@ class TestSimpleOSMRouting:
         # Step 4: Validate vertices structure
         self._validate_coordinate_vertices(start_vertex, goal_coordinate_vertex)
 
-        # Step 5: Register goal as offramp point for routing
-        access_provider.register_offramp_point(0.0001, 0.0011, {"destination": "goal"})
+        # Step 5: Register goal as linked vertex for routing
+        goal_link_vertex = Vertex({"lat": 0.0001, "lon": 0.0011, "destination": "goal"})
+        access_provider.link(goal_link_vertex, 0.0001, 0.0011)
 
-        # Verify offramp registration worked by checking OSM node 2 has offramps
+        # Verify link registration worked by checking OSM node 2 has linked vertex edges
         node2_vertex = Vertex({"osm_node_id": 2})
-        offramps = access_provider(node2_vertex)
-        assert len(offramps) > 0, "Node 2 should have offramp edges"
+        linked_edges = access_provider(node2_vertex)
+        assert len(linked_edges) > 0, "Node 2 should have linked vertex edges"
 
         # Use the original coordinate vertex for engine.plan() to demonstrate
         # direct coordinate-to-coordinate routing
@@ -512,7 +516,7 @@ class TestSimpleOSMRouting:
         print("✅ Minimal workflow components validated successfully!")
 
         # Clean up
-        access_provider.clear_offramp_points()
+        access_provider.clear_links()
         simple_osm_file.unlink()
 
     def test_pathfinding_edge_cases(
@@ -598,5 +602,5 @@ class TestSimpleOSMRouting:
         print("✅ Edge case testing completed successfully!")
 
         # Clean up
-        access_provider.clear_offramp_points()
+        access_provider.clear_links()
         simple_osm_file.unlink()

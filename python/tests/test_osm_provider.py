@@ -413,8 +413,8 @@ class TestOSMAccessProvider:
         # Clean up
         sample_osm_file.unlink()
 
-    def test_offramp_registration_and_edges(self, sample_osm_file: Path) -> None:
-        """Test offramp point registration and edge generation."""
+    def test_linked_vertex_registration_and_edges(self, sample_osm_file: Path) -> None:
+        """Test linked vertex registration and edge generation."""
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
 
@@ -427,12 +427,11 @@ class TestOSMAccessProvider:
             build_index=True,
         )
 
-        # Register offramp point near sample data
-        provider.register_offramp_point(
-            47.6063, -122.3322, {"exit_name": "Downtown Exit"}
-        )
+        # Create and link vertex near sample data
+        exit_vertex = Vertex({"lat": 47.6063, "lon": -122.3322, "exit_name": "Downtown Exit"})
+        provider.link(exit_vertex, 47.6063, -122.3322)
 
-        # Create OSM node vertex (assuming node 1 exists near our offramp)
+        # Create OSM node vertex (assuming node 1 exists near our linked vertex)
         osm_vertex = Vertex({"osm_node_id": 1})
 
         # Generate edges from OSM node
@@ -448,7 +447,7 @@ class TestOSMAccessProvider:
             assert target_vertex["exit_name"] == "Downtown Exit"
             assert edge.cost > 0
             assert "edge_type" in edge.metadata
-            assert edge.metadata["edge_type"] == "node_to_offramp"
+            assert edge.metadata["edge_type"] == "node_to_linked_vertex"
             assert "from_osm_node_id" in edge.metadata
 
         # Clean up
@@ -701,8 +700,8 @@ class TestOSMAccessProvider:
         # Clean up
         sample_osm_file.unlink()
 
-    def test_multiple_offramps_per_node(self, sample_osm_file: Path) -> None:
-        """Test that multiple offramp points can be registered for the same OSM node."""
+    def test_multiple_linked_vertices_per_node(self, sample_osm_file: Path) -> None:
+        """Test that multiple vertices can be linked to the same OSM node."""
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
 
@@ -715,21 +714,20 @@ class TestOSMAccessProvider:
             build_index=True,
         )
 
-        # Register multiple offramp points at similar coordinates
-        provider.register_offramp_point(
-            47.6063, -122.3322, {"exit_name": "Downtown Exit", "type": "mall"}
-        )
-        provider.register_offramp_point(
-            47.6064, -122.3323, {"exit_name": "Shopping Center", "type": "retail"}
-        )
+        # Link multiple vertices at similar coordinates
+        exit_vertex1 = Vertex({"lat": 47.6063, "lon": -122.3322, "exit_name": "Downtown Exit", "type": "mall"})
+        exit_vertex2 = Vertex({"lat": 47.6064, "lon": -122.3323, "exit_name": "Shopping Center", "type": "retail"})
+        
+        provider.link(exit_vertex1, 47.6063, -122.3322)
+        provider.link(exit_vertex2, 47.6064, -122.3323)
 
         # Create OSM node vertex
         osm_vertex = Vertex({"osm_node_id": 1})
 
-        # Generate edges from OSM node - should get multiple offramp edges
+        # Generate edges from OSM node - should get multiple linked vertex edges
         edges = provider(osm_vertex)
 
-        # Should have edges to both offramp points
+        # Should have edges to both linked vertices
         assert len(edges) >= 2
 
         # Check that we have different exit names

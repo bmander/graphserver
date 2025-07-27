@@ -125,7 +125,7 @@ def _benchmark_engine(
     times: list[float] = []
     successful = 0
 
-    # Get access provider to register offramps
+    # Get access provider to link vertices
     access_provider = engine.providers.get("osm_access")
 
     for rep in range(repetitions):
@@ -140,11 +140,10 @@ def _benchmark_engine(
                 start_vertex = Vertex({"lat": start_coords[0], "lon": start_coords[1]})
                 goal_vertex = Vertex({"lat": goal_coords[0], "lon": goal_coords[1]})
 
-                # Register goal as offramp for coordinate-to-coordinate routing
+                # Link vertices for coordinate-to-coordinate routing
                 if access_provider:
-                    access_provider.register_offramp_point(
-                        goal_coords[0], goal_coords[1], {"route": i}
-                    )
+                    access_provider.link(start_vertex, start_coords[0], start_coords[1])
+                    access_provider.link(goal_vertex, goal_coords[0], goal_coords[1])
 
                 # Use OSM node pathfinding workaround like in osm_routing_example.py
                 result = None
@@ -185,9 +184,9 @@ def _benchmark_engine(
 
         print(f"      Completed in {time.time() - rep_start:.3f}s")
 
-        # Clear offramps after each repetition to avoid conflicts
+        # Clear links after each repetition to avoid conflicts
         if access_provider:
-            access_provider.clear_offramp_points()
+            access_provider.clear_links()
 
     return times, successful, engine.get_stats()
 

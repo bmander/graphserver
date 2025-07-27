@@ -23,14 +23,19 @@ logger = logging.getLogger(__name__)
 
 
 class OSMAccessProvider:
-    """OSM access provider for connecting coordinates to the OSM network.
+    """OSM access provider for connecting vertices to the OSM network.
 
-    This provider handles two types of vertices:
-    1. Vertices with lat/lon coordinates - returns edges to nearby OSM nodes
-    2. Vertices with OSM node IDs - returns edges to registered offramp points
+    This provider uses explicit linking to connect vertices bidirectionally with OSM
+    nodes.
+    Vertices must be linked using the link() method before they can generate edges.
 
-    Offramp points can be registered at specific coordinates and will be returned
-    when querying nearby OSM nodes.
+    Supported vertex types:
+    1. Coordinate vertices (with lat/lon) - can be linked to nearby OSM nodes
+    2. OSM node vertices - return edges to all linked vertices
+    3. Other vertices - can be linked using external coordinates
+
+    The linking is time-agnostic: vertices with the same properties but different
+    times will link to the same OSM node, with time preserved across transitions.
     """
 
     def __init__(
@@ -61,9 +66,6 @@ class OSMAccessProvider:
         self.walking_profile = walking_profile or WalkingProfile()
         self.search_radius_m = search_radius_m
         self.max_nearby_nodes = max_nearby_nodes
-
-        # Offramp points: mapping from OSM node ID to list of offramp vertices
-        self._offramp_points: dict[int, list[Vertex]] = {}
 
         # Linked vertices: bidirectional mapping between vertices and OSM nodes
         self._linked_vertices: dict[int, list[Vertex]] = {}  # OSM node ID -> vertices
@@ -153,44 +155,6 @@ class OSMAccessProvider:
         self.spatial_index = SpatialIndex()
         self.spatial_index.add_nodes(self.parser.nodes)
 
-    def register_offramp_point(
-        self, lat: float, lon: float, offramp_vertex_data: dict | None = None
-    ) -> None:
-        """Register an offramp point at the given coordinates.
-
-        Args:
-            lat: Offramp point latitude
-            lon: Offramp point longitude
-            offramp_vertex_data: Additional data for the offramp vertex
-        """
-        # Create offramp vertex
-        vertex_data = {"lat": lat, "lon": lon}
-        if offramp_vertex_data:
-            vertex_data.update(offramp_vertex_data)
-
-        identity_hash = self._get_identity_hash(vertex_data)
-        offramp_vertex = Vertex(vertex_data, hash_value=identity_hash)
-
-        # Find nearby OSM nodes for this offramp point
-        if self.spatial_index is not None:
-            nearby_results = self.spatial_index.find_nearest_nodes(
-                lat, lon, self.search_radius_m, self.max_nearby_nodes
-            )
-            nearby_nodes = [node for node, distance in nearby_results]
-        else:
-            nearby_nodes = self.parser.get_nearby_nodes(lat, lon, self.search_radius_m)
-            nearby_nodes = nearby_nodes[: self.max_nearby_nodes]
-
-        # Register this offramp vertex for all nearby OSM nodes
-        for node in nearby_nodes:
-            if node.id not in self._offramp_points:
-                self._offramp_points[node.id] = []
-            self._offramp_points[node.id].append(offramp_vertex)
-
-    def clear_offramp_points(self) -> None:
-        """Clear all registered offramp points."""
-        self._offramp_points.clear()
-
     def link(self, vertex: Vertex, lat: float, lon: float) -> None:
         """Link a vertex to the nearest OSM node at given coordinates.
 
@@ -235,9 +199,7 @@ class OSMAccessProvider:
         # Calculate and cache distance for this link
         from .spatial import calculate_distance
 
-        distance_m = calculate_distance(
-            lat, lon, nearest_node.lat, nearest_node.lon
-        )
+        distance_m = calculate_distance(lat, lon, nearest_node.lat, nearest_node.lon)
 
         # Store cached distance
         if not hasattr(self, "_link_distances"):
@@ -264,16 +226,10 @@ class OSMAccessProvider:
         Returns:
             List of (target_vertex, edge) tuples
         """
-        # Handle coordinate vertices - return edges to linked OSM nodes if linked
-        if "lat" in vertex and "lon" in vertex:
-            return self._edges_from_linked_vertex(vertex)
 
-        # Handle OSM node vertices - return edges to linked vertices and offramp points
+        # Handle OSM node vertices - return edges to linked vertices
         if "osm_node_id" in vertex:
-            edges = []
-            edges.extend(self._edges_to_linked_vertices(vertex))
-            edges.extend(self._edges_to_offramp_points(vertex))
-            return edges
+            return self._edges_to_linked_vertices(vertex)
 
         # Handle other linked vertices (without coordinates) - check if linked
         vertex_hash = self._get_time_agnostic_hash(vertex)
@@ -311,7 +267,8 @@ class OSMAccessProvider:
         if hasattr(self, "_link_distances") and vertex_hash in self._link_distances:
             distance_m = self._link_distances[vertex_hash]
         else:
-            # Fallback: calculate distance if not cached (shouldn't happen for properly linked vertices)
+            # Fallback: calculate distance if not cached
+            # (shouldn't happen for properly linked vertices)
             from .spatial import calculate_distance
 
             if "lat" in vertex and "lon" in vertex:
@@ -385,7 +342,8 @@ class OSMAccessProvider:
             ):
                 distance_m = self._link_distances[template_hash]
             else:
-                # Fallback: calculate distance if not cached (shouldn't happen for properly linked vertices)
+                # Fallback: calculate distance if not cached
+            # (shouldn't happen for properly linked vertices)
                 from .spatial import calculate_distance
 
                 if "lat" in linked_vertex_template and "lon" in linked_vertex_template:
@@ -423,55 +381,6 @@ class OSMAccessProvider:
             )
 
             edges.append((target_vertex, edge))
-
-        return edges
-
-    def _edges_to_offramp_points(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
-        """Generate edges from OSM node to registered offramp points.
-
-        Args:
-            vertex: Vertex containing "osm_node_id" key
-
-        Returns:
-            List of edges to offramp vertices
-        """
-        node_id = int(vertex["osm_node_id"])
-
-        # Check if this node has any registered offramp points
-        if node_id not in self._offramp_points:
-            return []
-
-        # Check if node exists in our data
-        if node_id not in self.parser.nodes:
-            return []
-
-        node = self.parser.nodes[node_id]
-        edges = []
-
-        # Generate edges to all registered offramp points for this node
-        for offramp_vertex in self._offramp_points[node_id]:
-            # Calculate distance to offramp point
-            from .spatial import calculate_distance
-
-            distance_m = calculate_distance(
-                node.lat, node.lon, offramp_vertex["lat"], offramp_vertex["lon"]
-            )
-
-            # Calculate walking time
-            duration_s = distance_m / self.walking_profile.base_speed_ms
-
-            # Create edge to offramp vertex
-            edge = Edge(
-                cost=duration_s,
-                metadata={
-                    "edge_type": "node_to_offramp",
-                    "distance_m": distance_m,
-                    "duration_s": duration_s,
-                    "from_osm_node_id": node_id,
-                },
-            )
-
-            edges.append((offramp_vertex, edge))
 
         return edges
 
