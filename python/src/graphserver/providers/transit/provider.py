@@ -124,7 +124,6 @@ class TransitProvider:
             return self._edges_from_stop(vertex)
 
         # Unknown vertex type - return empty edges
-        logger.warning("Unknown vertex type: %s", vertex)
         return []
 
     def _edges_from_coordinates(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
