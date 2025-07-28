@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from string import Template
 from typing import Any
+from urllib.parse import quote
 
 
 def _load_template(name: str) -> Template:
@@ -127,7 +128,7 @@ def _generate_edges_section(
         query_params = []
         for key, value in target.items():
             if isinstance(value, str):
-                query_params.append(f"{key}={value}")
+                query_params.append(f"{key}={quote('\"'+str(value)+'\"')}")
             else:
                 query_params.append(f"{key}={value}")
 
