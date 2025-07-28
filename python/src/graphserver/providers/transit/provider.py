@@ -309,7 +309,11 @@ class TransitProvider:
         trip_id = str(vertex["trip_id"])
         stop_sequence = int(vertex["stop_sequence"])
         arrival_time = int(vertex["time"])
-        stop_id = str(vertex["stop_id"])
+        
+        # Get stop_id from trip and stop sequence
+        stop_id = self.parser.get_stop_id_from_sequence(trip_id, stop_sequence)
+        if stop_id is None:
+            return []  # Invalid trip or stop sequence
 
         edges = []
 

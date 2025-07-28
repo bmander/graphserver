@@ -286,6 +286,19 @@ class GTFSParser:
 
         return None
 
+    def get_stop_id_from_sequence(self, trip_id: str, stop_sequence: int) -> str | None:
+        """Get the stop ID for a specific trip and stop sequence.
+
+        Args:
+            trip_id: Trip ID
+            stop_sequence: Stop sequence number
+
+        Returns:
+            Stop ID or None if not found
+        """
+        stop_time = self.get_stop_time(trip_id, stop_sequence)
+        return stop_time.stop_id if stop_time is not None else None
+
     def get_next_stop_sequence(self, trip_id: str, stop_sequence: int) -> int | None:
         """Get the next stop sequence number in a trip.
 
