@@ -286,7 +286,6 @@ class OSMAccessProvider:
         # Create target vertex with OSM node information
         target_data = {
             "osm_node_id": node.id,
-            **node.tags,  # Include any relevant OSM tags
         }
 
         # Preserve time from origin vertex if present
@@ -376,7 +375,6 @@ class OSMAccessProvider:
                     "edge_type": "node_to_linked_vertex",
                     "distance_m": distance_m,
                     "duration_s": duration_s,
-                    "from_osm_node_id": node_id,
                 },
             )
 

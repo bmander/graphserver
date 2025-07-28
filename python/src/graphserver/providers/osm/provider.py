@@ -144,7 +144,6 @@ class OSMProvider:
                     "osm_node_id": node.id,
                     "lat": node.lat,
                     "lon": node.lon,
-                    **node.tags,  # Include any relevant OSM tags
                 }
             )
 
@@ -259,7 +258,7 @@ class OSMProvider:
             return None
 
         return Vertex(
-            {"osm_node_id": node.id, "lat": node.lat, "lon": node.lon, **node.tags}
+            {"osm_node_id": node.id}
         )
 
     @property

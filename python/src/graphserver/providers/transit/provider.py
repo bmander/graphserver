@@ -282,7 +282,6 @@ class TransitProvider:
                 "stop_sequence": next_stop_time.stop_sequence,
                 "vehicle_state": "alight",
                 "stop_id": next_stop_time.stop_id,
-                "route_id": vertex.get("route_id", ""),
             }
         )
 
@@ -292,11 +291,6 @@ class TransitProvider:
             cost=travel_time,
             metadata={
                 "edge_type": "in_vehicle_travel",
-                "travel_time_s": travel_time,
-                "trip_id": trip_id,
-                "from_stop_sequence": stop_sequence,
-                "to_stop_sequence": next_stop_time.stop_sequence,
-                "to_stop_id": next_stop_time.stop_id,
             },
         )
 

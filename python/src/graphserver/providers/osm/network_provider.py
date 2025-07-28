@@ -128,7 +128,6 @@ class OSMNetworkProvider:
             # Create target vertex
             target_data = {
                 "osm_node_id": target_node.id,
-                **target_node.tags,
             }
             # Create target vertex with identity hash
             identity_hash = self._get_identity_hash(target_data)
@@ -149,9 +148,6 @@ class OSMNetworkProvider:
                     "way_id": osm_edge.way_id,
                     "distance_m": osm_edge.distance_m,
                     "duration_s": osm_edge.duration_s,
-                    "highway": way.tags.get("highway", ""),
-                    "from_node_id": osm_edge.from_node_id,
-                    "to_node_id": osm_edge.to_node_id,
                 },
             )
 
