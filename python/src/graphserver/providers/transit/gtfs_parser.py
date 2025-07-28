@@ -263,17 +263,38 @@ class GTFSParser:
         departures.sort(key=lambda d: d.departure_time)
         return departures
 
-    def get_next_stop_in_trip(
-        self, trip_id: str, stop_sequence: int
-    ) -> StopTime | None:
-        """Get the next stop in a trip after the given stop sequence.
+
+    def get_stop_time(self, trip_id: str, stop_sequence: int) -> StopTime | None:
+        """Get the stop time for a specific trip and stop sequence.
+
+        Args:
+            trip_id: Trip ID
+            stop_sequence: Stop sequence number
+
+        Returns:
+            StopTime object or None if not found
+        """
+        if trip_id not in self.stop_times:
+            return None
+
+        stop_times_list = self.stop_times[trip_id]
+
+        # Find the stop time with matching sequence number
+        for stop_time in stop_times_list:
+            if stop_time.stop_sequence == stop_sequence:
+                return stop_time
+
+        return None
+
+    def get_next_stop_sequence(self, trip_id: str, stop_sequence: int) -> int | None:
+        """Get the next stop sequence number in a trip.
 
         Args:
             trip_id: Trip ID
             stop_sequence: Current stop sequence
 
         Returns:
-            Next stop time or None if no next stop
+            Next stop sequence number or None if no next stop
         """
         if trip_id not in self.stop_times:
             return None
@@ -281,11 +302,13 @@ class GTFSParser:
         stop_times_list = self.stop_times[trip_id]
 
         # Find the next stop with higher sequence number
+        next_sequence = None
         for stop_time in stop_times_list:
             if stop_time.stop_sequence > stop_sequence:
-                return stop_time
+                if next_sequence is None or stop_time.stop_sequence < next_sequence:
+                    next_sequence = stop_time.stop_sequence
 
-        return None
+        return next_sequence
 
     def get_trip_stop_bounds(self, trip_id: str) -> tuple[int, int] | None:
         """Get the first and last stop sequences for a trip.

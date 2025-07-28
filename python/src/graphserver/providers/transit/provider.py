@@ -254,25 +254,28 @@ class TransitProvider:
         stop_sequence = int(vertex["stop_sequence"])
         boarding_time = int(vertex["time"])
 
-        # Get next stop in trip
-        next_stop_time = self.parser.get_next_stop_in_trip(trip_id, stop_sequence)
-        if next_stop_time is None:
+        # Get current stop time
+        current_stop_time = self.parser.get_stop_time(trip_id, stop_sequence)
+        if current_stop_time is None:
+            return []  # Invalid sequence
+        
+        # Get next stop sequence and time
+        next_stop_sequence = self.parser.get_next_stop_sequence(trip_id, stop_sequence)
+        if next_stop_sequence is None:
             return []  # End of trip
-
-        # Get service date for time conversion
-        from datetime import datetime
-
-        boarding_datetime = datetime.fromtimestamp(boarding_time)
-        service_date = int(
-            boarding_datetime.replace(
-                hour=0, minute=0, second=0, microsecond=0
-            ).timestamp()
-        )
-
-        # Convert GTFS time to timestamp
-        from .types import gtfs_time_to_timestamp
-
-        arrival_time = gtfs_time_to_timestamp(next_stop_time.arrival_time, service_date)
+            
+        next_stop_time = self.parser.get_stop_time(trip_id, next_stop_sequence)
+        if next_stop_time is None:
+            return []  # Should not happen if get_next_stop_sequence worked
+        
+        # Convert GTFS times to seconds for calculation
+        from .types import parse_gtfs_time
+        current_departure_seconds = parse_gtfs_time(current_stop_time.departure_time)
+        next_arrival_seconds = parse_gtfs_time(next_stop_time.arrival_time)
+        
+        # Calculate travel time between stops
+        travel_time = next_arrival_seconds - current_departure_seconds
+        arrival_time = boarding_time + travel_time
 
         # Create alight vertex at next stop
         target_vertex = Vertex(
@@ -285,7 +288,6 @@ class TransitProvider:
         )
 
         # Cost is travel time
-        travel_time = arrival_time - boarding_time
         edge = Edge(
             cost=travel_time,
             metadata={
