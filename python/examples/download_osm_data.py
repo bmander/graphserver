@@ -2,15 +2,19 @@
 """Download OSM Data from Overpass API
 
 This script downloads OpenStreetMap data for testing the OSM provider.
-It fetches pedestrian-friendly ways from a specified bounding box.
+It supports different profiles for filtering the downloaded data.
 
 Usage:
-    python download_osm_data.py [lat_min] [lon_min] [lat_max] [lon_max] [output_file]
+    python download_osm_data.py --profile walking [--bbox lat_min lon_min lat_max lon_max] [--output output_file]
+    python download_osm_data.py --profile all [--bbox lat_min lon_min lat_max lon_max] [--output output_file]
 
-Example:
-    python download_osm_data.py 47.653 -122.315 47.657 -122.305 campus.osm
+Examples:
+    python download_osm_data.py --profile walking --bbox 47.653 -122.315 47.657 -122.305 --output campus.osm
+    python download_osm_data.py --profile travel --output travel_data.osm
+    python download_osm_data.py --profile all --output all_data.osm
 """
 
+import argparse
 import sys
 import time
 from pathlib import Path
@@ -18,10 +22,67 @@ from urllib.parse import quote
 from urllib.request import urlopen
 
 
+def get_overpass_query(profile: str, lat_min: float, lon_min: float, lat_max: float, lon_max: float) -> str:
+    """Generate Overpass query based on profile.
+    
+    Args:
+        profile: Query profile ("walking", "travel", or "all")
+        lat_min: Minimum latitude (south)
+        lon_min: Minimum longitude (west)
+        lat_max: Maximum latitude (north)
+        lon_max: Maximum longitude (east)
+        
+    Returns:
+        Overpass query string
+    """
+    bbox = f"({lat_min},{lon_min},{lat_max},{lon_max})"
+    
+    if profile == "walking":
+        # Pedestrian-friendly ways
+        return f"""
+        [out:xml][timeout:60];
+        (
+          way[highway~"^(footway|path|steps|pedestrian|residential|living_street|unclassified|service)$"]{bbox};
+          way[highway="primary"][sidewalk~"^(both|left|right|yes)$"]{bbox};
+          way[highway="secondary"][sidewalk~"^(both|left|right|yes)$"]{bbox};
+          way[highway="tertiary"][sidewalk~"^(both|left|right|yes)$"]{bbox};
+        );
+        (._;>;);
+        out;
+        """.strip()
+    elif profile == "travel":
+        # All travelable ways (highways, paths, footways, etc.)
+        return f"""
+        [out:xml][timeout:60];
+        (
+          way[highway~"^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|service|track|footway|path|steps|pedestrian|cycleway|bridleway)$"]{bbox};
+          way[highway="motorway_link"]{bbox};
+          way[highway="trunk_link"]{bbox};
+          way[highway="primary_link"]{bbox};
+          way[highway="secondary_link"]{bbox};
+          way[highway="tertiary_link"]{bbox};
+        );
+        (._;>;);
+        out;
+        """.strip()
+    elif profile == "all":
+        # All ways
+        return f"""
+        [out:xml][timeout:60];
+        (
+          way{bbox};
+        );
+        (._;>;);
+        out;
+        """.strip()
+    else:
+        raise ValueError(f"Unknown profile: {profile}")
+
+
 def download_osm_data(
-    lat_min: float, lon_min: float, lat_max: float, lon_max: float, output_file: str
+    lat_min: float, lon_min: float, lat_max: float, lon_max: float, output_file: str, profile: str = "walking"
 ) -> None:
-    """Download OSM data from Overpass API for pedestrian routing.
+    """Download OSM data from Overpass API.
 
     Args:
         lat_min: Minimum latitude (south)
@@ -29,26 +90,17 @@ def download_osm_data(
         lat_max: Maximum latitude (north)
         lon_max: Maximum longitude (east)
         output_file: Output OSM XML file path
+        profile: Data profile ("walking" or "all")
     """
 
-    # Overpass query to get pedestrian-friendly ways
-    overpass_query = f"""
-    [out:xml][timeout:60];
-    (
-      way[highway~"^(footway|path|steps|pedestrian|residential|living_street|unclassified|service)$"]({lat_min},{lon_min},{lat_max},{lon_max});
-      way[highway="primary"][sidewalk~"^(both|left|right|yes)$"]({lat_min},{lon_min},{lat_max},{lon_max});
-      way[highway="secondary"][sidewalk~"^(both|left|right|yes)$"]({lat_min},{lon_min},{lat_max},{lon_max});
-      way[highway="tertiary"][sidewalk~"^(both|left|right|yes)$"]({lat_min},{lon_min},{lat_max},{lon_max});
-    );
-    (._;>;);
-    out;
-    """.strip()
+    # Get the appropriate Overpass query
+    overpass_query = get_overpass_query(profile, lat_min, lon_min, lat_max, lon_max)
 
     # URL encode the query
     encoded_query = quote(overpass_query)
     url = f"https://overpass-api.de/api/interpreter?data={encoded_query}"
 
-    print("Downloading OSM data for bounding box:")
+    print(f"Downloading OSM data with profile '{profile}' for bounding box:")
     print(f"  South-West: ({lat_min}, {lon_min})")
     print(f"  North-East: ({lat_max}, {lon_max})")
     print(f"  Output file: {output_file}")
@@ -95,30 +147,59 @@ def download_osm_data(
 
 
 def main() -> None:
-    """Main function with example locations."""
-    if len(sys.argv) == 6:
-        # Custom bounding box provided
-        try:
-            lat_min = float(sys.argv[1])
-            lon_min = float(sys.argv[2])
-            lat_max = float(sys.argv[3])
-            lon_max = float(sys.argv[4])
-            output_file = sys.argv[5]
-        except ValueError:
-            print("Error: Invalid coordinates provided")
-            sys.exit(1)
+    """Main function with argument parsing."""
+    parser = argparse.ArgumentParser(
+        description="Download OSM data from Overpass API with different profiles",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s --profile walking --bbox 47.653 -122.315 47.657 -122.305 --output campus.osm
+  %(prog)s --profile travel --output travel_data.osm
+  %(prog)s --profile all --output all_data.osm
+  %(prog)s --profile walking  # Uses default bbox and filename
+        """
+    )
+    
+    parser.add_argument(
+        "--profile", 
+        choices=["walking", "travel", "all"], 
+        default="walking",
+        help="Data profile: 'walking' for pedestrian-friendly ways (default), 'travel' for all travelable ways, 'all' for all ways"
+    )
+    
+    parser.add_argument(
+        "--bbox", 
+        nargs=4, 
+        metavar=("LAT_MIN", "LON_MIN", "LAT_MAX", "LON_MAX"),
+        type=float,
+        help="Bounding box coordinates (lat_min lon_min lat_max lon_max)"
+    )
+    
+    parser.add_argument(
+        "--output", 
+        help="Output OSM XML file path"
+    )
+    
+    args = parser.parse_args()
+    
+    # Set defaults if not provided
+    if args.bbox:
+        lat_min, lon_min, lat_max, lon_max = args.bbox
     else:
-        # Use default location (University of Washington campus area)
-        print("No coordinates provided, using default location (UW Campus, Seattle)")
-        print(
-            "Usage: python download_osm_data.py [lat_min] [lon_min] [lat_max] [lon_max] [output_file]"
-        )
-        print()
-
+        print("No bounding box provided, using default location (UW Campus, Seattle)")
         # University of Washington campus area - good pedestrian infrastructure
         lat_min, lon_min = 47.649542342421846, -122.3146476835271  # South-West
         lat_max, lon_max = 47.661035800431776, -122.30256914707921  # North-East
-        output_file = "uw_campus.osm"
+    
+    if args.output:
+        output_file = args.output
+    else:
+        if args.profile == "walking":
+            output_file = "uw_campus_walking.osm"
+        elif args.profile == "travel":
+            output_file = "uw_campus_travel.osm"
+        else:
+            output_file = "uw_campus_all.osm"
 
     # Validate bounding box
     if lat_min >= lat_max:
@@ -140,7 +221,7 @@ def main() -> None:
         if response.lower() != "y":
             sys.exit(0)
 
-    download_osm_data(lat_min, lon_min, lat_max, lon_max, output_file)
+    download_osm_data(lat_min, lon_min, lat_max, lon_max, output_file, args.profile)
 
     print()
     print("Next steps:")
