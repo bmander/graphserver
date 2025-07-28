@@ -281,7 +281,6 @@ class TransitProvider:
                 "trip_id": trip_id,
                 "stop_sequence": next_stop_time.stop_sequence,
                 "vehicle_state": "alight",
-                "stop_id": next_stop_time.stop_id,
             }
         )
 
