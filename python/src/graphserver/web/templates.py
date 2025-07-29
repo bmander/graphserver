@@ -128,7 +128,7 @@ def _generate_edges_section(
         query_params = []
         for key, value in target.items():
             if isinstance(value, str):
-                query_params.append(f"{key}={quote('\"'+str(value)+'\"')}")
+                query_params.append(f"{key}={quote('"' + str(value) + '"')}")
             else:
                 query_params.append(f"{key}={value}")
 

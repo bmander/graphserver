@@ -22,21 +22,23 @@ from urllib.parse import quote
 from urllib.request import urlopen
 
 
-def get_overpass_query(profile: str, lat_min: float, lon_min: float, lat_max: float, lon_max: float) -> str:
+def get_overpass_query(
+    profile: str, lat_min: float, lon_min: float, lat_max: float, lon_max: float
+) -> str:
     """Generate Overpass query based on profile.
-    
+
     Args:
         profile: Query profile ("walking", "travel", or "all")
         lat_min: Minimum latitude (south)
         lon_min: Minimum longitude (west)
         lat_max: Maximum latitude (north)
         lon_max: Maximum longitude (east)
-        
+
     Returns:
         Overpass query string
     """
     bbox = f"({lat_min},{lon_min},{lat_max},{lon_max})"
-    
+
     if profile == "walking":
         # Pedestrian-friendly ways
         return f"""
@@ -80,7 +82,12 @@ def get_overpass_query(profile: str, lat_min: float, lon_min: float, lat_max: fl
 
 
 def download_osm_data(
-    lat_min: float, lon_min: float, lat_max: float, lon_max: float, output_file: str, profile: str = "walking"
+    lat_min: float,
+    lon_min: float,
+    lat_max: float,
+    lon_max: float,
+    output_file: str,
+    profile: str = "walking",
 ) -> None:
     """Download OSM data from Overpass API.
 
@@ -157,31 +164,28 @@ Examples:
   %(prog)s --profile travel --output travel_data.osm
   %(prog)s --profile all --output all_data.osm
   %(prog)s --profile walking  # Uses default bbox and filename
-        """
+        """,
     )
-    
+
     parser.add_argument(
-        "--profile", 
-        choices=["walking", "travel", "all"], 
+        "--profile",
+        choices=["walking", "travel", "all"],
         default="walking",
-        help="Data profile: 'walking' for pedestrian-friendly ways (default), 'travel' for all travelable ways, 'all' for all ways"
+        help="Data profile: 'walking' for pedestrian-friendly ways (default), 'travel' for all travelable ways, 'all' for all ways",
     )
-    
+
     parser.add_argument(
-        "--bbox", 
-        nargs=4, 
+        "--bbox",
+        nargs=4,
         metavar=("LAT_MIN", "LON_MIN", "LAT_MAX", "LON_MAX"),
         type=float,
-        help="Bounding box coordinates (lat_min lon_min lat_max lon_max)"
+        help="Bounding box coordinates (lat_min lon_min lat_max lon_max)",
     )
-    
-    parser.add_argument(
-        "--output", 
-        help="Output OSM XML file path"
-    )
-    
+
+    parser.add_argument("--output", help="Output OSM XML file path")
+
     args = parser.parse_args()
-    
+
     # Set defaults if not provided
     if args.bbox:
         lat_min, lon_min, lat_max, lon_max = args.bbox
@@ -190,7 +194,7 @@ Examples:
         # University of Washington campus area - good pedestrian infrastructure
         lat_min, lon_min = 47.649542342421846, -122.3146476835271  # South-West
         lat_max, lon_max = 47.661035800431776, -122.30256914707921  # North-East
-    
+
     if args.output:
         output_file = args.output
     else:

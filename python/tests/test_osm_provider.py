@@ -428,7 +428,9 @@ class TestOSMAccessProvider:
         )
 
         # Create and link vertex near sample data
-        exit_vertex = Vertex({"lat": 47.6063, "lon": -122.3322, "exit_name": "Downtown Exit"})
+        exit_vertex = Vertex(
+            {"lat": 47.6063, "lon": -122.3322, "exit_name": "Downtown Exit"}
+        )
         provider.link(exit_vertex, 47.6063, -122.3322)
 
         # Create OSM node vertex (assuming node 1 exists near our linked vertex)
@@ -715,9 +717,23 @@ class TestOSMAccessProvider:
         )
 
         # Link multiple vertices at similar coordinates
-        exit_vertex1 = Vertex({"lat": 47.6063, "lon": -122.3322, "exit_name": "Downtown Exit", "type": "mall"})
-        exit_vertex2 = Vertex({"lat": 47.6064, "lon": -122.3323, "exit_name": "Shopping Center", "type": "retail"})
-        
+        exit_vertex1 = Vertex(
+            {
+                "lat": 47.6063,
+                "lon": -122.3322,
+                "exit_name": "Downtown Exit",
+                "type": "mall",
+            }
+        )
+        exit_vertex2 = Vertex(
+            {
+                "lat": 47.6064,
+                "lon": -122.3323,
+                "exit_name": "Shopping Center",
+                "type": "retail",
+            }
+        )
+
         provider.link(exit_vertex1, 47.6063, -122.3322)
         provider.link(exit_vertex2, 47.6064, -122.3323)
 

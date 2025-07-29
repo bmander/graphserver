@@ -263,7 +263,6 @@ class GTFSParser:
         departures.sort(key=lambda d: d.departure_time)
         return departures
 
-
     def get_stop_time(self, trip_id: str, stop_sequence: int) -> StopTime | None:
         """Get the stop time for a specific trip and stop sequence.
 

@@ -342,7 +342,7 @@ class OSMAccessProvider:
                 distance_m = self._link_distances[template_hash]
             else:
                 # Fallback: calculate distance if not cached
-            # (shouldn't happen for properly linked vertices)
+                # (shouldn't happen for properly linked vertices)
                 from .spatial import calculate_distance
 
                 if "lat" in linked_vertex_template and "lon" in linked_vertex_template:

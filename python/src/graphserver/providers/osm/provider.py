@@ -257,9 +257,7 @@ class OSMProvider:
         if node is None:
             return None
 
-        return Vertex(
-            {"osm_node_id": node.id}
-        )
+        return Vertex({"osm_node_id": node.id})
 
     @property
     def node_count(self) -> int:

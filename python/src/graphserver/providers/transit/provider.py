@@ -258,21 +258,22 @@ class TransitProvider:
         current_stop_time = self.parser.get_stop_time(trip_id, stop_sequence)
         if current_stop_time is None:
             return []  # Invalid sequence
-        
+
         # Get next stop sequence and time
         next_stop_sequence = self.parser.get_next_stop_sequence(trip_id, stop_sequence)
         if next_stop_sequence is None:
             return []  # End of trip
-            
+
         next_stop_time = self.parser.get_stop_time(trip_id, next_stop_sequence)
         if next_stop_time is None:
             return []  # Should not happen if get_next_stop_sequence worked
-        
+
         # Convert GTFS times to seconds for calculation
         from .types import parse_gtfs_time
+
         current_departure_seconds = parse_gtfs_time(current_stop_time.departure_time)
         next_arrival_seconds = parse_gtfs_time(next_stop_time.arrival_time)
-        
+
         # Calculate travel time between stops
         travel_time = next_arrival_seconds - current_departure_seconds
         arrival_time = boarding_time + travel_time
@@ -309,7 +310,7 @@ class TransitProvider:
         trip_id = str(vertex["trip_id"])
         stop_sequence = int(vertex["stop_sequence"])
         arrival_time = int(vertex["time"])
-        
+
         # Get stop_id from trip and stop sequence
         stop_id = self.parser.get_stop_id_from_sequence(trip_id, stop_sequence)
         if stop_id is None:
