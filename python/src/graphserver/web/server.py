@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Graph Web Server - Main server implementation and CLI entry point."""
+# ruff: noqa: T201
 
 from __future__ import annotations
 
@@ -41,13 +42,13 @@ class GraphWebServer:
         """Start the HTTP server."""
         # Initialize providers before starting server
         try:
-            print("Initializing graph providers...")  # noqa: T201
+            print("Initializing graph providers...")
             self.provider_manager.initialize_engine()
-            print("✅ Provider initialization complete")  # noqa: T201
+            print("✅ Provider initialization complete")
 
         except ProviderError as e:
-            print(f"❌ Provider initialization failed: {e}")  # noqa: T201
-            print("\nPlease check your file paths and try again.")  # noqa: T201
+            print(f"❌ Provider initialization failed: {e}")
+            print("\nPlease check your file paths and try again.")
             sys.exit(1)
 
         # Create a handler class with server config
@@ -58,23 +59,23 @@ class GraphWebServer:
 
         try:
             server = HTTPServer(("localhost", self.port), handler_factory)
-            print(f"\n🌐 Graph Web Browser started on http://localhost:{self.port}")  # noqa: T201
+            print(f"\n🌐 Graph Web Browser started on http://localhost:{self.port}")
 
             # Show provider information
             provider_info = self.provider_manager.get_provider_info()
             if provider_info:
-                print("\n📊 Active Providers:")  # noqa: T201
+                print("\n📊 Active Providers:")
                 for provider_type, info in provider_info.items():
-                    print(f"  • {provider_type}: {info}")  # noqa: T201
+                    print(f"  • {provider_type}: {info}")
 
-            print(f"\n🚀 Ready to explore! Visit http://localhost:{self.port}")  # noqa: T201
-            print("Press Ctrl+C to stop the server")  # noqa: T201
+            print(f"\n🚀 Ready to explore! Visit http://localhost:{self.port}")
+            print("Press Ctrl+C to stop the server")
             server.serve_forever()
 
         except KeyboardInterrupt:
-            print("\n👋 Server stopped by user")  # noqa: T201
+            print("\n👋 Server stopped by user")
         except OSError as e:
-            print(f"❌ Error starting server: {e}")  # noqa: T201
+            print(f"❌ Error starting server: {e}")
             sys.exit(1)
 
 
@@ -105,7 +106,7 @@ def main() -> None:
 
     # Validate port
     if not (1 <= args.port <= 65535):
-        print("Error: Port must be between 1 and 65535")  # noqa: T201
+        print("Error: Port must be between 1 and 65535")
         sys.exit(1)
 
     # Create and run server

@@ -1,4 +1,5 @@
 """Provider initialization and management for the graph web browser."""
+# ruff: noqa: T201
 
 from __future__ import annotations
 
@@ -53,34 +54,37 @@ class ProviderManager:
                 self._initialize_osm_providers()
 
             if not self.providers:
-                raise ProviderError(
-                    "No providers initialized. Please specify --osm or --gtfs files."
-                )
+                msg = "No providers initialized. Please specify --osm or --gtfs files."
+                raise ProviderError(msg)
 
             print(f"Initialized {len(self.providers)} provider(s)")
             return self.engine
 
         except Exception as e:
-            raise ProviderError(f"Failed to initialize providers: {e}") from e
+            msg = f"Failed to initialize providers: {e}"
+            raise ProviderError(msg) from e
 
     def _initialize_transit_providers(self) -> None:
         """Initialize GTFS transit providers."""
         try:
             from graphserver.providers.transit import TransitProvider
         except ImportError as e:
-            raise ProviderError(
+            msg = (
                 "Transit provider not available. Install with: "
                 "pip install graphserver[transit]"
-            ) from e
+            )
+            raise ProviderError(msg) from e
 
         for i, gtfs_file in enumerate(self.gtfs_files):
             gtfs_path = Path(gtfs_file)
 
             if not gtfs_path.exists():
-                raise ProviderError(f"GTFS file not found: {gtfs_file}")
+                msg = f"GTFS file not found: {gtfs_file}"
+                raise ProviderError(msg)
 
             if not (gtfs_path.is_file() and gtfs_path.suffix.lower() == ".zip"):
-                raise ProviderError(f"GTFS file must be a .zip file: {gtfs_file}")
+                msg = f"GTFS file must be a .zip file: {gtfs_file}"
+                raise ProviderError(msg)
 
             try:
                 # Create transit provider for this GTFS feed
@@ -92,19 +96,19 @@ class ProviderManager:
                 print(f"Registered transit provider: {gtfs_file}")
 
             except Exception as e:
-                raise ProviderError(
-                    f"Failed to initialize GTFS file {gtfs_file}: {e}"
-                ) from e
+                msg = f"Failed to initialize GTFS file {gtfs_file}: {e}"
+                raise ProviderError(msg) from e
 
     def _initialize_osm_providers(self) -> None:
         """Initialize OSM routing providers."""
         try:
             from graphserver.providers.osm import OSMAccessProvider, OSMNetworkProvider
         except ImportError as e:
-            raise ProviderError(
+            msg = (
                 "OSM providers not available. Install with: "
                 "pip install graphserver[osm]"
-            ) from e
+            )
+            raise ProviderError(msg) from e
 
         # For now, use the first OSM file for the main providers
         # TODO: Support multiple OSM files in future
@@ -112,10 +116,12 @@ class ProviderManager:
         osm_path = Path(osm_file)
 
         if not osm_path.exists():
-            raise ProviderError(f"OSM file not found: {osm_file}")
+            msg = f"OSM file not found: {osm_file}"
+            raise ProviderError(msg)
 
         if not osm_path.is_file():
-            raise ProviderError(f"OSM path must be a file: {osm_file}")
+            msg = f"OSM path must be a file: {osm_file}"
+            raise ProviderError(msg)
 
         try:
             # Create OSM network provider (handles osm_node_id vertices)
@@ -132,7 +138,8 @@ class ProviderManager:
             print(f"Registered OSM access provider: {osm_file}")
 
         except Exception as e:
-            raise ProviderError(f"Failed to initialize OSM file {osm_file}: {e}") from e
+            msg = f"Failed to initialize OSM file {osm_file}: {e}"
+            raise ProviderError(msg) from e
 
         # Log additional OSM files that aren't yet supported
         if len(self.osm_files) > 1:
@@ -183,7 +190,8 @@ class ProviderManager:
                 self.linking_stats["total_stops"] += 1
 
                 try:
-                    # Create stop vertex for linking (using only stop_id, no coordinates)
+                    # Create stop vertex for linking
+                    # (using only stop_id, no coordinates)
                     stop_vertex = Vertex({"stop_id": stop.stop_id})
 
                     # Link to nearest OSM node using stop coordinates
@@ -196,7 +204,7 @@ class ProviderManager:
                     # Stop too far from OSM network
                     error_msg = f"Stop {stop.stop_id}: {str(e)}"
                     self.linking_stats["failed_links"].append(error_msg)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     # Unexpected error
                     error_msg = f"Stop {stop.stop_id}: Unexpected error - {str(e)}"
                     self.linking_stats["failed_links"].append(error_msg)
@@ -281,12 +289,13 @@ class ProviderManager:
                     provider_results.append(f"{provider_name}: {len(edges)} edges")
                 else:
                     provider_results.append(f"{provider_name}: no edges")
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 provider_results.append(f"{provider_name}: error ({str(e)[:50]}...)")
 
         if compatible_providers:
             return True, f"Compatible with: {', '.join(compatible_providers)}"
         return (
             False,
-            f"No providers can handle this vertex. Results: {'; '.join(provider_results)}",
+            f"No providers can handle this vertex. "
+            f"Results: {'; '.join(provider_results)}",
         )

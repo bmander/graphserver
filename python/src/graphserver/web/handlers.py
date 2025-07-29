@@ -1,4 +1,5 @@
 """HTTP request handlers for the graph web browser."""
+# ruff: noqa: T201
 
 from __future__ import annotations
 
@@ -95,16 +96,17 @@ class GraphRequestHandler(BaseHTTPRequestHandler):
                                     }
                                     edges_data.append(edge_info)
 
-                            except Exception as provider_error:
+                            except Exception as provider_error:  # noqa: BLE001
                                 print(
                                     f"Provider {provider_name} error: {provider_error}"
                                 )
 
                         print(
-                            f"Found {len(edges_data)} total edges for vertex {vertex_props}"
+                            f"Found {len(edges_data)} total edges for vertex "
+                            f"{vertex_props}"
                         )
 
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     print(f"Error getting edges: {e}")
                     vertex_validation = {
                         "is_valid": False,
@@ -125,7 +127,7 @@ class GraphRequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(html_content.encode("utf-8"))
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.send_error(500, f"Internal server error: {str(e)}")
 
     def log_message(self, format: str, *args: Any) -> None:
