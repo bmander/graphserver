@@ -5,11 +5,11 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Sequence
 from http.server import HTTPServer
-from typing import Sequence
 
 from .handlers import GraphRequestHandler
-from .providers import ProviderManager, ProviderError
+from .providers import ProviderError, ProviderManager
 
 
 class GraphWebServer:
@@ -41,13 +41,13 @@ class GraphWebServer:
         """Start the HTTP server."""
         # Initialize providers before starting server
         try:
-            print("Initializing graph providers...")
+            print("Initializing graph providers...")  # noqa: T201
             self.provider_manager.initialize_engine()
-            print("✅ Provider initialization complete")
+            print("✅ Provider initialization complete")  # noqa: T201
 
         except ProviderError as e:
-            print(f"❌ Provider initialization failed: {e}")
-            print("\nPlease check your file paths and try again.")
+            print(f"❌ Provider initialization failed: {e}")  # noqa: T201
+            print("\nPlease check your file paths and try again.")  # noqa: T201
             sys.exit(1)
 
         # Create a handler class with server config
@@ -58,23 +58,23 @@ class GraphWebServer:
 
         try:
             server = HTTPServer(("localhost", self.port), handler_factory)
-            print(f"\n🌐 Graph Web Browser started on http://localhost:{self.port}")
+            print(f"\n🌐 Graph Web Browser started on http://localhost:{self.port}")  # noqa: T201
 
             # Show provider information
             provider_info = self.provider_manager.get_provider_info()
             if provider_info:
-                print("\n📊 Active Providers:")
+                print("\n📊 Active Providers:")  # noqa: T201
                 for provider_type, info in provider_info.items():
-                    print(f"  • {provider_type}: {info}")
+                    print(f"  • {provider_type}: {info}")  # noqa: T201
 
-            print(f"\n🚀 Ready to explore! Visit http://localhost:{self.port}")
-            print("Press Ctrl+C to stop the server")
+            print(f"\n🚀 Ready to explore! Visit http://localhost:{self.port}")  # noqa: T201
+            print("Press Ctrl+C to stop the server")  # noqa: T201
             server.serve_forever()
 
         except KeyboardInterrupt:
-            print("\n👋 Server stopped by user")
+            print("\n👋 Server stopped by user")  # noqa: T201
         except OSError as e:
-            print(f"❌ Error starting server: {e}")
+            print(f"❌ Error starting server: {e}")  # noqa: T201
             sys.exit(1)
 
 
@@ -105,7 +105,7 @@ def main() -> None:
 
     # Validate port
     if not (1 <= args.port <= 65535):
-        print("Error: Port must be between 1 and 65535")
+        print("Error: Port must be between 1 and 65535")  # noqa: T201
         sys.exit(1)
 
     # Create and run server

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from graphserver import Engine, Vertex
+from graphserver import Vertex
 
 
 def create_sample_gtfs() -> Path:
@@ -203,7 +203,7 @@ def test_transit_provider_integration() -> None:
             result = engine.plan(start=start, goal=goal)
             # Path might not be found due to timing, but shouldn't crash
             assert result is not None
-        except Exception as e:
+        except RuntimeError as e:
             # Planning might fail due to no path, which is fine for this test
             assert (
                 "no path found" in str(e).lower()

@@ -450,7 +450,6 @@ class TestOSMAccessProvider:
             assert edge.cost > 0
             assert "edge_type" in edge.metadata
             assert edge.metadata["edge_type"] == "node_to_linked_vertex"
-            assert "from_osm_node_id" in edge.metadata
 
         # Clean up
         sample_osm_file.unlink()

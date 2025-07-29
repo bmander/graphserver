@@ -134,7 +134,7 @@ def main() -> None:
 
         edges = provider(coord_vertex)
         print(f"Found {len(edges)} nearby stops:")
-        for i, (target, edge) in enumerate(edges):
+        for _i, (target, edge) in enumerate(edges):
             stop_name = target.get("stop_name", "Unknown")
             distance = edge.get_metadata("distance_m", 0)
             walking_time = edge.get_metadata("walking_time_s", 0)
@@ -148,7 +148,7 @@ def main() -> None:
 
         departure_edges = provider(stop_vertex)
         print(f"Found {len(departure_edges)} departures:")
-        for i, (target, edge) in enumerate(departure_edges):
+        for _i, (target, edge) in enumerate(departure_edges):
             trip_id = target.get("trip_id", "Unknown")
             route_id = target.get("route_id", "Unknown")
             waiting_time = edge.get_metadata("waiting_time_s", 0)

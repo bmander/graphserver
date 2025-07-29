@@ -174,9 +174,8 @@ def main() -> None:
         # Since direct coordinate-to-coordinate routing isn't fully supported yet,
         # we'll find nearby OSM nodes and try routing between them
         if not start_edges or not goal_edges:
-            raise RuntimeError(
-                "Could not find nearby OSM nodes for start or goal coordinates"
-            )
+            error_msg = "Could not find nearby OSM nodes for start or goal coordinates"
+            raise RuntimeError(error_msg)
 
         result = None
         best_cost = float("inf")
@@ -203,8 +202,9 @@ def main() -> None:
                             result._start_access_cost = start_edge.cost
                             result._goal_access_cost = goal_edge.cost
                             break
-                except Exception:
-                    # Silently continue trying other node combinations
+                except Exception as e:
+                    # Log and continue trying other node combinations
+                    print(f"   Route planning failed for node combination: {e}")
                     continue
             if result:
                 break

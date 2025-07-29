@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from http.server import BaseHTTPRequestHandler
 from typing import Any
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
+
+from graphserver import Vertex
 
 from .templates import generate_html_response
-from graphserver import Vertex
 
 
 def parse_value(value_str: str) -> str | int | float:

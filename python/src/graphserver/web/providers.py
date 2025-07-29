@@ -15,8 +15,6 @@ if TYPE_CHECKING:
 class ProviderError(Exception):
     """Raised when provider initialization fails."""
 
-    pass
-
 
 class ProviderManager:
     """Manages provider initialization and engine configuration."""
@@ -101,7 +99,7 @@ class ProviderManager:
     def _initialize_osm_providers(self) -> None:
         """Initialize OSM routing providers."""
         try:
-            from graphserver.providers.osm import OSMNetworkProvider, OSMAccessProvider
+            from graphserver.providers.osm import OSMAccessProvider, OSMNetworkProvider
         except ImportError as e:
             raise ProviderError(
                 "OSM providers not available. Install with: "
@@ -288,8 +286,7 @@ class ProviderManager:
 
         if compatible_providers:
             return True, f"Compatible with: {', '.join(compatible_providers)}"
-        else:
-            return (
-                False,
-                f"No providers can handle this vertex. Results: {'; '.join(provider_results)}",
-            )
+        return (
+            False,
+            f"No providers can handle this vertex. Results: {'; '.join(provider_results)}",
+        )

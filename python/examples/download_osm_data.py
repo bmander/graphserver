@@ -52,7 +52,7 @@ def get_overpass_query(
         (._;>;);
         out;
         """.strip()
-    elif profile == "travel":
+    if profile == "travel":
         # All travelable ways (highways, paths, footways, etc.)
         return f"""
         [out:xml][timeout:60];
@@ -67,7 +67,7 @@ def get_overpass_query(
         (._;>;);
         out;
         """.strip()
-    elif profile == "all":
+    if profile == "all":
         # All ways
         return f"""
         [out:xml][timeout:60];
@@ -77,8 +77,8 @@ def get_overpass_query(
         (._;>;);
         out;
         """.strip()
-    else:
-        raise ValueError(f"Unknown profile: {profile}")
+    error_msg = f"Unknown profile: {profile}"
+    raise ValueError(error_msg)
 
 
 def download_osm_data(
@@ -197,13 +197,12 @@ Examples:
 
     if args.output:
         output_file = args.output
+    elif args.profile == "walking":
+        output_file = "uw_campus_walking.osm"
+    elif args.profile == "travel":
+        output_file = "uw_campus_travel.osm"
     else:
-        if args.profile == "walking":
-            output_file = "uw_campus_walking.osm"
-        elif args.profile == "travel":
-            output_file = "uw_campus_travel.osm"
-        else:
-            output_file = "uw_campus_all.osm"
+        output_file = "uw_campus_all.osm"
 
     # Validate bounding box
     if lat_min >= lat_max:

@@ -170,7 +170,7 @@ def _benchmark_engine(
                                             result = osm_result
                                             best_cost = total_cost
                                             break
-                                except:
+                                except Exception:
                                     continue
                             if result:
                                 break
