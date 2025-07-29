@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import UTC, date, timedelta
+from datetime import date, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -38,7 +38,7 @@ class GTFSParser:
         self.progress_callback = progress_callback
 
         # Step 1: Read GTFS feed
-        self.progress_callback("Reading GTFS file...", 1, 8, None)
+        self.progress_callback("Reading GTFS file...", 1, 9, None)
         self.feed = gk.read_feed(str(self.gtfs_path), dist_units="m")
 
         # Parse and store data
@@ -52,35 +52,42 @@ class GTFSParser:
         # stop_id -> [(stop_time, trip)]
         self.stop_to_stop_times: dict[str, list[tuple[StopTime, Trip]]] = {}
 
+        # Agency timezone for proper local time handling
+        self.agency_timezone: str | None = None
+
         self._parse_data()
 
     def _parse_data(self) -> None:
         """Parse GTFS data into internal structures."""
         logger.info("Parsing GTFS data from %s", self.gtfs_path)
 
-        # Step 2: Parse stops
-        self.progress_callback("Parsing stops...", 2, 8, None)
+        # Step 2: Parse agency timezone
+        self.progress_callback("Parsing agency timezone...", 2, 9, None)
+        self._parse_agency_timezone()
+
+        # Step 3: Parse stops
+        self.progress_callback("Parsing stops...", 3, 9, None)
         self._parse_stops()
 
-        # Step 3: Parse routes
-        self.progress_callback("Parsing routes...", 3, 8, None)
+        # Step 4: Parse routes
+        self.progress_callback("Parsing routes...", 4, 9, None)
         self._parse_routes()
 
-        # Step 4: Parse trips
-        self.progress_callback("Parsing trips...", 4, 8, None)
+        # Step 5: Parse trips
+        self.progress_callback("Parsing trips...", 5, 9, None)
         self._parse_trips()
 
-        # Step 5: Parse stop times (often the largest/slowest)
-        self.progress_callback("Parsing stop times...", 5, 8, None)
+        # Step 6: Parse stop times (often the largest/slowest)
+        self.progress_callback("Parsing stop times...", 6, 9, None)
         self._parse_stop_times()
 
-        # Step 6: Sort stop times by sequence
-        self.progress_callback("Sorting stop times...", 6, 8, None)
+        # Step 7: Sort stop times by sequence
+        self.progress_callback("Sorting stop times...", 7, 9, None)
         for trip_id in self.stop_times:
             self.stop_times[trip_id].sort(key=lambda st: st.stop_sequence)
 
-        # Step 7: Build service calendar and indices
-        self.progress_callback("Building service calendar and indices...", 7, 8, None)
+        # Step 8: Build service calendar and indices
+        self.progress_callback("Building service calendar and indices...", 8, 9, None)
         self._build_service_calendar()
         self._build_stop_indices()
 
@@ -272,12 +279,10 @@ class GTFSParser:
         if stop_id not in self.stops:
             return []
 
-        from datetime import datetime
-
-        # Convert start_time to date objects for service lookup
-        start_datetime = datetime.fromtimestamp(start_time, tz=UTC)
+        # Convert start_time to date objects for service lookup using agency timezone
+        start_datetime = self._localize_timestamp(start_time)
         end_time = start_time + (max_hours * 3600)
-        end_datetime = datetime.fromtimestamp(end_time, tz=UTC)
+        end_datetime = self._localize_timestamp(end_time)
 
         # Get the date range we need to check for services
         # Include previous day to catch late-night services that run past midnight
@@ -310,11 +315,7 @@ class GTFSParser:
             # Check both current day and previous day services
             for days_offset in [0, -1]:  # Current day, then previous day
                 service_date_obj = start_datetime.date() + timedelta(days=days_offset)
-                service_date_timestamp = int(
-                    datetime.combine(service_date_obj, datetime.min.time())
-                    .replace(tzinfo=UTC)
-                    .timestamp()
-                )
+                service_date_timestamp = self._get_service_midnight(service_date_obj)
 
                 # Check if service is active on this specific date
                 services_for_date = self._get_services_for_date(service_date_obj)
@@ -376,6 +377,110 @@ class GTFSParser:
         # Sort by departure time and return
         departures.sort(key=lambda d: d.departure_time)
         return departures
+
+    def _parse_agency_timezone(self) -> None:
+        """Parse agency timezone from GTFS agency.txt."""
+        if self.feed.agency is not None and not self.feed.agency.empty:
+            # Get the first agency's timezone (GTFS spec requires all agencies
+            # have same timezone)
+            agency_row = self.feed.agency.iloc[0]
+
+            agency_tz_val = agency_row.get("agency_timezone")
+            if agency_tz_val is not None and str(agency_tz_val) != "nan":
+                timezone_str = str(agency_tz_val).strip()
+                if timezone_str:
+                    # Validate timezone before storing
+                    if self._validate_timezone(timezone_str):
+                        self.agency_timezone = timezone_str
+                        logger.info("Using agency timezone: %s", self.agency_timezone)
+                    else:
+                        logger.warning(
+                            "Invalid agency timezone '%s', falling back to UTC",
+                            timezone_str
+                        )
+                        self.agency_timezone = "UTC"
+                else:
+                    logger.warning(
+                        "Empty agency_timezone found in agency.txt, using UTC"
+                    )
+                    self.agency_timezone = "UTC"
+            else:
+                logger.warning("No agency_timezone found in agency.txt, using UTC")
+                self.agency_timezone = "UTC"
+        else:
+            logger.warning("No agency.txt found in GTFS feed, using UTC")
+            self.agency_timezone = "UTC"
+
+    def _validate_timezone(self, timezone_str: str) -> bool:
+        """Validate that a timezone string is recognized by the system.
+
+        Args:
+            timezone_str: Timezone identifier to validate
+
+        Returns:
+            True if timezone is valid, False otherwise
+        """
+        import zoneinfo
+
+        try:
+            zoneinfo.ZoneInfo(timezone_str)
+        except zoneinfo.ZoneInfoNotFoundError:
+            return False
+        else:
+            return True
+
+    def _get_agency_timezone(self):
+        """Get the agency timezone as a timezone object."""
+        import zoneinfo
+
+        if self.agency_timezone:
+            try:
+                return zoneinfo.ZoneInfo(self.agency_timezone)
+            except zoneinfo.ZoneInfoNotFoundError:
+                logger.warning(
+                    "Invalid timezone '%s', falling back to UTC", self.agency_timezone
+                )
+                return zoneinfo.ZoneInfo("UTC")
+        else:
+            return zoneinfo.ZoneInfo("UTC")
+
+    def _localize_timestamp(self, timestamp: int):
+        """Convert Unix timestamp to agency timezone-aware datetime."""
+        from datetime import datetime
+
+        try:
+            agency_tz = self._get_agency_timezone()
+            return datetime.fromtimestamp(timestamp, tz=agency_tz)
+        except (OSError, ValueError) as e:
+            logger.warning(
+                "Failed to localize timestamp %s to timezone %s: %s",
+                timestamp, self.agency_timezone, e
+            )
+            # Fallback to UTC
+            import zoneinfo
+            return datetime.fromtimestamp(timestamp, tz=zoneinfo.ZoneInfo("UTC"))
+
+    def _get_service_midnight(self, date_obj: date) -> int:
+        """Get midnight timestamp for a date in agency timezone."""
+        from datetime import datetime
+
+        try:
+            agency_tz = self._get_agency_timezone()
+            midnight = datetime.combine(
+                date_obj, datetime.min.time()
+            ).replace(tzinfo=agency_tz)
+            return int(midnight.timestamp())
+        except (OSError, ValueError) as e:
+            logger.warning(
+                "Failed to get service midnight for %s in timezone %s: %s",
+                date_obj, self.agency_timezone, e
+            )
+            # Fallback to UTC midnight
+            import zoneinfo
+            midnight = datetime.combine(date_obj, datetime.min.time()).replace(
+                tzinfo=zoneinfo.ZoneInfo("UTC")
+            )
+            return int(midnight.timestamp())
 
     def _build_service_calendar(self) -> None:
         """Build service calendar mapping dates to active service IDs."""
