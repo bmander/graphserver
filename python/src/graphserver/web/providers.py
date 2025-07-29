@@ -270,8 +270,8 @@ class ProviderManager:
         self._validate_transit_imports()
         from tqdm import tqdm
 
-        # Initialize progress bar for GTFS loading (7 steps per file + 1 register step)
-        total_steps = len(self.gtfs_files) * 8  # 7 parsing steps + 1 register step
+        # Initialize progress bar for GTFS loading (8 steps per file + 1 register step)
+        total_steps = len(self.gtfs_files) * 9  # 8 parsing steps + 1 register step
         total_stops = 0
         total_routes = 0
         total_trips = 0

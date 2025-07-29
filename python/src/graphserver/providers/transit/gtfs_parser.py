@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import UTC, date, datetime
+from datetime import UTC, date, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 import gtfs_kit as gk
 import pandas as pd
 
-from .types import Departure, Route, Stop, StopTime, Trip, gtfs_time_to_timestamp
+from .types import Departure, Route, Stop, StopTime, Trip
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ class GTFSParser:
         self.progress_callback = progress_callback
 
         # Step 1: Read GTFS feed
-        self.progress_callback("Reading GTFS file...", 1, 7, None)
+        self.progress_callback("Reading GTFS file...", 1, 8, None)
         self.feed = gk.read_feed(str(self.gtfs_path), dist_units="m")
 
         # Parse and store data
@@ -47,6 +47,11 @@ class GTFSParser:
         self.trips: dict[str, Trip] = {}
         self.stop_times: dict[str, list[StopTime]] = {}  # keyed by trip_id
 
+        # Service calendar and indexing data structures
+        self.service_calendar: dict[str, list[str]] = {}  # date_str -> [service_ids]
+        # stop_id -> [(stop_time, trip)]
+        self.stop_to_stop_times: dict[str, list[tuple[StopTime, Trip]]] = {}
+
         self._parse_data()
 
     def _parse_data(self) -> None:
@@ -54,25 +59,30 @@ class GTFSParser:
         logger.info("Parsing GTFS data from %s", self.gtfs_path)
 
         # Step 2: Parse stops
-        self.progress_callback("Parsing stops...", 2, 7, None)
+        self.progress_callback("Parsing stops...", 2, 8, None)
         self._parse_stops()
 
         # Step 3: Parse routes
-        self.progress_callback("Parsing routes...", 3, 7, None)
+        self.progress_callback("Parsing routes...", 3, 8, None)
         self._parse_routes()
 
         # Step 4: Parse trips
-        self.progress_callback("Parsing trips...", 4, 7, None)
+        self.progress_callback("Parsing trips...", 4, 8, None)
         self._parse_trips()
 
         # Step 5: Parse stop times (often the largest/slowest)
-        self.progress_callback("Parsing stop times...", 5, 7, None)
+        self.progress_callback("Parsing stop times...", 5, 8, None)
         self._parse_stop_times()
 
         # Step 6: Sort stop times by sequence
-        self.progress_callback("Sorting stop times...", 6, 7, None)
+        self.progress_callback("Sorting stop times...", 6, 8, None)
         for trip_id in self.stop_times:
             self.stop_times[trip_id].sort(key=lambda st: st.stop_sequence)
+
+        # Step 7: Build service calendar and indices
+        self.progress_callback("Building service calendar and indices...", 7, 8, None)
+        self._build_service_calendar()
+        self._build_stop_indices()
 
         logger.info(
             "Parsed GTFS data: %d stops, %d routes, %d trips",
@@ -262,60 +272,96 @@ class GTFSParser:
         if stop_id not in self.stops:
             return []
 
-        departures = []
-        end_time = start_time + (max_hours * 3600)
+        from datetime import datetime
 
-        # Convert timestamps to date for service lookup
+        # Convert start_time to date objects for service lookup
         start_datetime = datetime.fromtimestamp(start_time, tz=UTC)
-        service_date = int(
-            start_datetime.replace(
-                hour=0, minute=0, second=0, microsecond=0
-            ).timestamp()
-        )
+        end_time = start_time + (max_hours * 3600)
+        end_datetime = datetime.fromtimestamp(end_time, tz=UTC)
 
-        # Look through all trips and find those that serve this stop
-        for trip_id, stop_times_list in self.stop_times.items():
-            if trip_id not in self.trips:
+        # Get the date range we need to check for services
+        # Include previous day to catch late-night services that run past midnight
+        start_date = start_datetime.date() - timedelta(days=1)
+        end_date = end_datetime.date()
+
+        # Get all services active in this date range
+        active_services = self._get_services_for_date_range(start_date, end_date)
+
+        if not active_services:
+            # If no service calendar data, assume all services are active
+            active_services = self._get_all_service_ids()
+
+        # Use the stop index to get only relevant stop times
+        if stop_id not in self.stop_to_stop_times:
+            return []
+
+        departures = []
+
+        # Process each stop time for this stop
+        for stop_time, trip in self.stop_to_stop_times[stop_id]:
+            # Skip if this stop doesn't allow pickup
+            if stop_time.pickup_type == 1:
                 continue
 
-            trip = self.trips[trip_id]
+            # Skip if trip's service is not active in our date range
+            if trip.service_id not in active_services:
+                continue
 
-            # Find stop times for this stop in this trip
-            for i, stop_time in enumerate(stop_times_list):
-                if stop_time.stop_id != stop_id:
-                    continue
-
-                # Skip if this stop doesn't allow pickup
-                if stop_time.pickup_type == 1:
-                    continue
-
-                # Convert GTFS time to timestamp
-                departure_timestamp = gtfs_time_to_timestamp(
-                    stop_time.departure_time, service_date
+            # Check both current day and previous day services
+            for days_offset in [0, -1]:  # Current day, then previous day
+                service_date_obj = start_datetime.date() + timedelta(days=days_offset)
+                service_date_timestamp = int(
+                    datetime.combine(service_date_obj, datetime.min.time())
+                    .replace(tzinfo=UTC)
+                    .timestamp()
                 )
-                arrival_timestamp = gtfs_time_to_timestamp(
-                    stop_time.arrival_time, service_date
+
+                # Check if service is active on this specific date
+                services_for_date = self._get_services_for_date(service_date_obj)
+                if trip.service_id not in services_for_date:
+                    continue
+
+                # Calculate departure time for this service date
+                departure_timestamp = self._normalize_departure_time(
+                    stop_time.departure_time, service_date_timestamp
+                )
+                arrival_timestamp = self._normalize_departure_time(
+                    stop_time.arrival_time, service_date_timestamp
                 )
 
                 # Check if departure is within our time window
                 if departure_timestamp < start_time or departure_timestamp > end_time:
                     continue
 
-                # Find next stop in sequence
+                # Find next stop in the trip
                 next_stop_id = None
                 next_stop_sequence = None
                 next_arrival_time = None
 
-                if i + 1 < len(stop_times_list):
-                    next_stop_time = stop_times_list[i + 1]
-                    next_stop_id = next_stop_time.stop_id
-                    next_stop_sequence = next_stop_time.stop_sequence
-                    next_arrival_time = gtfs_time_to_timestamp(
-                        next_stop_time.arrival_time, service_date
-                    )
+                if stop_time.trip_id in self.stop_times:
+                    trip_stop_times = self.stop_times[stop_time.trip_id]
+
+                    # Find current stop in the trip's stop times
+                    current_index = None
+                    for i, st in enumerate(trip_stop_times):
+                        if st.stop_sequence == stop_time.stop_sequence:
+                            current_index = i
+                            break
+
+                    # Get next stop if exists
+                    if (
+                        current_index is not None
+                        and current_index + 1 < len(trip_stop_times)
+                    ):
+                        next_stop_time = trip_stop_times[current_index + 1]
+                        next_stop_id = next_stop_time.stop_id
+                        next_stop_sequence = next_stop_time.stop_sequence
+                        next_arrival_time = self._normalize_departure_time(
+                            next_stop_time.arrival_time, service_date_timestamp
+                        )
 
                 departure = Departure(
-                    trip_id=trip_id,
+                    trip_id=trip.trip_id,
                     route_id=trip.route_id,
                     stop_id=stop_id,
                     stop_sequence=stop_time.stop_sequence,
@@ -327,9 +373,141 @@ class GTFSParser:
                 )
                 departures.append(departure)
 
-        # Sort by departure time
+        # Sort by departure time and return
         departures.sort(key=lambda d: d.departure_time)
         return departures
+
+    def _build_service_calendar(self) -> None:
+        """Build service calendar mapping dates to active service IDs."""
+
+        # Use gtfs-kit to get valid dates for this feed
+        valid_dates = gk.calendar.get_dates(self.feed, as_date_obj=True)
+
+        if not valid_dates:
+            # If no calendar data, assume all services are always active
+            logger.warning(
+                "No calendar data found in GTFS feed, assuming all services are active"
+            )
+            return
+
+        # For each valid date, determine which services are active
+        for date_obj in valid_dates:
+            date_str = date_obj.strftime("%Y%m%d")
+
+            # Check each service to see if it's active on this date
+            active_services = [
+                service_id for service_id in self._get_all_service_ids()
+                if self._is_service_active_on_date(service_id, date_obj)
+            ]
+
+            if active_services:
+                self.service_calendar[date_str] = active_services
+
+    def _get_all_service_ids(self) -> set[str]:
+        """Get all service IDs from trips."""
+        return {trip.service_id for trip in self.trips.values()}
+
+    def _is_service_active_on_date(self, service_id: str, date_obj: date) -> bool:
+        """Check if a service is active on a specific date using calendar logic."""
+        # Check if service runs on this day of week from calendar
+        if self.feed.calendar is not None:
+            calendar_df = self.feed.calendar
+            service_calendar = calendar_df[calendar_df["service_id"] == service_id]
+
+            if not service_calendar.empty:
+                service_row = service_calendar.iloc[0]
+
+                # Check date range
+                start_date = pd.to_datetime(
+                    str(service_row["start_date"]), format="%Y%m%d"
+                ).date()
+                end_date = pd.to_datetime(
+                    str(service_row["end_date"]), format="%Y%m%d"
+                ).date()
+
+                if date_obj < start_date or date_obj > end_date:
+                    return False
+
+                # Check day of week (Monday = 0)
+                day_names = [
+                    "monday", "tuesday", "wednesday", "thursday",
+                    "friday", "saturday", "sunday"
+                ]
+                day_column = day_names[date_obj.weekday()]
+
+                if day_column in service_row and service_row[day_column] != 1:
+                    return False
+
+        # Check calendar_dates for exceptions
+        if self.feed.calendar_dates is not None:
+            calendar_dates_df = self.feed.calendar_dates
+            date_str = date_obj.strftime("%Y%m%d")
+
+            exceptions = calendar_dates_df[
+                (calendar_dates_df["service_id"] == service_id) &
+                (calendar_dates_df["date"].astype(str) == date_str)
+            ]
+
+            if not exceptions.empty:
+                exception_type = exceptions.iloc[0]["exception_type"]
+                return exception_type == 1  # 1 = service added, 2 = service removed
+
+        return True  # Default to active if no specific rules found
+
+    def _build_stop_indices(self) -> None:
+        """Build stop-to-stop_time index for efficient departure lookups."""
+        # Clear existing index
+        self.stop_to_stop_times.clear()
+
+        # Build index: stop_id -> [(stop_time, trip)]
+        for trip_id, stop_times_list in self.stop_times.items():
+            if trip_id not in self.trips:
+                continue
+
+            trip = self.trips[trip_id]
+
+            for stop_time in stop_times_list:
+                stop_id = stop_time.stop_id
+
+                if stop_id not in self.stop_to_stop_times:
+                    self.stop_to_stop_times[stop_id] = []
+
+                self.stop_to_stop_times[stop_id].append((stop_time, trip))
+
+    def _get_services_for_date(self, date_obj: date) -> list[str]:
+        """Get all service IDs active on a specific date."""
+        date_str = date_obj.strftime("%Y%m%d")
+        return self.service_calendar.get(date_str, [])
+
+    def _get_services_for_date_range(
+        self, start_date: date, end_date: date
+    ) -> set[str]:
+        """Get all service IDs active within a date range."""
+
+        active_services = set()
+        current_date = start_date
+
+        while current_date <= end_date:
+            services = self._get_services_for_date(current_date)
+            active_services.update(services)
+            current_date += timedelta(days=1)
+
+        return active_services
+
+    def _normalize_departure_time(self, gtfs_time: str, service_date: int) -> int:
+        """Convert GTFS time to Unix timestamp, handling times past midnight.
+
+        Args:
+            gtfs_time: GTFS time string (e.g., "08:30:00" or "25:30:00")
+            service_date: Service date as Unix timestamp (midnight)
+
+        Returns:
+            Unix timestamp of the departure
+        """
+        from .types import parse_gtfs_time
+
+        seconds_since_service_start = parse_gtfs_time(gtfs_time)
+        return service_date + seconds_since_service_start
 
     def get_stop_time(self, trip_id: str, stop_sequence: int) -> StopTime | None:
         """Get the stop time for a specific trip and stop sequence.
@@ -410,7 +588,7 @@ class GTFSParser:
         sequences = [st.stop_sequence for st in stop_times_list]
         return (min(sequences), max(sequences))
 
-    def is_service_active(self, service_id: str, date_obj: date) -> bool:  # noqa: ARG002
+    def is_service_active(self, service_id: str, date_obj: date) -> bool:
         """Check if a service is active on a given date.
 
         Args:
@@ -420,9 +598,7 @@ class GTFSParser:
         Returns:
             True if service is active
         """
-        # For simplicity, assume all services are active
-        # In a real implementation, you would check calendar.txt and calendar_dates.txt
-        return True
+        return self._is_service_active_on_date(service_id, date_obj)
 
     @property
     def stop_count(self) -> int:

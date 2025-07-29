@@ -99,9 +99,9 @@ class TransitProvider:
 
     def _build_spatial_index(self) -> None:
         """Build spatial index for fast coordinate-based lookups."""
-        # Step 7: Build spatial index
+        # Step 8: Build spatial index
         callback = self.progress_callback or self._default_progress_callback
-        callback("Building spatial index...", 7, 7, None)
+        callback("Building spatial index...", 8, 8, None)
         logger.info("Building spatial index for transit stops")
         self.spatial_index = SpatialIndex()
         self.spatial_index.add_stops(self.parser.stops)
