@@ -173,49 +173,53 @@ class GTFSParser:
         if self.feed.stop_times is None:
             return
 
-        df = self.feed.stop_times.copy()  # Avoid modifying original
-        total_rows = len(df)
+        stop_times_df = self.feed.stop_times.copy()  # Avoid modifying original
+        total_rows = len(stop_times_df)
 
         # Vectorized type conversions and defaults - much faster than row-by-row
-        df["pickup_type"] = (
-            pd.to_numeric(df.get("pickup_type", 0), errors="coerce")
-            .fillna(0)
-            .astype(int)
-        )
-        df["drop_off_type"] = (
-            pd.to_numeric(df.get("drop_off_type", 0), errors="coerce")
-            .fillna(0)
-            .astype(int)
-        )
+        if "pickup_type" in stop_times_df.columns:
+            stop_times_df["pickup_type"] = (
+                pd.to_numeric(stop_times_df["pickup_type"], errors="coerce")
+                .fillna(0)
+                .astype(int)
+            )
+        else:
+            stop_times_df["pickup_type"] = 0
+
+        if "drop_off_type" in stop_times_df.columns:
+            stop_times_df["drop_off_type"] = (
+                pd.to_numeric(stop_times_df["drop_off_type"], errors="coerce")
+                .fillna(0)
+                .astype(int)
+            )
+        else:
+            stop_times_df["drop_off_type"] = 0
 
         # Ensure string types for IDs (usually already strings)
-        df["trip_id"] = df["trip_id"].astype(str)
-        df["stop_id"] = df["stop_id"].astype(str)
-        df["arrival_time"] = df["arrival_time"].astype(str)
-        df["departure_time"] = df["departure_time"].astype(str)
+        stop_times_df["trip_id"] = stop_times_df["trip_id"].astype(str)
+        stop_times_df["stop_id"] = stop_times_df["stop_id"].astype(str)
+        stop_times_df["arrival_time"] = stop_times_df["arrival_time"].astype(str)
+        stop_times_df["departure_time"] = stop_times_df["departure_time"].astype(str)
 
         # Group by trip_id for efficient processing
-        grouped = df.groupby("trip_id", sort=False)
+        grouped = stop_times_df.groupby("trip_id", sort=False)
         processed_rows = 0
         update_interval = max(1, total_rows // 100)  # Update every 1% of records
 
         for trip_id, group_df in grouped:
-            # Convert group to StopTime objects using fast itertuples
-            stop_times_list = []
-            for row in group_df.itertuples(index=False):
-                stop_times_list.append(
-                    StopTime(
-                        trip_id=trip_id,  # Reuse the group key
-                        stop_id=row.stop_id,
-                        stop_sequence=int(row.stop_sequence),
-                        arrival_time=row.arrival_time,
-                        departure_time=row.departure_time,
-                        pickup_type=row.pickup_type,
-                        drop_off_type=row.drop_off_type,
-                    )
+            # Convert group to StopTime objects using list comprehension
+            self.stop_times[trip_id] = [
+                StopTime(
+                    trip_id=trip_id,  # Reuse the group key
+                    stop_id=row.stop_id,
+                    stop_sequence=int(row.stop_sequence),
+                    arrival_time=row.arrival_time,
+                    departure_time=row.departure_time,
+                    pickup_type=row.pickup_type,
+                    drop_off_type=row.drop_off_type,
                 )
-
-            self.stop_times[trip_id] = stop_times_list
+                for row in group_df.itertuples(index=False)
+            ]
 
             # Update progress periodically
             processed_rows += len(group_df)

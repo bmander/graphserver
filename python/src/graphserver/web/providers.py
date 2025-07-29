@@ -64,10 +64,10 @@ class ProviderManager:
             msg = f"Failed to initialize providers: {e}"
             raise ProviderError(msg) from e
 
-    def _initialize_transit_providers(self) -> None:
-        """Initialize GTFS transit providers."""
+    def _validate_transit_imports(self) -> None:
+        """Validate that required imports are available for transit providers."""
         try:
-            from graphserver.providers.transit import TransitProvider
+            from graphserver.providers.transit import TransitProvider  # noqa: F401
         except ImportError as e:
             msg = (
                 "Transit provider not available. Install with: "
@@ -76,7 +76,7 @@ class ProviderManager:
             raise ProviderError(msg) from e
 
         try:
-            from tqdm import tqdm
+            from tqdm import tqdm  # noqa: F401
         except ImportError as e:
             msg = (
                 "tqdm not available for progress bars. Install with: "
@@ -84,74 +84,59 @@ class ProviderManager:
             )
             raise ProviderError(msg) from e
 
-        # Initialize progress bar for GTFS loading (7 steps per file + 1 register step)
-        total_steps = len(self.gtfs_files) * 8  # 7 parsing steps + 1 register step
-        total_stops = 0
-        total_routes = 0
-        total_trips = 0
+    def _create_progress_callback(self, pbar):
+        """Create progress callback function for updating progress bar."""
 
-        with tqdm(total=total_steps, desc="Loading GTFS", unit="step") as pbar:
-            for i, gtfs_file in enumerate(self.gtfs_files):
-                gtfs_path = Path(gtfs_file)
-                pbar.set_description(f"Loading GTFS ({gtfs_path.name})")
+        def progress_callback(
+            step_name: str,
+            current_step: int,
+            total_steps: int,
+            sub_progress: float | None = None,
+        ) -> None:  # noqa: ARG001
+            if sub_progress is not None:
+                # Update postfix with sub-progress info, don't advance main
+                pbar.set_postfix_str(step_name)
+            else:
+                # Step complete, advance main progress
+                pbar.set_postfix_str(step_name)
+                pbar.update(1)
 
-                if not gtfs_path.exists():
-                    msg = f"GTFS file not found: {gtfs_file}"
-                    raise ProviderError(msg)
+        return progress_callback
 
-                if not (gtfs_path.is_file() and gtfs_path.suffix.lower() == ".zip"):
-                    msg = f"GTFS file must be a .zip file: {gtfs_file}"
-                    raise ProviderError(msg)
+    def _validate_gtfs_file(self, gtfs_path: Path) -> None:
+        """Validate that GTFS file exists and is a valid zip file."""
+        if not gtfs_path.exists():
+            msg = f"GTFS file not found: {gtfs_path}"
+            raise ProviderError(msg)
 
-                try:
-                    # Create progress callback that updates our progress bar
-                    def progress_callback(
-                        step_name: str,
-                        current_step: int,
-                        total_steps: int,
-                        sub_progress: float | None = None,
-                    ) -> None:  # noqa: ARG001
-                        if sub_progress is not None:
-                            # Update postfix with sub-progress info, don't advance main progress
-                            pbar.set_postfix_str(step_name)
-                        else:
-                            # Step complete, advance main progress
-                            pbar.set_postfix_str(step_name)
-                            pbar.update(1)
+        if not (gtfs_path.is_file() and gtfs_path.suffix.lower() == ".zip"):
+            msg = f"GTFS file must be a .zip file: {gtfs_path}"
+            raise ProviderError(msg)
 
-                    # Parse GTFS data with detailed progress
-                    provider_name = f"transit_{i}" if i > 0 else "transit"
-                    transit_provider = TransitProvider(
-                        str(gtfs_path), progress_callback=progress_callback
-                    )
+    def _register_transit_provider(
+        self, transit_provider, provider_name: str, pbar
+    ) -> dict:
+        """Register transit provider and collect statistics."""
+        pbar.set_postfix_str("Registering provider...")
+        self.providers[provider_name] = transit_provider
+        self.engine.register_provider(provider_name, transit_provider)
 
-                    # Register provider and collect statistics
-                    pbar.set_postfix_str("Registering provider...")
-                    self.providers[provider_name] = transit_provider
-                    self.engine.register_provider(provider_name, transit_provider)
+        # Collect statistics for this feed
+        feed_stops = transit_provider.parser.stop_count
+        feed_routes = transit_provider.parser.route_count
+        feed_trips = transit_provider.parser.trip_count
 
-                    # Collect statistics for this feed
-                    feed_stops = transit_provider.parser.stop_count
-                    feed_routes = transit_provider.parser.route_count
-                    feed_trips = transit_provider.parser.trip_count
+        pbar.set_postfix_str(
+            f"stops: {feed_stops}, routes: {feed_routes}, trips: {feed_trips}"
+        )
+        pbar.update(1)
 
-                    total_stops += feed_stops
-                    total_routes += feed_routes
-                    total_trips += feed_trips
+        return {"stops": feed_stops, "routes": feed_routes, "trips": feed_trips}
 
-                    pbar.set_postfix_str(
-                        f"stops: {feed_stops}, routes: {feed_routes}, "
-                        f"trips: {feed_trips}"
-                    )
-                    pbar.update(1)
-
-                except Exception as e:
-                    msg = f"Failed to initialize GTFS file {gtfs_file}: {e}"
-                    raise ProviderError(msg) from e
-
-            pbar.set_postfix_str("Complete")
-
-        # Print detailed summary
+    def _print_transit_summary(
+        self, total_stops: int, total_routes: int, total_trips: int
+    ) -> None:
+        """Print summary of loaded GTFS providers."""
         if len(self.gtfs_files) == 1:
             print(
                 f"✅ Registered GTFS provider: "
@@ -164,10 +149,13 @@ class ProviderManager:
                 f"{total_trips} total trips"
             )
 
-    def _initialize_osm_providers(self) -> None:
-        """Initialize OSM routing providers."""
+    def _validate_osm_imports(self) -> None:
+        """Validate that required imports are available for OSM providers."""
         try:
-            from graphserver.providers.osm import OSMAccessProvider, OSMNetworkProvider
+            from graphserver.providers.osm import (  # noqa: F401
+                OSMAccessProvider,
+                OSMNetworkProvider,
+            )
         except ImportError as e:
             msg = (
                 "OSM providers not available. Install with: "
@@ -176,7 +164,7 @@ class ProviderManager:
             raise ProviderError(msg) from e
 
         try:
-            from tqdm import tqdm
+            from tqdm import tqdm  # noqa: F401
         except ImportError as e:
             msg = (
                 "tqdm not available for progress bars. Install with: "
@@ -184,66 +172,135 @@ class ProviderManager:
             )
             raise ProviderError(msg) from e
 
+    def _validate_osm_file(self, osm_path: Path) -> None:
+        """Validate that OSM file exists and is a valid file."""
+        if not osm_path.exists():
+            msg = f"OSM file not found: {osm_path}"
+            raise ProviderError(msg)
+
+        if not osm_path.is_file():
+            msg = f"OSM path must be a file: {osm_path}"
+            raise ProviderError(msg)
+
+    def _create_osm_providers(self, osm_path: Path) -> tuple:
+        """Create OSM providers and return statistics."""
+        from tqdm import tqdm
+
+        from graphserver.providers.osm import OSMAccessProvider, OSMNetworkProvider
+        from graphserver.providers.osm.parser import OSMParser
+        from graphserver.providers.osm.types import WalkingProfile
+
+        # Get file size for context
+        file_size_mb = osm_path.stat().st_size / (1024 * 1024)
+        size_info = f"{file_size_mb:.1f}MB"
+
+        # Initialize progress bar for OSM loading (4 detailed steps)
+        with tqdm(
+            total=4, desc=f"Loading OSM ({osm_path.name}, {size_info})", unit="step"
+        ) as pbar:
+            # Step 1: Parse OSM file
+            pbar.set_postfix_str("Parsing OSM file...")
+            parser = OSMParser(WalkingProfile())
+            parser.parse_file(str(osm_path))
+            pbar.update(1)
+
+            # Step 2: Show parsing results
+            raw_nodes = len(parser.nodes)
+            raw_ways = len(parser.ways)
+            raw_edges = len(parser.edges)
+            pbar.set_postfix_str(
+                f"nodes: {raw_nodes}, ways: {raw_ways}, edges: {raw_edges}"
+            )
+            pbar.update(1)
+
+            # Step 3: Create OSM network provider (handles osm_node_id vertices)
+            pbar.set_postfix_str("Creating network provider...")
+            osm_network = OSMNetworkProvider(parser=parser)
+            self.providers["osm_network"] = osm_network
+            self.engine.register_provider("osm_network", osm_network)
+            pbar.update(1)
+
+            # Step 4: Create OSM access provider (handles lat/lon vertices)
+            pbar.set_postfix_str("Creating access provider...")
+            osm_access = OSMAccessProvider(parser=parser)
+            self.providers["osm_access"] = osm_access
+            self.engine.register_provider("osm_access", osm_access)
+            pbar.update(1)
+            pbar.set_postfix_str("Complete")
+
+        return osm_access, {"nodes": raw_nodes, "ways": raw_ways, "edges": raw_edges}
+
+    def _print_osm_summary(self, stats: dict, osm_path: Path) -> None:
+        """Print summary of loaded OSM providers."""
+        print(
+            f"✅ Registered OSM providers: {stats['nodes']} nodes, "
+            f"{stats['ways']} ways, {stats['edges']} edges ({osm_path.name})"
+        )
+
+    def _process_single_gtfs_file(self, i: int, gtfs_file: str, pbar) -> dict:
+        """Process a single GTFS file and return statistics."""
+        from graphserver.providers.transit import TransitProvider
+
+        gtfs_path = Path(gtfs_file)
+        pbar.set_description(f"Loading GTFS ({gtfs_path.name})")
+
+        self._validate_gtfs_file(gtfs_path)
+
+        try:
+            # Create progress callback that updates our progress bar
+            progress_callback = self._create_progress_callback(pbar)
+
+            # Parse GTFS data with detailed progress
+            provider_name = f"transit_{i}" if i > 0 else "transit"
+            transit_provider = TransitProvider(
+                str(gtfs_path), progress_callback=progress_callback
+            )
+
+            # Register provider and collect statistics
+            return self._register_transit_provider(
+                transit_provider, provider_name, pbar
+            )
+
+        except Exception as e:
+            msg = f"Failed to initialize GTFS file {gtfs_file}: {e}"
+            raise ProviderError(msg) from e
+
+    def _initialize_transit_providers(self) -> None:
+        """Initialize GTFS transit providers."""
+        self._validate_transit_imports()
+        from tqdm import tqdm
+
+        # Initialize progress bar for GTFS loading (7 steps per file + 1 register step)
+        total_steps = len(self.gtfs_files) * 8  # 7 parsing steps + 1 register step
+        total_stops = 0
+        total_routes = 0
+        total_trips = 0
+
+        with tqdm(total=total_steps, desc="Loading GTFS", unit="step") as pbar:
+            for i, gtfs_file in enumerate(self.gtfs_files):
+                feed_stats = self._process_single_gtfs_file(i, gtfs_file, pbar)
+                total_stops += feed_stats["stops"]
+                total_routes += feed_stats["routes"]
+                total_trips += feed_stats["trips"]
+            pbar.set_postfix_str("Complete")
+
+        # Print detailed summary
+        self._print_transit_summary(total_stops, total_routes, total_trips)
+
+    def _initialize_osm_providers(self) -> None:
+        """Initialize OSM routing providers."""
+        self._validate_osm_imports()
+
         # For now, use the first OSM file for the main providers
         # Multiple OSM file support tracked in: https://github.com/bmander/graphserver/issues/50
         osm_file = self.osm_files[0]
         osm_path = Path(osm_file)
 
-        if not osm_path.exists():
-            msg = f"OSM file not found: {osm_file}"
-            raise ProviderError(msg)
-
-        if not osm_path.is_file():
-            msg = f"OSM path must be a file: {osm_file}"
-            raise ProviderError(msg)
+        self._validate_osm_file(osm_path)
 
         try:
-            # Get file size for context
-            file_size_mb = osm_path.stat().st_size / (1024 * 1024)
-            size_info = f"{file_size_mb:.1f}MB"
-
-            # Initialize progress bar for OSM loading (4 detailed steps)
-            with tqdm(
-                total=4, desc=f"Loading OSM ({osm_path.name}, {size_info})", unit="step"
-            ) as pbar:
-                # Step 1: Parse OSM file
-                pbar.set_postfix_str("Parsing OSM file...")
-                from graphserver.providers.osm.parser import OSMParser
-                from graphserver.providers.osm.types import WalkingProfile
-
-                parser = OSMParser(WalkingProfile())
-                parser.parse_file(str(osm_path))
-                pbar.update(1)
-
-                # Step 2: Show parsing results
-                raw_nodes = len(parser.nodes)
-                raw_ways = len(parser.ways)
-                raw_edges = len(parser.edges)
-                pbar.set_postfix_str(
-                    f"nodes: {raw_nodes}, ways: {raw_ways}, edges: {raw_edges}"
-                )
-                pbar.update(1)
-
-                # Step 3: Create OSM network provider (handles osm_node_id vertices)
-                pbar.set_postfix_str("Creating network provider...")
-                osm_network = OSMNetworkProvider(parser=parser)
-                self.providers["osm_network"] = osm_network
-                self.engine.register_provider("osm_network", osm_network)
-                pbar.update(1)
-
-                # Step 4: Create OSM access provider (handles lat/lon vertices)
-                pbar.set_postfix_str("Creating access provider...")
-                osm_access = OSMAccessProvider(parser=parser)
-                self.providers["osm_access"] = osm_access
-                self.engine.register_provider("osm_access", osm_access)
-                pbar.update(1)
-                pbar.set_postfix_str("Complete")
-
-            # Print detailed completion summary
-            print(
-                f"✅ Registered OSM providers: {raw_nodes} nodes, "
-                f"{raw_ways} ways, {raw_edges} edges ({osm_path.name})"
-            )
+            osm_access, stats = self._create_osm_providers(osm_path)
+            self._print_osm_summary(stats, osm_path)
 
         except Exception as e:
             msg = f"Failed to initialize OSM file {osm_file}: {e}"
