@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 import gtfs_kit as gk
+import pandas as pd
 
 from .types import Departure, Route, Stop, StopTime, Trip, gtfs_time_to_timestamp
 
@@ -21,9 +22,9 @@ class GTFSParser:
     """Parser for GTFS data using gtfs-kit library."""
 
     def __init__(
-        self, 
-        gtfs_path: str | Path, 
-        progress_callback: callable[[str, int, int, float | None], None]
+        self,
+        gtfs_path: str | Path,
+        progress_callback: callable[[str, int, int, float | None], None],
     ) -> None:
         """Initialize GTFS parser.
 
@@ -31,11 +32,11 @@ class GTFSParser:
             gtfs_path: Path to GTFS zip file or directory
             progress_callback: Callback function for progress updates
                 (step_name, current_step, total_steps, sub_progress)
-                sub_progress is 0.0-1.0 for progress within current step, None when step complete
+                sub_progress is 0.0-1.0 for progress within step, complete=None
         """
         self.gtfs_path = Path(gtfs_path)
         self.progress_callback = progress_callback
-        
+
         # Step 1: Read GTFS feed
         self.progress_callback("Reading GTFS file...", 1, 7, None)
         self.feed = gk.read_feed(str(self.gtfs_path), dist_units="m")
@@ -55,15 +56,15 @@ class GTFSParser:
         # Step 2: Parse stops
         self.progress_callback("Parsing stops...", 2, 7, None)
         self._parse_stops()
-        
+
         # Step 3: Parse routes
         self.progress_callback("Parsing routes...", 3, 7, None)
         self._parse_routes()
-        
+
         # Step 4: Parse trips
         self.progress_callback("Parsing trips...", 4, 7, None)
         self._parse_trips()
-        
+
         # Step 5: Parse stop times (often the largest/slowest)
         self.progress_callback("Parsing stop times...", 5, 7, None)
         self._parse_stop_times()
@@ -169,55 +170,74 @@ class GTFSParser:
 
     def _parse_stop_times(self) -> None:
         """Parse stop times from GTFS data."""
-        if self.feed.stop_times is not None:
-            total_rows = len(self.feed.stop_times)
-            processed_rows = 0
-            update_interval = max(1, total_rows // 100)  # Update every 1% of records
-            
-            for _, st_row in self.feed.stop_times.iterrows():
-                # Handle NaN values in GTFS data
-                pickup_type_value = st_row.get("pickup_type", 0)
-                try:
-                    pickup_type_value = int(pickup_type_value)
-                except (ValueError, TypeError):
-                    pickup_type_value = 0
+        if self.feed.stop_times is None:
+            return
 
-                drop_off_type_value = st_row.get("drop_off_type", 0)
-                try:
-                    drop_off_type_value = int(drop_off_type_value)
-                except (ValueError, TypeError):
-                    drop_off_type_value = 0
+        df = self.feed.stop_times.copy()  # Avoid modifying original
+        total_rows = len(df)
 
-                stop_time = StopTime(
-                    trip_id=str(st_row["trip_id"]),
-                    stop_id=str(st_row["stop_id"]),
-                    stop_sequence=int(st_row["stop_sequence"]),
-                    arrival_time=str(st_row["arrival_time"]),
-                    departure_time=str(st_row["departure_time"]),
-                    pickup_type=pickup_type_value,
-                    drop_off_type=drop_off_type_value,
+        # Vectorized type conversions and defaults - much faster than row-by-row
+        df["pickup_type"] = (
+            pd.to_numeric(df.get("pickup_type", 0), errors="coerce")
+            .fillna(0)
+            .astype(int)
+        )
+        df["drop_off_type"] = (
+            pd.to_numeric(df.get("drop_off_type", 0), errors="coerce")
+            .fillna(0)
+            .astype(int)
+        )
+
+        # Ensure string types for IDs (usually already strings)
+        df["trip_id"] = df["trip_id"].astype(str)
+        df["stop_id"] = df["stop_id"].astype(str)
+        df["arrival_time"] = df["arrival_time"].astype(str)
+        df["departure_time"] = df["departure_time"].astype(str)
+
+        # Group by trip_id for efficient processing
+        grouped = df.groupby("trip_id", sort=False)
+        processed_rows = 0
+        update_interval = max(1, total_rows // 100)  # Update every 1% of records
+
+        for trip_id, group_df in grouped:
+            # Convert group to StopTime objects using fast itertuples
+            stop_times_list = []
+            for row in group_df.itertuples(index=False):
+                stop_times_list.append(
+                    StopTime(
+                        trip_id=trip_id,  # Reuse the group key
+                        stop_id=row.stop_id,
+                        stop_sequence=int(row.stop_sequence),
+                        arrival_time=row.arrival_time,
+                        departure_time=row.departure_time,
+                        pickup_type=row.pickup_type,
+                        drop_off_type=row.drop_off_type,
+                    )
                 )
 
-                if stop_time.trip_id not in self.stop_times:
-                    self.stop_times[stop_time.trip_id] = []
-                self.stop_times[stop_time.trip_id].append(stop_time)
-                
-                # Update progress periodically
-                processed_rows += 1
-                if processed_rows % update_interval == 0 or processed_rows == total_rows:
-                    sub_progress = processed_rows / total_rows
-                    # Format numbers with K/M suffixes for readability
-                    if total_rows >= 1_000_000:
-                        progress_text = f"({processed_rows/1_000_000:.1f}M/{total_rows/1_000_000:.1f}M records)"
-                    elif total_rows >= 1_000:
-                        progress_text = f"({processed_rows/1_000:.1f}K/{total_rows/1_000:.1f}K records)"
-                    else:
-                        progress_text = f"({processed_rows}/{total_rows} records)"
-                    
-                    self.progress_callback(
-                        f"Parsing stop times... {progress_text}", 
-                        5, 7, sub_progress
+            self.stop_times[trip_id] = stop_times_list
+
+            # Update progress periodically
+            processed_rows += len(group_df)
+            if processed_rows % update_interval == 0 or processed_rows == total_rows:
+                sub_progress = processed_rows / total_rows
+                # Format numbers with K/M suffixes for readability
+                if total_rows >= 1_000_000:
+                    progress_text = (
+                        f"({processed_rows / 1_000_000:.1f}M/"
+                        f"{total_rows / 1_000_000:.1f}M records)"
                     )
+                elif total_rows >= 1_000:
+                    progress_text = (
+                        f"({processed_rows / 1_000:.1f}K/"
+                        f"{total_rows / 1_000:.1f}K records)"
+                    )
+                else:
+                    progress_text = f"({processed_rows}/{total_rows} records)"
+
+                self.progress_callback(
+                    f"Parsing stop times... {progress_text}", 5, 7, sub_progress
+                )
 
     def get_departures_from_stop(
         self,

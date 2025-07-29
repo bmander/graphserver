@@ -105,7 +105,12 @@ class ProviderManager:
 
                 try:
                     # Create progress callback that updates our progress bar
-                    def progress_callback(step_name: str, current_step: int, total_steps: int, sub_progress: float | None = None) -> None:  # noqa: ARG001
+                    def progress_callback(
+                        step_name: str,
+                        current_step: int,
+                        total_steps: int,
+                        sub_progress: float | None = None,
+                    ) -> None:  # noqa: ARG001
                         if sub_progress is not None:
                             # Update postfix with sub-progress info, don't advance main progress
                             pbar.set_postfix_str(step_name)
@@ -117,8 +122,7 @@ class ProviderManager:
                     # Parse GTFS data with detailed progress
                     provider_name = f"transit_{i}" if i > 0 else "transit"
                     transit_provider = TransitProvider(
-                        str(gtfs_path),
-                        progress_callback=progress_callback
+                        str(gtfs_path), progress_callback=progress_callback
                     )
 
                     # Register provider and collect statistics
@@ -200,9 +204,7 @@ class ProviderManager:
 
             # Initialize progress bar for OSM loading (4 detailed steps)
             with tqdm(
-                total=4,
-                desc=f"Loading OSM ({osm_path.name}, {size_info})",
-                unit="step"
+                total=4, desc=f"Loading OSM ({osm_path.name}, {size_info})", unit="step"
             ) as pbar:
                 # Step 1: Parse OSM file
                 pbar.set_postfix_str("Parsing OSM file...")
@@ -361,15 +363,12 @@ class ProviderManager:
 
         # Count total stops for progress bar
         total_stops = sum(
-            len(provider.parser.stops)
-            for provider in transit_providers.values()
+            len(provider.parser.stops) for provider in transit_providers.values()
         )
 
         # Link stops from all transit providers with progress bar
         with tqdm(
-            total=total_stops, 
-            desc="Linking GTFS stops to OSM", 
-            unit="stop"
+            total=total_stops, desc="Linking GTFS stops to OSM", unit="stop"
         ) as pbar:
             for provider_name, transit_provider in transit_providers.items():
                 provider_linked = 0
@@ -378,7 +377,7 @@ class ProviderManager:
                 for stop in transit_provider.parser.stops.values():
                     provider_total += 1
                     self.linking_stats["total_stops"] += 1
-                    
+
                     pbar.set_postfix_str(f"Stop {stop.stop_id}")
 
                     success, error_msg = self._link_single_stop(
@@ -389,14 +388,14 @@ class ProviderManager:
                         self.linking_stats["linked_stops"] += 1
                     else:
                         self.linking_stats["failed_links"].append(error_msg)
-                    
+
                     pbar.update(1)
 
                 pbar.set_description(
                     f"Linking stops ({provider_name}: "
                     f"{provider_linked}/{provider_total})"
                 )
-            
+
             pbar.set_postfix_str("Complete")
 
         # Print summary
