@@ -369,7 +369,7 @@ class GTFSParser:
         service_date_obj: date,
         start_time: int,
         end_time: int,
-        stop_id: str
+        stop_id: str,
     ) -> Departure | None:
         """Process a service date and create departure if valid.
 
