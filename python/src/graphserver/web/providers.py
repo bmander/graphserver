@@ -150,20 +150,8 @@ class ProviderManager:
         if self.gtfs_files and osm_access:
             self._link_transit_stops_to_osm(osm_access)
 
-    def _link_transit_stops_to_osm(self, osm_access_provider) -> None:
-        """Link all transit stops to nearby OSM nodes for multimodal routing.
-
-        Args:
-            osm_access_provider: The OSM access provider to use for linking
-        """
-        from graphserver import Vertex
-
-        print("Linking transit stops to OSM network...")
-
-        # Reset statistics
-        self.linking_stats = {"total_stops": 0, "linked_stops": 0, "failed_links": []}
-
-        # Find all transit providers
+    def _get_transit_providers_for_linking(self) -> dict[str, any]:
+        """Get transit providers that have stops available for linking."""
         transit_providers = {
             name: provider
             for name, provider in self.providers.items()
@@ -172,46 +160,49 @@ class ProviderManager:
 
         if not transit_providers:
             print("⚠️  No transit providers found for linking")
-            return
+            return {}
 
-        # Link stops from all transit providers
-        for provider_name, transit_provider in transit_providers.items():
-            if not hasattr(transit_provider, "parser") or not hasattr(
-                transit_provider.parser, "stops"
-            ):
+        # Filter providers that have stops
+        valid_providers = {}
+        for provider_name, provider in transit_providers.items():
+            if not hasattr(provider, "parser") or not hasattr(provider.parser, "stops"):
                 print(f"⚠️  Transit provider {provider_name} has no stops to link")
                 continue
+            valid_providers[provider_name] = provider
 
-            provider_linked = 0
-            provider_total = 0
+        return valid_providers
 
-            for stop in transit_provider.parser.stops.values():
-                provider_total += 1
-                self.linking_stats["total_stops"] += 1
+    def _link_single_stop(self, stop, osm_access_provider) -> tuple[bool, str | None]:
+        """Link a single transit stop to the OSM network.
 
-                try:
-                    # Create stop vertex for linking
-                    # (using only stop_id, no coordinates)
-                    stop_vertex = Vertex({"stop_id": stop.stop_id})
+        Args:
+            stop: Transit stop object with stop_id, lat, lon
+            osm_access_provider: The OSM access provider to use for linking
 
-                    # Link to nearest OSM node using stop coordinates
-                    osm_access_provider.link(stop_vertex, stop.lat, stop.lon)
+        Returns:
+            Tuple of (success: bool, error_message: str | None)
+        """
+        from graphserver import Vertex
 
-                    provider_linked += 1
-                    self.linking_stats["linked_stops"] += 1
+        try:
+            # Create stop vertex for linking
+            # (using only stop_id, no coordinates)
+            stop_vertex = Vertex({"stop_id": stop.stop_id})
 
-                except ValueError as e:
-                    # Stop too far from OSM network
-                    error_msg = f"Stop {stop.stop_id}: {str(e)}"
-                    self.linking_stats["failed_links"].append(error_msg)
-                except Exception as e:  # noqa: BLE001
-                    # Unexpected error
-                    error_msg = f"Stop {stop.stop_id}: Unexpected error - {str(e)}"
-                    self.linking_stats["failed_links"].append(error_msg)
+            # Link to nearest OSM node using stop coordinates
+            osm_access_provider.link(stop_vertex, stop.lat, stop.lon)
 
-            print(f"  {provider_name}: {provider_linked}/{provider_total} stops linked")
+        except ValueError as e:
+            # Stop too far from OSM network
+            return False, f"Stop {stop.stop_id}: {str(e)}"
+        except Exception as e:  # noqa: BLE001
+            # Unexpected error
+            return False, f"Stop {stop.stop_id}: Unexpected error - {str(e)}"
+        else:
+            return True, None
 
-        # Print summary
+    def _print_linking_summary(self) -> None:
+        """Print summary of transit stop linking results."""
         total_stops = self.linking_stats["total_stops"]
         linked_stops = self.linking_stats["linked_stops"]
         failed_count = len(self.linking_stats["failed_links"])
@@ -238,6 +229,43 @@ class ProviderManager:
                     print(f"     ... and {failed_count - 3} more")
         else:
             print("⚠️  No transit stops found to link")
+
+    def _link_transit_stops_to_osm(self, osm_access_provider) -> None:
+        """Link all transit stops to nearby OSM nodes for multimodal routing.
+
+        Args:
+            osm_access_provider: The OSM access provider to use for linking
+        """
+        print("Linking transit stops to OSM network...")
+
+        # Reset statistics
+        self.linking_stats = {"total_stops": 0, "linked_stops": 0, "failed_links": []}
+
+        # Get valid transit providers
+        transit_providers = self._get_transit_providers_for_linking()
+        if not transit_providers:
+            return
+
+        # Link stops from all transit providers
+        for provider_name, transit_provider in transit_providers.items():
+            provider_linked = 0
+            provider_total = 0
+
+            for stop in transit_provider.parser.stops.values():
+                provider_total += 1
+                self.linking_stats["total_stops"] += 1
+
+                success, error_msg = self._link_single_stop(stop, osm_access_provider)
+                if success:
+                    provider_linked += 1
+                    self.linking_stats["linked_stops"] += 1
+                else:
+                    self.linking_stats["failed_links"].append(error_msg)
+
+            print(f"  {provider_name}: {provider_linked}/{provider_total} stops linked")
+
+        # Print summary
+        self._print_linking_summary()
 
     def get_provider_info(self) -> dict[str, str]:
         """Get information about initialized providers for display."""
