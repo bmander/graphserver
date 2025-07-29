@@ -56,7 +56,6 @@ class ProviderManager:
             if not self.providers:
                 msg = "No providers initialized. Please specify --osm or --gtfs files."
                 raise ProviderError(msg)
-
             print(f"Initialized {len(self.providers)} provider(s)")
             return self.engine
 
@@ -111,7 +110,8 @@ class ProviderManager:
             raise ProviderError(msg) from e
 
         # For now, use the first OSM file for the main providers
-        # TODO: Support multiple OSM files in future
+        # TODO @dev: Support multiple OSM files in future
+        # (issue: multiple OSM file support)
         osm_file = self.osm_files[0]
         osm_path = Path(osm_file)
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -198,7 +198,7 @@ class GTFSParser:
         end_time = start_time + (max_hours * 3600)
 
         # Convert timestamps to date for service lookup
-        start_datetime = datetime.fromtimestamp(start_time)
+        start_datetime = datetime.fromtimestamp(start_time, tz=UTC)
         service_date = int(
             start_datetime.replace(
                 hour=0, minute=0, second=0, microsecond=0
@@ -316,9 +316,9 @@ class GTFSParser:
         # Find the next stop with higher sequence number
         next_sequence = None
         for stop_time in stop_times_list:
-            if stop_time.stop_sequence > stop_sequence:
-                if next_sequence is None or stop_time.stop_sequence < next_sequence:
-                    next_sequence = stop_time.stop_sequence
+            if (stop_time.stop_sequence > stop_sequence and
+                (next_sequence is None or stop_time.stop_sequence < next_sequence)):
+                next_sequence = stop_time.stop_sequence
 
         return next_sequence
 

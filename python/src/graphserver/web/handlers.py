@@ -130,6 +130,6 @@ class GraphRequestHandler(BaseHTTPRequestHandler):
         except Exception as e:  # noqa: BLE001
             self.send_error(500, f"Internal server error: {str(e)}")
 
-    def log_message(self, format: str, *args: Any) -> None:
+    def log_message(self, fmt: str, *args: Any) -> None:
         """Custom log message to show requests."""
-        print(f"[{self.address_string()}] {format % args}")
+        print(f"[{self.address_string()}] {fmt % args}")
