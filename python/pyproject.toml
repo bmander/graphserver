@@ -19,7 +19,9 @@ dev = [
     "ruff",
     "black",
 ]
-web = []
+web = [
+    "tqdm>=4.0.0",
+]
 osm = [
     "osmium>=4.0.2",
     "shapely>=2.0",

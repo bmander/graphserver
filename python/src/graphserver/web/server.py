@@ -42,7 +42,6 @@ class GraphWebServer:
         """Start the HTTP server."""
         # Initialize providers before starting server
         try:
-            print("Initializing graph providers...")
             self.provider_manager.initialize_engine()
             print("✅ Provider initialization complete")
 
