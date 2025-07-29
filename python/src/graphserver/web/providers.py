@@ -55,9 +55,10 @@ class ProviderManager:
 
             if not self.providers:
                 msg = "No providers initialized. Please specify --osm or --gtfs files."
-                raise ProviderError(msg)
-            print(f"Initialized {len(self.providers)} provider(s)")
-            return self.engine
+                raise ProviderError(msg)  # noqa: TRY301
+            else:  # noqa: RET506
+                print(f"Initialized {len(self.providers)} provider(s)")
+                return self.engine
 
         except Exception as e:
             msg = f"Failed to initialize providers: {e}"
@@ -110,8 +111,7 @@ class ProviderManager:
             raise ProviderError(msg) from e
 
         # For now, use the first OSM file for the main providers
-        # TODO @dev: Support multiple OSM files in future
-        # (issue: multiple OSM file support)
+        # Multiple OSM file support tracked in: https://github.com/bmander/graphserver/issues/50
         osm_file = self.osm_files[0]
         osm_path = Path(osm_file)
 

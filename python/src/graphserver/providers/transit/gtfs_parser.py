@@ -316,8 +316,9 @@ class GTFSParser:
         # Find the next stop with higher sequence number
         next_sequence = None
         for stop_time in stop_times_list:
-            if (stop_time.stop_sequence > stop_sequence and
-                (next_sequence is None or stop_time.stop_sequence < next_sequence)):
+            if stop_time.stop_sequence > stop_sequence and (
+                next_sequence is None or stop_time.stop_sequence < next_sequence
+            ):
                 next_sequence = stop_time.stop_sequence
 
         return next_sequence

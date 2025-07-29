@@ -170,7 +170,7 @@ def _benchmark_engine(
                                             result = osm_result
                                             best_cost = total_cost
                                             break
-                                except Exception:
+                                except Exception:  # noqa: S112
                                     continue
                             if result:
                                 break

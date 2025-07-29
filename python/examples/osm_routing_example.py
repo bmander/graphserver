@@ -175,7 +175,7 @@ def main() -> None:
         # we'll find nearby OSM nodes and try routing between them
         if not start_edges or not goal_edges:
             error_msg = "Could not find nearby OSM nodes for start or goal coordinates"
-            raise RuntimeError(error_msg)
+            raise RuntimeError(error_msg)  # noqa: TRY301
 
         result = None
         best_cost = float("inf")

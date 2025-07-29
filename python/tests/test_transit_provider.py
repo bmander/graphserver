@@ -205,7 +205,7 @@ def test_transit_provider_integration() -> None:
             assert result is not None
         except RuntimeError as e:
             # Planning might fail due to no path, which is fine for this test
-            assert (
+            assert (  # noqa: PT017
                 "no path found" in str(e).lower()
                 or "goal not reached" in str(e).lower()
                 or "Path planning failed" in str(e)
