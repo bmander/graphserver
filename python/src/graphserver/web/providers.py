@@ -6,13 +6,14 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from graphserver import Engine, GraphserverDataType
 
 if TYPE_CHECKING:
     from graphserver.core import EdgeProvider
     from graphserver.providers.osm.access_provider import OSMAccessProvider
+    from graphserver.providers.transit.provider import TransitProvider
     from graphserver.providers.transit.types import Stop
 
 
@@ -23,6 +24,24 @@ class LinkingStats:
     total_stops: int = 0
     linked_stops: int = 0
     failed_links: list[str] = field(default_factory=list)
+
+
+@dataclass
+class GTFSFeedStats:
+    """Statistics for a GTFS feed."""
+
+    stops: int
+    routes: int
+    trips: int
+
+
+@dataclass
+class OSMProviderStats:
+    """Statistics for OSM provider data."""
+
+    nodes: int
+    ways: int
+    edges: int
 
 
 class ProgressBar(Protocol):
@@ -136,8 +155,8 @@ class ProviderManager:
             raise ProviderError(msg)
 
     def _register_transit_provider(
-        self, transit_provider: Any, provider_name: str, pbar: ProgressBar
-    ) -> dict[str, Any]:
+        self, transit_provider: TransitProvider, provider_name: str, pbar: ProgressBar
+    ) -> GTFSFeedStats:
         """Register transit provider and collect statistics."""
         assert (
             self.engine is not None
@@ -156,7 +175,7 @@ class ProviderManager:
         )
         pbar.update(1)
 
-        return {"stops": feed_stops, "routes": feed_routes, "trips": feed_trips}
+        return GTFSFeedStats(stops=feed_stops, routes=feed_routes, trips=feed_trips)
 
     def _print_transit_summary(
         self, total_stops: int, total_routes: int, total_trips: int
@@ -207,7 +226,9 @@ class ProviderManager:
             msg = f"OSM path must be a file: {osm_path}"
             raise ProviderError(msg)
 
-    def _create_osm_providers(self, osm_path: Path) -> tuple[Any, dict[str, Any]]:
+    def _create_osm_providers(
+        self, osm_path: Path
+    ) -> tuple[OSMAccessProvider, OSMProviderStats]:
         """Create OSM providers and return statistics."""
         from tqdm import tqdm
 
@@ -259,18 +280,20 @@ class ProviderManager:
             pbar.update(1)
             pbar.set_postfix_str("Complete")
 
-        return osm_access, {"nodes": raw_nodes, "ways": raw_ways, "edges": raw_edges}
+        return osm_access, OSMProviderStats(
+            nodes=raw_nodes, ways=raw_ways, edges=raw_edges
+        )
 
-    def _print_osm_summary(self, stats: dict[str, Any], osm_path: Path) -> None:
+    def _print_osm_summary(self, stats: OSMProviderStats, osm_path: Path) -> None:
         """Print summary of loaded OSM providers."""
         print(
-            f"✅ Registered OSM providers: {stats['nodes']} nodes, "
-            f"{stats['ways']} ways, {stats['edges']} edges ({osm_path.name})"
+            f"✅ Registered OSM providers: {stats.nodes} nodes, "
+            f"{stats.ways} ways, {stats.edges} edges ({osm_path.name})"
         )
 
     def _process_single_gtfs_file(
         self, i: int, gtfs_file: str, pbar: ProgressBar
-    ) -> dict[str, Any]:
+    ) -> GTFSFeedStats:
         """Process a single GTFS file and return statistics."""
         from graphserver.providers.transit import TransitProvider
 
@@ -312,9 +335,9 @@ class ProviderManager:
         with tqdm(total=total_steps, desc="Loading GTFS", unit="step") as pbar:
             for i, gtfs_file in enumerate(self.gtfs_files):
                 feed_stats = self._process_single_gtfs_file(i, gtfs_file, pbar)
-                total_stops += feed_stats["stops"]
-                total_routes += feed_stats["routes"]
-                total_trips += feed_stats["trips"]
+                total_stops += feed_stats.stops
+                total_routes += feed_stats.routes
+                total_trips += feed_stats.trips
             pbar.set_postfix_str("Complete")
 
         # Print detailed summary
@@ -348,12 +371,14 @@ class ProviderManager:
         if self.gtfs_files and osm_access:
             self._link_transit_stops_to_osm(osm_access)
 
-    def _get_transit_providers_for_linking(self) -> dict[str, Any]:
+    def _get_transit_providers_for_linking(self) -> dict[str, TransitProvider]:
         """Get transit providers that have stops available for linking."""
+        from graphserver.providers.transit import TransitProvider
+
         transit_providers = {
             name: provider
             for name, provider in self.providers.items()
-            if name.startswith("transit")
+            if name.startswith("transit") and isinstance(provider, TransitProvider)
         }
 
         if not transit_providers:

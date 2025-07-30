@@ -7,7 +7,6 @@ and their relationships in the context of pedestrian pathfinding.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 
 @dataclass
@@ -103,7 +102,7 @@ class OSMEdge:
     way_id: int
     distance_m: float
     duration_s: float
-    tags: dict[str, Any]
+    tags: dict[str, str]
 
     def __post_init__(self) -> None:
         """Validate edge data after initialization."""

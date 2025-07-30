@@ -9,6 +9,7 @@ from urllib.parse import parse_qs, urlparse
 
 from graphserver import GraphserverDataType, Vertex
 
+from .providers import ProviderManager
 from .templates import generate_html_response
 
 
@@ -97,7 +98,9 @@ class GraphRequestHandler(BaseHTTPRequestHandler):
         return edges_data
 
     def _process_vertex_with_providers(
-        self, vertex_props: dict[str, GraphserverDataType], provider_manager: Any
+        self,
+        vertex_props: dict[str, GraphserverDataType],
+        provider_manager: ProviderManager | None,
     ) -> tuple[list[dict[str, Any]] | None, dict[str, Any]]:
         """Process vertex with all available providers.
 
@@ -186,9 +189,11 @@ class GraphRequestHandler(BaseHTTPRequestHandler):
                 return  # Error already sent in _parse_vertex_from_request
 
             # Process vertex with providers to get edges
-            provider_manager = self.server_config.get("provider_manager")
+            provider_manager_obj = self.server_config.get("provider_manager")
+            if not isinstance(provider_manager_obj, ProviderManager):
+                provider_manager_obj = None
             edges_data, vertex_validation = self._process_vertex_with_providers(
-                vertex_props, provider_manager
+                vertex_props, provider_manager_obj
             )
 
             # Send HTML response
