@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -13,6 +14,15 @@ if TYPE_CHECKING:
     from graphserver.core import EdgeProvider
     from graphserver.providers.osm.access_provider import OSMAccessProvider
     from graphserver.providers.transit.types import Stop
+
+
+@dataclass
+class LinkingStats:
+    """Cross-modal linking statistics."""
+
+    total_stops: int = 0
+    linked_stops: int = 0
+    failed_links: list[str] = field(default_factory=list)
 
 
 class ProgressBar(Protocol):
@@ -41,7 +51,7 @@ class ProviderManager:
         self.providers: dict[str, EdgeProvider] = {}
 
         # Cross-modal linking statistics
-        self.linking_stats = {"total_stops": 0, "linked_stops": 0, "failed_links": []}
+        self.linking_stats = LinkingStats()
 
     def initialize_engine(self) -> Engine:
         """Initialize the graph engine with all configured providers."""
@@ -129,6 +139,9 @@ class ProviderManager:
         self, transit_provider: Any, provider_name: str, pbar: ProgressBar
     ) -> dict[str, Any]:
         """Register transit provider and collect statistics."""
+        assert (
+            self.engine is not None
+        )  # Engine must be initialized before registering providers
         pbar.set_postfix_str("Registering provider...")
         self.providers[provider_name] = transit_provider
         self.engine.register_provider(provider_name, transit_provider)
@@ -229,6 +242,9 @@ class ProviderManager:
             pbar.set_postfix_str("Creating network provider...")
             osm_network = OSMNetworkProvider(parser=parser)
             self.providers["osm_network"] = osm_network
+            assert (
+                self.engine is not None
+            )  # Engine must be initialized before registering providers
             self.engine.register_provider("osm_network", osm_network)
             pbar.update(1)
 
@@ -236,6 +252,9 @@ class ProviderManager:
             pbar.set_postfix_str("Creating access provider...")
             osm_access = OSMAccessProvider(parser=parser)
             self.providers["osm_access"] = osm_access
+            assert (
+                self.engine is not None
+            )  # Engine must be initialized before registering providers
             self.engine.register_provider("osm_access", osm_access)
             pbar.update(1)
             pbar.set_postfix_str("Complete")
@@ -384,9 +403,10 @@ class ProviderManager:
 
     def _print_linking_summary(self) -> None:
         """Print summary of transit stop linking results."""
-        total_stops = self.linking_stats["total_stops"]
-        linked_stops = self.linking_stats["linked_stops"]
-        failed_count = len(self.linking_stats["failed_links"])
+        total_stops = self.linking_stats.total_stops
+        linked_stops = self.linking_stats.linked_stops
+        failed_links = self.linking_stats.failed_links
+        failed_count = len(failed_links)
 
         if total_stops > 0:
             success_rate = (linked_stops / total_stops) * 100
@@ -402,10 +422,10 @@ class ProviderManager:
                 )
                 # Show first few failures as examples
                 if failed_count <= 3:
-                    for error in self.linking_stats["failed_links"]:
+                    for error in failed_links:
                         print(f"     {error}")
                 else:
-                    for error in self.linking_stats["failed_links"][:3]:
+                    for error in failed_links[:3]:
                         print(f"     {error}")
                     print(f"     ... and {failed_count - 3} more")
         else:
@@ -429,7 +449,7 @@ class ProviderManager:
             raise ProviderError(msg) from e
 
         # Reset statistics
-        self.linking_stats = {"total_stops": 0, "linked_stops": 0, "failed_links": []}
+        self.linking_stats = LinkingStats()
 
         # Get valid transit providers
         transit_providers = self._get_transit_providers_for_linking()
@@ -451,7 +471,7 @@ class ProviderManager:
 
                 for stop in transit_provider.parser.stops.values():
                     provider_total += 1
-                    self.linking_stats["total_stops"] += 1
+                    self.linking_stats.total_stops += 1
 
                     pbar.set_postfix_str(f"Stop {stop.stop_id}")
 
@@ -460,9 +480,9 @@ class ProviderManager:
                     )
                     if success:
                         provider_linked += 1
-                        self.linking_stats["linked_stops"] += 1
-                    else:
-                        self.linking_stats["failed_links"].append(error_msg)
+                        self.linking_stats.linked_stops += 1
+                    elif error_msg is not None:
+                        self.linking_stats.failed_links.append(error_msg)
 
                     pbar.update(1)
 
@@ -489,9 +509,9 @@ class ProviderManager:
             )
 
         # Add cross-modal linking information if available
-        if self.osm_files and self.gtfs_files and self.linking_stats["total_stops"] > 0:
-            linked_stops = self.linking_stats["linked_stops"]
-            total_stops = self.linking_stats["total_stops"]
+        if self.osm_files and self.gtfs_files and self.linking_stats.total_stops > 0:
+            linked_stops = self.linking_stats.linked_stops
+            total_stops = self.linking_stats.total_stops
             success_rate = (linked_stops / total_stops) * 100 if total_stops > 0 else 0
             info["Cross-modal links"] = (
                 f"{linked_stops}/{total_stops} transit stops linked to OSM network "
