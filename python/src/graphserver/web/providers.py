@@ -3,14 +3,24 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 from graphserver import Engine, GraphserverDataType
 
 if TYPE_CHECKING:
     from graphserver.core import EdgeProvider
+    from graphserver.providers.osm.access_provider import OSMAccessProvider
+    from graphserver.providers.transit.types import Stop
+
+
+class ProgressBar(Protocol):
+    """Protocol for progress bar interface."""
+
+    def set_postfix_str(self, s: str) -> None: ...
+    def set_description(self, desc: str) -> None: ...
+    def update(self, n: float | None = None) -> bool | None: ...
 
 
 class ProviderError(Exception):
@@ -84,7 +94,9 @@ class ProviderManager:
             )
             raise ProviderError(msg) from e
 
-    def _create_progress_callback(self, pbar):
+    def _create_progress_callback(
+        self, pbar: ProgressBar
+    ) -> Callable[[str, int, int, float | None], None]:
         """Create progress callback function for updating progress bar."""
 
         def progress_callback(
@@ -114,7 +126,7 @@ class ProviderManager:
             raise ProviderError(msg)
 
     def _register_transit_provider(
-        self, transit_provider, provider_name: str, pbar
+        self, transit_provider: Any, provider_name: str, pbar: ProgressBar
     ) -> dict[str, Any]:
         """Register transit provider and collect statistics."""
         pbar.set_postfix_str("Registering provider...")
@@ -237,7 +249,9 @@ class ProviderManager:
             f"{stats['ways']} ways, {stats['edges']} edges ({osm_path.name})"
         )
 
-    def _process_single_gtfs_file(self, i: int, gtfs_file: str, pbar) -> dict[str, Any]:
+    def _process_single_gtfs_file(
+        self, i: int, gtfs_file: str, pbar: ProgressBar
+    ) -> dict[str, Any]:
         """Process a single GTFS file and return statistics."""
         from graphserver.providers.transit import TransitProvider
 
@@ -337,7 +351,9 @@ class ProviderManager:
 
         return valid_providers
 
-    def _link_single_stop(self, stop, osm_access_provider) -> tuple[bool, str | None]:
+    def _link_single_stop(
+        self, stop: Stop, osm_access_provider: OSMAccessProvider
+    ) -> tuple[bool, str | None]:
         """Link a single transit stop to the OSM network.
 
         Args:
@@ -395,7 +411,9 @@ class ProviderManager:
         else:
             print("⚠️  No transit stops found to link")
 
-    def _link_transit_stops_to_osm(self, osm_access_provider) -> None:
+    def _link_transit_stops_to_osm(
+        self, osm_access_provider: OSMAccessProvider
+    ) -> None:
         """Link all transit stops to nearby OSM nodes for multimodal routing.
 
         Args:
