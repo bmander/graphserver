@@ -52,7 +52,7 @@ def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     """
     # Use PyProj for accurate geodesic distance calculation
     _, _, distance = _GEOD.inv(lon1, lat1, lon2, lat2)
-    return abs(distance)
+    return float(abs(distance))
 
 
 def create_point_from_coords(lat: float, lon: float) -> Point:

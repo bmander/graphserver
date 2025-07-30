@@ -8,7 +8,7 @@ GraphserverDataType = str | int | float
 
 # Import will be available after C extension is built
 try:
-    import _graphserver  # type: ignore[import-untyped]
+    import _graphserver  # type: ignore[import-not-found]
 except ImportError:
     # Graceful handling during development
     _graphserver = None
@@ -34,7 +34,7 @@ class Vertex:
         if data and "_hash" in data and hash_value is None:
             data_dict = dict(data)
             hash_value = data_dict.pop("_hash")
-            self._data: dict[str, Any] = data_dict
+            self._data = data_dict
         else:
             self._data: dict[str, Any] = dict(data) if data else {}
 
@@ -321,7 +321,7 @@ class Engine:
         Returns:
             True if edge caching is enabled, False otherwise
         """
-        return self._config.get("enable_edge_caching", False)
+        return bool(self._config.get("enable_edge_caching", False))
 
     def precache_subgraph(
         self,

@@ -23,7 +23,7 @@ try:
     from . import providers
 except ImportError:
     # Providers may not be available if optional dependencies aren't installed
-    providers = None
+    providers = None  # type: ignore[assignment]
 
 __version__ = "2.0.0"
 __all__ = [

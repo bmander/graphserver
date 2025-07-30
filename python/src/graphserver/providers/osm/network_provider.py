@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
 from graphserver.core import Edge, GraphserverDataType, Vertex, VertexEdgePair
 
@@ -66,7 +66,7 @@ class OSMNetworkProvider:
         )
 
     def _get_identity_hash(
-        self, vertex_data: dict[str, GraphserverDataType]
+        self, vertex_data: Mapping[str, GraphserverDataType]
     ) -> int | None:
         """Generate identity hash for vertex data.
 

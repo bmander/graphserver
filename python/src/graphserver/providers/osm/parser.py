@@ -10,14 +10,14 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from collections.abc import Iterator
-
 try:
     import osmium
 except ImportError as e:
     msg = "PyOsmium is required for OSM parsing. Install with: pip install osmium"
     raise ImportError(msg) from e
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 from .types import OSMEdge, OSMNode, OSMWay, WalkingProfile
 

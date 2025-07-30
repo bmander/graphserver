@@ -649,7 +649,9 @@ class GTFSParser:
 
             if not exceptions.empty:
                 exception_type = exceptions.iloc[0]["exception_type"]
-                return exception_type == 1  # 1 = service added, 2 = service removed
+                return bool(
+                    exception_type == 1
+                )  # 1 = service added, 2 = service removed
 
         return True  # Default to active if no specific rules found
 

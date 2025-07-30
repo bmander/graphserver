@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
 from graphserver.core import Edge, GraphserverDataType, Vertex, VertexEdgePair
 
@@ -110,7 +110,7 @@ class OSMAccessProvider:
         return f"coord:{rounded_lat},{rounded_lon}"
 
     def _get_identity_hash(
-        self, vertex_data: dict[str, GraphserverDataType]
+        self, vertex_data: Mapping[str, GraphserverDataType]
     ) -> int | None:
         """Generate identity hash for vertex data.
 
@@ -125,7 +125,7 @@ class OSMAccessProvider:
             hash_string = f"osm:{vertex_data['osm_node_id']}"
         elif "lat" in vertex_data and "lon" in vertex_data:
             hash_string = self._create_coordinate_identity_hash(
-                vertex_data["lat"], vertex_data["lon"]
+                float(vertex_data["lat"]), float(vertex_data["lon"])
             )
         else:
             return None
