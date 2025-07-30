@@ -284,27 +284,6 @@ class GTFSParser:
 
         return start_datetime, end_datetime, start_date, end_date
 
-    def _get_active_services_for_window(
-        self, start_date: date, end_date: date
-    ) -> set[str]:
-        """Get services active in the given date range.
-
-        Args:
-            start_date: Start date for service lookup
-            end_date: End date for service lookup
-
-        Returns:
-            Set of active service IDs
-        """
-        # Get all services active in this date range
-        active_services = self._get_services_for_date_range(start_date, end_date)
-
-        if not active_services:
-            # If no service calendar data, assume all services are active
-            active_services = self._get_all_service_ids()
-
-        return active_services
-
     def _should_skip_stop_time(
         self, stop_time: StopTime, trip: Trip, active_services: set[str]
     ) -> bool:
@@ -446,7 +425,7 @@ class GTFSParser:
         end_time = start_time + (max_hours * 3600)
 
         # Get all services active in this date range
-        active_services = self._get_active_services_for_window(start_date, end_date)
+        active_services = self._get_services_for_date_range(start_date, end_date)
 
         # Use the stop index to get only relevant stop times
         if stop_id not in self.stop_to_stop_times:
