@@ -7,6 +7,7 @@ protocol for GTFS-based transit pathfinding.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -50,7 +51,7 @@ class TransitProvider:
         *,
         config: TransitConfig | None = None,
         build_index: bool = True,
-        progress_callback: callable[[str, int, int, float | None], None] | None = None,
+        progress_callback: Callable[[str, int, int, float | None], None] | None = None,
     ) -> None:
         """Initialize transit provider from a GTFS file.
 
@@ -95,7 +96,6 @@ class TransitProvider:
         sub_progress: float | None = None,
     ) -> None:
         """Default progress callback that does nothing."""
-        pass
 
     def _build_spatial_index(self) -> None:
         """Build spatial index for fast coordinate-based lookups."""

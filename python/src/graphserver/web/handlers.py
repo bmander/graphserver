@@ -7,12 +7,12 @@ from http.server import BaseHTTPRequestHandler
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
-from graphserver import Vertex
+from graphserver import GraphserverDataType, Vertex
 
 from .templates import generate_html_response
 
 
-def parse_value(value_str: str) -> str | int | float:
+def parse_value(value_str: str) -> GraphserverDataType:
     """Convert string to appropriate type (float, int, or str)."""
     # If value is quoted, treat as string and strip quotes
     if (value_str.startswith('"') and value_str.endswith('"')) or (
@@ -34,11 +34,13 @@ def parse_value(value_str: str) -> str | int | float:
 class GraphRequestHandler(BaseHTTPRequestHandler):
     """HTTP request handler for graph browsing."""
 
-    def __init__(self, *args, server_config: dict[str, Any] | None = None, **kwargs):
+    def __init__(
+        self, *args: Any, server_config: dict[str, Any] | None = None, **kwargs: Any
+    ) -> None:
         self.server_config = server_config or {}
         super().__init__(*args, **kwargs)
 
-    def _parse_vertex_from_request(self) -> dict[str, str | int | float] | None:
+    def _parse_vertex_from_request(self) -> dict[str, GraphserverDataType] | None:
         """Parse vertex properties from the request URL.
 
         Returns:
@@ -53,7 +55,7 @@ class GraphRequestHandler(BaseHTTPRequestHandler):
 
         # Parse query parameters
         query_params = parse_qs(parsed_url.query)
-        vertex_props: dict[str, str | int | float] = {}
+        vertex_props: dict[str, GraphserverDataType] = {}
 
         for key, values in query_params.items():
             # Take the first value for each parameter
@@ -63,8 +65,8 @@ class GraphRequestHandler(BaseHTTPRequestHandler):
         return vertex_props
 
     def _get_edges_from_provider(
-        self, provider_name: str, provider, vertex
-    ) -> list[dict]:
+        self, provider_name: str, provider: Any, vertex: Vertex
+    ) -> list[dict[str, Any]]:
         """Get edges from a single provider.
 
         Args:
@@ -95,8 +97,8 @@ class GraphRequestHandler(BaseHTTPRequestHandler):
         return edges_data
 
     def _process_vertex_with_providers(
-        self, vertex_props: dict, provider_manager
-    ) -> tuple[list[dict] | None, dict]:
+        self, vertex_props: dict[str, GraphserverDataType], provider_manager: Any
+    ) -> tuple[list[dict[str, Any]] | None, dict[str, Any]]:
         """Process vertex with all available providers.
 
         Args:
@@ -150,9 +152,9 @@ class GraphRequestHandler(BaseHTTPRequestHandler):
 
     def _send_html_response(
         self,
-        vertex_props: dict,
-        edges_data: list[dict] | None,
-        vertex_validation: dict | None,
+        vertex_props: dict[str, GraphserverDataType],
+        edges_data: list[dict[str, Any]] | None,
+        vertex_validation: dict[str, Any] | None,
     ) -> None:
         """Generate and send HTML response.
 

@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-from graphserver.core import Edge, Vertex, VertexEdgePair
+from graphserver.core import Edge, GraphserverDataType, Vertex, VertexEdgePair
 
 from .parser import OSMParser
 from .types import WalkingProfile
@@ -65,7 +65,9 @@ class OSMNetworkProvider:
             len(self.parser.edges),
         )
 
-    def _get_identity_hash(self, vertex_data: dict) -> int | None:
+    def _get_identity_hash(
+        self, vertex_data: dict[str, GraphserverDataType]
+    ) -> int | None:
         """Generate identity hash for vertex data.
 
         Args:

@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, timedelta
+from collections.abc import Callable
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
+from zoneinfo import ZoneInfo
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -24,7 +26,7 @@ class GTFSParser:
     def __init__(
         self,
         gtfs_path: str | Path,
-        progress_callback: callable[[str, int, int, float | None], None],
+        progress_callback: Callable[[str, int, int, float | None], None],
     ) -> None:
         """Initialize GTFS parser.
 
@@ -260,7 +262,9 @@ class GTFSParser:
                     f"Parsing stop times... {progress_text}", 5, 7, sub_progress
                 )
 
-    def _prepare_time_window(self, start_time: int, max_hours: int) -> tuple:
+    def _prepare_time_window(
+        self, start_time: int, max_hours: int
+    ) -> tuple[datetime, datetime, date, date]:
         """Prepare time window for departure search.
 
         Args:
@@ -507,7 +511,7 @@ class GTFSParser:
         else:
             return True
 
-    def _get_agency_timezone(self):
+    def _get_agency_timezone(self) -> ZoneInfo:
         """Get the agency timezone as a timezone object."""
         import zoneinfo
 
@@ -522,7 +526,7 @@ class GTFSParser:
         else:
             return zoneinfo.ZoneInfo("UTC")
 
-    def _localize_timestamp(self, timestamp: int):
+    def _localize_timestamp(self, timestamp: int) -> datetime:
         """Convert Unix timestamp to agency timezone-aware datetime."""
         from datetime import datetime
 

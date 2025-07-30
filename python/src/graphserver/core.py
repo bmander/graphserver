@@ -3,6 +3,9 @@ from __future__ import annotations
 from collections.abc import ItemsView, Iterator, KeysView, Mapping, Sequence
 from typing import Any, Protocol, runtime_checkable
 
+# Type alias for graphserver vertex data values
+GraphserverDataType = str | int | float
+
 # Import will be available after C extension is built
 try:
     import _graphserver  # type: ignore[import-untyped]

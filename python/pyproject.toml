@@ -18,6 +18,9 @@ dev = [
     "mypy>=1.0",
     "ruff",
     "black",
+    "pandas-stubs",
+    "types-shapely",
+    "types-tqdm",
 ]
 web = [
     "tqdm>=4.0.0",

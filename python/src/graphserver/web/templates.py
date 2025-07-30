@@ -5,8 +5,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from string import Template
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import quote
+
+if TYPE_CHECKING:
+    from graphserver import GraphserverDataType
 
 
 def _load_template(name: str) -> Template:
@@ -22,9 +25,9 @@ def _load_css() -> str:
 
 
 def generate_html_response(
-    vertex_props: dict[str, Any],
+    vertex_props: dict[str, GraphserverDataType],
     server_config: dict[str, Any],
-    edges_data: list[dict] | None = None,
+    edges_data: list[dict[str, Any]] | None = None,
     vertex_validation: dict[str, Any] | None = None,
 ) -> str:
     """Generate complete HTML response for the given vertex properties."""
@@ -74,7 +77,7 @@ def generate_usage_content(server_config: dict[str, Any]) -> str:
 
 def generate_vertex_content(
     vertex_json: str,
-    edges_data: list[dict] | None = None,
+    edges_data: list[dict[str, Any]] | None = None,
     vertex_validation: dict[str, Any] | None = None,
 ) -> str:
     """Generate content for a specific vertex."""
@@ -89,7 +92,7 @@ def generate_vertex_content(
 
 
 def _generate_edges_section(
-    edges_data: list[dict] | None, vertex_validation: dict[str, Any] | None
+    edges_data: list[dict[str, Any]] | None, vertex_validation: dict[str, Any] | None
 ) -> str:
     """Generate the edges section of the vertex page."""
     if vertex_validation and not vertex_validation.get("is_valid", True):

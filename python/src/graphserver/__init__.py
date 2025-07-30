@@ -11,6 +11,7 @@ from .core import (
     Edge,
     EdgeProvider,
     Engine,
+    GraphserverDataType,
     PathEdge,
     PathResult,
     Vertex,
@@ -33,6 +34,7 @@ __all__ = [
     "Edge",
     "PathEdge",
     "VertexEdgePair",
+    "GraphserverDataType",
 ]
 
 # Add providers to __all__ if available

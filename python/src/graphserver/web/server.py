@@ -8,6 +8,7 @@ import argparse
 import sys
 from collections.abc import Sequence
 from http.server import HTTPServer
+from typing import Any
 
 from .handlers import GraphRequestHandler
 from .providers import ProviderError, ProviderManager
@@ -51,7 +52,7 @@ class GraphWebServer:
             sys.exit(1)
 
         # Create a handler class with server config
-        def handler_factory(*args, **kwargs):
+        def handler_factory(*args: Any, **kwargs: Any) -> GraphRequestHandler:
             return GraphRequestHandler(
                 *args, server_config=self.server_config, **kwargs
             )

@@ -5,9 +5,9 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from graphserver import Engine
+from graphserver import Engine, GraphserverDataType
 
 if TYPE_CHECKING:
     from graphserver.core import EdgeProvider
@@ -115,7 +115,7 @@ class ProviderManager:
 
     def _register_transit_provider(
         self, transit_provider, provider_name: str, pbar
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Register transit provider and collect statistics."""
         pbar.set_postfix_str("Registering provider...")
         self.providers[provider_name] = transit_provider
@@ -182,7 +182,7 @@ class ProviderManager:
             msg = f"OSM path must be a file: {osm_path}"
             raise ProviderError(msg)
 
-    def _create_osm_providers(self, osm_path: Path) -> tuple:
+    def _create_osm_providers(self, osm_path: Path) -> tuple[Any, dict[str, Any]]:
         """Create OSM providers and return statistics."""
         from tqdm import tqdm
 
@@ -230,14 +230,14 @@ class ProviderManager:
 
         return osm_access, {"nodes": raw_nodes, "ways": raw_ways, "edges": raw_edges}
 
-    def _print_osm_summary(self, stats: dict, osm_path: Path) -> None:
+    def _print_osm_summary(self, stats: dict[str, Any], osm_path: Path) -> None:
         """Print summary of loaded OSM providers."""
         print(
             f"✅ Registered OSM providers: {stats['nodes']} nodes, "
             f"{stats['ways']} ways, {stats['edges']} edges ({osm_path.name})"
         )
 
-    def _process_single_gtfs_file(self, i: int, gtfs_file: str, pbar) -> dict:
+    def _process_single_gtfs_file(self, i: int, gtfs_file: str, pbar) -> dict[str, Any]:
         """Process a single GTFS file and return statistics."""
         from graphserver.providers.transit import TransitProvider
 
@@ -315,7 +315,7 @@ class ProviderManager:
         if self.gtfs_files and osm_access:
             self._link_transit_stops_to_osm(osm_access)
 
-    def _get_transit_providers_for_linking(self) -> dict[str, any]:
+    def _get_transit_providers_for_linking(self) -> dict[str, Any]:
         """Get transit providers that have stops available for linking."""
         transit_providers = {
             name: provider
@@ -482,7 +482,9 @@ class ProviderManager:
 
         return info
 
-    def validate_vertex_for_providers(self, vertex_props: dict) -> tuple[bool, str]:
+    def validate_vertex_for_providers(
+        self, vertex_props: dict[str, GraphserverDataType]
+    ) -> tuple[bool, str]:
         """Validate that vertex properties are compatible with providers.
 
         Tests the vertex with actual providers to determine if any can handle it.
