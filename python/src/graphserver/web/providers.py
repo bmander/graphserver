@@ -226,10 +226,13 @@ class ProviderManager:
             msg = f"OSM path must be a file: {osm_path}"
             raise ProviderError(msg)
 
-    def _create_osm_providers(
+    def _install_osm_providers(
         self, osm_path: Path
     ) -> tuple[OSMAccessProvider, OSMProviderStats]:
-        """Create OSM providers and return statistics."""
+        """Create and install OSM providers and return statistics.
+
+        Registers both OSM network and access providers; returns the access provider."""
+
         from tqdm import tqdm
 
         from graphserver.providers.osm import OSMAccessProvider, OSMNetworkProvider
@@ -355,7 +358,7 @@ class ProviderManager:
         self._validate_osm_file(osm_path)
 
         try:
-            osm_access, stats = self._create_osm_providers(osm_path)
+            osm_access, stats = self._install_osm_providers(osm_path)
             self._print_osm_summary(stats, osm_path)
 
         except Exception as e:
