@@ -8,10 +8,10 @@ GraphserverDataType = str | int | float
 
 # Import will be available after C extension is built
 try:
-    import _graphserver  # type: ignore[import-not-found]
+    import _graphserver
 except ImportError:
     # Graceful handling during development
-    _graphserver = None
+    _graphserver = None  # type: ignore[assignment]
 
 
 class Vertex:
@@ -34,9 +34,9 @@ class Vertex:
         if data and "_hash" in data and hash_value is None:
             data_dict = dict(data)
             hash_value = data_dict.pop("_hash")
-            self._data = data_dict
+            self._data: dict[str, Any] = data_dict
         else:
-            self._data: dict[str, Any] = dict(data) if data else {}
+            self._data = dict(data) if data else {}
 
         self._custom_hash: int | None = hash_value
 
@@ -377,8 +377,8 @@ class Engine:
             msg = "C extension not available"
             raise RuntimeError(msg)
 
-        # Convert to list for C extension
-        seed_list = list(seed_vertices)
+        # Convert to list of dicts for C extension
+        seed_list = [v.to_dict() for v in seed_vertices]
 
         # Call C extension function
         _graphserver.precache_subgraph(

@@ -403,7 +403,7 @@ class OSMAccessProvider:
         if node is None:
             return None
 
-        node_data = {
+        node_data: dict[str, GraphserverDataType] = {
             "osm_node_id": node.id,
             **node.tags,
         }

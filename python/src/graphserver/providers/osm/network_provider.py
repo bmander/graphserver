@@ -170,7 +170,7 @@ class OSMNetworkProvider:
             return None
 
         node = self.parser.nodes[node_id]
-        node_data = {
+        node_data: dict[str, GraphserverDataType] = {
             "osm_node_id": node.id,
             **node.tags,
         }
