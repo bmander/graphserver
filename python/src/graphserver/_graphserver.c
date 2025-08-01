@@ -29,6 +29,12 @@ static PyObject* path_to_python_list(const GraphserverPath* path);
 static int python_edges_to_c_edges(PyObject* edge_list, GraphserverEdgeList* out_edges);
 static int python_vertex_edge_pairs_to_c_edges(PyObject* pair_list, GraphserverEdgeList* out_edges);
 
+// Cleanup helper functions
+static void cleanup_plan_resources(PyObject* python_path, GraphserverPath* path, 
+                                  GraphserverVertex* start_vertex, GraphserverVertex* goal_vertex);
+static void cleanup_vertex_pairs(GraphserverKeyPair* pairs, size_t count);
+static void cleanup_vertex_array(GraphserverVertex** vertices, size_t count);
+
 // Provider wrapper for calling Python functions from C
 static int python_provider_wrapper(
     const GraphserverVertex* current_vertex,
@@ -201,9 +207,7 @@ static PyObject* py_plan(PyObject* self, PyObject* args, PyObject* kwargs) {
     size_t num_edges = gs_path_get_num_edges(path);
     PyObject* python_path = PyList_New(num_edges);
     if (!python_path) {
-        gs_path_destroy(path);
-        gs_vertex_destroy(start_vertex);
-        gs_vertex_destroy(goal_vertex);
+        cleanup_plan_resources(NULL, path, start_vertex, goal_vertex);
         return NULL;
     }
     
@@ -211,20 +215,14 @@ static PyObject* py_plan(PyObject* self, PyObject* args, PyObject* kwargs) {
     for (size_t i = 0; i < num_edges; i++) {
         const GraphserverEdge* edge = gs_path_get_edge(path, i);
         if (!edge) {
-            Py_DECREF(python_path);
-            gs_path_destroy(path);
-            gs_vertex_destroy(start_vertex);
-            gs_vertex_destroy(goal_vertex);
+            cleanup_plan_resources(python_path, path, start_vertex, goal_vertex);
             PyErr_Format(PyExc_RuntimeError, "Failed to get edge at index %zu", i);
             return NULL;
         }
         
         PyObject* edge_dict = PyDict_New();
         if (!edge_dict) {
-            Py_DECREF(python_path);
-            gs_path_destroy(path);
-            gs_vertex_destroy(start_vertex);
-            gs_vertex_destroy(goal_vertex);
+            cleanup_plan_resources(python_path, path, start_vertex, goal_vertex);
             return NULL;
         }
         
@@ -252,10 +250,7 @@ static PyObject* py_plan(PyObject* self, PyObject* args, PyObject* kwargs) {
         
         if (!cost_obj) {
             Py_DECREF(edge_dict);
-            Py_DECREF(python_path);
-            gs_path_destroy(path);
-            gs_vertex_destroy(start_vertex);
-            gs_vertex_destroy(goal_vertex);
+            cleanup_plan_resources(python_path, path, start_vertex, goal_vertex);
             return NULL;
         }
         
@@ -267,10 +262,7 @@ static PyObject* py_plan(PyObject* self, PyObject* args, PyObject* kwargs) {
         PyObject* target_dict = vertex_to_python_dict(target_vertex);
         if (!target_dict) {
             Py_DECREF(edge_dict);
-            Py_DECREF(python_path);
-            gs_path_destroy(path);
-            gs_vertex_destroy(start_vertex);
-            gs_vertex_destroy(goal_vertex);
+            cleanup_plan_resources(python_path, path, start_vertex, goal_vertex);
             return NULL;
         }
         
@@ -551,6 +543,32 @@ static int python_object_to_graphserver_value(PyObject* value, GraphserverValue*
     return 0;  // Success
 }
 
+// Cleanup helper function implementations
+
+static void cleanup_plan_resources(PyObject* python_path, GraphserverPath* path, 
+                                  GraphserverVertex* start_vertex, GraphserverVertex* goal_vertex) {
+    Py_XDECREF(python_path);
+    if (path) gs_path_destroy(path);
+    if (start_vertex) gs_vertex_destroy(start_vertex);
+    if (goal_vertex) gs_vertex_destroy(goal_vertex);
+}
+
+static void cleanup_vertex_pairs(GraphserverKeyPair* pairs, size_t count) {
+    if (!pairs) return;
+    for (size_t i = 0; i < count; i++) {
+        gs_value_destroy((GraphserverValue*)&pairs[i].value);
+    }
+    free(pairs);
+}
+
+static void cleanup_vertex_array(GraphserverVertex** vertices, size_t count) {
+    if (!vertices) return;
+    for (size_t i = 0; i < count; i++) {
+        if (vertices[i]) gs_vertex_destroy(vertices[i]);
+    }
+    free(vertices);
+}
+
 static GraphserverVertex* python_dict_to_vertex(PyObject* dict) {
     if (!PyDict_Check(dict)) {
         PyErr_SetString(PyExc_TypeError, "Expected dict object");
@@ -606,20 +624,14 @@ static GraphserverVertex* python_dict_to_vertex(PyObject* dict) {
         if (!PyUnicode_Check(key)) {
             PyErr_SetString(PyExc_TypeError, "Dictionary keys must be strings");
             // Clean up any values we've already created
-            for (size_t i = 0; i < pair_index; i++) {
-                gs_value_destroy((GraphserverValue*)&pairs[i].value);
-            }
-            free(pairs);
+            cleanup_vertex_pairs(pairs, pair_index);
             return NULL;
         }
         
         const char* key_str = PyUnicode_AsUTF8(key);
         if (!key_str) {
             // Clean up and return error
-            for (size_t i = 0; i < pair_index; i++) {
-                gs_value_destroy((GraphserverValue*)&pairs[i].value);
-            }
-            free(pairs);
+            cleanup_vertex_pairs(pairs, pair_index);
             return NULL;
         }
         
@@ -627,10 +639,7 @@ static GraphserverVertex* python_dict_to_vertex(PyObject* dict) {
         GraphserverValue gs_value;
         if (python_object_to_graphserver_value(value, &gs_value) != 0) {
             // Clean up and return error
-            for (size_t i = 0; i < pair_index; i++) {
-                gs_value_destroy((GraphserverValue*)&pairs[i].value);
-            }
-            free(pairs);
+            cleanup_vertex_pairs(pairs, pair_index);
             return NULL;
         }
         
@@ -644,10 +653,7 @@ static GraphserverVertex* python_dict_to_vertex(PyObject* dict) {
     GraphserverVertex* vertex = gs_vertex_create(pairs, pair_index, hash_ptr);
     
     // Clean up the pairs array (vertex makes its own copies)
-    for (size_t i = 0; i < pair_index; i++) {
-        gs_value_destroy((GraphserverValue*)&pairs[i].value);
-    }
-    free(pairs);
+    cleanup_vertex_pairs(pairs, pair_index);
     
     if (!vertex) {
         PyErr_SetString(PyExc_MemoryError, "Failed to create vertex");
@@ -744,10 +750,7 @@ static GraphserverVertex* python_vertex_to_vertex(PyObject* vertex_obj) {
         GraphserverValue gs_value;
         if (python_object_to_graphserver_value(value, &gs_value) != 0) {
             // Clean up and return error
-            for (size_t i = 0; i < pair_index; i++) {
-                gs_value_destroy((GraphserverValue*)&pairs[i].value);
-            }
-            free(pairs);
+            cleanup_vertex_pairs(pairs, pair_index);
             Py_DECREF(data_dict);
             return NULL;
         }
@@ -1438,12 +1441,7 @@ static PyObject* py_precache_subgraph(PyObject* self, PyObject* args, PyObject* 
         PyObject* vertex_obj = PyList_GetItem(seed_vertices_list, i);
         if (!vertex_obj) {
             // Cleanup and return error
-            for (Py_ssize_t j = 0; j < i; j++) {
-                if (c_vertices[j]) {
-                    gs_vertex_destroy(c_vertices[j]);
-                }
-            }
-            free(c_vertices);
+            cleanup_vertex_array(c_vertices, i);
             return NULL;
         }
         
@@ -1452,12 +1450,7 @@ static PyObject* py_precache_subgraph(PyObject* self, PyObject* args, PyObject* 
         
         if (!c_vertices[i]) {
             // Cleanup and return error
-            for (Py_ssize_t j = 0; j < i; j++) {
-                if (c_vertices[j]) {
-                    gs_vertex_destroy(c_vertices[j]);
-                }
-            }
-            free(c_vertices);
+            cleanup_vertex_array(c_vertices, i);
             return NULL;
         }
     }
@@ -1473,12 +1466,7 @@ static PyObject* py_precache_subgraph(PyObject* self, PyObject* args, PyObject* 
     );
     
     // Cleanup C vertices
-    for (Py_ssize_t i = 0; i < num_seeds; i++) {
-        if (c_vertices[i]) {
-            gs_vertex_destroy(c_vertices[i]);
-        }
-    }
-    free(c_vertices);
+    cleanup_vertex_array(c_vertices, num_seeds);
     
     // Handle result
     if (result != GS_SUCCESS) {
