@@ -80,11 +80,16 @@ def test_plan_with_provider() -> None:
         result = _graphserver.plan(engine, Vertex({"x": 0}), Vertex({"x": 1}))
         assert result is not None
         assert isinstance(result, list)
-        assert len(result) == 1
-        # Target vertex data should now be accessible (raw dict format from C extension)
-        assert result[0]["target"]["x"] == 1
-        cost = 1.0
-        assert result[0]["cost"] == cost
+        assert len(result) == 2  # (None, start_vertex) + (edge, target_vertex)
+
+        # First tuple: (None, start_vertex)
+        assert result[0][0] is None  # No incoming edge to start vertex
+        assert result[0][1]["x"] == 0  # Start vertex
+
+        # Second tuple: (edge, target_vertex)
+        assert result[1][0] is not None  # Edge object
+        assert result[1][0].cost == 1.0  # Edge cost
+        assert result[1][1]["x"] == 1  # Target vertex
     except ImportError:
         pytest.skip("C extension not built yet")
 
@@ -201,7 +206,7 @@ def test_standardized_error_handling() -> None:
 
         # Test 4: Engine statistics validation - PyArg_ParseTuple catches this first
         with pytest.raises(TypeError, match="argument 1 must be PyCapsule"):
-            _graphserver.get_engine_stats(None)  # type: ignore[arg-type]
+            _graphserver.get_engine_stats(None)
 
     except ImportError:
         pytest.skip("C extension not built yet")

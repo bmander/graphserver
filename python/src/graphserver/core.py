@@ -391,23 +391,27 @@ class PathResult:
     Provides convenient access to path data with proper type annotations.
     """
 
-    def __init__(self, path_data: Sequence[Mapping[str, Any]]) -> None:
+    def __init__(self, path_data: Sequence[tuple[Edge | None, Vertex]]) -> None:
         """Initialize path result.
 
         Args:
-            path_data: Sequence of edge dictionaries from C extension
+            path_data: Sequence of (Edge|None, Vertex) tuples from C extension
         """
-        # Convert raw edge data to PathEdge objects
+        # Convert (Edge|None, Vertex) tuples to PathEdge objects
         self._edges: list[PathEdge] = []
-        for edge_data in path_data:
-            target_data = edge_data.get("target", {})
-            target_vertex = Vertex(target_data or {})
-            cost = edge_data.get("cost", 0.0)
-            metadata = {
-                k: v for k, v in edge_data.items() if k not in ("target", "cost")
-            }
 
-            edge = Edge(cost=cost, metadata=metadata)
+        # Skip the first tuple which is (None, start_vertex) and process the rest
+        for i, (edge, target_vertex) in enumerate(path_data):
+            if i == 0:
+                # First tuple is (None, start_vertex) - skip it as PathResult
+                # represents the edges taken, not the vertices visited
+                continue
+
+            # For all other tuples, edge should not be None
+            if edge is None:
+                msg = f"Edge at index {i} cannot be None (except for start vertex)"
+                raise ValueError(msg)
+
             self._edges.append(PathEdge(target=target_vertex, edge=edge))
 
     def __len__(self) -> int:

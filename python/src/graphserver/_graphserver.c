@@ -44,6 +44,11 @@ static PyObject* handle_graphserver_error(GraphserverResult result, const char* 
 static int validate_engine_capsule(PyObject* capsule, GraphserverEngine** out_engine);
 static int validate_callable(PyObject* obj, const char* name);
 
+// Python object creation helpers
+static PyObject* create_python_edge_object(const GraphserverEdge* edge);
+static PyObject* create_python_vertex_object(const GraphserverVertex* vertex);
+static PyObject* convert_path_to_edge_vertex_pairs(const GraphserverPath* path, const GraphserverVertex* start_vertex);
+
 // Provider wrapper for calling Python functions from C
 static int python_provider_wrapper(
     const GraphserverVertex* current_vertex,
@@ -209,30 +214,11 @@ static PyObject* py_plan(PyObject* self, PyObject* args, PyObject* kwargs) {
         return NULL;
     }
     
-    // Create a simplified path conversion that doesn't access vertex data
-    size_t num_edges = gs_path_get_num_edges(path);
-    PyObject* python_path = PyList_New(num_edges);
+    // Convert path to (Edge|None, Vertex) pairs
+    PyObject* python_path = convert_path_to_edge_vertex_pairs(path, start_vertex);
     if (!python_path) {
         cleanup_plan_resources(NULL, path, start_vertex, goal_vertex);
         return NULL;
-    }
-    
-    // Create simplified edge representations without accessing vertex data
-    for (size_t i = 0; i < num_edges; i++) {
-        const GraphserverEdge* edge = gs_path_get_edge(path, i);
-        if (!edge) {
-            cleanup_plan_resources(python_path, path, start_vertex, goal_vertex);
-            PyErr_Format(PyExc_RuntimeError, "Failed to get edge at index %zu", i);
-            return NULL;
-        }
-        
-        PyObject* edge_dict = convert_edge_to_dict(edge);
-        if (!edge_dict) {
-            cleanup_plan_resources(python_path, path, start_vertex, goal_vertex);
-            return NULL;
-        }
-        
-        PyList_SetItem(python_path, i, edge_dict);
     }
     
     // Clean up C path AFTER conversion
@@ -655,6 +641,177 @@ static int validate_callable(PyObject* obj, const char* name) {
         return -1;
     }
     return 0;
+}
+
+// Python object creation helpers
+static PyObject* create_python_edge_object(const GraphserverEdge* edge) {
+    if (!edge) {
+        Py_RETURN_NONE;
+    }
+    
+    // Get cost information
+    const double* distance_vector = gs_edge_get_distance_vector(edge);
+    size_t distance_vector_size = gs_edge_get_distance_vector_size(edge);
+    
+    PyObject* cost_obj = convert_cost_vector(distance_vector, distance_vector_size);
+    if (!cost_obj) {
+        return NULL;
+    }
+    
+    // Create Edge constructor arguments tuple: (cost, metadata=None)
+    PyObject* args = PyTuple_New(1);
+    if (!args) {
+        Py_DECREF(cost_obj);
+        return NULL;
+    }
+    PyTuple_SetItem(args, 0, cost_obj); // steals reference
+    
+    // Get Edge class from graphserver.core module
+    PyObject* core_module = PyImport_ImportModule("graphserver.core");
+    if (!core_module) {
+        Py_DECREF(args);
+        return NULL;
+    }
+    
+    PyObject* edge_class = PyObject_GetAttrString(core_module, "Edge");
+    Py_DECREF(core_module);
+    if (!edge_class) {
+        Py_DECREF(args);
+        return NULL;
+    }
+    
+    // Create Edge instance
+    PyObject* edge_obj = PyObject_CallObject(edge_class, args);
+    Py_DECREF(edge_class);
+    Py_DECREF(args);
+    
+    return edge_obj;
+}
+
+static PyObject* create_python_vertex_object(const GraphserverVertex* vertex) {
+    if (!vertex) {
+        PyErr_SetString(PyExc_ValueError, "Vertex cannot be NULL");
+        return NULL;
+    }
+    
+    // Convert C vertex to Python dict
+    PyObject* vertex_dict = vertex_to_python_dict(vertex);
+    if (!vertex_dict) {
+        return NULL;
+    }
+    
+    // Create Vertex constructor arguments tuple: (data, hash_value=None)
+    PyObject* args = PyTuple_New(1);
+    if (!args) {
+        Py_DECREF(vertex_dict);
+        return NULL;
+    }
+    PyTuple_SetItem(args, 0, vertex_dict); // steals reference
+    
+    // Get Vertex class from graphserver.core module
+    PyObject* core_module = PyImport_ImportModule("graphserver.core");
+    if (!core_module) {
+        Py_DECREF(args);
+        return NULL;
+    }
+    
+    PyObject* vertex_class = PyObject_GetAttrString(core_module, "Vertex");
+    Py_DECREF(core_module);
+    if (!vertex_class) {
+        Py_DECREF(args);
+        return NULL;
+    }
+    
+    // Create Vertex instance
+    PyObject* vertex_obj = PyObject_CallObject(vertex_class, args);
+    Py_DECREF(vertex_class);
+    Py_DECREF(args);
+    
+    return vertex_obj;
+}
+
+static PyObject* convert_path_to_edge_vertex_pairs(const GraphserverPath* path, const GraphserverVertex* start_vertex) {
+    if (!path || !start_vertex) {
+        PyErr_SetString(PyExc_ValueError, "Path and start vertex cannot be NULL");
+        return NULL;
+    }
+    
+    size_t num_edges = gs_path_get_num_edges(path);
+    
+    // Path representation: [(None, start_vertex), (edge1, target1), (edge2, target2), ...]
+    // Total length is num_edges + 1 (start vertex + each edge's target)
+    PyObject* path_list = PyList_New(num_edges + 1);
+    if (!path_list) {
+        return NULL;
+    }
+    
+    // First tuple: (None, start_vertex)
+    PyObject* start_vertex_obj = create_python_vertex_object(start_vertex);
+    if (!start_vertex_obj) {
+        Py_DECREF(path_list);
+        return NULL;
+    }
+    
+    PyObject* start_tuple = PyTuple_New(2);
+    if (!start_tuple) {
+        Py_DECREF(start_vertex_obj);
+        Py_DECREF(path_list);
+        return NULL;
+    }
+    
+    Py_INCREF(Py_None);
+    PyTuple_SetItem(start_tuple, 0, Py_None); // steals reference to None
+    PyTuple_SetItem(start_tuple, 1, start_vertex_obj); // steals reference
+    PyList_SetItem(path_list, 0, start_tuple); // steals reference
+    
+    // Subsequent tuples: (edge, target_vertex) for each path step
+    for (size_t i = 0; i < num_edges; i++) {
+        const GraphserverEdge* edge = gs_path_get_edge(path, i);
+        if (!edge) {
+            Py_DECREF(path_list);
+            PyErr_Format(PyExc_RuntimeError, "Failed to get edge at index %zu", i);
+            return NULL;
+        }
+        
+        // Create Edge object
+        PyObject* edge_obj = create_python_edge_object(edge);
+        if (!edge_obj) {
+            Py_DECREF(path_list);
+            return NULL;
+        }
+        
+        // Get target vertex from edge
+        const GraphserverVertex* target_vertex = gs_edge_get_target_vertex(edge);
+        if (!target_vertex) {
+            Py_DECREF(edge_obj);
+            Py_DECREF(path_list);
+            PyErr_Format(PyExc_RuntimeError, "Edge at index %zu has no target vertex", i);
+            return NULL;
+        }
+        
+        // Create Vertex object
+        PyObject* target_vertex_obj = create_python_vertex_object(target_vertex);
+        if (!target_vertex_obj) {
+            Py_DECREF(edge_obj);
+            Py_DECREF(path_list);
+            return NULL;
+        }
+        
+        // Create tuple (edge, vertex)
+        PyObject* edge_vertex_tuple = PyTuple_New(2);
+        if (!edge_vertex_tuple) {
+            Py_DECREF(edge_obj);
+            Py_DECREF(target_vertex_obj);
+            Py_DECREF(path_list);
+            return NULL;
+        }
+        
+        PyTuple_SetItem(edge_vertex_tuple, 0, edge_obj); // steals reference
+        PyTuple_SetItem(edge_vertex_tuple, 1, target_vertex_obj); // steals reference
+        PyList_SetItem(path_list, i + 1, edge_vertex_tuple); // steals reference
+    }
+    
+    return path_list;
 }
 
 static GraphserverVertex* python_dict_to_vertex(PyObject* dict) {
