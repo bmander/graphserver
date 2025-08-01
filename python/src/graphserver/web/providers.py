@@ -6,7 +6,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING
 
 from graphserver import Engine, GraphserverDataType
 
@@ -44,12 +44,9 @@ class OSMProviderStats:
     edges: int
 
 
-class ProgressBar(Protocol):
-    """Protocol for progress bar interface."""
-
-    def set_postfix_str(self, s: str) -> None: ...
-    def set_description(self, desc: str) -> None: ...
-    def update(self, n: float | None = None) -> bool | None: ...
+# Type alias for progress callback function
+ProgressCallback = Callable[[str, int, int], None] | None
+# Arguments: (description, current_step, total_steps)
 
 
 class ProviderError(Exception):
@@ -72,7 +69,7 @@ class ProviderManager:
         # Cross-modal linking statistics
         self.linking_stats = LinkingStats()
 
-    def initialize_engine(self) -> Engine:
+    def initialize_engine(self, progress_callback: ProgressCallback = None) -> Engine:
         """Initialize the graph engine with all configured providers."""
         if self.engine is not None:
             return self.engine
@@ -86,11 +83,11 @@ class ProviderManager:
         try:
             # Initialize Transit providers if GTFS files specified
             if self.gtfs_files:
-                self._initialize_transit_providers()
+                self._initialize_transit_providers(progress_callback)
 
             # Initialize OSM providers if OSM files specified
             if self.osm_files:
-                self._initialize_osm_providers()
+                self._initialize_osm_providers(progress_callback)
 
             if not self.providers:
                 msg = "No providers initialized. Please specify --osm or --gtfs files."
@@ -114,35 +111,9 @@ class ProviderManager:
             )
             raise ProviderError(msg) from e
 
-        try:
-            from tqdm import tqdm  # noqa: F401
-        except ImportError as e:
-            msg = (
-                "tqdm not available for progress bars. Install with: "
-                "pip install graphserver[web]"
-            )
-            raise ProviderError(msg) from e
+        # tqdm dependency removed - progress bars handled at CLI layer
 
-    def _create_progress_callback(
-        self, pbar: ProgressBar
-    ) -> Callable[[str, int, int, float | None], None]:
-        """Create progress callback function for updating progress bar."""
-
-        def progress_callback(
-            step_name: str,
-            current_step: int,
-            total_steps: int,
-            sub_progress: float | None = None,
-        ) -> None:  # noqa: ARG001
-            if sub_progress is not None:
-                # Update postfix with sub-progress info, don't advance main
-                pbar.set_postfix_str(step_name)
-            else:
-                # Step complete, advance main progress
-                pbar.set_postfix_str(step_name)
-                pbar.update(1)
-
-        return progress_callback
+    # _create_progress_callback method removed - using direct callbacks now
 
     def _validate_gtfs_file(self, gtfs_path: Path) -> None:
         """Validate that GTFS file exists and is a valid zip file."""
@@ -155,13 +126,16 @@ class ProviderManager:
             raise ProviderError(msg)
 
     def _register_transit_provider(
-        self, transit_provider: TransitProvider, provider_name: str, pbar: ProgressBar
+        self, transit_provider: TransitProvider, provider_name: str, progress_callback: ProgressCallback = None
     ) -> GTFSFeedStats:
         """Register transit provider and collect statistics."""
         assert (
             self.engine is not None
         )  # Engine must be initialized before registering providers
-        pbar.set_postfix_str("Registering provider...")
+        
+        if progress_callback:
+            progress_callback("Registering provider...", 0, 1)
+        
         self.providers[provider_name] = transit_provider
         self.engine.register_provider(provider_name, transit_provider)
 
@@ -170,10 +144,10 @@ class ProviderManager:
         feed_routes = transit_provider.parser.route_count
         feed_trips = transit_provider.parser.trip_count
 
-        pbar.set_postfix_str(
-            f"stops: {feed_stops}, routes: {feed_routes}, trips: {feed_trips}"
-        )
-        pbar.update(1)
+        if progress_callback:
+            progress_callback(
+                f"stops: {feed_stops}, routes: {feed_routes}, trips: {feed_trips}", 1, 1
+            )
 
         return GTFSFeedStats(stops=feed_stops, routes=feed_routes, trips=feed_trips)
 
@@ -207,14 +181,7 @@ class ProviderManager:
             )
             raise ProviderError(msg) from e
 
-        try:
-            from tqdm import tqdm  # noqa: F401
-        except ImportError as e:
-            msg = (
-                "tqdm not available for progress bars. Install with: "
-                "pip install graphserver[web]"
-            )
-            raise ProviderError(msg) from e
+        # tqdm dependency removed - progress bars handled at CLI layer
 
     def _validate_osm_file(self, osm_path: Path) -> None:
         """Validate that OSM file exists and is a valid file."""
@@ -227,13 +194,11 @@ class ProviderManager:
             raise ProviderError(msg)
 
     def _install_osm_providers(
-        self, osm_path: Path
+        self, osm_path: Path, progress_callback: ProgressCallback = None
     ) -> tuple[OSMAccessProvider, OSMProviderStats]:
         """Create and install OSM providers and return statistics.
 
         Registers both OSM network and access providers; returns the access provider."""
-
-        from tqdm import tqdm
 
         from graphserver.providers.osm import OSMAccessProvider, OSMNetworkProvider
         from graphserver.providers.osm.parser import OSMParser
@@ -243,45 +208,43 @@ class ProviderManager:
         file_size_mb = osm_path.stat().st_size / (1024 * 1024)
         size_info = f"{file_size_mb:.1f}MB"
 
-        # Initialize progress bar for OSM loading (4 detailed steps)
-        with tqdm(
-            total=4, desc=f"Loading OSM ({osm_path.name}, {size_info})", unit="step"
-        ) as pbar:
-            # Step 1: Parse OSM file
-            pbar.set_postfix_str("Parsing OSM file...")
-            parser = OSMParser(WalkingProfile())
-            parser.parse_file(str(osm_path))
-            pbar.update(1)
+        # Step 1: Parse OSM file
+        if progress_callback:
+            progress_callback(f"Parsing OSM file ({osm_path.name}, {size_info})...", 0, 4)
+        parser = OSMParser(WalkingProfile())
+        parser.parse_file(str(osm_path))
 
-            # Step 2: Show parsing results
-            raw_nodes = len(parser.nodes)
-            raw_ways = len(parser.ways)
-            raw_edges = len(parser.edges)
-            pbar.set_postfix_str(
-                f"nodes: {raw_nodes}, ways: {raw_ways}, edges: {raw_edges}"
+        # Step 2: Show parsing results
+        raw_nodes = len(parser.nodes)
+        raw_ways = len(parser.ways)
+        raw_edges = len(parser.edges)
+        if progress_callback:
+            progress_callback(
+                f"Parsed: {raw_nodes} nodes, {raw_ways} ways, {raw_edges} edges", 1, 4
             )
-            pbar.update(1)
 
-            # Step 3: Create OSM network provider (handles osm_node_id vertices)
-            pbar.set_postfix_str("Creating network provider...")
-            osm_network = OSMNetworkProvider(parser=parser)
-            self.providers["osm_network"] = osm_network
-            assert (
-                self.engine is not None
-            )  # Engine must be initialized before registering providers
-            self.engine.register_provider("osm_network", osm_network)
-            pbar.update(1)
+        # Step 3: Create OSM network provider (handles osm_node_id vertices)
+        if progress_callback:
+            progress_callback("Creating network provider...", 2, 4)
+        osm_network = OSMNetworkProvider(parser=parser)
+        self.providers["osm_network"] = osm_network
+        assert (
+            self.engine is not None
+        )  # Engine must be initialized before registering providers
+        self.engine.register_provider("osm_network", osm_network)
 
-            # Step 4: Create OSM access provider (handles lat/lon vertices)
-            pbar.set_postfix_str("Creating access provider...")
-            osm_access = OSMAccessProvider(parser=parser)
-            self.providers["osm_access"] = osm_access
-            assert (
-                self.engine is not None
-            )  # Engine must be initialized before registering providers
-            self.engine.register_provider("osm_access", osm_access)
-            pbar.update(1)
-            pbar.set_postfix_str("Complete")
+        # Step 4: Create OSM access provider (handles lat/lon vertices)
+        if progress_callback:
+            progress_callback("Creating access provider...", 3, 4)
+        osm_access = OSMAccessProvider(parser=parser)
+        self.providers["osm_access"] = osm_access
+        assert (
+            self.engine is not None
+        )  # Engine must be initialized before registering providers
+        self.engine.register_provider("osm_access", osm_access)
+        
+        if progress_callback:
+            progress_callback("OSM providers complete", 4, 4)
 
         return osm_access, OSMProviderStats(
             nodes=raw_nodes, ways=raw_ways, edges=raw_edges
@@ -295,58 +258,76 @@ class ProviderManager:
         )
 
     def _process_single_gtfs_file(
-        self, i: int, gtfs_file: str, pbar: ProgressBar
+        self, i: int, gtfs_file: str, progress_callback: ProgressCallback = None
     ) -> GTFSFeedStats:
         """Process a single GTFS file and return statistics."""
         from graphserver.providers.transit import TransitProvider
 
         gtfs_path = Path(gtfs_file)
-        pbar.set_description(f"Loading GTFS ({gtfs_path.name})")
+        if progress_callback:
+            progress_callback(f"Loading GTFS ({gtfs_path.name})", 0, 10)
 
         self._validate_gtfs_file(gtfs_path)
 
         try:
-            # Create progress callback that updates our progress bar
-            progress_callback = self._create_progress_callback(pbar)
-
             # Parse GTFS data with detailed progress
             provider_name = f"transit_{i}" if i > 0 else "transit"
+            
+            # Create a sub-progress callback for the TransitProvider
+            def transit_progress_callback(
+                step_name: str, current: int, total: int, sub_progress: float | None = None  # noqa: ARG001
+            ) -> None:
+                if progress_callback:
+                    # Map the 9 parsing steps to our progress (steps 1-9 out of 10)
+                    mapped_current = current + 1  # offset by 1 since we start at step 0
+                    progress_callback(step_name, mapped_current, 10)
+            
             transit_provider = TransitProvider(
-                str(gtfs_path), progress_callback=progress_callback
+                str(gtfs_path), progress_callback=transit_progress_callback
             )
 
-            # Register provider and collect statistics
+            # Register provider and collect statistics (step 10)
             return self._register_transit_provider(
-                transit_provider, provider_name, pbar
+                transit_provider, provider_name, progress_callback
             )
 
         except Exception as e:
             msg = f"Failed to initialize GTFS file {gtfs_file}: {e}"
             raise ProviderError(msg) from e
 
-    def _initialize_transit_providers(self) -> None:
+    def _initialize_transit_providers(self, progress_callback: ProgressCallback = None) -> None:
         """Initialize GTFS transit providers."""
         self._validate_transit_imports()
-        from tqdm import tqdm
 
-        # Initialize progress bar for GTFS loading (9 steps per file + 1 register step)
+        # Initialize progress tracking for GTFS loading (10 steps per file)
         total_steps = len(self.gtfs_files) * 10  # 9 parsing steps + 1 register step
         total_stops = 0
         total_routes = 0
         total_trips = 0
+        current_step = 0
 
-        with tqdm(total=total_steps, desc="Loading GTFS", unit="step") as pbar:
-            for i, gtfs_file in enumerate(self.gtfs_files):
-                feed_stats = self._process_single_gtfs_file(i, gtfs_file, pbar)
-                total_stops += feed_stats.stops
-                total_routes += feed_stats.routes
-                total_trips += feed_stats.trips
-            pbar.set_postfix_str("Complete")
+        for i, gtfs_file in enumerate(self.gtfs_files):
+            # Create a progress callback for this file that maps to overall progress
+            def file_progress_callback(
+                description: str, file_current: int, file_total: int  # noqa: ARG001
+            ) -> None:
+                if progress_callback:
+                    overall_current = current_step + file_current
+                    progress_callback(description, overall_current, total_steps)
+            
+            feed_stats = self._process_single_gtfs_file(i, gtfs_file, file_progress_callback)
+            total_stops += feed_stats.stops
+            total_routes += feed_stats.routes
+            total_trips += feed_stats.trips
+            current_step += 10  # Move to next file's steps
+
+        if progress_callback:
+            progress_callback("GTFS loading complete", total_steps, total_steps)
 
         # Print detailed summary
         self._print_transit_summary(total_stops, total_routes, total_trips)
 
-    def _initialize_osm_providers(self) -> None:
+    def _initialize_osm_providers(self, progress_callback: ProgressCallback = None) -> None:
         """Initialize OSM routing providers."""
         self._validate_osm_imports()
 
@@ -358,7 +339,7 @@ class ProviderManager:
         self._validate_osm_file(osm_path)
 
         try:
-            osm_access, stats = self._install_osm_providers(osm_path)
+            osm_access, stats = self._install_osm_providers(osm_path, progress_callback)
             self._print_osm_summary(stats, osm_path)
 
         except Exception as e:
@@ -372,7 +353,7 @@ class ProviderManager:
 
         # Link transit stops to OSM network for cross-modal routing
         if self.gtfs_files and osm_access:
-            self._link_transit_stops_to_osm(osm_access)
+            self._link_transit_stops_to_osm(osm_access, progress_callback)
 
     def _get_transit_providers_for_linking(self) -> dict[str, TransitProvider]:
         """Get transit providers that have stops available for linking."""
@@ -460,22 +441,13 @@ class ProviderManager:
             print("⚠️  No transit stops found to link")
 
     def _link_transit_stops_to_osm(
-        self, osm_access_provider: OSMAccessProvider
+        self, osm_access_provider: OSMAccessProvider, progress_callback: ProgressCallback = None
     ) -> None:
         """Link all transit stops to nearby OSM nodes for multimodal routing.
 
         Args:
             osm_access_provider: The OSM access provider to use for linking
         """
-        try:
-            from tqdm import tqdm
-        except ImportError as e:
-            msg = (
-                "tqdm not available for progress bars. Install with: "
-                "pip install graphserver[web]"
-            )
-            raise ProviderError(msg) from e
-
         # Reset statistics
         self.linking_stats = LinkingStats()
 
@@ -484,42 +456,44 @@ class ProviderManager:
         if not transit_providers:
             return
 
-        # Count total stops for progress bar
+        # Count total stops for progress tracking
         total_stops = sum(
             len(provider.parser.stops) for provider in transit_providers.values()
         )
+        
+        current_stop = 0
 
-        # Link stops from all transit providers with progress bar
-        with tqdm(
-            total=total_stops, desc="Linking GTFS stops to OSM", unit="stop"
-        ) as pbar:
-            for provider_name, transit_provider in transit_providers.items():
-                provider_linked = 0
-                provider_total = 0
+        # Link stops from all transit providers
+        for provider_name, transit_provider in transit_providers.items():
+            provider_linked = 0
+            provider_total = 0
 
-                for stop in transit_provider.parser.stops.values():
-                    provider_total += 1
-                    self.linking_stats.total_stops += 1
+            for stop in transit_provider.parser.stops.values():
+                provider_total += 1
+                self.linking_stats.total_stops += 1
 
-                    pbar.set_postfix_str(f"Stop {stop.stop_id}")
+                if progress_callback:
+                    progress_callback(f"Linking stop {stop.stop_id}", current_stop, total_stops)
 
-                    success, error_msg = self._link_single_stop(
-                        stop, osm_access_provider
-                    )
-                    if success:
-                        provider_linked += 1
-                        self.linking_stats.linked_stops += 1
-                    elif error_msg is not None:
-                        self.linking_stats.failed_links.append(error_msg)
+                success, error_msg = self._link_single_stop(
+                    stop, osm_access_provider
+                )
+                if success:
+                    provider_linked += 1
+                    self.linking_stats.linked_stops += 1
+                elif error_msg is not None:
+                    self.linking_stats.failed_links.append(error_msg)
 
-                    pbar.update(1)
+                current_stop += 1
 
-                pbar.set_description(
-                    f"Linking stops ({provider_name}: "
-                    f"{provider_linked}/{provider_total})"
+            if progress_callback:
+                progress_callback(
+                    f"Linked {provider_name}: {provider_linked}/{provider_total}", 
+                    current_stop, total_stops
                 )
 
-            pbar.set_postfix_str("Complete")
+        if progress_callback:
+            progress_callback("Transit stop linking complete", total_stops, total_stops)
 
         # Print summary
         self._print_linking_summary()

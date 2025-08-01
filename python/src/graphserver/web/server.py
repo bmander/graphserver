@@ -11,7 +11,7 @@ from http.server import HTTPServer
 from typing import Any
 
 from .handlers import GraphRequestHandler
-from .providers import ProviderError, ProviderManager
+from .providers import ProviderError, ProviderManager, ProgressCallback
 
 
 class GraphWebServer:
@@ -43,7 +43,9 @@ class GraphWebServer:
         """Start the HTTP server."""
         # Initialize providers before starting server
         try:
-            self.provider_manager.initialize_engine()
+            # Create progress callback for CLI usage
+            progress_callback = create_tqdm_progress_callback("Initializing providers")
+            self.provider_manager.initialize_engine(progress_callback)
             print("✅ Provider initialization complete")
 
         except ProviderError as e:
@@ -77,6 +79,46 @@ class GraphWebServer:
         except OSError as e:
             print(f"❌ Error starting server: {e}")
             sys.exit(1)
+
+
+def create_tqdm_progress_callback(task_name: str) -> ProgressCallback:
+    """Create a progress callback that uses tqdm for CLI progress bars.
+    
+    Args:
+        task_name: Name of the overall task for the progress bar
+        
+    Returns:
+        A progress callback function that creates and manages a tqdm progress bar
+    """
+    try:
+        from tqdm import tqdm
+    except ImportError:
+        # If tqdm is not available, return a simple print-based callback
+        def simple_callback(description: str, current: int, total: int) -> None:
+            percentage = (current / total * 100) if total > 0 else 0
+            print(f"[{percentage:5.1f}%] {description}")
+        return simple_callback
+    
+    bar = None
+    
+    def callback(description: str, current: int, total: int) -> None:
+        nonlocal bar
+        
+        # Create bar on first call
+        if bar is None:
+            bar = tqdm(total=total, desc=task_name, unit="step")
+        
+        # Update progress bar
+        bar.set_description(description)
+        bar.n = current
+        bar.refresh()
+        
+        # Close bar when complete
+        if current >= total:
+            bar.close()
+            bar = None
+    
+    return callback
 
 
 def main() -> None:
