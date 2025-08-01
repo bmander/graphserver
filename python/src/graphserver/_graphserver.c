@@ -1263,35 +1263,10 @@ static int python_edges_to_c_edges(PyObject* edge_list, GraphserverEdgeList* out
                     return -1;
                 }
                 
-                // Convert metadata value to GraphserverValue
+                // Convert metadata value to GraphserverValue using existing helper
                 GraphserverValue meta_gs_value;
-                if (PyLong_Check(meta_value)) {
-                    long long val = PyLong_AsLongLong(meta_value);
-                    if (val == -1 && PyErr_Occurred()) {
-                        gs_edge_destroy(edge);
-                        return -1;
-                    }
-                    meta_gs_value = gs_value_create_int((int64_t)val);
-                } else if (PyFloat_Check(meta_value)) {
-                    double val = PyFloat_AsDouble(meta_value);
-                    if (val == -1.0 && PyErr_Occurred()) {
-                        gs_edge_destroy(edge);
-                        return -1;
-                    }
-                    meta_gs_value = gs_value_create_float(val);
-                } else if (PyUnicode_Check(meta_value)) {
-                    const char* val = PyUnicode_AsUTF8(meta_value);
-                    if (!val) {
-                        gs_edge_destroy(edge);
-                        return -1;
-                    }
-                    meta_gs_value = gs_value_create_string(val);
-                } else if (PyBool_Check(meta_value)) {
-                    bool val = PyObject_IsTrue(meta_value);
-                    meta_gs_value = gs_value_create_bool(val);
-                } else {
+                if (python_object_to_graphserver_value(meta_value, &meta_gs_value) != 0) {
                     gs_edge_destroy(edge);
-                    PyErr_Format(PyExc_TypeError, "Unsupported metadata value type for key '%s'", meta_key_str);
                     return -1;
                 }
                 
