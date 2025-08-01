@@ -23,6 +23,7 @@ static PyObject* safe_vertex_to_python_dict(const GraphserverVertex* vertex);
 static PyObject* vertex_to_python_vertex_object(const GraphserverVertex* vertex);
 static GraphserverVertex* python_dict_to_vertex(PyObject* dict);
 static GraphserverVertex* python_vertex_to_vertex(PyObject* vertex_obj);
+static int python_object_to_graphserver_value(PyObject* value, GraphserverValue* out_value);
 static GraphserverVertex* python_vertex_object_to_vertex(PyObject* vertex_obj);
 static PyObject* path_to_python_list(const GraphserverPath* path);
 static int python_edges_to_c_edges(PyObject* edge_list, GraphserverEdgeList* out_edges);
@@ -497,6 +498,59 @@ static PyObject* safe_vertex_to_python_dict(const GraphserverVertex* vertex) {
     return vertex_to_python_dict(vertex);
 }
 
+static int python_object_to_graphserver_value(PyObject* value, GraphserverValue* out_value) {
+    if (PyLong_Check(value)) {
+        // Python int -> GraphserverValue int64
+        long long int_val = PyLong_AsLongLong(value);
+        if (int_val == -1 && PyErr_Occurred()) {
+            return -1;  // Error already set
+        }
+        *out_value = gs_value_create_int((int64_t)int_val);
+        
+    } else if (PyFloat_Check(value)) {
+        // Python float -> GraphserverValue double
+        double float_val = PyFloat_AsDouble(value);
+        if (float_val == -1.0 && PyErr_Occurred()) {
+            return -1;  // Error already set
+        }
+        *out_value = gs_value_create_float(float_val);
+        
+    } else if (PyUnicode_Check(value)) {
+        // Python str -> GraphserverValue string
+        const char* str_val = PyUnicode_AsUTF8(value);
+        if (!str_val) {
+            return -1;  // Error already set
+        }
+        *out_value = gs_value_create_string(str_val);
+        
+    } else if (PyBool_Check(value)) {
+        // Python bool -> GraphserverValue boolean
+        bool bool_val = PyObject_IsTrue(value);
+        *out_value = gs_value_create_bool(bool_val);
+        
+    } else if (PyList_Check(value)) {
+        // Convert list to a simple string representation
+        PyObject* str_repr = PyObject_Str(value);
+        if (!str_repr) {
+            return -1;  // Error already set
+        }
+        const char* str_val = PyUnicode_AsUTF8(str_repr);
+        if (!str_val) {
+            Py_DECREF(str_repr);
+            return -1;  // Error already set
+        }
+        *out_value = gs_value_create_string(str_val);
+        Py_DECREF(str_repr);
+        
+    } else {
+        // Unsupported type
+        PyErr_SetString(PyExc_TypeError, "Unsupported vertex value type");
+        return -1;
+    }
+    
+    return 0;  // Success
+}
+
 static GraphserverVertex* python_dict_to_vertex(PyObject* dict) {
     if (!PyDict_Check(dict)) {
         PyErr_SetString(PyExc_TypeError, "Expected dict object");
@@ -569,80 +623,9 @@ static GraphserverVertex* python_dict_to_vertex(PyObject* dict) {
             return NULL;
         }
         
+        // Convert Python value to GraphserverValue using helper function
         GraphserverValue gs_value;
-        
-        // Convert Python value to GraphserverValue based on type
-        if (PyLong_Check(value)) {
-            // Python int -> GraphserverValue int
-            long long int_val = PyLong_AsLongLong(value);
-            if (int_val == -1 && PyErr_Occurred()) {
-                // Clean up and return error
-                for (size_t i = 0; i < pair_index; i++) {
-                    gs_value_destroy((GraphserverValue*)&pairs[i].value);
-                }
-                free(pairs);
-                return NULL;
-            }
-            gs_value = gs_value_create_int((int64_t)int_val);
-            
-        } else if (PyFloat_Check(value)) {
-            // Python float -> GraphserverValue float
-            double float_val = PyFloat_AsDouble(value);
-            if (float_val == -1.0 && PyErr_Occurred()) {
-                // Clean up and return error
-                for (size_t i = 0; i < pair_index; i++) {
-                    gs_value_destroy((GraphserverValue*)&pairs[i].value);
-                }
-                free(pairs);
-                return NULL;
-            }
-            gs_value = gs_value_create_float(float_val);
-            
-        } else if (PyUnicode_Check(value)) {
-            // Python str -> GraphserverValue string
-            const char* str_val = PyUnicode_AsUTF8(value);
-            if (!str_val) {
-                // Clean up and return error
-                for (size_t i = 0; i < pair_index; i++) {
-                    gs_value_destroy((GraphserverValue*)&pairs[i].value);
-                }
-                free(pairs);
-                return NULL;
-            }
-            gs_value = gs_value_create_string(str_val);
-            
-        } else if (PyBool_Check(value)) {
-            // Python bool -> GraphserverValue bool
-            bool bool_val = PyObject_IsTrue(value);
-            gs_value = gs_value_create_bool(bool_val);
-            
-        } else if (PyList_Check(value)) {
-            // For now, skip complex array handling to debug the segfault
-            // Convert list to a simple string representation
-            PyObject* str_repr = PyObject_Str(value);
-            if (!str_repr) {
-                // Clean up and return error
-                for (size_t i = 0; i < pair_index; i++) {
-                    gs_value_destroy((GraphserverValue*)&pairs[i].value);
-                }
-                free(pairs);
-                return NULL;
-            }
-            const char* str_val = PyUnicode_AsUTF8(str_repr);
-            if (!str_val) {
-                Py_DECREF(str_repr);
-                // Clean up and return error
-                for (size_t i = 0; i < pair_index; i++) {
-                    gs_value_destroy((GraphserverValue*)&pairs[i].value);
-                }
-                free(pairs);
-                return NULL;
-            }
-            gs_value = gs_value_create_string(str_val);
-            Py_DECREF(str_repr);
-            
-        } else {
-            PyErr_Format(PyExc_TypeError, "Unsupported value type for key '%s'", key_str);
+        if (python_object_to_graphserver_value(value, &gs_value) != 0) {
             // Clean up and return error
             for (size_t i = 0; i < pair_index; i++) {
                 gs_value_destroy((GraphserverValue*)&pairs[i].value);
@@ -757,90 +740,15 @@ static GraphserverVertex* python_vertex_to_vertex(PyObject* vertex_obj) {
         
         pairs[pair_index].key = key_str;
         
-        // Convert value
+        // Convert Python value to GraphserverValue using helper function
         GraphserverValue gs_value;
-        
-        if (PyLong_Check(value)) {
-            // Python int -> GraphserverValue int64
-            long long int_val = PyLong_AsLongLong(value);
-            if (int_val == -1 && PyErr_Occurred()) {
-                // Clean up and return error
-                for (size_t i = 0; i < pair_index; i++) {
-                    gs_value_destroy((GraphserverValue*)&pairs[i].value);
-                }
-                free(pairs);
-                Py_DECREF(data_dict);
-                return NULL;
-            }
-            gs_value = gs_value_create_int(int_val);
-            
-        } else if (PyFloat_Check(value)) {
-            // Python float -> GraphserverValue double
-            double float_val = PyFloat_AsDouble(value);
-            if (float_val == -1.0 && PyErr_Occurred()) {
-                // Clean up and return error
-                for (size_t i = 0; i < pair_index; i++) {
-                    gs_value_destroy((GraphserverValue*)&pairs[i].value);
-                }
-                free(pairs);
-                Py_DECREF(data_dict);
-                return NULL;
-            }
-            gs_value = gs_value_create_float(float_val);
-            
-        } else if (PyUnicode_Check(value)) {
-            // Python str -> GraphserverValue string
-            const char* str_val = PyUnicode_AsUTF8(value);
-            if (!str_val) {
-                // Clean up and return error
-                for (size_t i = 0; i < pair_index; i++) {
-                    gs_value_destroy((GraphserverValue*)&pairs[i].value);
-                }
-                free(pairs);
-                Py_DECREF(data_dict);
-                return NULL;
-            }
-            gs_value = gs_value_create_string(str_val);
-            
-        } else if (PyBool_Check(value)) {
-            // Python bool -> GraphserverValue boolean  
-            bool bool_val = (value == Py_True);
-            gs_value = gs_value_create_bool(bool_val);
-            
-        } else if (PyList_Check(value)) {
-            // Convert list to a simple string representation
-            PyObject* str_repr = PyObject_Str(value);
-            if (!str_repr) {
-                // Clean up and return error
-                for (size_t i = 0; i < pair_index; i++) {
-                    gs_value_destroy((GraphserverValue*)&pairs[i].value);
-                }
-                free(pairs);
-                Py_DECREF(data_dict);
-                return NULL;
-            }
-            const char* str_val = PyUnicode_AsUTF8(str_repr);
-            if (!str_val) {
-                Py_DECREF(str_repr);
-                // Clean up and return error
-                for (size_t i = 0; i < pair_index; i++) {
-                    gs_value_destroy((GraphserverValue*)&pairs[i].value);
-                }
-                free(pairs);
-                Py_DECREF(data_dict);
-                return NULL;
-            }
-            gs_value = gs_value_create_string(str_val);
-            Py_DECREF(str_repr);
-            
-        } else {
-            // Unsupported type
+        if (python_object_to_graphserver_value(value, &gs_value) != 0) {
+            // Clean up and return error
             for (size_t i = 0; i < pair_index; i++) {
                 gs_value_destroy((GraphserverValue*)&pairs[i].value);
             }
             free(pairs);
             Py_DECREF(data_dict);
-            PyErr_SetString(PyExc_TypeError, "Unsupported vertex value type");
             return NULL;
         }
         
