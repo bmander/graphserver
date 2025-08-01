@@ -14,7 +14,11 @@ import pytest
 # Skip all tests if OSM dependencies are not available
 try:
     from graphserver import Engine, Vertex
-    from graphserver.providers.osm import OSMAccessProvider, OSMNetworkProvider
+    from graphserver.providers.osm import (
+        OSMAccessProvider,
+        OSMDataSource,
+        OSMNetworkProvider,
+    )
     from graphserver.providers.osm.types import WalkingProfile
 
     OSM_AVAILABLE = True
@@ -71,10 +75,10 @@ class TestSimpleOSMRouting:
             pytest.skip("OSM dependencies not available")
 
         # Create network provider and check parsing
-        network_provider = OSMNetworkProvider(
-            simple_osm_file,
-            walking_profile=simple_walking_profile,
+        data_source = OSMDataSource(
+            simple_osm_file, walking_profile=simple_walking_profile
         )
+        network_provider = OSMNetworkProvider(data_source)
 
         # Should have exactly 2 nodes and 1 way
         assert network_provider.node_count == 2
@@ -98,10 +102,10 @@ class TestSimpleOSMRouting:
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
 
-        network_provider = OSMNetworkProvider(
-            simple_osm_file,
-            walking_profile=simple_walking_profile,
+        data_source = OSMDataSource(
+            simple_osm_file, walking_profile=simple_walking_profile
         )
+        network_provider = OSMNetworkProvider(data_source)
 
         # Test edges from node 1
         node1_vertex = Vertex({"osm_node_id": 1})
@@ -134,12 +138,15 @@ class TestSimpleOSMRouting:
             pytest.skip("OSM dependencies not available")
 
         # Create access provider with wide search radius
-        access_provider = OSMAccessProvider(
+        data_source = OSMDataSource(
             simple_osm_file,
             walking_profile=simple_walking_profile,
+            build_spatial_index=True,
+        )
+        access_provider = OSMAccessProvider(
+            data_source,
             search_radius_m=1000.0,  # Wide radius to ensure we find nodes
             max_nearby_nodes=5,
-            build_index=True,
         )
 
         # Test coordinate vertex near node 1
@@ -179,17 +186,15 @@ class TestSimpleOSMRouting:
             pytest.skip("OSM dependencies not available")
 
         # Create both providers
-        network_provider = OSMNetworkProvider(
-            simple_osm_file,
-            walking_profile=simple_walking_profile,
+        data_source = OSMDataSource(
+            simple_osm_file, walking_profile=simple_walking_profile
         )
+        network_provider = OSMNetworkProvider(data_source)
 
         access_provider = OSMAccessProvider(
-            parser=network_provider.parser,  # Share parser for efficiency
-            walking_profile=simple_walking_profile,
+            data_source,  # Share data source for efficiency
             search_radius_m=1000.0,
             max_nearby_nodes=5,
-            build_index=True,
         )
 
         # Register with engine
@@ -213,17 +218,15 @@ class TestSimpleOSMRouting:
             pytest.skip("OSM dependencies not available")
 
         # Create providers
-        network_provider = OSMNetworkProvider(
-            simple_osm_file,
-            walking_profile=simple_walking_profile,
+        data_source = OSMDataSource(
+            simple_osm_file, walking_profile=simple_walking_profile
         )
+        network_provider = OSMNetworkProvider(data_source)
 
         access_provider = OSMAccessProvider(
-            parser=network_provider.parser,
-            walking_profile=simple_walking_profile,
+            data_source,
             search_radius_m=1000.0,
             max_nearby_nodes=5,
-            build_index=True,
         )
 
         # Register with engine
@@ -269,17 +272,15 @@ class TestSimpleOSMRouting:
             pytest.skip("OSM dependencies not available")
 
         # Create providers
-        network_provider = OSMNetworkProvider(
-            simple_osm_file,
-            walking_profile=simple_walking_profile,
+        data_source = OSMDataSource(
+            simple_osm_file, walking_profile=simple_walking_profile
         )
+        network_provider = OSMNetworkProvider(data_source)
 
         access_provider = OSMAccessProvider(
-            parser=network_provider.parser,
-            walking_profile=simple_walking_profile,
+            data_source,
             search_radius_m=1000.0,  # Wide radius to ensure connections
             max_nearby_nodes=5,
-            build_index=True,
         )
 
         # Register with engine
@@ -327,17 +328,15 @@ class TestSimpleOSMRouting:
         self, simple_osm_file: Path, simple_walking_profile: WalkingProfile
     ) -> tuple[OSMNetworkProvider, OSMAccessProvider, Engine]:
         """Create and register providers with engine."""
-        network_provider = OSMNetworkProvider(
-            simple_osm_file,
-            walking_profile=simple_walking_profile,
+        data_source = OSMDataSource(
+            simple_osm_file, walking_profile=simple_walking_profile
         )
+        network_provider = OSMNetworkProvider(data_source)
 
         access_provider = OSMAccessProvider(
-            parser=network_provider.parser,
-            walking_profile=simple_walking_profile,
+            data_source,
             search_radius_m=1000.0,
             max_nearby_nodes=5,
-            build_index=True,
         )
 
         engine = Engine()
@@ -527,17 +526,15 @@ class TestSimpleOSMRouting:
             pytest.skip("OSM dependencies not available")
 
         # Set up providers and engine
-        network_provider = OSMNetworkProvider(
-            simple_osm_file,
-            walking_profile=simple_walking_profile,
+        data_source = OSMDataSource(
+            simple_osm_file, walking_profile=simple_walking_profile
         )
+        network_provider = OSMNetworkProvider(data_source)
 
         access_provider = OSMAccessProvider(
-            parser=network_provider.parser,
-            walking_profile=simple_walking_profile,
+            data_source,
             search_radius_m=50.0,  # Smaller radius to test "no nearby nodes" scenario
             max_nearby_nodes=5,
-            build_index=True,
         )
 
         engine = Engine()

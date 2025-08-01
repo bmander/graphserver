@@ -250,7 +250,7 @@ class OSMAccessProvider:
             distance_m = calculate_distance(lat, lon, node.lat, node.lon)
 
         # Calculate walking time
-        duration_s = distance_m / self.walking_profile.base_speed_ms
+        duration_s = distance_m / self.data_source.walking_profile.base_speed_ms
 
         # Create target vertex with OSM node information
         target_data = {

@@ -2,35 +2,53 @@
 
 import pytest
 
-from graphserver.providers.osm import OSMAccessProvider
+from graphserver.providers.osm import OSMAccessProvider, OSMDataSource
 
 
 def test_coordinate_identity_hash_matching():
     """Test that access provider generates consistent identity hashes for coordinates."""
     try:
-        from graphserver.providers.osm.parser import OSMParser
+        import tempfile
+        from pathlib import Path
         from graphserver.providers.osm.types import WalkingProfile
 
-        # Create a minimal access provider for testing
-        walking_profile = WalkingProfile()
-        parser = OSMParser(walking_profile)
-        parser.nodes = {}  # Empty for testing
+        # Create minimal OSM XML for testing
+        minimal_osm = """<?xml version="1.0" encoding="UTF-8"?>
+<osm version="0.6" generator="test">
+  <node id="1" lat="0.0" lon="0.0"/>
+  <way id="100" version="1">
+    <nd ref="1"/>
+    <tag k="highway" v="footway"/>
+  </way>
+</osm>"""
 
-        access_provider = OSMAccessProvider(parser=parser)
+        # Create temporary OSM file
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".osm", delete=False) as f:
+            f.write(minimal_osm)
+            f.flush()
+            osm_file = Path(f.name)
 
-        # Test coordinate hash generation directly
-        hash1 = access_provider._create_coordinate_identity_hash(0.000001, 0.000001)
-        hash2 = access_provider._create_coordinate_identity_hash(0.000002, 0.000002)
-        hash3 = access_provider._create_coordinate_identity_hash(0.001000, 0.001000)
+        try:
+            # Create data source and access provider
+            data_source = OSMDataSource(osm_file, build_spatial_index=True)
+            access_provider = OSMAccessProvider(data_source)
 
-        # Coordinates within ~1 meter should get the same hash (rounding to 5 decimal places)
-        assert hash1 == hash2
+            # Test coordinate hash generation directly
+            hash1 = access_provider._create_coordinate_identity_hash(0.000001, 0.000001)
+            hash2 = access_provider._create_coordinate_identity_hash(0.000002, 0.000002)
+            hash3 = access_provider._create_coordinate_identity_hash(0.001000, 0.001000)
 
-        # Coordinates 1km apart should get different hashes
-        assert hash1 != hash3
+            # Coordinates within ~1 meter should get the same hash (rounding to 5 decimal places)
+            assert hash1 == hash2
 
-        print(f"Close coordinates hash: {hash1}")
-        print(f"Distant coordinate hash: {hash3}")
+            # Coordinates 1km apart should get different hashes
+            assert hash1 != hash3
+
+            print(f"Close coordinates hash: {hash1}")
+            print(f"Distant coordinate hash: {hash3}")
+
+        finally:
+            osm_file.unlink()
 
     except ImportError:
         pytest.skip("OSM dependencies not available")
@@ -39,38 +57,60 @@ def test_coordinate_identity_hash_matching():
 def test_osm_node_identity_hash():
     """Test that OSM providers generate consistent identity hashes for nodes."""
     try:
-        from graphserver.providers.osm.parser import OSMParser
+        import tempfile
+        from pathlib import Path
         from graphserver.providers.osm.types import WalkingProfile
 
-        # Create a minimal access provider for testing
-        walking_profile = WalkingProfile()
-        parser = OSMParser(walking_profile)
-        parser.nodes = {}  # Empty for testing
+        # Create minimal OSM XML for testing
+        minimal_osm = """<?xml version="1.0" encoding="UTF-8"?>
+<osm version="0.6" generator="test">
+  <node id="1" lat="0.0" lon="0.0"/>
+  <way id="100" version="1">
+    <nd ref="1"/>
+    <tag k="highway" v="footway"/>
+  </way>
+</osm>"""
 
-        access_provider = OSMAccessProvider(parser=parser)
+        # Create temporary OSM file
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".osm", delete=False) as f:
+            f.write(minimal_osm)
+            f.flush()
+            osm_file = Path(f.name)
 
-        # Test OSM node hash generation via vertex creation
-        node1_data = {"osm_node_id": 123, "lat": 47.6062, "lon": -122.3321}
-        node2_data = {"osm_node_id": 123, "lat": 47.6062, "lon": -122.3321}  # Same node
-        node3_data = {
-            "osm_node_id": 456,
-            "lat": 47.6062,
-            "lon": -122.3321,
-        }  # Different node
+        try:
+            # Create data source and access provider
+            data_source = OSMDataSource(osm_file, build_spatial_index=True)
+            access_provider = OSMAccessProvider(data_source)
 
-        # Create vertices with identity hashes
-        hash1 = access_provider._get_identity_hash(node1_data)
-        hash2 = access_provider._get_identity_hash(node2_data)
-        hash3 = access_provider._get_identity_hash(node3_data)
+            # Test OSM node hash generation via vertex creation
+            node1_data = {"osm_node_id": 123, "lat": 47.6062, "lon": -122.3321}
+            node2_data = {
+                "osm_node_id": 123,
+                "lat": 47.6062,
+                "lon": -122.3321,
+            }  # Same node
+            node3_data = {
+                "osm_node_id": 456,
+                "lat": 47.6062,
+                "lon": -122.3321,
+            }  # Different node
 
-        # Same OSM node ID should get same hash
-        assert hash1 == hash2
+            # Create vertices with identity hashes
+            hash1 = access_provider._get_identity_hash(node1_data)
+            hash2 = access_provider._get_identity_hash(node2_data)
+            hash3 = access_provider._get_identity_hash(node3_data)
 
-        # Different OSM node IDs should get different hashes
-        assert hash1 != hash3
+            # Same OSM node ID should get same hash
+            assert hash1 == hash2
 
-        print(f"Node 123 hash: {hash1}")
-        print(f"Node 456 hash: {hash3}")
+            # Different OSM node IDs should get different hashes
+            assert hash1 != hash3
+
+            print(f"Node 123 hash: {hash1}")
+            print(f"Node 456 hash: {hash3}")
+
+        finally:
+            osm_file.unlink()
 
     except ImportError:
         pytest.skip("OSM dependencies not available")
@@ -80,39 +120,58 @@ def test_provider_generated_identity_hashes():
     """Test that providers generate identity hashes correctly."""
     # This test would need actual OSM data, so we'll skip it if not available
     try:
-        from graphserver.providers.osm.parser import OSMParser
+        import tempfile
+        from pathlib import Path
         from graphserver.providers.osm.types import WalkingProfile
 
-        # Create a mock parser for testing (minimal setup)
-        walking_profile = WalkingProfile()
-        parser = OSMParser(walking_profile)
-        parser.nodes = {}  # Empty for testing
+        # Create minimal OSM XML for testing
+        minimal_osm = """<?xml version="1.0" encoding="UTF-8"?>
+<osm version="0.6" generator="test">
+  <node id="1" lat="0.0" lon="0.0"/>
+  <way id="100" version="1">
+    <nd ref="1"/>
+    <tag k="highway" v="footway"/>
+  </way>
+</osm>"""
 
-        # Create a simple access provider with the mock parser
-        access_provider = OSMAccessProvider(parser=parser)
+        # Create temporary OSM file
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".osm", delete=False) as f:
+            f.write(minimal_osm)
+            f.flush()
+            osm_file = Path(f.name)
 
-        # Test the hash generation methods directly
-        coord_hash = access_provider._create_coordinate_identity_hash(
-            47.6062, -122.3321
-        )
-        assert coord_hash == "coord:47.6062,-122.3321"
+        try:
+            # Create data source and access provider
+            data_source = OSMDataSource(osm_file, build_spatial_index=True)
+            access_provider = OSMAccessProvider(data_source)
 
-        # Test generating identity hash for vertex data
-        coord_data = {
-            "lat": 47.606201,
-            "lon": -122.332102,
-        }  # Slightly different precision
-        coord_identity_hash = access_provider._get_identity_hash(coord_data)
-        expected_coord_hash = hash("coord:47.6062,-122.3321") & 0xFFFFFFFFFFFFFFFF
-        assert coord_identity_hash == expected_coord_hash  # Should round to same value
+            # Test the hash generation methods directly
+            coord_hash = access_provider._create_coordinate_identity_hash(
+                47.6062, -122.3321
+            )
+            assert coord_hash == "coord:47.6062,-122.3321"
 
-        osm_data = {"osm_node_id": 12345, "lat": 47.6062, "lon": -122.3321}
-        osm_identity_hash = access_provider._get_identity_hash(osm_data)
-        expected_osm_hash = hash("osm:12345") & 0xFFFFFFFFFFFFFFFF
-        assert osm_identity_hash == expected_osm_hash  # OSM node ID takes priority
+            # Test generating identity hash for vertex data
+            coord_data = {
+                "lat": 47.606201,
+                "lon": -122.332102,
+            }  # Slightly different precision
+            coord_identity_hash = access_provider._get_identity_hash(coord_data)
+            expected_coord_hash = hash("coord:47.6062,-122.3321") & 0xFFFFFFFFFFFFFFFF
+            assert (
+                coord_identity_hash == expected_coord_hash
+            )  # Should round to same value
 
-        print(f"Coordinate hash: {coord_identity_hash}")
-        print(f"OSM node hash (priority): {osm_identity_hash}")
+            osm_data = {"osm_node_id": 12345, "lat": 47.6062, "lon": -122.3321}
+            osm_identity_hash = access_provider._get_identity_hash(osm_data)
+            expected_osm_hash = hash("osm:12345") & 0xFFFFFFFFFFFFFFFF
+            assert osm_identity_hash == expected_osm_hash  # OSM node ID takes priority
+
+            print(f"Coordinate hash: {coord_identity_hash}")
+            print(f"OSM node hash (priority): {osm_identity_hash}")
+
+        finally:
+            osm_file.unlink()
 
     except ImportError:
         pytest.skip("OSM dependencies not available")

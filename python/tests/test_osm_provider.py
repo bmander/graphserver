@@ -15,7 +15,11 @@ import pytest
 pytest_plugins = []
 
 try:
-    from graphserver.providers.osm import OSMAccessProvider, OSMNetworkProvider
+    from graphserver.providers.osm import (
+        OSMAccessProvider,
+        OSMDataSource,
+        OSMNetworkProvider,
+    )
     from graphserver.providers.osm.parser import OSMParser
     from graphserver.providers.osm.spatial import SpatialIndex, calculate_distance
     from graphserver.providers.osm.types import OSMNode, OSMWay, WalkingProfile
@@ -287,10 +291,8 @@ class TestOSMNetworkProvider:
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
 
-        provider = OSMNetworkProvider(
-            sample_osm_file,
-            walking_profile=walking_profile,
-        )
+        data_source = OSMDataSource(sample_osm_file, walking_profile=walking_profile)
+        provider = OSMNetworkProvider(data_source)
 
         assert provider.node_count > 0
         assert provider.way_count > 0
@@ -306,7 +308,8 @@ class TestOSMNetworkProvider:
 
         from graphserver import Vertex
 
-        provider = OSMNetworkProvider(sample_osm_file)
+        data_source = OSMDataSource(sample_osm_file)
+        provider = OSMNetworkProvider(data_source)
 
         # Create vertex with OSM node ID
         node_vertex = Vertex({"osm_node_id": 1})
@@ -332,7 +335,8 @@ class TestOSMNetworkProvider:
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
 
-        provider = OSMNetworkProvider(sample_osm_file)
+        data_source = OSMDataSource(sample_osm_file)
+        provider = OSMNetworkProvider(data_source)
 
         # Test get_node_by_id
         node_vertex = provider.get_node_by_id(1)
@@ -357,11 +361,11 @@ class TestOSMAccessProvider:
 
         from graphserver import Vertex
 
+        data_source = OSMDataSource(sample_osm_file, build_spatial_index=True)
         provider = OSMAccessProvider(
-            sample_osm_file,
+            data_source,
             search_radius_m=1000.0,
             max_nearby_nodes=3,
-            build_index=True,
         )
 
         # Create vertex with coordinates near sample data
@@ -396,11 +400,11 @@ class TestOSMAccessProvider:
 
         from graphserver import Vertex
 
+        data_source = OSMDataSource(sample_osm_file, build_spatial_index=True)
         provider = OSMAccessProvider(
-            sample_osm_file,
+            data_source,
             search_radius_m=1000.0,
             max_nearby_nodes=3,
-            build_index=True,
         )
 
         # Create vertex with coordinates that is not linked
@@ -420,11 +424,11 @@ class TestOSMAccessProvider:
 
         from graphserver import Vertex
 
+        data_source = OSMDataSource(sample_osm_file, build_spatial_index=True)
         provider = OSMAccessProvider(
-            sample_osm_file,
+            data_source,
             search_radius_m=1000.0,
             max_nearby_nodes=3,
-            build_index=True,
         )
 
         # Create and link vertex near sample data
@@ -461,11 +465,11 @@ class TestOSMAccessProvider:
 
         from graphserver import Vertex
 
+        data_source = OSMDataSource(sample_osm_file, build_spatial_index=True)
         provider = OSMAccessProvider(
-            sample_osm_file,
+            data_source,
             search_radius_m=1000.0,
             max_nearby_nodes=3,
-            build_index=True,
         )
 
         # Create vertex to link
@@ -502,11 +506,11 @@ class TestOSMAccessProvider:
 
         from graphserver import Vertex
 
+        data_source = OSMDataSource(sample_osm_file, build_spatial_index=True)
         provider = OSMAccessProvider(
-            sample_osm_file,
+            data_source,
             search_radius_m=100.0,  # Small radius
             max_nearby_nodes=3,
-            build_index=True,
         )
 
         # Test linking to coordinates outside search radius
@@ -525,11 +529,11 @@ class TestOSMAccessProvider:
 
         from graphserver import Vertex
 
+        data_source = OSMDataSource(sample_osm_file, build_spatial_index=True)
         provider = OSMAccessProvider(
-            sample_osm_file,
+            data_source,
             search_radius_m=1000.0,
             max_nearby_nodes=3,
-            build_index=True,
         )
 
         # Create and link a vertex
@@ -557,11 +561,11 @@ class TestOSMAccessProvider:
 
         from graphserver import Vertex
 
+        data_source = OSMDataSource(sample_osm_file, build_spatial_index=True)
         provider = OSMAccessProvider(
-            sample_osm_file,
+            data_source,
             search_radius_m=1000.0,
             max_nearby_nodes=3,
-            build_index=True,
         )
 
         # Create two vertices with same properties but different times
@@ -602,11 +606,11 @@ class TestOSMAccessProvider:
 
         from graphserver import Vertex
 
+        data_source = OSMDataSource(sample_osm_file, build_spatial_index=True)
         provider = OSMAccessProvider(
-            sample_osm_file,
+            data_source,
             search_radius_m=1000.0,
             max_nearby_nodes=3,
-            build_index=True,
         )
 
         # Create vertex with time and link it
@@ -634,11 +638,11 @@ class TestOSMAccessProvider:
 
         from graphserver import Vertex
 
+        data_source = OSMDataSource(sample_osm_file, build_spatial_index=True)
         provider = OSMAccessProvider(
-            sample_osm_file,
+            data_source,
             search_radius_m=1000.0,
             max_nearby_nodes=3,
-            build_index=True,
         )
 
         # Create and link a vertex (without time for the template)
@@ -677,11 +681,11 @@ class TestOSMAccessProvider:
 
         from graphserver import Vertex
 
+        data_source = OSMDataSource(sample_osm_file, build_spatial_index=True)
         provider = OSMAccessProvider(
-            sample_osm_file,
+            data_source,
             search_radius_m=1000.0,
             max_nearby_nodes=3,
-            build_index=True,
         )
 
         # Create vertex without coordinates (location provided via link method)
@@ -708,11 +712,11 @@ class TestOSMAccessProvider:
 
         from graphserver import Vertex
 
+        data_source = OSMDataSource(sample_osm_file, build_spatial_index=True)
         provider = OSMAccessProvider(
-            sample_osm_file,
+            data_source,
             search_radius_m=1000.0,
             max_nearby_nodes=3,
-            build_index=True,
         )
 
         # Link multiple vertices at similar coordinates
@@ -764,7 +768,8 @@ class TestOSMAccessProvider:
 
         from graphserver import Vertex
 
-        provider = OSMAccessProvider(sample_osm_file, build_index=True)
+        data_source = OSMDataSource(sample_osm_file, build_spatial_index=True)
+        provider = OSMAccessProvider(data_source)
 
         # Create vertex with unknown structure
         unknown_vertex = Vertex({"unknown_key": "unknown_value"})
@@ -781,9 +786,8 @@ class TestOSMAccessProvider:
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
 
-        provider = OSMAccessProvider(
-            sample_osm_file, search_radius_m=1000.0, build_index=True
-        )
+        data_source = OSMDataSource(sample_osm_file, build_spatial_index=True)
+        provider = OSMAccessProvider(data_source, search_radius_m=1000.0)
 
         # Test find_nearest_node
         nearest = provider.find_nearest_node(47.6062, -122.3321)
@@ -811,12 +815,12 @@ class TestIntegrationWithGraphserver:
 
             # Create engine and register both OSM providers
             engine = Engine()
-            network_provider = OSMNetworkProvider(sample_osm_file)
+            data_source = OSMDataSource(sample_osm_file, build_spatial_index=True)
+            network_provider = OSMNetworkProvider(data_source)
             access_provider = OSMAccessProvider(
-                parser=network_provider.parser,
+                data_source,
                 search_radius_m=1000.0,
                 max_nearby_nodes=3,
-                build_index=True,
             )
 
             engine.register_provider("osm_network", network_provider)
