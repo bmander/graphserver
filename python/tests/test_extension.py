@@ -15,6 +15,7 @@ def _import_c_extension():
     try:
         # Try package import first (modern approach)
         import graphserver._graphserver as _graphserver
+
         return _graphserver
     except ImportError:
         # Fallback to direct import for development builds

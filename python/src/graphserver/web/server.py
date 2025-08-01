@@ -83,10 +83,10 @@ class GraphWebServer:
 
 def create_tqdm_progress_callback(task_name: str) -> ProgressCallback:
     """Create a progress callback that uses tqdm for CLI progress bars.
-    
+
     Args:
         task_name: Name of the overall task for the progress bar
-        
+
     Returns:
         A progress callback function that creates and manages a tqdm progress bar
     """
@@ -97,27 +97,28 @@ def create_tqdm_progress_callback(task_name: str) -> ProgressCallback:
         def simple_callback(description: str, current: int, total: int) -> None:
             percentage = (current / total * 100) if total > 0 else 0
             print(f"[{percentage:5.1f}%] {description}")
+
         return simple_callback
-    
+
     bar = None
-    
+
     def callback(description: str, current: int, total: int) -> None:
         nonlocal bar
-        
+
         # Create bar on first call
         if bar is None:
             bar = tqdm(total=total, desc=task_name, unit="step")
-        
+
         # Update progress bar
         bar.set_description(description)
         bar.n = current
         bar.refresh()
-        
+
         # Close bar when complete
         if current >= total:
             bar.close()
             bar = None
-    
+
     return callback
 
 

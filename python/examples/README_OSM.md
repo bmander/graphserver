@@ -42,9 +42,15 @@ engine = Engine()
 engine.register_provider("osm_network", osm_network)
 engine.register_provider("osm_access", osm_access)
 
-# Plan route between coordinates
+# Create vertices for start and goal coordinates
 start = Vertex({"lat": 47.6062, "lon": -122.3321})
 goal = Vertex({"lat": 47.6205, "lon": -122.3493})
+
+# Link vertices to OSM network
+osm_access.link(start, 47.6062, -122.3321)
+osm_access.link(goal, 47.6205, -122.3493)
+
+# Plan route between coordinates
 result = engine.plan(start=start, goal=goal)
 ```
 

@@ -5,11 +5,14 @@ This script downloads OpenStreetMap data for testing the OSM provider.
 It supports different profiles for filtering the downloaded data.
 
 Usage:
-    python download_osm_data.py --profile walking [--bbox lat_min lon_min lat_max lon_max] [--output output_file]
-    python download_osm_data.py --profile all [--bbox lat_min lon_min lat_max lon_max] [--output output_file]
+    python download_osm_data.py --profile walking [--bbox lat_min lon_min lat_max lon_max] \\
+        [--output output_file]
+    python download_osm_data.py --profile all [--bbox lat_min lon_min lat_max lon_max] \\
+        [--output output_file]
 
 Examples:
-    python download_osm_data.py --profile walking --bbox 47.653 -122.315 47.657 -122.305 --output campus.osm
+    python download_osm_data.py --profile walking --bbox 47.653 -122.315 47.657 -122.305 \\
+        --output campus.osm
     python download_osm_data.py --profile travel --output travel_data.osm
     python download_osm_data.py --profile all --output all_data.osm
 """
@@ -171,7 +174,8 @@ Examples:
         "--profile",
         choices=["walking", "travel", "all"],
         default="walking",
-        help="Data profile: 'walking' for pedestrian-friendly ways (default), 'travel' for all travelable ways, 'all' for all ways",
+        help="Data profile: 'walking' for pedestrian-friendly ways (default), "
+        "'travel' for all travelable ways, 'all' for all ways",
     )
 
     parser.add_argument(
@@ -231,7 +235,9 @@ Examples:
     print(f"  python osm_routing_example.py {output_file}")
     print("Or test the provider directly:")
     print(
-        f"  python -c \"from graphserver.providers.osm import OSMNetworkProvider; p = OSMNetworkProvider('{output_file}'); print(f'Loaded {{p.node_count}} nodes, {{p.way_count}} ways')\""
+        f'  python -c "from graphserver.providers.osm import OSMNetworkProvider; '
+        f"p = OSMNetworkProvider('{output_file}'); "
+        f"print(f'Loaded {{p.node_count}} nodes, {{p.way_count}} ways')\""
     )
 
 

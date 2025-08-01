@@ -126,16 +126,19 @@ class ProviderManager:
             raise ProviderError(msg)
 
     def _register_transit_provider(
-        self, transit_provider: TransitProvider, provider_name: str, progress_callback: ProgressCallback = None
+        self,
+        transit_provider: TransitProvider,
+        provider_name: str,
+        progress_callback: ProgressCallback = None,
     ) -> GTFSFeedStats:
         """Register transit provider and collect statistics."""
         assert (
             self.engine is not None
         )  # Engine must be initialized before registering providers
-        
+
         if progress_callback:
             progress_callback("Registering provider...", 0, 1)
-        
+
         self.providers[provider_name] = transit_provider
         self.engine.register_provider(provider_name, transit_provider)
 
@@ -210,7 +213,9 @@ class ProviderManager:
 
         # Step 1: Parse OSM file
         if progress_callback:
-            progress_callback(f"Parsing OSM file ({osm_path.name}, {size_info})...", 0, 4)
+            progress_callback(
+                f"Parsing OSM file ({osm_path.name}, {size_info})...", 0, 4
+            )
         parser = OSMParser(WalkingProfile())
         parser.parse_file(str(osm_path))
 
@@ -242,7 +247,7 @@ class ProviderManager:
             self.engine is not None
         )  # Engine must be initialized before registering providers
         self.engine.register_provider("osm_access", osm_access)
-        
+
         if progress_callback:
             progress_callback("OSM providers complete", 4, 4)
 
@@ -272,16 +277,19 @@ class ProviderManager:
         try:
             # Parse GTFS data with detailed progress
             provider_name = f"transit_{i}" if i > 0 else "transit"
-            
+
             # Create a sub-progress callback for the TransitProvider
             def transit_progress_callback(
-                step_name: str, current: int, total: int, sub_progress: float | None = None  # noqa: ARG001
+                step_name: str,
+                current: int,
+                total: int,
+                sub_progress: float | None = None,  # noqa: ARG001
             ) -> None:
                 if progress_callback:
                     # Map the 9 parsing steps to our progress (steps 1-9 out of 10)
                     mapped_current = current + 1  # offset by 1 since we start at step 0
                     progress_callback(step_name, mapped_current, 10)
-            
+
             transit_provider = TransitProvider(
                 str(gtfs_path), progress_callback=transit_progress_callback
             )
@@ -295,7 +303,9 @@ class ProviderManager:
             msg = f"Failed to initialize GTFS file {gtfs_file}: {e}"
             raise ProviderError(msg) from e
 
-    def _initialize_transit_providers(self, progress_callback: ProgressCallback = None) -> None:
+    def _initialize_transit_providers(
+        self, progress_callback: ProgressCallback = None
+    ) -> None:
         """Initialize GTFS transit providers."""
         self._validate_transit_imports()
 
@@ -309,13 +319,17 @@ class ProviderManager:
         for i, gtfs_file in enumerate(self.gtfs_files):
             # Create a progress callback for this file that maps to overall progress
             def file_progress_callback(
-                description: str, file_current: int, file_total: int  # noqa: ARG001
+                description: str,
+                file_current: int,
+                file_total: int,  # noqa: ARG001
             ) -> None:
                 if progress_callback:
                     overall_current = current_step + file_current
                     progress_callback(description, overall_current, total_steps)
-            
-            feed_stats = self._process_single_gtfs_file(i, gtfs_file, file_progress_callback)
+
+            feed_stats = self._process_single_gtfs_file(
+                i, gtfs_file, file_progress_callback
+            )
             total_stops += feed_stats.stops
             total_routes += feed_stats.routes
             total_trips += feed_stats.trips
@@ -327,7 +341,9 @@ class ProviderManager:
         # Print detailed summary
         self._print_transit_summary(total_stops, total_routes, total_trips)
 
-    def _initialize_osm_providers(self, progress_callback: ProgressCallback = None) -> None:
+    def _initialize_osm_providers(
+        self, progress_callback: ProgressCallback = None
+    ) -> None:
         """Initialize OSM routing providers."""
         self._validate_osm_imports()
 
@@ -441,7 +457,9 @@ class ProviderManager:
             print("⚠️  No transit stops found to link")
 
     def _link_transit_stops_to_osm(
-        self, osm_access_provider: OSMAccessProvider, progress_callback: ProgressCallback = None
+        self,
+        osm_access_provider: OSMAccessProvider,
+        progress_callback: ProgressCallback = None,
     ) -> None:
         """Link all transit stops to nearby OSM nodes for multimodal routing.
 
@@ -460,7 +478,7 @@ class ProviderManager:
         total_stops = sum(
             len(provider.parser.stops) for provider in transit_providers.values()
         )
-        
+
         current_stop = 0
 
         # Link stops from all transit providers
@@ -473,11 +491,11 @@ class ProviderManager:
                 self.linking_stats.total_stops += 1
 
                 if progress_callback:
-                    progress_callback(f"Linking stop {stop.stop_id}", current_stop, total_stops)
+                    progress_callback(
+                        f"Linking stop {stop.stop_id}", current_stop, total_stops
+                    )
 
-                success, error_msg = self._link_single_stop(
-                    stop, osm_access_provider
-                )
+                success, error_msg = self._link_single_stop(stop, osm_access_provider)
                 if success:
                     provider_linked += 1
                     self.linking_stats.linked_stops += 1
@@ -488,8 +506,9 @@ class ProviderManager:
 
             if progress_callback:
                 progress_callback(
-                    f"Linked {provider_name}: {provider_linked}/{provider_total}", 
-                    current_stop, total_stops
+                    f"Linked {provider_name}: {provider_linked}/{provider_total}",
+                    current_stop,
+                    total_stops,
                 )
 
         if progress_callback:
