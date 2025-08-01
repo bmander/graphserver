@@ -8,7 +8,12 @@ from typing import TYPE_CHECKING
 import pytest
 
 try:
-    import _graphserver
+    # Try package import first (modern approach)
+    try:
+        import graphserver._graphserver as _graphserver
+    except ImportError:
+        # Fallback to direct import for development builds
+        import _graphserver
 
     from graphserver import Engine
 except ImportError:

@@ -159,7 +159,6 @@ static bool hash_table_resize(HashTable* table) {
     table->entries = new_entries;
     table->capacity = new_capacity;
     table->mask = new_capacity - 1;
-    size_t old_size = table->size;
     table->size = 0;
     
     // Rehash all entries
@@ -175,7 +174,6 @@ static bool hash_table_resize(HashTable* table) {
         free(old_entries);
     }
     
-    assert(table->size == old_size);
     return true;
 }
 

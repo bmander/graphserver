@@ -74,3 +74,5 @@ _skbuild/
 *.cmake
 CMakeCache.txt
 CMakeFiles/
+
+.py-build-cmake_cache/

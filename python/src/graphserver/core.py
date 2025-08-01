@@ -9,10 +9,13 @@ GraphserverDataType = str | int | float
 
 # Import will be available after C extension is built
 try:
-    import _graphserver
+    from . import _graphserver
 except ImportError:
-    # Graceful handling during development
-    _graphserver = None  # type: ignore[assignment]
+    try:
+        import _graphserver
+    except ImportError:
+        # Graceful handling during development
+        _graphserver = None  # type: ignore[assignment]
 
 
 class Vertex:

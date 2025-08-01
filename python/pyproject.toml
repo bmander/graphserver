@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["py-build-cmake~=0.4.0"]
+build-backend = "py_build_cmake.build"
 
 [project]
 name = "graphserver"
@@ -40,10 +40,20 @@ transit = [
 [project.scripts]
 graphserver-web = "graphserver.web:main"
 
-[tool.scikit-build]
-cmake.build-type = "Release"
-cmake.source-dir = "."
-wheel.expand-macos-universal-tags = true
+[tool.py-build-cmake.module]
+name = "graphserver"
+directory = "src"
+
+[tool.py-build-cmake.sdist]
+include = ["CMakeLists.txt", "src/**/*"]
+exclude = ["**/__pycache__", "**/*.pyc"]
+
+[tool.py-build-cmake.cmake]
+minimum_version = "3.15"
+build_type = "Release"
+source_path = "."
+build_args = ["-j"]
+install_components = ["python_extension"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

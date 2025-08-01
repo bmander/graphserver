@@ -23,7 +23,6 @@ pip install -e ".[dev]"
 - Python 3.12+
 - CMake 3.15+
 - C compiler supporting C99
-- Core Graphserver library (built from ../core)
 
 ## Quick Start
 
@@ -63,8 +62,6 @@ print(f"Path found: {len(path)} steps, cost: {path.total_cost}")
 ## Development
 
 ### Building
-
-The package uses scikit-build-core for building the C extension:
 
 ```bash
 # Build in place
