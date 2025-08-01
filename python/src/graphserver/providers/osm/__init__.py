@@ -12,9 +12,10 @@ from __future__ import annotations
 
 try:
     from .access_provider import OSMAccessProvider
+    from .data_source import OSMDataSource
     from .network_provider import OSMNetworkProvider
 
-    __all__ = ["OSMNetworkProvider", "OSMAccessProvider"]
+    __all__ = ["OSMDataSource", "OSMNetworkProvider", "OSMAccessProvider"]
 except ImportError:
     # OSM dependencies not installed
     __all__ = []

@@ -235,9 +235,9 @@ Examples:
     print(f"  python osm_routing_example.py {output_file}")
     print("Or test the provider directly:")
     print(
-        f'  python -c "from graphserver.providers.osm import OSMNetworkProvider; '
-        f"p = OSMNetworkProvider('{output_file}'); "
-        f"print(f'Loaded {{p.node_count}} nodes, {{p.way_count}} ways')\""
+        f'  python -c "from graphserver.providers.osm import OSMDataSource; '
+        f"data = OSMDataSource('{output_file}'); "
+        f"print(f'Loaded {{data.node_count}} nodes, {{data.way_count}} ways')\""
     )
 
 

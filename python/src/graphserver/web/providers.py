@@ -203,26 +203,27 @@ class ProviderManager:
 
         Registers both OSM network and access providers; returns the access provider."""
 
-        from graphserver.providers.osm import OSMAccessProvider, OSMNetworkProvider
-        from graphserver.providers.osm.parser import OSMParser
-        from graphserver.providers.osm.types import WalkingProfile
+        from graphserver.providers.osm import (
+            OSMAccessProvider,
+            OSMDataSource,
+            OSMNetworkProvider,
+        )
 
         # Get file size for context
         file_size_mb = osm_path.stat().st_size / (1024 * 1024)
         size_info = f"{file_size_mb:.1f}MB"
 
-        # Step 1: Parse OSM file
+        # Step 1: Create OSM data source
         if progress_callback:
             progress_callback(
                 f"Parsing OSM file ({osm_path.name}, {size_info})...", 0, 4
             )
-        parser = OSMParser(WalkingProfile())
-        parser.parse_file(str(osm_path))
+        osm_data = OSMDataSource(osm_path)
 
         # Step 2: Show parsing results
-        raw_nodes = len(parser.nodes)
-        raw_ways = len(parser.ways)
-        raw_edges = len(parser.edges)
+        raw_nodes = osm_data.node_count
+        raw_ways = osm_data.way_count
+        raw_edges = osm_data.edge_count
         if progress_callback:
             progress_callback(
                 f"Parsed: {raw_nodes} nodes, {raw_ways} ways, {raw_edges} edges", 1, 4
@@ -231,7 +232,7 @@ class ProviderManager:
         # Step 3: Create OSM network provider (handles osm_node_id vertices)
         if progress_callback:
             progress_callback("Creating network provider...", 2, 4)
-        osm_network = OSMNetworkProvider(parser=parser)
+        osm_network = OSMNetworkProvider(osm_data)
         self.providers["osm_network"] = osm_network
         assert (
             self.engine is not None
@@ -241,7 +242,7 @@ class ProviderManager:
         # Step 4: Create OSM access provider (handles lat/lon vertices)
         if progress_callback:
             progress_callback("Creating access provider...", 3, 4)
-        osm_access = OSMAccessProvider(parser=parser)
+        osm_access = OSMAccessProvider(osm_data)
         self.providers["osm_access"] = osm_access
         assert (
             self.engine is not None

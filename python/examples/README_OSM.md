@@ -31,11 +31,14 @@ Download OpenStreetMap data for your area of interest:
 
 ```python
 from graphserver import Engine, Vertex
-from graphserver.providers.osm import OSMNetworkProvider, OSMAccessProvider
+from graphserver.providers.osm import OSMDataSource, OSMNetworkProvider, OSMAccessProvider
 
-# Load OSM data
-osm_network = OSMNetworkProvider("data/your_area.osm")
-osm_access = OSMAccessProvider("data/your_area.osm")
+# Load OSM data once
+osm_data = OSMDataSource("data/your_area.osm")
+
+# Create providers using shared data source
+osm_network = OSMNetworkProvider(osm_data)
+osm_access = OSMAccessProvider(osm_data)
 
 # Create planning engine
 engine = Engine()
@@ -73,6 +76,7 @@ The OSM providers support two types of input vertices:
 Customize pedestrian routing behavior:
 
 ```python
+from graphserver.providers.osm import OSMDataSource
 from graphserver.providers.osm.types import WalkingProfile
 
 profile = WalkingProfile(
@@ -82,8 +86,8 @@ profile = WalkingProfile(
     max_detour_factor=1.5     # Maximum detour tolerance
 )
 
-osm_network = OSMNetworkProvider("data.osm", walking_profile=profile)
-osm_access = OSMAccessProvider("data.osm", walking_profile=profile)
+# Create data source with custom walking profile
+osm_data = OSMDataSource("data.osm", walking_profile=profile)
 ```
 
 ### Provider Configuration
@@ -91,20 +95,24 @@ osm_access = OSMAccessProvider("data.osm", walking_profile=profile)
 Adjust spatial search parameters:
 
 ```python
+# Create data source with spatial indexing
+osm_data = OSMDataSource("data.osm", build_spatial_index=True)
+
+# Create access provider with custom search parameters
 osm_access = OSMAccessProvider(
-    "data.osm",
+    osm_data,
     search_radius_m=200.0,    # Search radius for coordinate queries
     max_nearby_nodes=5,       # Max nodes to consider from coordinates
-    build_index=True          # Build spatial index (recommended)
 )
 ```
 
 ## Performance Tips
 
-1. **Use spatial indexing**: Keep `build_index=True` for coordinate-based queries
-2. **Adjust search radius**: Larger radius finds more options but slower queries
-3. **Limit nearby nodes**: Reduce `max_nearby_nodes` for faster coordinate queries
-4. **Filter OSM data**: Use smaller OSM extracts for faster loading
+1. **Use spatial indexing**: Keep `build_spatial_index=True` in OSMDataSource for coordinate-based queries
+2. **Share data source**: Create one OSMDataSource and pass it to multiple providers to avoid redundant parsing
+3. **Adjust search radius**: Larger radius finds more options but slower queries
+4. **Limit nearby nodes**: Reduce `max_nearby_nodes` for faster coordinate queries
+5. **Filter OSM data**: Use smaller OSM extracts for faster loading
 
 ## Supported OSM Highway Types
 

@@ -7,7 +7,6 @@ geographic coordinates to the OSM network via bidirectional edges.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -15,9 +14,7 @@ if TYPE_CHECKING:
 
 from graphserver.core import Edge, GraphserverDataType, Vertex, VertexEdgePair
 
-from .parser import OSMParser
-from .spatial import SpatialIndex
-from .types import WalkingProfile
+from .data_source import OSMDataSource
 
 logger = logging.getLogger(__name__)
 
@@ -40,30 +37,19 @@ class OSMAccessProvider:
 
     def __init__(
         self,
-        osm_file: str | Path | None = None,
+        data_source: OSMDataSource,
         *,
-        parser: OSMParser | None = None,
-        walking_profile: WalkingProfile | None = None,
         search_radius_m: float = 100.0,
         max_nearby_nodes: int = 5,
-        build_index: bool = True,
     ) -> None:
         """Initialize OSM access provider.
 
         Args:
-            osm_file: Path to OSM XML or PBF file (if parser not provided)
-            parser: Pre-initialized OSM parser (if osm_file not provided)
-            walking_profile: Configuration for pedestrian routing preferences
+            data_source: OSM data source containing parsed OSM data
             search_radius_m: Search radius for finding nearby nodes from coordinates
             max_nearby_nodes: Maximum number of nearby nodes to consider
-            build_index: Whether to build spatial index (recommended for performance)
-
-        Raises:
-            ValueError: If neither osm_file nor parser is provided
-            FileNotFoundError: If OSM file doesn't exist
-            RuntimeError: If parsing fails
         """
-        self.walking_profile = walking_profile or WalkingProfile()
+        self.data_source = data_source
         self.search_radius_m = search_radius_m
         self.max_nearby_nodes = max_nearby_nodes
 
@@ -71,24 +57,9 @@ class OSMAccessProvider:
         self._linked_vertices: dict[int, list[Vertex]] = {}  # OSM node ID -> vertices
         self._vertex_to_osm_node: dict[int, int] = {}  # vertex hash -> OSM node ID
 
-        if parser is not None:
-            self.parser = parser
-        elif osm_file is not None:
-            logger.info("Initializing OSM access provider from %s", osm_file)
-            self.parser = OSMParser(self.walking_profile)
-            self.parser.parse_file(osm_file)
-        else:
-            msg = "Either osm_file or parser must be provided"
-            raise ValueError(msg)
-
-        # Build spatial index for efficient coordinate-based queries
-        self.spatial_index: SpatialIndex | None = None
-        if build_index:
-            self._build_spatial_index()
-
         logger.info(
             "OSM access provider ready: %d nodes, search radius %.1fm",
-            len(self.parser.nodes),
+            len(self.data_source.nodes),
             self.search_radius_m,
         )
 
@@ -151,12 +122,6 @@ class OSMAccessProvider:
         # Create stable hash from sorted items
         return hash(tuple(sorted(vertex_data.items())))
 
-    def _build_spatial_index(self) -> None:
-        """Build spatial index for fast coordinate-based lookups."""
-        logger.info("Building spatial index for OSM access")
-        self.spatial_index = SpatialIndex()
-        self.spatial_index.add_nodes(self.parser.nodes)
-
     def link(self, vertex: Vertex, lat: float, lon: float) -> None:
         """Link a vertex to the nearest OSM node at given coordinates.
 
@@ -176,12 +141,14 @@ class OSMAccessProvider:
             ValueError: If no OSM node is found within search radius
         """
         # Find nearest OSM node
-        if self.spatial_index is not None:
-            nearest_node = self.spatial_index.find_nearest_node(
+        if self.data_source.spatial_index is not None:
+            nearest_node = self.data_source.spatial_index.find_nearest_node(
                 lat, lon, self.search_radius_m
             )
         else:
-            nearby_nodes = self.parser.get_nearby_nodes(lat, lon, self.search_radius_m)
+            nearby_nodes = self.data_source.get_nearby_nodes(
+                lat, lon, self.search_radius_m
+            )
             nearest_node = nearby_nodes[0] if nearby_nodes else None
 
         if nearest_node is None:
@@ -260,10 +227,10 @@ class OSMAccessProvider:
         osm_node_id = self._vertex_to_osm_node[vertex_hash]
 
         # Check if the OSM node exists in our data
-        if osm_node_id not in self.parser.nodes:
+        if osm_node_id not in self.data_source.nodes:
             return []
 
-        node = self.parser.nodes[osm_node_id]
+        node = self.data_source.nodes[osm_node_id]
 
         # Get cached distance for this link
         if hasattr(self, "_link_distances") and vertex_hash in self._link_distances:
@@ -326,10 +293,10 @@ class OSMAccessProvider:
             return []
 
         # Check if node exists in our data
-        if node_id not in self.parser.nodes:
+        if node_id not in self.data_source.nodes:
             return []
 
-        node = self.parser.nodes[node_id]
+        node = self.data_source.nodes[node_id]
         edges = []
 
         # Generate edges to all linked vertices for this node
@@ -359,7 +326,7 @@ class OSMAccessProvider:
                 )
 
             # Calculate walking time
-            duration_s = distance_m / self.walking_profile.base_speed_ms
+            duration_s = distance_m / self.data_source.walking_profile.base_speed_ms
 
             # Create target vertex with time preserved from origin
             target_data = dict(linked_vertex_template.items())
@@ -394,10 +361,14 @@ class OSMAccessProvider:
         Returns:
             Vertex for nearest node or None if no node found
         """
-        if self.spatial_index is not None:
-            node = self.spatial_index.find_nearest_node(lat, lon, self.search_radius_m)
+        if self.data_source.spatial_index is not None:
+            node = self.data_source.spatial_index.find_nearest_node(
+                lat, lon, self.search_radius_m
+            )
         else:
-            nearby_nodes = self.parser.get_nearby_nodes(lat, lon, self.search_radius_m)
+            nearby_nodes = self.data_source.get_nearby_nodes(
+                lat, lon, self.search_radius_m
+            )
             node = nearby_nodes[0] if nearby_nodes else None
 
         if node is None:
@@ -413,4 +384,14 @@ class OSMAccessProvider:
     @property
     def node_count(self) -> int:
         """Get number of OSM nodes in the provider."""
-        return len(self.parser.nodes)
+        return self.data_source.node_count
+
+    @property
+    def way_count(self) -> int:
+        """Get number of walkable OSM ways in the provider."""
+        return self.data_source.way_count
+
+    @property
+    def edge_count(self) -> int:
+        """Get number of walkable edges in the provider."""
+        return self.data_source.edge_count

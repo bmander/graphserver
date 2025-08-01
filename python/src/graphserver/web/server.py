@@ -11,7 +11,7 @@ from http.server import HTTPServer
 from typing import Any
 
 from .handlers import GraphRequestHandler
-from .providers import ProviderError, ProviderManager, ProgressCallback
+from .providers import ProgressCallback, ProviderError, ProviderManager
 
 
 class GraphWebServer:

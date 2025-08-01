@@ -7,7 +7,6 @@ OSM nodes via the street/path network.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -15,8 +14,7 @@ if TYPE_CHECKING:
 
 from graphserver.core import Edge, GraphserverDataType, Vertex, VertexEdgePair
 
-from .parser import OSMParser
-from .types import WalkingProfile
+from .data_source import OSMDataSource
 
 logger = logging.getLogger(__name__)
 
@@ -29,40 +27,18 @@ class OSMNetworkProvider:
     connected nodes based on the walkable OSM ways.
     """
 
-    def __init__(
-        self,
-        osm_file: str | Path | None = None,
-        *,
-        parser: OSMParser | None = None,
-        walking_profile: WalkingProfile | None = None,
-    ) -> None:
+    def __init__(self, data_source: OSMDataSource) -> None:
         """Initialize OSM network provider.
 
         Args:
-            osm_file: Path to OSM XML or PBF file (if parser not provided)
-            parser: Pre-initialized OSM parser (if osm_file not provided)
-            walking_profile: Configuration for pedestrian routing preferences
-
-        Raises:
-            ValueError: If neither osm_file nor parser is provided
-            FileNotFoundError: If OSM file doesn't exist
-            RuntimeError: If parsing fails
+            data_source: OSM data source containing parsed OSM data
         """
-        if parser is not None:
-            self.parser = parser
-        elif osm_file is not None:
-            self.walking_profile = walking_profile or WalkingProfile()
-            logger.info("Initializing OSM network provider from %s", osm_file)
-            self.parser = OSMParser(self.walking_profile)
-            self.parser.parse_file(osm_file)
-        else:
-            msg = "Either osm_file or parser must be provided"
-            raise ValueError(msg)
+        self.data_source = data_source
 
         logger.info(
             "OSM network provider ready: %d nodes, %d edges",
-            len(self.parser.nodes),
-            len(self.parser.edges),
+            len(self.data_source.nodes),
+            len(self.data_source.edges),
         )
 
     def _get_identity_hash(
@@ -112,20 +88,20 @@ class OSMNetworkProvider:
         node_id = int(vertex["osm_node_id"])
 
         # Check if node exists in our data
-        if node_id not in self.parser.nodes:
+        if node_id not in self.data_source.nodes:
             logger.warning("OSM node %d not found in parsed data", node_id)
             return []
 
         # Get all outgoing edges from this node
         edges = []
-        for osm_edge in self.parser.get_node_edges(node_id):
+        for osm_edge in self.data_source.get_node_edges(node_id):
             target_node_id = osm_edge.to_node_id
 
             # Skip if target node doesn't exist
-            if target_node_id not in self.parser.nodes:
+            if target_node_id not in self.data_source.nodes:
                 continue
 
-            target_node = self.parser.nodes[target_node_id]
+            target_node = self.data_source.nodes[target_node_id]
 
             # Create target vertex
             target_data = {
@@ -136,10 +112,8 @@ class OSMNetworkProvider:
             target_vertex = Vertex(target_data, hash_value=identity_hash)
 
             # Apply walking profile to get final cost
-            way = self.parser.ways[osm_edge.way_id]
-            walking_profile = (
-                getattr(self, "walking_profile", None) or self.parser.walking_profile
-            )
+            way = self.data_source.ways[osm_edge.way_id]
+            walking_profile = self.data_source.walking_profile
             final_cost = walking_profile.get_edge_cost(osm_edge, way)
 
             # Create edge
@@ -166,10 +140,10 @@ class OSMNetworkProvider:
         Returns:
             Vertex object or None if node not found
         """
-        if node_id not in self.parser.nodes:
+        if node_id not in self.data_source.nodes:
             return None
 
-        node = self.parser.nodes[node_id]
+        node = self.data_source.nodes[node_id]
         node_data: dict[str, GraphserverDataType] = {
             "osm_node_id": node.id,
             **node.tags,
@@ -181,14 +155,14 @@ class OSMNetworkProvider:
     @property
     def node_count(self) -> int:
         """Get number of OSM nodes in the provider."""
-        return len(self.parser.nodes)
+        return self.data_source.node_count
 
     @property
     def way_count(self) -> int:
         """Get number of walkable OSM ways in the provider."""
-        return len(self.parser.ways)
+        return self.data_source.way_count
 
     @property
     def edge_count(self) -> int:
         """Get number of walkable edges in the provider."""
-        return len(self.parser.edges)
+        return self.data_source.edge_count

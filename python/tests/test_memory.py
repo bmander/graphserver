@@ -10,7 +10,7 @@ import pytest
 try:
     # Try package import first (modern approach)
     try:
-        import graphserver._graphserver as _graphserver
+        from graphserver import _graphserver
     except ImportError:
         # Fallback to direct import for development builds
         import _graphserver

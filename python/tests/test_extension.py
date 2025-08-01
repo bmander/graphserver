@@ -14,7 +14,7 @@ def _import_c_extension():
     """Helper function to import C extension with fallback."""
     try:
         # Try package import first (modern approach)
-        import graphserver._graphserver as _graphserver
+        from graphserver import _graphserver
 
         return _graphserver
     except ImportError:
