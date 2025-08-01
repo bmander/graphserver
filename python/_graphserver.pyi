@@ -1,22 +1,24 @@
 from collections.abc import Sequence
 from typing import Any
 
+from graphserver.core import Vertex
+
 __version__: str
 
 def create_engine(*, enable_edge_caching: bool = False) -> Any: ...
 def register_provider(engine: Any, name: str, provider: Any) -> None: ...
 def plan(
     engine: Any,
-    start_vertex_data: dict[str, Any],
-    end_vertex_data: dict[str, Any],
-    planner: Any,
+    start: Vertex,
+    goal: Vertex,
+    planner: str = "dijkstra",
 ) -> Sequence[dict[str, Any]]: ...
 def get_engine_stats(engine: Any) -> dict[str, int]: ...
 def precache_subgraph(
     *,
     engine: Any,
     provider_name: str,
-    seed_vertices: list[dict[str, Any]],
+    seed_vertices: Sequence[Vertex],
     max_depth: int,
     max_vertices: int,
 ) -> None: ...

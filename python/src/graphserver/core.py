@@ -278,11 +278,10 @@ class Engine:
             msg = "C extension not available"
             raise RuntimeError(msg)
 
-        # Convert Vertex objects to dictionaries for C extension
         result_data = _graphserver.plan(
             self._engine,
-            start.to_dict(),
-            goal.to_dict(),
+            start,
+            goal,
             planner,
         )
         return PathResult(result_data)
@@ -377,14 +376,10 @@ class Engine:
             msg = "C extension not available"
             raise RuntimeError(msg)
 
-        # Convert to list of dicts for C extension
-        seed_list = [v.to_dict() for v in seed_vertices]
-
-        # Call C extension function
         _graphserver.precache_subgraph(
             engine=self._engine,
             provider_name=provider_name,
-            seed_vertices=seed_list,
+            seed_vertices=seed_vertices,
             max_depth=max_depth,
             max_vertices=max_vertices,
         )

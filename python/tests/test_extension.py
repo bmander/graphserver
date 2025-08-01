@@ -75,7 +75,9 @@ def test_plan_with_provider() -> None:
         _graphserver.register_provider(engine, "simple", simple_provider)
 
         # Now planning should work
-        result = _graphserver.plan(engine, {"x": 0}, {"x": 1})
+        from graphserver import Vertex
+
+        result = _graphserver.plan(engine, Vertex({"x": 0}), Vertex({"x": 1}))
         assert result is not None
         assert isinstance(result, list)
         assert len(result) == 1

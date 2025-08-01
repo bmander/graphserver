@@ -22,6 +22,7 @@ static PyObject* vertex_to_python_dict(const GraphserverVertex* vertex);
 static PyObject* safe_vertex_to_python_dict(const GraphserverVertex* vertex);
 static PyObject* vertex_to_python_vertex_object(const GraphserverVertex* vertex);
 static GraphserverVertex* python_dict_to_vertex(PyObject* dict);
+static GraphserverVertex* python_vertex_to_vertex(PyObject* vertex_obj);
 static GraphserverVertex* python_vertex_object_to_vertex(PyObject* vertex_obj);
 static PyObject* path_to_python_list(const GraphserverPath* path);
 static int python_edges_to_c_edges(PyObject* edge_list, GraphserverEdgeList* out_edges);
@@ -144,14 +145,14 @@ static PyObject* py_plan(PyObject* self, PyObject* args, PyObject* kwargs) {
     
     static char* kwlist[] = {"engine", "start", "goal", "planner", NULL};
     PyObject* engine_capsule;
-    PyObject* start_dict;
-    PyObject* goal_dict;
+    PyObject* start_vertex_obj;
+    PyObject* goal_vertex_obj;
     const char* planner_name = "dijkstra";
     
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!O!O!|s", kwlist,
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!OO|s", kwlist,
                                     &PyCapsule_Type, &engine_capsule,
-                                    &PyDict_Type, &start_dict,
-                                    &PyDict_Type, &goal_dict,
+                                    &start_vertex_obj,
+                                    &goal_vertex_obj,
                                     &planner_name)) {
         return NULL;
     }
@@ -162,13 +163,13 @@ static PyObject* py_plan(PyObject* self, PyObject* args, PyObject* kwargs) {
         return NULL;
     }
     
-    // Convert Python dicts to C vertices
-    GraphserverVertex* start_vertex = python_dict_to_vertex(start_dict);
+    // Convert Python Vertex objects to C vertices
+    GraphserverVertex* start_vertex = python_vertex_to_vertex(start_vertex_obj);
     if (!start_vertex) {
         return NULL; // Error already set
     }
     
-    GraphserverVertex* goal_vertex = python_dict_to_vertex(goal_dict);
+    GraphserverVertex* goal_vertex = python_vertex_to_vertex(goal_vertex_obj);
     if (!goal_vertex) {
         gs_vertex_destroy(start_vertex);
         return NULL; // Error already set
@@ -663,6 +664,194 @@ static GraphserverVertex* python_dict_to_vertex(PyObject* dict) {
     for (size_t i = 0; i < pair_index; i++) {
         gs_value_destroy((GraphserverValue*)&pairs[i].value);
     }
+    free(pairs);
+    
+    if (!vertex) {
+        PyErr_SetString(PyExc_MemoryError, "Failed to create vertex");
+        return NULL;
+    }
+    
+    return vertex;
+}
+
+static GraphserverVertex* python_vertex_to_vertex(PyObject* vertex_obj) {
+    // Check if it's a Vertex object by checking for _data attribute
+    if (!PyObject_HasAttrString(vertex_obj, "_data")) {
+        PyErr_SetString(PyExc_TypeError, "Expected Vertex object with _data attribute");
+        return NULL;
+    }
+    
+    // Get the _data dictionary
+    PyObject* data_dict = PyObject_GetAttrString(vertex_obj, "_data");
+    if (!data_dict) {
+        return NULL;
+    }
+    
+    if (!PyDict_Check(data_dict)) {
+        Py_DECREF(data_dict);
+        PyErr_SetString(PyExc_TypeError, "Vertex._data must be a dictionary");
+        return NULL;
+    }
+    
+    // Get the optional _custom_hash
+    PyObject* hash_obj = PyObject_GetAttrString(vertex_obj, "_custom_hash");
+    uint64_t custom_hash = 0;
+    uint64_t* hash_ptr = NULL;
+    
+    if (hash_obj && hash_obj != Py_None && PyLong_Check(hash_obj)) {
+        custom_hash = PyLong_AsUnsignedLongLong(hash_obj);
+        if (custom_hash == (uint64_t)-1 && PyErr_Occurred()) {
+            Py_DECREF(data_dict);
+            Py_XDECREF(hash_obj);
+            return NULL;
+        }
+        hash_ptr = &custom_hash;
+    }
+    Py_XDECREF(hash_obj);
+    
+    Py_ssize_t dict_size = PyDict_Size(data_dict);
+    
+    // Handle empty dictionary case
+    if (dict_size == 0) {
+        Py_DECREF(data_dict);
+        return gs_vertex_create(NULL, 0, hash_ptr);
+    }
+    
+    // Allocate array for key-value pairs
+    GraphserverKeyPair* pairs = malloc(dict_size * sizeof(GraphserverKeyPair));
+    if (!pairs) {
+        Py_DECREF(data_dict);
+        PyErr_NoMemory();
+        return NULL;
+    }
+    
+    // Convert Python dict to key-value pairs (reuse logic from python_dict_to_vertex)
+    PyObject* key;
+    PyObject* value;
+    Py_ssize_t pos = 0;
+    size_t pair_index = 0;
+    
+    while (PyDict_Next(data_dict, &pos, &key, &value)) {
+        // Convert key
+        if (!PyUnicode_Check(key)) {
+            // Clean up and return error
+            for (size_t i = 0; i < pair_index; i++) {
+                gs_value_destroy((GraphserverValue*)&pairs[i].value);
+            }
+            free(pairs);
+            Py_DECREF(data_dict);
+            PyErr_SetString(PyExc_TypeError, "All vertex keys must be strings");
+            return NULL;
+        }
+        
+        const char* key_str = PyUnicode_AsUTF8(key);
+        if (!key_str) {
+            // Clean up and return error
+            for (size_t i = 0; i < pair_index; i++) {
+                gs_value_destroy((GraphserverValue*)&pairs[i].value);
+            }
+            free(pairs);
+            Py_DECREF(data_dict);
+            return NULL;
+        }
+        
+        pairs[pair_index].key = key_str;
+        
+        // Convert value
+        GraphserverValue gs_value;
+        
+        if (PyLong_Check(value)) {
+            // Python int -> GraphserverValue int64
+            long long int_val = PyLong_AsLongLong(value);
+            if (int_val == -1 && PyErr_Occurred()) {
+                // Clean up and return error
+                for (size_t i = 0; i < pair_index; i++) {
+                    gs_value_destroy((GraphserverValue*)&pairs[i].value);
+                }
+                free(pairs);
+                Py_DECREF(data_dict);
+                return NULL;
+            }
+            gs_value = gs_value_create_int(int_val);
+            
+        } else if (PyFloat_Check(value)) {
+            // Python float -> GraphserverValue double
+            double float_val = PyFloat_AsDouble(value);
+            if (float_val == -1.0 && PyErr_Occurred()) {
+                // Clean up and return error
+                for (size_t i = 0; i < pair_index; i++) {
+                    gs_value_destroy((GraphserverValue*)&pairs[i].value);
+                }
+                free(pairs);
+                Py_DECREF(data_dict);
+                return NULL;
+            }
+            gs_value = gs_value_create_float(float_val);
+            
+        } else if (PyUnicode_Check(value)) {
+            // Python str -> GraphserverValue string
+            const char* str_val = PyUnicode_AsUTF8(value);
+            if (!str_val) {
+                // Clean up and return error
+                for (size_t i = 0; i < pair_index; i++) {
+                    gs_value_destroy((GraphserverValue*)&pairs[i].value);
+                }
+                free(pairs);
+                Py_DECREF(data_dict);
+                return NULL;
+            }
+            gs_value = gs_value_create_string(str_val);
+            
+        } else if (PyBool_Check(value)) {
+            // Python bool -> GraphserverValue boolean  
+            bool bool_val = (value == Py_True);
+            gs_value = gs_value_create_bool(bool_val);
+            
+        } else if (PyList_Check(value)) {
+            // Convert list to a simple string representation
+            PyObject* str_repr = PyObject_Str(value);
+            if (!str_repr) {
+                // Clean up and return error
+                for (size_t i = 0; i < pair_index; i++) {
+                    gs_value_destroy((GraphserverValue*)&pairs[i].value);
+                }
+                free(pairs);
+                Py_DECREF(data_dict);
+                return NULL;
+            }
+            const char* str_val = PyUnicode_AsUTF8(str_repr);
+            if (!str_val) {
+                Py_DECREF(str_repr);
+                // Clean up and return error
+                for (size_t i = 0; i < pair_index; i++) {
+                    gs_value_destroy((GraphserverValue*)&pairs[i].value);
+                }
+                free(pairs);
+                Py_DECREF(data_dict);
+                return NULL;
+            }
+            gs_value = gs_value_create_string(str_val);
+            Py_DECREF(str_repr);
+            
+        } else {
+            // Unsupported type
+            for (size_t i = 0; i < pair_index; i++) {
+                gs_value_destroy((GraphserverValue*)&pairs[i].value);
+            }
+            free(pairs);
+            Py_DECREF(data_dict);
+            PyErr_SetString(PyExc_TypeError, "Unsupported vertex value type");
+            return NULL;
+        }
+        
+        pairs[pair_index].value = gs_value;
+        pair_index++;
+    }
+    
+    Py_DECREF(data_dict);
+    
+    // Create the vertex
+    GraphserverVertex* vertex = gs_vertex_create(pairs, dict_size, hash_ptr);
     free(pairs);
     
     if (!vertex) {
@@ -1350,26 +1539,8 @@ static PyObject* py_precache_subgraph(PyObject* self, PyObject* args, PyObject* 
             return NULL;
         }
         
-        // Check if it's a dictionary (legacy format) or Vertex object
-        if (PyDict_Check(vertex_obj)) {
-            c_vertices[i] = python_dict_to_vertex(vertex_obj);
-        } else {
-            // Assume it's a Vertex object with to_dict() method
-            PyObject* dict_repr = PyObject_CallMethod(vertex_obj, "to_dict", NULL);
-            if (!dict_repr) {
-                // Cleanup and return error
-                for (Py_ssize_t j = 0; j < i; j++) {
-                    if (c_vertices[j]) {
-                        gs_vertex_destroy(c_vertices[j]);
-                    }
-                }
-                free(c_vertices);
-                return NULL;
-            }
-            
-            c_vertices[i] = python_dict_to_vertex(dict_repr);
-            Py_DECREF(dict_repr);
-        }
+        // Convert Vertex object directly
+        c_vertices[i] = python_vertex_to_vertex(vertex_obj);
         
         if (!c_vertices[i]) {
             // Cleanup and return error
