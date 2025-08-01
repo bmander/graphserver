@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from typing import Any
 
-from graphserver.core import Edge, Vertex
+from graphserver.core import Edge, EngineStats, Vertex
 
 __version__: str
 
@@ -13,7 +13,7 @@ def plan(
     goal: Vertex,
     planner: str = "dijkstra",
 ) -> Sequence[tuple[Edge | None, Vertex]]: ...
-def get_engine_stats(engine: Any) -> dict[str, int]: ...
+def get_engine_stats(engine: Any) -> EngineStats: ...
 def precache_subgraph(
     *,
     engine: Any,

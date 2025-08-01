@@ -1612,24 +1612,68 @@ static PyObject* py_get_engine_stats(PyObject* self, PyObject* args) {
         return handle_graphserver_error(result, "engine statistics retrieval");
     }
     
-    // Convert to Python dictionary
-    PyObject* stats_dict = PyDict_New();
-    if (!stats_dict) {
+    // Create EngineStats instance
+    PyObject* vertices_expanded = PyLong_FromUnsignedLongLong(stats.vertices_expanded);
+    PyObject* edges_generated = PyLong_FromUnsignedLongLong(stats.edges_generated);
+    PyObject* providers_called = PyLong_FromUnsignedLongLong(stats.providers_called);
+    PyObject* peak_memory_usage = PyLong_FromSize_t(stats.peak_memory_usage);
+    PyObject* cache_hits = PyLong_FromUnsignedLongLong(stats.cache_hits);
+    PyObject* cache_misses = PyLong_FromUnsignedLongLong(stats.cache_misses);
+    PyObject* cache_puts = PyLong_FromUnsignedLongLong(stats.cache_puts);
+    
+    if (!vertices_expanded || !edges_generated || !providers_called || !peak_memory_usage ||
+        !cache_hits || !cache_misses || !cache_puts) {
+        Py_XDECREF(vertices_expanded);
+        Py_XDECREF(edges_generated);
+        Py_XDECREF(providers_called);
+        Py_XDECREF(peak_memory_usage);
+        Py_XDECREF(cache_hits);
+        Py_XDECREF(cache_misses);
+        Py_XDECREF(cache_puts);
         return NULL;
     }
     
-    // Add all statistics fields
-    PyDict_SetItemString(stats_dict, "vertices_expanded", PyLong_FromUnsignedLongLong(stats.vertices_expanded));
-    PyDict_SetItemString(stats_dict, "edges_generated", PyLong_FromUnsignedLongLong(stats.edges_generated));
-    PyDict_SetItemString(stats_dict, "providers_called", PyLong_FromUnsignedLongLong(stats.providers_called));
-    PyDict_SetItemString(stats_dict, "peak_memory_usage", PyLong_FromSize_t(stats.peak_memory_usage));
+    // Create arguments tuple for EngineStats constructor
+    PyObject* constructor_args = PyTuple_New(7);
+    if (!constructor_args) {
+        Py_DECREF(vertices_expanded);
+        Py_DECREF(edges_generated);
+        Py_DECREF(providers_called);
+        Py_DECREF(peak_memory_usage);
+        Py_DECREF(cache_hits);
+        Py_DECREF(cache_misses);
+        Py_DECREF(cache_puts);
+        return NULL;
+    }
     
-    // Add cache-specific statistics
-    PyDict_SetItemString(stats_dict, "cache_hits", PyLong_FromUnsignedLongLong(stats.cache_hits));
-    PyDict_SetItemString(stats_dict, "cache_misses", PyLong_FromUnsignedLongLong(stats.cache_misses));
-    PyDict_SetItemString(stats_dict, "cache_puts", PyLong_FromUnsignedLongLong(stats.cache_puts));
+    PyTuple_SetItem(constructor_args, 0, vertices_expanded); // steals reference
+    PyTuple_SetItem(constructor_args, 1, edges_generated);
+    PyTuple_SetItem(constructor_args, 2, providers_called);
+    PyTuple_SetItem(constructor_args, 3, peak_memory_usage);
+    PyTuple_SetItem(constructor_args, 4, cache_hits);
+    PyTuple_SetItem(constructor_args, 5, cache_misses);
+    PyTuple_SetItem(constructor_args, 6, cache_puts);
     
-    return stats_dict;
+    // Get EngineStats class from graphserver.core module
+    PyObject* core_module = PyImport_ImportModule("graphserver.core");
+    if (!core_module) {
+        Py_DECREF(constructor_args);
+        return NULL;
+    }
+    
+    PyObject* engine_stats_class = PyObject_GetAttrString(core_module, "EngineStats");
+    Py_DECREF(core_module);
+    if (!engine_stats_class) {
+        Py_DECREF(constructor_args);
+        return NULL;
+    }
+    
+    // Create EngineStats instance
+    PyObject* engine_stats = PyObject_CallObject(engine_stats_class, constructor_args);
+    Py_DECREF(engine_stats_class);
+    Py_DECREF(constructor_args);
+    
+    return engine_stats;
 }
 
 static PyObject* py_precache_subgraph(PyObject* self, PyObject* args, PyObject* kwargs) {

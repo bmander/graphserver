@@ -162,9 +162,9 @@ def benchmark_routing_performance(
         "total_routes": len(test_routes),
         "avg_route_length": total_route_length / max(successful_routes, 1),
         "provider_calls": provider.call_count,
-        "cache_hits": stats.get("cache_hits", 0),
-        "cache_misses": stats.get("cache_misses", 0),
-        "cache_puts": stats.get("cache_puts", 0),
+        "cache_hits": stats.cache_hits,
+        "cache_misses": stats.cache_misses,
+        "cache_puts": stats.cache_puts,
     }
 
 
@@ -263,8 +263,8 @@ def demonstrate_precaching():
     precache_stats = engine_with_cache.get_stats()
 
     print(f"⏱️  Precaching time: {precache_time:.3f} seconds")
-    print(f"💾 Vertices cached: {precache_stats['cache_puts']}")
-    print(f"🔄 Provider calls during precaching: {precache_stats['providers_called']}")
+    print(f"💾 Vertices cached: {precache_stats.cache_puts}")
+    print(f"🔄 Provider calls during precaching: {precache_stats.providers_called}")
 
     print("\n🚀 Running test routes with precached data...")
 

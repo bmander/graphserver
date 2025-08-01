@@ -346,19 +346,17 @@ def print_performance_results(results: dict[str, Any]) -> None:
 
         print("\\n📈 Cache Statistics:")
         cache_stats = cache["stats"]
-        total_cache_ops = cache_stats["cache_hits"] + cache_stats["cache_misses"]
+        total_cache_ops = cache_stats.cache_hits + cache_stats.cache_misses
         hit_ratio = (
-            cache_stats["cache_hits"] / total_cache_ops * 100
-            if total_cache_ops > 0
-            else 0
+            cache_stats.cache_hits / total_cache_ops * 100 if total_cache_ops > 0 else 0
         )
 
-        print(f"   Cache hits: {cache_stats['cache_hits']}")
-        print(f"   Cache misses: {cache_stats['cache_misses']}")
-        print(f"   Cache puts: {cache_stats['cache_puts']}")
+        print(f"   Cache hits: {cache_stats.cache_hits}")
+        print(f"   Cache misses: {cache_stats.cache_misses}")
+        print(f"   Cache puts: {cache_stats.cache_puts}")
         print(f"   Hit ratio: {hit_ratio:.1f}%")
-        print(f"   Vertices expanded: {cache_stats['vertices_expanded']}")
-        print(f"   Providers called: {cache_stats['providers_called']}")
+        print(f"   Vertices expanded: {cache_stats.vertices_expanded}")
+        print(f"   Providers called: {cache_stats.providers_called}")
 
         # Cache efficiency analysis
         if cache["speedup"] >= 2.0:

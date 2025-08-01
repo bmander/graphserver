@@ -85,7 +85,7 @@ class TestPrecacheBasic:
 
         # Verify that cache statistics show cache puts
         stats = engine.get_stats()
-        assert stats["cache_puts"] > 0
+        assert stats.cache_puts > 0
 
     def test_precache_multiple_seeds(self):
         """Test precaching with multiple seed vertices."""
@@ -112,7 +112,7 @@ class TestPrecacheBasic:
 
         # Verify cache statistics
         stats = engine.get_stats()
-        assert stats["cache_puts"] > 0
+        assert stats.cache_puts > 0
 
     def test_precache_vertex_limit(self):
         """Test precaching with vertex limit."""
@@ -131,7 +131,7 @@ class TestPrecacheBasic:
 
         # Should respect the vertex limit
         stats = engine.get_stats()
-        assert stats["cache_puts"] <= 10
+        assert stats.cache_puts <= 10
 
     def test_precache_depth_limit(self):
         """Test precaching with depth limit."""
@@ -150,7 +150,7 @@ class TestPrecacheBasic:
 
         # Should cache seed vertex plus its immediate neighbors (at most 5 vertices)
         stats = engine.get_stats()
-        assert 1 <= stats["cache_puts"] <= 5
+        assert 1 <= stats.cache_puts <= 5
 
 
 class TestPrecacheErrors:
@@ -295,13 +295,13 @@ class TestPrecacheIntegration:
         final_stats = engine.get_stats()
 
         # Cache puts should have increased
-        assert final_stats["cache_puts"] > initial_stats["cache_puts"]
+        assert final_stats.cache_puts > initial_stats.cache_puts
 
         # Providers called should have increased
-        assert final_stats["providers_called"] > initial_stats["providers_called"]
+        assert final_stats.providers_called > initial_stats.providers_called
 
         # Edges generated should have increased
-        assert final_stats["edges_generated"] > initial_stats["edges_generated"]
+        assert final_stats.edges_generated > initial_stats.edges_generated
 
     def test_precache_with_unlimited_parameters(self):
         """Test precaching with unlimited depth and vertices."""
@@ -321,10 +321,10 @@ class TestPrecacheIntegration:
 
         # Should cache some vertices
         stats = engine.get_stats()
-        assert stats["cache_puts"] > 0
+        assert stats.cache_puts > 0
 
         # For a 5x5 grid, should cache at most 25 vertices
-        assert stats["cache_puts"] <= 25
+        assert stats.cache_puts <= 25
 
 
 class TestPrecacheMemory:
@@ -354,7 +354,7 @@ class TestPrecacheMemory:
         # Test should complete without memory errors
         # (Actual memory leak detection would require external tools)
         stats = engine.get_stats()
-        assert stats["cache_puts"] > 0
+        assert stats.cache_puts > 0
 
     def test_precache_large_seed_list(self):
         """Test precaching with a large number of seeds."""
@@ -375,4 +375,4 @@ class TestPrecacheMemory:
         )
 
         stats = engine.get_stats()
-        assert stats["cache_puts"] > 0
+        assert stats.cache_puts > 0

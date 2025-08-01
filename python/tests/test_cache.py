@@ -51,12 +51,12 @@ class TestEngineCache:
         assert not engine.cache_enabled
 
         stats = engine.get_stats()
-        assert "cache_hits" in stats
-        assert "cache_misses" in stats
-        assert "cache_puts" in stats
-        assert stats["cache_hits"] == 0
-        assert stats["cache_misses"] == 0
-        assert stats["cache_puts"] == 0
+        assert hasattr(stats, "cache_hits")
+        assert hasattr(stats, "cache_misses")
+        assert hasattr(stats, "cache_puts")
+        assert stats.cache_hits == 0
+        assert stats.cache_misses == 0
+        assert stats.cache_puts == 0
 
     def test_engine_creation_with_cache(self):
         """Test creating engine with caching enabled."""
@@ -64,12 +64,12 @@ class TestEngineCache:
         assert engine.cache_enabled
 
         stats = engine.get_stats()
-        assert "cache_hits" in stats
-        assert "cache_misses" in stats
-        assert "cache_puts" in stats
-        assert stats["cache_hits"] == 0
-        assert stats["cache_misses"] == 0
-        assert stats["cache_puts"] == 0
+        assert hasattr(stats, "cache_hits")
+        assert hasattr(stats, "cache_misses")
+        assert hasattr(stats, "cache_puts")
+        assert stats.cache_hits == 0
+        assert stats.cache_misses == 0
+        assert stats.cache_puts == 0
 
     def test_cache_disabled_behavior(self):
         """Test that cache doesn't interfere when disabled."""
@@ -93,9 +93,9 @@ class TestEngineCache:
                 engine.plan(start=start, goal=goal)
 
         stats = engine.get_stats()
-        assert stats["cache_hits"] == 0
-        assert stats["cache_misses"] == 0
-        assert stats["cache_puts"] == 0
+        assert stats.cache_hits == 0
+        assert stats.cache_misses == 0
+        assert stats.cache_puts == 0
 
     def test_cache_enabled_behavior(self):
         """Test that cache operates when enabled."""
@@ -120,11 +120,7 @@ class TestEngineCache:
 
         final_stats = engine.get_stats()
         # With cache enabled, there should be some cache activity
-        total_cache_ops = (
-            final_stats["cache_hits"]
-            + final_stats["cache_misses"]
-            + final_stats["cache_puts"]
-        )
+        total_cache_ops = final_stats.total_cache_operations
         assert total_cache_ops >= 0  # Cache may be used during expansion
 
 
@@ -136,20 +132,19 @@ class TestCacheStatistics:
         engine = Engine(enable_edge_caching=True)
         stats = engine.get_stats()
 
-        assert isinstance(stats, dict)
-        assert "cache_hits" in stats
-        assert "cache_misses" in stats
-        assert "cache_puts" in stats
-        assert "vertices_expanded" in stats
-        assert "edges_generated" in stats
-        assert "providers_called" in stats
+        assert hasattr(stats, "cache_hits")
+        assert hasattr(stats, "cache_misses")
+        assert hasattr(stats, "cache_puts")
+        assert hasattr(stats, "vertices_expanded")
+        assert hasattr(stats, "edges_generated")
+        assert hasattr(stats, "providers_called")
 
-        assert stats["cache_hits"] == 0
-        assert stats["cache_misses"] == 0
-        assert stats["cache_puts"] == 0
-        assert stats["vertices_expanded"] == 0
-        assert stats["edges_generated"] == 0
-        assert stats["providers_called"] == 0
+        assert stats.cache_hits == 0
+        assert stats.cache_misses == 0
+        assert stats.cache_puts == 0
+        assert stats.vertices_expanded == 0
+        assert stats.edges_generated == 0
+        assert stats.providers_called == 0
 
     def test_statistics_consistency(self):
         """Test that cache statistics remain consistent."""
@@ -163,8 +158,9 @@ class TestCacheStatistics:
         assert stats1 == stats2
 
         # All cache counters should be non-negative
-        for stat_name in ["cache_hits", "cache_misses", "cache_puts"]:
-            assert stats1[stat_name] >= 0
+        assert stats1.cache_hits >= 0
+        assert stats1.cache_misses >= 0
+        assert stats1.cache_puts >= 0
 
     def test_cache_property_consistency(self):
         """Test that cache_enabled property matches configuration."""
@@ -185,11 +181,12 @@ class TestCacheStatistics:
         stats_after_register = engine.get_stats()
 
         # Basic stats should still be accessible and valid
-        assert isinstance(stats_after_register, dict)
-        assert all(
-            stats_after_register[key] >= 0
-            for key in ["cache_hits", "cache_misses", "cache_puts"]
-        )
+        assert hasattr(stats_after_register, "cache_hits")
+        assert hasattr(stats_after_register, "cache_misses")
+        assert hasattr(stats_after_register, "cache_puts")
+        assert stats_after_register.cache_hits >= 0
+        assert stats_after_register.cache_misses >= 0
+        assert stats_after_register.cache_puts >= 0
 
 
 class TestCacheIntegration:
@@ -220,9 +217,9 @@ class TestCacheIntegration:
         final_stats = engine.get_stats()
 
         # Cache operations should be valid
-        assert final_stats["cache_hits"] >= initial_stats["cache_hits"]
-        assert final_stats["cache_misses"] >= initial_stats["cache_misses"]
-        assert final_stats["cache_puts"] >= initial_stats["cache_puts"]
+        assert final_stats.cache_hits >= initial_stats.cache_hits
+        assert final_stats.cache_misses >= initial_stats.cache_misses
+        assert final_stats.cache_puts >= initial_stats.cache_puts
 
     def test_cache_consistency_across_plans(self):
         """Test that cache statistics are consistent across multiple plans."""
@@ -251,10 +248,10 @@ class TestCacheIntegration:
             # Statistics should only increase or stay the same
             if i > 0:
                 prev_stats = stats_history[i - 1]
-                assert stats["cache_hits"] >= prev_stats["cache_hits"]
-                assert stats["cache_misses"] >= prev_stats["cache_misses"]
-                assert stats["cache_puts"] >= prev_stats["cache_puts"]
-                assert stats["vertices_expanded"] >= prev_stats["vertices_expanded"]
+                assert stats.cache_hits >= prev_stats.cache_hits
+                assert stats.cache_misses >= prev_stats.cache_misses
+                assert stats.cache_puts >= prev_stats.cache_puts
+                assert stats.vertices_expanded >= prev_stats.vertices_expanded
 
     def test_provider_registration_cache_behavior(self):
         """Test cache behavior when providers are registered/unregistered."""
@@ -268,7 +265,7 @@ class TestCacheIntegration:
 
         # Registration itself shouldn't change cache stats dramatically
         # (though it may clear cache internally)
-        assert isinstance(stats_after_register, dict)
+        assert hasattr(stats_after_register, "cache_hits")
 
         # Try to access providers (this should work without errors)
         providers = engine.providers
@@ -294,7 +291,7 @@ class TestCacheErrorHandling:
 
         # Statistics should still be accessible
         stats = engine.get_stats()
-        assert isinstance(stats, dict)
+        assert hasattr(stats, "cache_hits")
 
     def test_cache_memory_safety(self):
         """Test that cache doesn't cause memory issues."""
@@ -323,7 +320,7 @@ class TestCacheErrorHandling:
 
         # Should still be functional
         stats = engine.get_stats()
-        assert isinstance(stats, dict)
+        assert hasattr(stats, "cache_hits")
 
     def test_cache_with_provider_exceptions(self):
         """Test cache behavior when providers raise exceptions."""
@@ -345,7 +342,7 @@ class TestCacheErrorHandling:
 
         # Cache statistics should still be accessible
         stats = engine.get_stats()
-        assert isinstance(stats, dict)
+        assert hasattr(stats, "cache_hits")
 
     def test_statistics_type_safety(self):
         """Test that statistics are always returned with correct types."""
@@ -353,20 +350,22 @@ class TestCacheErrorHandling:
 
         stats = engine.get_stats()
 
-        # Verify all expected keys exist and have correct types
-        expected_int_keys = [
-            "cache_hits",
-            "cache_misses",
-            "cache_puts",
-            "vertices_expanded",
-            "edges_generated",
-            "providers_called",
-        ]
+        # Verify all expected attributes exist and have correct types
+        assert isinstance(stats.cache_hits, int)
+        assert isinstance(stats.cache_misses, int)
+        assert isinstance(stats.cache_puts, int)
+        assert isinstance(stats.vertices_expanded, int)
+        assert isinstance(stats.edges_generated, int)
+        assert isinstance(stats.providers_called, int)
+        assert isinstance(stats.peak_memory_usage, int)
 
-        for key in expected_int_keys:
-            assert key in stats
-            assert isinstance(stats[key], int)
-            assert stats[key] >= 0
+        assert stats.cache_hits >= 0
+        assert stats.cache_misses >= 0
+        assert stats.cache_puts >= 0
+        assert stats.vertices_expanded >= 0
+        assert stats.edges_generated >= 0
+        assert stats.providers_called >= 0
+        assert stats.peak_memory_usage >= 0
 
 
 class TestCachePerformance:
@@ -421,9 +420,9 @@ class TestCachePerformance:
 
         # Uncached engine should have no cache operations
         uncached_total_ops = (
-            uncached_stats["cache_hits"]
-            + uncached_stats["cache_misses"]
-            + uncached_stats["cache_puts"]
+            uncached_stats.cache_hits
+            + uncached_stats.cache_misses
+            + uncached_stats.cache_puts
         )
 
         assert uncached_total_ops == 0
@@ -457,11 +456,12 @@ class TestCachePerformance:
         final_stats = engine.get_stats()
 
         # Some statistics should have increased
-        assert final_stats["vertices_expanded"] >= initial_stats["vertices_expanded"]
+        assert final_stats.vertices_expanded >= initial_stats.vertices_expanded
 
         # Cache statistics should be non-negative and potentially increased
-        for stat_name in ["cache_hits", "cache_misses", "cache_puts"]:
-            assert final_stats[stat_name] >= initial_stats[stat_name] >= 0
+        assert final_stats.cache_hits >= initial_stats.cache_hits >= 0
+        assert final_stats.cache_misses >= initial_stats.cache_misses >= 0
+        assert final_stats.cache_puts >= initial_stats.cache_puts >= 0
 
 
 # Test fixtures and utilities
@@ -502,7 +502,7 @@ class TestCacheOSMIntegration:
         # Verify that the engine is properly configured for OSM integration
         assert engine.cache_enabled is True
         stats = engine.get_stats()
-        assert isinstance(stats, dict)
+        assert hasattr(stats, "cache_hits")
 
 
 if __name__ == "__main__":
