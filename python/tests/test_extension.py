@@ -165,6 +165,48 @@ def test_error_handling() -> None:
         pytest.skip("C extension not built yet")
 
 
+def test_standardized_error_handling() -> None:
+    """Test standardized error handling improvements in C extension."""
+    try:
+        import _graphserver
+
+        from graphserver import Engine, Vertex
+
+        # Test 1: Engine capsule validation
+        with pytest.raises(TypeError, match="argument 1 must be PyCapsule"):
+            _graphserver.get_engine_stats("not_a_capsule")
+
+        # Test 2: Provider validation with specific error message
+        engine_capsule = _graphserver.create_engine()
+        with pytest.raises(TypeError, match="Provider must be callable"):
+            _graphserver.register_provider(
+                engine_capsule, "bad_provider", "not_callable"
+            )
+
+        # Test 3: Consistent validation across functions
+        engine = Engine()
+
+        # Register a test provider
+        def test_provider(vertex: Vertex) -> Sequence[VertexEdgePair]:
+            return []
+
+        engine.register_provider("test", test_provider)
+
+        # Test that error messages are consistent and descriptive
+        with pytest.raises(TypeError, match="Start must be a Vertex"):
+            engine.plan(start="invalid", goal=Vertex({"x": 1}))  # type: ignore[arg-type]
+
+        with pytest.raises(TypeError, match="Goal must be a Vertex"):
+            engine.plan(start=Vertex({"x": 0}), goal="invalid")  # type: ignore[arg-type]
+
+        # Test 4: Engine statistics validation - PyArg_ParseTuple catches this first
+        with pytest.raises(TypeError, match="argument 1 must be PyCapsule"):
+            _graphserver.get_engine_stats(None)  # type: ignore[arg-type]
+
+    except ImportError:
+        pytest.skip("C extension not built yet")
+
+
 def test_data_conversion() -> None:
     """Test data conversion between Python and C."""
     try:

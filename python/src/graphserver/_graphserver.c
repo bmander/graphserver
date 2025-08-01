@@ -39,6 +39,11 @@ static void cleanup_vertex_array(GraphserverVertex** vertices, size_t count);
 static PyObject* convert_cost_vector(const double* vector, size_t size);
 static PyObject* convert_edge_to_dict(const GraphserverEdge* edge);
 
+// Standardized error handling functions
+static PyObject* handle_graphserver_error(GraphserverResult result, const char* operation);
+static int validate_engine_capsule(PyObject* capsule, GraphserverEngine** out_engine);
+static int validate_callable(PyObject* obj, const char* name);
+
 // Provider wrapper for calling Python functions from C
 static int python_provider_wrapper(
     const GraphserverVertex* current_vertex,
@@ -115,14 +120,12 @@ static PyObject* py_register_provider(PyObject* self, PyObject* args) {
         return NULL;
     }
     
-    if (!PyCallable_Check(provider_function)) {
-        PyErr_SetString(PyExc_TypeError, "Provider must be callable");
+    if (validate_callable(provider_function, "Provider") < 0) {
         return NULL;
     }
     
-    GraphserverEngine* engine = (GraphserverEngine*)
-        PyCapsule_GetPointer(engine_capsule, "GraphserverEngine");
-    if (!engine) {
+    GraphserverEngine* engine;
+    if (validate_engine_capsule(engine_capsule, &engine) < 0) {
         return NULL;
     }
     
@@ -168,9 +171,8 @@ static PyObject* py_plan(PyObject* self, PyObject* args, PyObject* kwargs) {
         return NULL;
     }
     
-    GraphserverEngine* engine = (GraphserverEngine*)
-        PyCapsule_GetPointer(engine_capsule, "GraphserverEngine");
-    if (!engine) {
+    GraphserverEngine* engine;
+    if (validate_engine_capsule(engine_capsule, &engine) < 0) {
         return NULL;
     }
     
@@ -359,7 +361,7 @@ static PyObject* vertex_to_python_dict(const GraphserverVertex* vertex) {
         GraphserverResult result = gs_vertex_get_key_at_index(vertex, i, &key);
         if (result != GS_SUCCESS) {
             Py_DECREF(dict);
-            PyErr_Format(PyExc_RuntimeError, "Failed to get key at index %zu", i);
+            handle_graphserver_error(result, "vertex key retrieval");
             return NULL;
         }
         
@@ -367,7 +369,7 @@ static PyObject* vertex_to_python_dict(const GraphserverVertex* vertex) {
         result = gs_vertex_get_value(vertex, key, &gs_value);
         if (result != GS_SUCCESS) {
             Py_DECREF(dict);
-            PyErr_Format(PyExc_RuntimeError, "Failed to get value for key '%s'", key);
+            handle_graphserver_error(result, "vertex value retrieval");
             return NULL;
         }
         
@@ -598,6 +600,61 @@ static PyObject* convert_edge_to_dict(const GraphserverEdge* edge) {
     Py_DECREF(target_dict);
     
     return edge_dict;
+}
+
+// Standardized error handling functions
+static PyObject* handle_graphserver_error(GraphserverResult result, const char* operation) {
+    switch (result) {
+        case GS_SUCCESS:
+            Py_RETURN_NONE;
+        case GS_ERROR_NULL_POINTER:
+            PyErr_SetString(PyExc_ValueError, "Invalid null pointer argument");
+            break;
+        case GS_ERROR_KEY_NOT_FOUND:
+            PyErr_Format(PyExc_ValueError, "Resource not found during %s", operation);
+            break;
+        case GS_ERROR_INVALID_ARGUMENT:
+            PyErr_Format(PyExc_ValueError, "Invalid argument for %s", operation);
+            break;
+        case GS_ERROR_OUT_OF_MEMORY:
+            PyErr_NoMemory();
+            break;
+        case GS_ERROR_TYPE_MISMATCH:
+            PyErr_Format(PyExc_TypeError, "Type mismatch during %s", operation);
+            break;
+        case GS_ERROR_TIMEOUT:
+            PyErr_Format(PyExc_TimeoutError, "Timeout occurred during %s", operation);
+            break;
+        case GS_ERROR_NO_PATH_FOUND:
+            PyErr_Format(PyExc_ValueError, "No path found during %s", operation);
+            break;
+        default:
+            PyErr_Format(PyExc_RuntimeError, "%s failed with error code %d", operation, result);
+            break;
+    }
+    return NULL;
+}
+
+static int validate_engine_capsule(PyObject* capsule, GraphserverEngine** out_engine) {
+    if (!PyCapsule_CheckExact(capsule)) {
+        PyErr_SetString(PyExc_TypeError, "Expected engine capsule");
+        return -1;
+    }
+    
+    *out_engine = (GraphserverEngine*)PyCapsule_GetPointer(capsule, "GraphserverEngine");
+    if (!*out_engine) {
+        return -1; // Error already set by PyCapsule_GetPointer
+    }
+    
+    return 0;
+}
+
+static int validate_callable(PyObject* obj, const char* name) {
+    if (!PyCallable_Check(obj)) {
+        PyErr_Format(PyExc_TypeError, "%s must be callable", name);
+        return -1;
+    }
+    return 0;
 }
 
 static GraphserverVertex* python_dict_to_vertex(PyObject* dict) {
@@ -1084,7 +1141,7 @@ static int python_edges_to_c_edges(PyObject* edge_list, GraphserverEdgeList* out
                 GraphserverResult result = gs_edge_set_metadata(edge, meta_key_str, meta_gs_value);
                 if (result != GS_SUCCESS) {
                     gs_edge_destroy(edge);
-                    PyErr_Format(PyExc_RuntimeError, "Failed to set metadata for key '%s'", meta_key_str);
+                    handle_graphserver_error(result, "edge metadata setting");
                     return -1;
                 }
             }
@@ -1094,7 +1151,7 @@ static int python_edges_to_c_edges(PyObject* edge_list, GraphserverEdgeList* out
         GraphserverResult result = gs_edge_list_add_edge(out_edges, edge);
         if (result != GS_SUCCESS) {
             gs_edge_destroy(edge);
-            PyErr_SetString(PyExc_RuntimeError, "Failed to add edge to list");
+            handle_graphserver_error(result, "edge list addition");
             return -1;
         }
     }
@@ -1356,7 +1413,7 @@ static int python_vertex_edge_pairs_to_c_edges(PyObject* pair_list, GraphserverE
                 if (result != GS_SUCCESS) {
                     Py_DECREF(metadata_attr);
                     gs_edge_destroy(edge);
-                    PyErr_Format(PyExc_RuntimeError, "Failed to set metadata for key '%s'", meta_key_str);
+                    handle_graphserver_error(result, "edge metadata setting");
                     return -1;
                 }
             }
@@ -1369,7 +1426,7 @@ static int python_vertex_edge_pairs_to_c_edges(PyObject* pair_list, GraphserverE
         GraphserverResult result = gs_edge_list_add_edge(out_edges, edge);
         if (result != GS_SUCCESS) {
             gs_edge_destroy(edge);
-            PyErr_SetString(PyExc_RuntimeError, "Failed to add edge to list");
+            handle_graphserver_error(result, "edge list addition");
             return -1;
         }
     }
@@ -1386,9 +1443,8 @@ static PyObject* py_get_engine_stats(PyObject* self, PyObject* args) {
         return NULL;
     }
     
-    GraphserverEngine* engine = (GraphserverEngine*)
-        PyCapsule_GetPointer(engine_capsule, "GraphserverEngine");
-    if (!engine) {
+    GraphserverEngine* engine;
+    if (validate_engine_capsule(engine_capsule, &engine) < 0) {
         return NULL;
     }
     
@@ -1396,8 +1452,7 @@ static PyObject* py_get_engine_stats(PyObject* self, PyObject* args) {
     GraphserverPlanStats stats;
     GraphserverResult result = gs_engine_get_stats(engine, &stats);
     if (result != GS_SUCCESS) {
-        PyErr_SetString(PyExc_RuntimeError, "Failed to get engine statistics");
-        return NULL;
+        return handle_graphserver_error(result, "engine statistics retrieval");
     }
     
     // Convert to Python dictionary
@@ -1442,9 +1497,8 @@ static PyObject* py_precache_subgraph(PyObject* self, PyObject* args, PyObject* 
     }
     
     // Get engine from capsule
-    GraphserverEngine* engine = (GraphserverEngine*)
-        PyCapsule_GetPointer(engine_capsule, "GraphserverEngine");
-    if (!engine) {
+    GraphserverEngine* engine;
+    if (validate_engine_capsule(engine_capsule, &engine) < 0) {
         return NULL;
     }
     
