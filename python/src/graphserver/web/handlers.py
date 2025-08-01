@@ -4,10 +4,13 @@
 from __future__ import annotations
 
 from http.server import BaseHTTPRequestHandler
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urlparse
 
 from graphserver import GraphserverDataType, Vertex
+
+if TYPE_CHECKING:
+    from graphserver.core import EdgeProvider
 
 from .providers import ProviderManager
 from .templates import generate_html_response
@@ -66,7 +69,7 @@ class GraphRequestHandler(BaseHTTPRequestHandler):
         return vertex_props
 
     def _get_edges_from_provider(
-        self, provider_name: str, provider: Any, vertex: Vertex
+        self, provider_name: str, provider: EdgeProvider, vertex: Vertex
     ) -> list[dict[str, Any]]:
         """Get edges from a single provider.
 
