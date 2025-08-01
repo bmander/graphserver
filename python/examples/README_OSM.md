@@ -31,14 +31,16 @@ Download OpenStreetMap data for your area of interest:
 
 ```python
 from graphserver import Engine, Vertex
-from graphserver.providers.osm import OSMProvider
+from graphserver.providers.osm import OSMNetworkProvider, OSMAccessProvider
 
 # Load OSM data
-osm_provider = OSMProvider("data/your_area.osm")
+osm_network = OSMNetworkProvider("data/your_area.osm")
+osm_access = OSMAccessProvider("data/your_area.osm")
 
 # Create planning engine
 engine = Engine()
-engine.register_provider("osm", osm_provider)
+engine.register_provider("osm_network", osm_network)
+engine.register_provider("osm_access", osm_access)
 
 # Plan route between coordinates
 start = Vertex({"lat": 47.6062, "lon": -122.3321})
@@ -48,13 +50,15 @@ result = engine.plan(start=start, goal=goal)
 
 ### Vertex Types
 
-The OSM provider supports two types of input vertices:
+The OSM providers support two types of input vertices:
 
 1. **Geographic coordinates**: `{"lat": float, "lon": float}`
+   - Handled by OSMAccessProvider
    - Finds nearby OSM nodes within search radius
    - Generates edges from coordinates to OSM nodes
 
 2. **OSM node IDs**: `{"osm_node_id": int}`
+   - Handled by OSMNetworkProvider
    - Returns edges to all connected nodes in the walkable network
    - Uses actual OSM way data for routing
 
@@ -72,7 +76,8 @@ profile = WalkingProfile(
     max_detour_factor=1.5     # Maximum detour tolerance
 )
 
-osm_provider = OSMProvider("data.osm", walking_profile=profile)
+osm_network = OSMNetworkProvider("data.osm", walking_profile=profile)
+osm_access = OSMAccessProvider("data.osm", walking_profile=profile)
 ```
 
 ### Provider Configuration
@@ -80,7 +85,7 @@ osm_provider = OSMProvider("data.osm", walking_profile=profile)
 Adjust spatial search parameters:
 
 ```python
-osm_provider = OSMProvider(
+osm_access = OSMAccessProvider(
     "data.osm",
     search_radius_m=200.0,    # Search radius for coordinate queries
     max_nearby_nodes=5,       # Max nodes to consider from coordinates
