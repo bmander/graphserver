@@ -35,6 +35,10 @@ static void cleanup_plan_resources(PyObject* python_path, GraphserverPath* path,
 static void cleanup_vertex_pairs(GraphserverKeyPair* pairs, size_t count);
 static void cleanup_vertex_array(GraphserverVertex** vertices, size_t count);
 
+// Edge conversion helper functions
+static PyObject* convert_cost_vector(const double* vector, size_t size);
+static PyObject* convert_edge_to_dict(const GraphserverEdge* edge);
+
 // Provider wrapper for calling Python functions from C
 static int python_provider_wrapper(
     const GraphserverVertex* current_vertex,
@@ -220,54 +224,11 @@ static PyObject* py_plan(PyObject* self, PyObject* args, PyObject* kwargs) {
             return NULL;
         }
         
-        PyObject* edge_dict = PyDict_New();
+        PyObject* edge_dict = convert_edge_to_dict(edge);
         if (!edge_dict) {
             cleanup_plan_resources(python_path, path, start_vertex, goal_vertex);
             return NULL;
         }
-        
-        // Get cost information (this should be safe)
-        const double* distance_vector = gs_edge_get_distance_vector(edge);
-        size_t distance_vector_size = gs_edge_get_distance_vector_size(edge);
-        
-        PyObject* cost_obj;
-        if (distance_vector_size == 1) {
-            cost_obj = PyFloat_FromDouble(distance_vector[0]);
-        } else {
-            cost_obj = PyList_New(distance_vector_size);
-            if (cost_obj) {
-                for (size_t j = 0; j < distance_vector_size; j++) {
-                    PyObject* cost_item = PyFloat_FromDouble(distance_vector[j]);
-                    if (!cost_item) {
-                        Py_DECREF(cost_obj);
-                        cost_obj = NULL;
-                        break;
-                    }
-                    PyList_SetItem(cost_obj, j, cost_item);
-                }
-            }
-        }
-        
-        if (!cost_obj) {
-            Py_DECREF(edge_dict);
-            cleanup_plan_resources(python_path, path, start_vertex, goal_vertex);
-            return NULL;
-        }
-        
-        PyDict_SetItemString(edge_dict, "cost", cost_obj);
-        Py_DECREF(cost_obj);
-        
-        // Get target vertex data - now safe due to vertex cloning in C library
-        const GraphserverVertex* target_vertex = gs_edge_get_target_vertex(edge);
-        PyObject* target_dict = vertex_to_python_dict(target_vertex);
-        if (!target_dict) {
-            Py_DECREF(edge_dict);
-            cleanup_plan_resources(python_path, path, start_vertex, goal_vertex);
-            return NULL;
-        }
-        
-        PyDict_SetItemString(edge_dict, "target", target_dict);
-        Py_DECREF(target_dict);
         
         PyList_SetItem(python_path, i, edge_dict);
     }
@@ -567,6 +528,76 @@ static void cleanup_vertex_array(GraphserverVertex** vertices, size_t count) {
         if (vertices[i]) gs_vertex_destroy(vertices[i]);
     }
     free(vertices);
+}
+
+// Edge conversion helper function implementations
+
+static PyObject* convert_cost_vector(const double* vector, size_t size) {
+    if (!vector || size == 0) {
+        PyErr_SetString(PyExc_ValueError, "Invalid cost vector");
+        return NULL;
+    }
+    
+    if (size == 1) {
+        return PyFloat_FromDouble(vector[0]);
+    }
+    
+    PyObject* cost_list = PyList_New(size);
+    if (!cost_list) return NULL;
+    
+    for (size_t i = 0; i < size; i++) {
+        PyObject* cost_item = PyFloat_FromDouble(vector[i]);
+        if (!cost_item) {
+            Py_DECREF(cost_list);
+            return NULL;
+        }
+        PyList_SetItem(cost_list, i, cost_item);
+    }
+    
+    return cost_list;
+}
+
+static PyObject* convert_edge_to_dict(const GraphserverEdge* edge) {
+    if (!edge) {
+        PyErr_SetString(PyExc_ValueError, "Edge cannot be NULL");
+        return NULL;
+    }
+    
+    PyObject* edge_dict = PyDict_New();
+    if (!edge_dict) return NULL;
+    
+    // Convert cost information using helper function
+    const double* distance_vector = gs_edge_get_distance_vector(edge);
+    size_t distance_vector_size = gs_edge_get_distance_vector_size(edge);
+    
+    PyObject* cost_obj = convert_cost_vector(distance_vector, distance_vector_size);
+    if (!cost_obj) {
+        Py_DECREF(edge_dict);
+        return NULL;
+    }
+    
+    // Convert target vertex
+    const GraphserverVertex* target_vertex = gs_edge_get_target_vertex(edge);
+    PyObject* target_dict = vertex_to_python_dict(target_vertex);
+    if (!target_dict) {
+        Py_DECREF(cost_obj);
+        Py_DECREF(edge_dict);
+        return NULL;
+    }
+    
+    // Assemble the edge dictionary
+    if (PyDict_SetItemString(edge_dict, "cost", cost_obj) < 0 ||
+        PyDict_SetItemString(edge_dict, "target", target_dict) < 0) {
+        Py_DECREF(cost_obj);
+        Py_DECREF(target_dict);
+        Py_DECREF(edge_dict);
+        return NULL;
+    }
+    
+    Py_DECREF(cost_obj);
+    Py_DECREF(target_dict);
+    
+    return edge_dict;
 }
 
 static GraphserverVertex* python_dict_to_vertex(PyObject* dict) {
