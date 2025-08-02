@@ -8,6 +8,11 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    ProgressCallback = Callable[[str], None] | None
 
 try:
     import osmium
@@ -25,7 +30,7 @@ logger = logging.getLogger(__name__)
 class OSMHandler(osmium.SimpleHandler):
     """PyOsmium handler for extracting pedestrian-relevant OSM data."""
 
-    def __init__(self) -> None:
+    def __init__(self, progress_callback: ProgressCallback = None) -> None:
         """Initialize the OSM handler."""
         super().__init__()
         self.nodes: dict[int, OSMNode] = {}
@@ -33,6 +38,8 @@ class OSMHandler(osmium.SimpleHandler):
         self._node_count = 0
         self._way_count = 0
         self._walkable_way_count = 0
+        self._progress_callback = progress_callback
+        self._total_estimates = {"nodes": 0, "ways": 0}  # Will be updated as we parse
 
     def node(self, n: osmium.Node) -> None:
         """Process an OSM node."""
@@ -45,7 +52,13 @@ class OSMHandler(osmium.SimpleHandler):
         node = OSMNode(id=n.id, lat=n.location.lat, lon=n.location.lon, tags=tags)
         self.nodes[n.id] = node
 
-        if self._node_count % 10000 == 0:
+        # Report progress every 1,000 nodes
+        if self._node_count % 1000 == 0:
+            if self._progress_callback:
+                # We don't know total nodes in advance, so use count for progress
+                self._progress_callback(
+                    f"Processing nodes... ({self._node_count:,} processed)"
+                )
             logger.debug("Processed %d nodes", self._node_count)
 
     def way(self, w: osmium.Way) -> None:
@@ -68,7 +81,14 @@ class OSMHandler(osmium.SimpleHandler):
             self.ways[w.id] = way
             self._walkable_way_count += 1
 
-        if self._way_count % 10000 == 0:
+        # Report progress every 1,000 ways
+        if self._way_count % 1000 == 0:
+            if self._progress_callback:
+                msg = (
+                    f"Processing ways... ({self._way_count:,} processed, "
+                    f"{self._walkable_way_count:,} walkable)"
+                )
+                self._progress_callback(msg)
             logger.debug(
                 "Processed %d ways (%d walkable)",
                 self._way_count,
@@ -96,6 +116,7 @@ class OSMDataSource:
         *,
         walking_profile: WalkingProfile | None = None,
         build_spatial_index: bool = True,
+        progress_callback: ProgressCallback = None,
     ) -> None:
         """Initialize OSM data source from an OSM file.
 
@@ -104,6 +125,7 @@ class OSMDataSource:
             walking_profile: Configuration for pedestrian routing preferences
             build_spatial_index: Whether to build spatial index (recommended for
                 performance)
+            progress_callback: Optional callback for progress updates during parsing
 
         Raises:
             FileNotFoundError: If OSM file doesn't exist
@@ -116,7 +138,7 @@ class OSMDataSource:
 
         # Parse OSM data
         logger.info("Initializing OSM data source from %s", self.osm_file)
-        self._parse_file(self.osm_file)
+        self._parse_file(self.osm_file, progress_callback)
 
         # Build spatial index for efficient coordinate-based queries
         self.spatial_index: SpatialIndex | None = None
@@ -129,11 +151,14 @@ class OSMDataSource:
             len(self.ways),
         )
 
-    def _parse_file(self, osm_file: str | Path) -> None:
+    def _parse_file(
+        self, osm_file: str | Path, progress_callback: ProgressCallback = None
+    ) -> None:
         """Parse an OSM file and extract pedestrian network data.
 
         Args:
             osm_file: Path to OSM XML or PBF file
+            progress_callback: Optional callback for progress updates
 
         Raises:
             FileNotFoundError: If the OSM file doesn't exist
@@ -148,7 +173,9 @@ class OSMDataSource:
 
         try:
             # Parse the OSM file
-            handler = OSMHandler()
+            handler = OSMHandler(progress_callback)
+            if progress_callback:
+                progress_callback("Starting OSM file parsing...")
             handler.apply_file(str(osm_path))
 
             logger.info(

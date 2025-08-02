@@ -48,7 +48,9 @@ class GraphWebServer:
         # Initialize providers before starting server
         try:
             # Create progress callback for CLI usage
-            progress_callback = create_tqdm_progress_callback("Initializing providers")
+            progress_callback = create_simple_progress_callback(
+                "Initializing providers"
+            )
             self.provider_manager.initialize_engine(progress_callback)
             print("✅ Provider initialization complete")
 
@@ -85,43 +87,17 @@ class GraphWebServer:
             sys.exit(1)
 
 
-def create_tqdm_progress_callback(task_name: str) -> ProgressCallback:
-    """Create a progress callback that uses tqdm for CLI progress bars.
+def create_simple_progress_callback(task_name: str) -> ProgressCallback:
+    """Create a progress callback that uses simple status lines.
 
     Args:
-        task_name: Name of the overall task for the progress bar
+        task_name: Name of the overall task for status output
 
     Returns:
-        A progress callback function that creates and manages a tqdm progress bar
+        A progress callback function that prints simple status lines
     """
-    try:
-        from tqdm import tqdm
-    except ImportError:
-        # If tqdm is not available, return a simple print-based callback
-        def simple_callback(description: str, current: int, total: int) -> None:
-            percentage = (current / total * 100) if total > 0 else 0
-            print(f"[{percentage:5.1f}%] {description}")
-
-        return simple_callback
-
-    bar = None
-
-    def callback(description: str, current: int, total: int) -> None:
-        nonlocal bar
-
-        # Create bar on first call
-        if bar is None:
-            bar = tqdm(total=total, desc=task_name, unit="step")
-
-        # Update progress bar
-        bar.set_description(description)
-        bar.n = current
-        bar.refresh()
-
-        # Close bar when complete
-        if current >= total:
-            bar.close()
-            bar = None
+    def callback(description: str) -> None:
+        print(f"\r{description}", end="", flush=True)
 
     return callback
 

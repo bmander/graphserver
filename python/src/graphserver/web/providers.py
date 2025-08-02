@@ -45,7 +45,7 @@ class OSMProviderStats:
 
 
 # Type alias for progress callback function
-ProgressCallback = Callable[[str, int, int], None] | None
+ProgressCallback = Callable[[str], None] | None
 
 # Display constants
 MAX_ERROR_EXAMPLES = 3
@@ -139,7 +139,7 @@ class ProviderManager:
         )  # Engine must be initialized before registering providers
 
         if progress_callback:
-            progress_callback("Registering provider...", 0, 1)
+            progress_callback("Registering provider...")
 
         self.providers[provider_name] = transit_provider
         self.engine.register_provider(provider_name, transit_provider)
@@ -151,7 +151,7 @@ class ProviderManager:
 
         if progress_callback:
             progress_callback(
-                f"stops: {feed_stops}, routes: {feed_routes}, trips: {feed_trips}", 1, 1
+                f"stops: {feed_stops}, routes: {feed_routes}, trips: {feed_trips}"
             )
 
         return GTFSFeedStats(stops=feed_stops, routes=feed_routes, trips=feed_trips)
@@ -218,9 +218,9 @@ class ProviderManager:
         # Step 1: Create OSM data source
         if progress_callback:
             progress_callback(
-                f"Parsing OSM file ({osm_path.name}, {size_info})...", 0, 4
+                f"Parsing OSM file ({osm_path.name}, {size_info})..."
             )
-        osm_data = OSMDataSource(osm_path)
+        osm_data = OSMDataSource(osm_path, progress_callback=progress_callback)
 
         # Step 2: Show parsing results
         raw_nodes = osm_data.node_count
@@ -228,12 +228,12 @@ class ProviderManager:
         raw_edges = osm_data.way_count
         if progress_callback:
             progress_callback(
-                f"Parsed: {raw_nodes} nodes, {raw_ways} ways, {raw_edges} edges", 1, 4
+                f"Parsed: {raw_nodes} nodes, {raw_ways} ways, {raw_edges} edges"
             )
 
         # Step 3: Create OSM network provider (handles osm_node_id vertices)
         if progress_callback:
-            progress_callback("Creating network provider...", 2, 4)
+            progress_callback("Creating network provider...")
         osm_network = OSMNetworkProvider(osm_data)
         self.providers["osm_network"] = osm_network
         assert (
@@ -243,7 +243,7 @@ class ProviderManager:
 
         # Step 4: Create OSM access provider (handles lat/lon vertices)
         if progress_callback:
-            progress_callback("Creating access provider...", 3, 4)
+            progress_callback("Creating access provider...")
         osm_access = OSMAccessProvider(osm_data)
         self.providers["osm_access"] = osm_access
         assert (
@@ -252,7 +252,7 @@ class ProviderManager:
         self.engine.register_provider("osm_access", osm_access)
 
         if progress_callback:
-            progress_callback("OSM providers complete", 4, 4)
+            progress_callback("OSM providers complete")
 
         return osm_access, OSMProviderStats(
             nodes=raw_nodes, ways=raw_ways, edges=raw_edges
@@ -273,7 +273,7 @@ class ProviderManager:
 
         gtfs_path = Path(gtfs_file)
         if progress_callback:
-            progress_callback(f"Loading GTFS ({gtfs_path.name})", 0, 10)
+            progress_callback(f"Loading GTFS ({gtfs_path.name})")
 
         self._validate_gtfs_file(gtfs_path)
 
@@ -289,9 +289,8 @@ class ProviderManager:
                 sub_progress: float | None = None,  # noqa: ARG001
             ) -> None:
                 if progress_callback:
-                    # Map the 9 parsing steps to our progress (steps 1-9 out of 10)
-                    mapped_current = current + 1  # offset by 1 since we start at step 0
-                    progress_callback(step_name, mapped_current, 10)
+                    # Map the 9 parsing steps to our progress
+                    progress_callback(f"{step_name} ({current + 1}/{total})")
 
             transit_provider = TransitProvider(
                 str(gtfs_path), progress_callback=transit_progress_callback
@@ -312,24 +311,18 @@ class ProviderManager:
         """Initialize GTFS transit providers."""
         self._validate_transit_imports()
 
-        # Initialize progress tracking for GTFS loading (10 steps per file)
-        total_steps = len(self.gtfs_files) * 10  # 9 parsing steps + 1 register step
+        # Initialize progress tracking for GTFS loading
         total_stops = 0
         total_routes = 0
         total_trips = 0
-        current_step = 0
 
         for i, gtfs_file in enumerate(self.gtfs_files):
             # Create a progress callback for this file that maps to overall progress
             def file_progress_callback(
                 description: str,
-                file_current: int,
-                file_total: int,  # noqa: ARG001
-                base_step: int = current_step,  # Capture current value
             ) -> None:
                 if progress_callback:
-                    overall_current = base_step + file_current
-                    progress_callback(description, overall_current, total_steps)
+                    progress_callback(description)
 
             feed_stats = self._process_single_gtfs_file(
                 i, gtfs_file, file_progress_callback
@@ -337,10 +330,9 @@ class ProviderManager:
             total_stops += feed_stats.stops
             total_routes += feed_stats.routes
             total_trips += feed_stats.trips
-            current_step += 10  # Move to next file's steps
 
         if progress_callback:
-            progress_callback("GTFS loading complete", total_steps, total_steps)
+            progress_callback("GTFS loading complete")
 
         # Print detailed summary
         self._print_transit_summary(total_stops, total_routes, total_trips)
@@ -496,7 +488,7 @@ class ProviderManager:
 
                 if progress_callback:
                     progress_callback(
-                        f"Linking stop {stop.stop_id}", current_stop, total_stops
+                        f"Linking stop {stop.stop_id} ({current_stop}/{total_stops})"
                     )
 
                 success, error_msg = self._link_single_stop(stop, osm_access_provider)
@@ -510,13 +502,11 @@ class ProviderManager:
 
             if progress_callback:
                 progress_callback(
-                    f"Linked {provider_name}: {provider_linked}/{provider_total}",
-                    current_stop,
-                    total_stops,
+                    f"Linked {provider_name}: {provider_linked}/{provider_total}"
                 )
 
         if progress_callback:
-            progress_callback("Transit stop linking complete", total_stops, total_stops)
+            progress_callback("Transit stop linking complete")
 
         # Print summary
         self._print_linking_summary()
