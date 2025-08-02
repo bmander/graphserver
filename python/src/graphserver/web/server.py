@@ -151,6 +151,12 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    # If no data files are provided, print help and exit
+    if not args.osm_files and not args.gtfs_files:
+        parser.print_help()
+        print("\nError: At least one OSM or GTFS file must be provided")
+        sys.exit(1)
+
     # Validate port
     if not (MIN_PORT <= args.port <= MAX_PORT):
         print(f"Error: Port must be between {MIN_PORT} and {MAX_PORT}")
