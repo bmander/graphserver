@@ -10,22 +10,87 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+try:
+    import osmium
+except ImportError as e:
+    msg = "PyOsmium is required for OSM parsing. Install with: pip install osmium"
+    raise ImportError(msg) from e
+
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-from .parser import OSMParser
 from .spatial import SpatialIndex
-from .types import OSMEdge, OSMNode, OSMWay, WalkingProfile
+from .types import OSMNode, OSMWay, WalkingProfile
 
 logger = logging.getLogger(__name__)
 
 
-class OSMDataSource:
-    """OSM data source for parsing and managing OSM data.
+class OSMHandler(osmium.SimpleHandler):
+    """PyOsmium handler for extracting pedestrian-relevant OSM data."""
 
-    This class encapsulates the parsing of OSM files and provides shared access
-    to the parsed data (nodes, ways, edges) and spatial indexing for multiple
-    providers.
+    def __init__(self) -> None:
+        """Initialize the OSM handler."""
+        super().__init__()
+        self.nodes: dict[int, OSMNode] = {}
+        self.ways: dict[int, OSMWay] = {}
+        self._node_count = 0
+        self._way_count = 0
+        self._walkable_way_count = 0
+
+    def node(self, n: osmium.Node) -> None:
+        """Process an OSM node."""
+        self._node_count += 1
+
+        # Convert tags to dictionary
+        tags = {tag.k: tag.v for tag in n.tags}
+
+        # Store all nodes - we'll filter later based on way references
+        node = OSMNode(id=n.id, lat=n.location.lat, lon=n.location.lon, tags=tags)
+        self.nodes[n.id] = node
+
+        if self._node_count % 10000 == 0:
+            logger.debug("Processed %d nodes", self._node_count)
+
+    def way(self, w: osmium.Way) -> None:
+        """Process an OSM way."""
+        self._way_count += 1
+
+        # Convert tags to dictionary
+        tags = {tag.k: tag.v for tag in w.tags}
+
+        # Extract node references
+        node_refs = [node.ref for node in w.nodes]
+
+        if len(node_refs) < 2:
+            return  # Skip ways with insufficient nodes
+
+        way = OSMWay(id=w.id, node_refs=node_refs, tags=tags)
+
+        # Only store walkable ways
+        if way.is_walkable():
+            self.ways[w.id] = way
+            self._walkable_way_count += 1
+
+        if self._way_count % 10000 == 0:
+            logger.debug(
+                "Processed %d ways (%d walkable)",
+                self._way_count,
+                self._walkable_way_count,
+            )
+
+    def relation(self, r: osmium.Relation) -> None:
+        """Process an OSM relation (currently ignored for pedestrian routing)."""
+        # For now, we ignore relations as they're not essential for basic
+        # pedestrian routing
+        # In the future, we could handle route relations or access restrictions
+
+
+class OSMDataSource:
+    """OSM data source for parsing and managing raw OSM data.
+
+    This class handles parsing of OSM files and provides shared access
+    to the raw parsed data (nodes and ways) and spatial indexing for multiple
+    providers. Edge generation is handled by the individual providers.
     """
 
     def __init__(
@@ -48,11 +113,12 @@ class OSMDataSource:
         """
         self.osm_file = Path(osm_file)
         self.walking_profile = walking_profile or WalkingProfile()
+        self.nodes: dict[int, OSMNode] = {}
+        self.ways: dict[int, OSMWay] = {}
 
         # Parse OSM data
         logger.info("Initializing OSM data source from %s", self.osm_file)
-        self.parser = OSMParser(self.walking_profile)
-        self.parser.parse_file(self.osm_file)
+        self._parse_file(self.osm_file)
 
         # Build spatial index for efficient coordinate-based queries
         self.spatial_index: SpatialIndex | None = None
@@ -60,63 +126,87 @@ class OSMDataSource:
             self._build_spatial_index()
 
         logger.info(
-            "OSM data source ready: %d nodes, %d ways, %d edges",
-            len(self.parser.nodes),
-            len(self.parser.ways),
-            len(self.parser.edges),
+            "OSM data source ready: %d nodes, %d ways",
+            len(self.nodes),
+            len(self.ways),
         )
+
+    def _parse_file(self, osm_file: str | Path) -> None:
+        """Parse an OSM file and extract pedestrian network data.
+
+        Args:
+            osm_file: Path to OSM XML or PBF file
+
+        Raises:
+            FileNotFoundError: If the OSM file doesn't exist
+            RuntimeError: If parsing fails
+        """
+        osm_path = Path(osm_file)
+        if not osm_path.exists():
+            msg = f"OSM file not found: {osm_path}"
+            raise FileNotFoundError(msg)
+
+        logger.info("Parsing OSM file: %s", osm_path)
+
+        try:
+            # Parse the OSM file
+            handler = OSMHandler()
+            handler.apply_file(str(osm_path))
+
+            logger.info(
+                "Parsed %d nodes, %d walkable ways",
+                len(handler.nodes),
+                len(handler.ways),
+            )
+
+            # Store parsed data
+            self.nodes = handler.nodes
+            self.ways = handler.ways
+
+            # Filter nodes to only those referenced by walkable ways
+            self._filter_referenced_nodes()
+
+        except Exception as e:
+            msg = f"Failed to parse OSM file: {e}"
+            raise RuntimeError(msg) from e
+
+    def _filter_referenced_nodes(self) -> None:
+        """Filter nodes to only include those referenced by walkable ways."""
+        referenced_node_ids = set()
+
+        for way in self.ways.values():
+            referenced_node_ids.update(way.node_refs)
+
+        # Keep only referenced nodes
+        filtered_nodes = {
+            node_id: node
+            for node_id, node in self.nodes.items()
+            if node_id in referenced_node_ids
+        }
+
+        self.nodes = filtered_nodes
+        logger.info("Filtered to %d referenced nodes", len(self.nodes))
 
     def _build_spatial_index(self) -> None:
         """Build spatial index for fast coordinate-based lookups."""
         logger.info("Building spatial index for OSM nodes")
         self.spatial_index = SpatialIndex()
-        self.spatial_index.add_nodes(self.parser.nodes)
-
-    @property
-    def nodes(self) -> Mapping[int, OSMNode]:
-        """Get OSM nodes mapping."""
-        return self.parser.nodes
-
-    @property
-    def ways(self) -> Mapping[int, OSMWay]:
-        """Get OSM ways mapping."""
-        return self.parser.ways
-
-    @property
-    def edges(self) -> list[OSMEdge]:
-        """Get OSM edges list."""
-        return self.parser.edges
+        self.spatial_index.add_nodes(self.nodes)
 
     @property
     def node_count(self) -> int:
         """Get number of OSM nodes."""
-        return len(self.parser.nodes)
+        return len(self.nodes)
 
     @property
     def way_count(self) -> int:
         """Get number of walkable OSM ways."""
-        return len(self.parser.ways)
-
-    @property
-    def edge_count(self) -> int:
-        """Get number of walkable edges."""
-        return len(self.parser.edges)
-
-    def get_node_edges(self, node_id: int) -> list[OSMEdge]:
-        """Get all outgoing edges from a node.
-
-        Args:
-            node_id: OSM node ID
-
-        Returns:
-            List of edges originating from the node
-        """
-        return self.parser.get_node_edges(node_id)
+        return len(self.ways)
 
     def get_nearby_nodes(
-        self, lat: float, lon: float, radius_m: float
+        self, lat: float, lon: float, radius_m: float = 100.0
     ) -> list[OSMNode]:
-        """Get nodes within radius of coordinates.
+        """Get OSM nodes within a given radius of coordinates.
 
         Args:
             lat: Latitude in degrees
@@ -124,6 +214,33 @@ class OSMDataSource:
             radius_m: Search radius in meters
 
         Returns:
-            List of nodes within radius
+            List of nearby OSM nodes
         """
-        return self.parser.get_nearby_nodes(lat, lon, radius_m)
+        from .spatial import calculate_distance
+
+        nearby_nodes = []
+
+        for node in self.nodes.values():
+            distance = calculate_distance(lat, lon, node.lat, node.lon)
+            if distance <= radius_m:
+                nearby_nodes.append(node)
+
+        # Sort by distance
+        nearby_nodes.sort(key=lambda n: calculate_distance(lat, lon, n.lat, n.lon))
+
+        return nearby_nodes
+
+    def get_ways_for_node(self, node_id: int) -> list[OSMWay]:
+        """Get all walkable ways that reference a specific node.
+
+        Args:
+            node_id: OSM node ID
+
+        Returns:
+            List of OSMWay objects that reference the given node
+        """
+        ways_for_node = []
+        for way in self.ways.values():
+            if node_id in way.node_refs:
+                ways_for_node.append(way)
+        return ways_for_node

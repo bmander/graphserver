@@ -36,9 +36,9 @@ class OSMNetworkProvider:
         self.data_source = data_source
 
         logger.info(
-            "OSM network provider ready: %d nodes, %d edges",
+            "OSM network provider ready: %d nodes, %d ways",
             len(self.data_source.nodes),
-            len(self.data_source.edges),
+            len(self.data_source.ways),
         )
 
     def _get_identity_hash(
@@ -92,42 +92,84 @@ class OSMNetworkProvider:
             logger.warning("OSM node %d not found in parsed data", node_id)
             return []
 
-        # Get all outgoing edges from this node
+        # Generate edges dynamically from ways that include this node
         edges = []
-        for osm_edge in self.data_source.get_node_edges(node_id):
-            target_node_id = osm_edge.to_node_id
+        ways_for_node = self.data_source.get_ways_for_node(node_id)
 
-            # Skip if target node doesn't exist
-            if target_node_id not in self.data_source.nodes:
-                continue
+        for way in ways_for_node:
+            # Find this node's position in the way
+            try:
+                node_index = way.node_refs.index(node_id)
+            except ValueError:
+                continue  # Node not in this way (shouldn't happen)
 
-            target_node = self.data_source.nodes[target_node_id]
+            # Generate edges to adjacent nodes in the way
+            for target_index in [node_index - 1, node_index + 1]:
+                if target_index < 0 or target_index >= len(way.node_refs):
+                    continue  # Out of bounds
 
-            # Create target vertex
-            target_data = {
-                "osm_node_id": target_node.id,
-            }
-            # Create target vertex with identity hash
-            identity_hash = self._get_identity_hash(target_data)
-            target_vertex = Vertex(target_data, hash_value=identity_hash)
+                target_node_id = way.node_refs[target_index]
 
-            # Apply walking profile to get final cost
-            way = self.data_source.ways[osm_edge.way_id]
-            walking_profile = self.data_source.walking_profile
-            final_cost = walking_profile.get_edge_cost(osm_edge, way)
+                # Skip if target node doesn't exist
+                if target_node_id not in self.data_source.nodes:
+                    continue
 
-            # Create edge
-            edge = Edge(
-                cost=final_cost,
-                metadata={
-                    "edge_type": "osm_way",
-                    "way_id": osm_edge.way_id,
-                    "distance_m": osm_edge.distance_m,
-                    "duration_s": osm_edge.duration_s,
-                },
-            )
+                # Check if this is a oneway that prevents this direction
+                oneway = way.tags.get("oneway", "no")
+                if oneway in {"yes", "true", "1"}:
+                    # For oneway, only allow forward direction (increasing index)
+                    if target_index < node_index:
+                        continue
 
-            edges.append((target_vertex, edge))
+                target_node = self.data_source.nodes[target_node_id]
+                from_node = self.data_source.nodes[node_id]
+
+                # Calculate edge distance and cost
+                from .spatial import calculate_distance
+
+                distance_m = calculate_distance(
+                    from_node.lat, from_node.lon, target_node.lat, target_node.lon
+                )
+
+                # Get walking speed for this way type
+                walking_speed = way.get_walking_speed()
+                duration_s = distance_m / walking_speed
+
+                # Apply walking profile to get final cost
+                walking_profile = self.data_source.walking_profile
+                # Create a temporary edge-like object for the walking profile
+                from .types import OSMEdge
+
+                temp_edge = OSMEdge(
+                    from_node_id=node_id,
+                    to_node_id=target_node_id,
+                    way_id=way.id,
+                    distance_m=distance_m,
+                    duration_s=duration_s,
+                    tags={"highway": way.tags.get("highway", "")},
+                )
+                final_cost = walking_profile.get_edge_cost(temp_edge, way)
+
+                # Create target vertex
+                target_data = {
+                    "osm_node_id": target_node.id,
+                }
+                # Create target vertex with identity hash
+                identity_hash = self._get_identity_hash(target_data)
+                target_vertex = Vertex(target_data, hash_value=identity_hash)
+
+                # Create edge
+                edge = Edge(
+                    cost=final_cost,
+                    metadata={
+                        "edge_type": "osm_way",
+                        "way_id": way.id,
+                        "distance_m": distance_m,
+                        "duration_s": duration_s,
+                    },
+                )
+
+                edges.append((target_vertex, edge))
 
         return edges
 
@@ -164,5 +206,20 @@ class OSMNetworkProvider:
 
     @property
     def edge_count(self) -> int:
-        """Get number of walkable edges in the provider."""
-        return self.data_source.edge_count
+        """Get estimated number of walkable edges in the provider.
+
+        Note: This is calculated dynamically and may be approximate.
+        """
+        # Estimate: each way typically creates 2 edges per segment (bidirectional)
+        # and ways have on average 3-4 nodes, so ~6-8 edges per way
+        estimated_edges = 0
+        for way in self.data_source.ways.values():
+            segments = len(way.node_refs) - 1
+            if segments > 0:
+                # Check if oneway
+                oneway = way.tags.get("oneway", "no")
+                if oneway in {"yes", "true", "1"}:
+                    estimated_edges += segments  # Only forward edges
+                else:
+                    estimated_edges += segments * 2  # Bidirectional
+        return estimated_edges

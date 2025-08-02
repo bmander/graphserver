@@ -20,7 +20,6 @@ try:
         OSMDataSource,
         OSMNetworkProvider,
     )
-    from graphserver.providers.osm.parser import OSMParser
     from graphserver.providers.osm.spatial import SpatialIndex, calculate_distance
     from graphserver.providers.osm.types import OSMNode, OSMWay, WalkingProfile
 
@@ -209,19 +208,33 @@ class TestSpatialCalculations:
         assert distances == sorted(distances)
 
 
-class TestOSMParser:
-    """Test OSM file parsing functionality."""
+class TestOSMDataSource:
+    """Test OSM data source functionality."""
 
-    def test_parser_creation(self, walking_profile: WalkingProfile) -> None:
-        """Test OSM parser creation."""
+    def test_data_source_creation(self, walking_profile: WalkingProfile) -> None:
+        """Test OSM data source creation with empty file."""
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
 
-        parser = OSMParser(walking_profile)
-        assert parser.walking_profile == walking_profile
-        assert len(parser.nodes) == 0
-        assert len(parser.ways) == 0
-        assert len(parser.edges) == 0
+        # Create minimal OSM file with no ways (empty)
+        import tempfile
+
+        minimal_osm = """<?xml version="1.0" encoding="UTF-8"?>
+<osm version="0.6" generator="test">
+</osm>"""
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".osm", delete=False) as f:
+            f.write(minimal_osm)
+            f.flush()
+            osm_file = Path(f.name)
+
+        try:
+            data_source = OSMDataSource(osm_file, walking_profile=walking_profile)
+            assert data_source.walking_profile == walking_profile
+            assert len(data_source.nodes) == 0
+            assert len(data_source.ways) == 0
+        finally:
+            osm_file.unlink()
 
     def test_parse_sample_file(
         self, sample_osm_file: Path, walking_profile: WalkingProfile
@@ -230,30 +243,28 @@ class TestOSMParser:
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
 
-        parser = OSMParser(walking_profile)
-        parser.parse_file(sample_osm_file)
+        data_source = OSMDataSource(sample_osm_file, walking_profile=walking_profile)
 
         # Should have parsed nodes and ways
-        assert len(parser.nodes) > 0
-        assert len(parser.ways) > 0
-        assert len(parser.edges) > 0
+        assert len(data_source.nodes) > 0
+        assert len(data_source.ways) > 0
 
         # Check specific nodes from sample data
-        assert 1 in parser.nodes
-        assert 2 in parser.nodes
-        assert 3 in parser.nodes
+        assert 1 in data_source.nodes
+        assert 2 in data_source.nodes
+        assert 3 in data_source.nodes
 
         # Check node coordinates
-        node1 = parser.nodes[1]
+        node1 = data_source.nodes[1]
         assert abs(node1.lat - 47.6062) < 0.0001
         assert abs(node1.lon - (-122.3321)) < 0.0001
 
         # Should have walkable ways
-        assert 100 in parser.ways  # footway
-        assert 200 in parser.ways  # steps
+        assert 100 in data_source.ways  # footway
+        assert 200 in data_source.ways  # steps
 
         # Check way properties
-        footway = parser.ways[100]
+        footway = data_source.ways[100]
         assert footway.is_walkable()
         assert footway.node_refs == [1, 2, 3]
 
@@ -265,16 +276,15 @@ class TestOSMParser:
         if not OSM_AVAILABLE:
             pytest.skip("OSM dependencies not available")
 
-        parser = OSMParser()
-        parser.parse_file(sample_osm_file)
+        data_source = OSMDataSource(sample_osm_file)
 
         # Search near node 1
-        nearby = parser.get_nearby_nodes(47.6062, -122.3321, radius_m=100)
+        nearby = data_source.get_nearby_nodes(47.6062, -122.3321, radius_m=100)
         assert len(nearby) > 0
         assert nearby[0].id == 1  # Should find node 1 itself
 
         # Search in empty area
-        empty = parser.get_nearby_nodes(0.0, 0.0, radius_m=100)
+        empty = data_source.get_nearby_nodes(0.0, 0.0, radius_m=100)
         assert len(empty) == 0
 
         # Clean up
