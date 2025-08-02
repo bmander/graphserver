@@ -2,7 +2,7 @@
 """Download OSM Data from Overpass API
 
 This script downloads OpenStreetMap data for testing the OSM provider.
-It supports different profiles for filtering the downloaded data and 
+It supports different profiles for filtering the downloaded data and
 predefined locations for convenience.
 
 Usage:
@@ -31,36 +31,18 @@ MAX_AREA_DEG_SQUARED = 0.01  # About 1km x 1km at mid-latitudes
 
 # Predefined locations with their bounding boxes
 PREDEFINED_LOCATIONS = {
-    "uw-campus": {
-        "name": "University of Washington Campus",
-        "bbox": (47.649542342421846, -122.3146476835271, 47.661035800431776, -122.30256914707921),
-        "description": "UW Campus area with good pedestrian infrastructure"
-    },
-    "downtown-seattle": {
-        "name": "Downtown Seattle",
-        "bbox": (47.595, -122.345, 47.615, -122.315),
-        "description": "Seattle downtown core with dense street network"
-    },
-    "capitol-hill": {
-        "name": "Capitol Hill, Seattle",
-        "bbox": (47.610, -122.325, 47.625, -122.305),
-        "description": "Capitol Hill neighborhood with mixed residential/commercial streets"
-    },
-    "fremont": {
-        "name": "Fremont, Seattle",
-        "bbox": (47.645, -122.360, 47.660, -122.340),
-        "description": "Fremont neighborhood with local streets and arterials"
-    },
-    "ballard": {
-        "name": "Ballard, Seattle",
-        "bbox": (47.660, -122.390, 47.675, -122.370),
-        "description": "Ballard neighborhood with industrial and residential mix"
-    },
-    "west-seattle": {
-        "name": "West Seattle",
-        "bbox": (47.560, -122.390, 47.580, -122.370),
-        "description": "West Seattle area across the harbor"
-    }
+    "uw-campus": (
+        47.649542342421846,
+        -122.3146476835271,
+        47.661035800431776,
+        -122.30256914707921,
+    ),
+    "downtown-seattle": (47.595, -122.345, 47.615, -122.315),
+    "capitol-hill": (47.610, -122.325, 47.625, -122.305),
+    "fremont": (47.645, -122.360, 47.660, -122.340),
+    "ballard": (47.660, -122.390, 47.675, -122.370),
+    "west-seattle": (47.560, -122.390, 47.580, -122.370),
+    "seattle-metro": (47.500, -122.500, 47.798185, -121.977277),
 }
 
 
@@ -229,13 +211,13 @@ Examples:
     parser.add_argument(
         "--location",
         help="Use predefined location (e.g., 'uw-campus', 'downtown-seattle'). "
-        "Use --list-locations to see all available locations."
+        "Use --list-locations to see all available locations.",
     )
 
     parser.add_argument(
         "--list-locations",
         action="store_true",
-        help="List all available predefined locations and exit"
+        help="List all available predefined locations and exit",
     )
 
     parser.add_argument("--output", help="Output OSM XML file path")
@@ -246,13 +228,9 @@ Examples:
     if args.list_locations:
         print("Available predefined locations:")
         print()
-        for key, location in PREDEFINED_LOCATIONS.items():
-            lat_min, lon_min, lat_max, lon_max = location["bbox"]
-            print(f"  {key}")
-            print(f"    Name: {location['name']}")
-            print(f"    Description: {location['description']}")
-            print(f"    Bounding box: ({lat_min}, {lon_min}) to ({lat_max}, {lon_max})")
-            print()
+        for key, bbox in PREDEFINED_LOCATIONS.items():
+            lat_min, lon_min, lat_max, lon_max = bbox
+            print(f"  {key}: ({lat_min}, {lon_min}) to ({lat_max}, {lon_max})")
         sys.exit(0)
 
     # Validate mutually exclusive arguments
@@ -269,25 +247,24 @@ Examples:
             print(f"Error: Unknown location '{args.location}'")
             print("Use --list-locations to see available locations")
             sys.exit(1)
-        
-        location = PREDEFINED_LOCATIONS[location_key]
-        lat_min, lon_min, lat_max, lon_max = location["bbox"]
-        print(f"Using predefined location: {location['name']}")
-        print(f"Description: {location['description']}")
+
+        lat_min, lon_min, lat_max, lon_max = PREDEFINED_LOCATIONS[location_key]
+        print(f"Using predefined location: {location_key}")
     else:
-        print("No location specified, using default location (UW Campus, Seattle)")
-        # University of Washington campus area - good pedestrian infrastructure
-        lat_min, lon_min = 47.649542342421846, -122.3146476835271  # South-West
-        lat_max, lon_max = 47.661035800431776, -122.30256914707921  # North-East
+        print("No location or bounding box specified.")
+        print("Available predefined locations:")
+        print()
+        for key, bbox in PREDEFINED_LOCATIONS.items():
+            lat_min, lon_min, lat_max, lon_max = bbox
+            print(f"  {key}: ({lat_min}, {lon_min}) to ({lat_max}, {lon_max})")
+        print()
+        print("Use --location <location_name> or --bbox <coords> to specify an area.")
+        sys.exit(0)
 
     if args.output:
         output_file = args.output
-    elif args.profile == "walking":
-        output_file = "uw_campus_walking.osm"
-    elif args.profile == "travel":
-        output_file = "uw_campus_travel.osm"
     else:
-        output_file = "uw_campus_all.osm"
+        output_file = "out.osm"
 
     # Validate bounding box
     if lat_min >= lat_max:
@@ -305,9 +282,6 @@ Examples:
     if area_deg2 > MAX_AREA_DEG_SQUARED:  # About 1km x 1km at mid-latitudes
         print(f"Warning: Large area requested ({area_deg2:.4f} deg²)")
         print("This may take a long time or fail. Consider a smaller area.")
-        response = input("Continue anyway? (y/N): ")
-        if response.lower() != "y":
-            sys.exit(0)
 
     download_osm_data(lat_min, lon_min, lat_max, lon_max, output_file, args.profile)
 
