@@ -26,8 +26,15 @@ else()
     endif()
 endif()
 
-# Create the extension module
-Python_add_library(_graphserver MODULE src/graphserver/_graphserver.c)
+# Create the extension module with all source files
+Python_add_library(_graphserver MODULE 
+    src/graphserver/_graphserver.c
+    src/graphserver/extension/engine.c
+    src/graphserver/extension/providers.c
+    src/graphserver/extension/conversion.c
+    src/graphserver/extension/validation.c
+    src/graphserver/extension/cleanup.c
+)
 
 # Link to core graphserver library
 target_include_directories(_graphserver PRIVATE ../core/include)
