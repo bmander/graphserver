@@ -319,15 +319,11 @@ class Engine:
             RuntimeError: If registration fails
         """
         # Validate that provider has required methods
-        if not hasattr(provider, "out_edges") or not callable(
-            getattr(provider, "out_edges")
-        ):
+        if not hasattr(provider, "out_edges") or not callable(provider.out_edges):
             msg = "Provider must implement out_edges method"
             raise TypeError(msg)
 
-        if not hasattr(provider, "in_edges") or not callable(
-            getattr(provider, "in_edges")
-        ):
+        if not hasattr(provider, "in_edges") or not callable(provider.in_edges):
             msg = "Provider must implement in_edges method"
             raise TypeError(msg)
 

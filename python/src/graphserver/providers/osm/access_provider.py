@@ -437,9 +437,6 @@ class OSMAccessProvider:
             link() method. To get all possible vertices, you must first link them.
         """
         vertices = []
-        for osm_node_id, linked_vertex_list in self._linked_vertices.items():
-            for vertex_template in linked_vertex_list:
-                # Use the template vertex as-is since it already represents
-                # the access point
-                vertices.append(vertex_template)
+        for linked_vertex_list in self._linked_vertices.values():
+            vertices.extend(linked_vertex_list)
         return vertices

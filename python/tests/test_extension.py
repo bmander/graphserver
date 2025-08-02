@@ -50,10 +50,10 @@ def test_provider_registration() -> None:
         from graphserver import Engine
 
         class DummyProvider:
-            def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+            def out_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
                 return []
 
-            def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+            def in_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
                 return []
 
         dummy_provider = DummyProvider()
@@ -89,7 +89,7 @@ def test_plan_with_provider() -> None:
                     return [(target, edge)]
                 return []
 
-            def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+            def in_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
                 return []
 
         simple_provider = SimpleProvider()
@@ -132,7 +132,7 @@ def test_python_api() -> None:
                     return [(target, edge)]
                 return []
 
-            def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+            def in_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
                 return []
 
         simple_provider = SimpleProvider()
@@ -157,12 +157,12 @@ def test_type_checking() -> None:
     from graphserver import Edge, EdgeProvider, Engine, Vertex
 
     class ValidProvider:
-        def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+        def out_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
             target = Vertex({"x": 1})
             edge = Edge(cost=1.0)
             return [(target, edge)]
 
-        def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+        def in_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
             return []
 
         def seed_vertices(self) -> Sequence[Vertex]:
@@ -190,10 +190,10 @@ def test_error_handling() -> None:
 
         # Test invalid start/goal
         class DummyProvider:
-            def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+            def out_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
                 return []
 
-            def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+            def in_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
                 return []
 
         dummy_provider = DummyProvider()
@@ -232,10 +232,10 @@ def test_standardized_error_handling() -> None:
 
         # Register a test provider
         class TestProvider:
-            def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+            def out_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
                 return []
 
-            def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+            def in_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
                 return []
 
         test_provider = TestProvider()
@@ -285,7 +285,7 @@ def test_data_conversion() -> None:
                     return [(target, edge)]
                 return []
 
-            def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+            def in_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
                 return []
 
         complex_provider = ComplexProvider()
@@ -343,7 +343,7 @@ def test_vertex_immutability_integration() -> None:
                     return [(target, edge)]
                 return []
 
-            def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+            def in_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
                 return []
 
         test_provider = TestProvider()
@@ -393,7 +393,7 @@ def test_hash_preservation_through_planning() -> None:
                     return [(target, edge)]
                 return []
 
-            def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+            def in_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
                 return []
 
         hash_preserving_provider = HashPreservingProvider()

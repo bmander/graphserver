@@ -394,9 +394,8 @@ class TransitProvider:
         Raises:
             NotImplementedError: Transit providers do not support incoming edges
         """
-        raise NotImplementedError(
-            "Transit providers do not support incoming edge generation"
-        )
+        msg = "Transit providers do not support incoming edge generation"
+        raise NotImplementedError(msg)
 
     @property
     def stop_count(self) -> int:

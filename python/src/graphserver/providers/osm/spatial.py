@@ -125,8 +125,8 @@ class SpatialIndex:
         # Generator function for bulk loading
         def node_generator():
             for node in nodes.values():
-                # Yield (id, bbox, object) - bbox is (minx, miny, maxx, maxy)
-                # For points, min and max coordinates are the same
+                # Yield tuple with node ID, bounding box, and object
+                # For points, bbox coordinates are duplicated
                 yield (node.id, (node.lon, node.lat, node.lon, node.lat), None)
 
         # Create index using generator - this is MUCH faster than individual inserts

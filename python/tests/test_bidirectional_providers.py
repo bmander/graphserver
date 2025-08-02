@@ -74,7 +74,8 @@ class OutgoingOnlyProvider:
 
     def in_edges(self, vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
         """Raise NotImplementedError for incoming edges."""
-        raise NotImplementedError("This provider does not support incoming edges")
+        msg = "This provider does not support incoming edges"
+        raise NotImplementedError(msg)
 
 
 class TestBidirectionalProviders:
@@ -117,7 +118,7 @@ class TestBidirectionalProviders:
 
         # This tests that out_edges is called during planning
         try:
-            result = engine.plan(start=start, goal=goal)
+            engine.plan(start=start, goal=goal)
             # Planning might fail (no path), but provider should have been called
             assert provider.out_edges_calls > 0
         except RuntimeError:
@@ -130,7 +131,7 @@ class TestBidirectionalProviders:
 
         # Provider without out_edges method
         class BadProvider1:
-            def in_edges(self, vertex):
+            def in_edges(self, _vertex):
                 return []
 
         with pytest.raises(TypeError, match="must implement out_edges method"):
@@ -138,7 +139,7 @@ class TestBidirectionalProviders:
 
         # Provider without in_edges method
         class BadProvider2:
-            def out_edges(self, vertex):
+            def out_edges(self, _vertex):
                 return []
 
         with pytest.raises(TypeError, match="must implement in_edges method"):
@@ -164,7 +165,7 @@ class TestBidirectionalProviders:
         goal = Vertex({"x": 1, "y": 0})
 
         try:
-            result = engine.plan(start=start, goal=goal)
+            engine.plan(start=start, goal=goal)
             # Planning might fail, but should not crash due to NotImplementedError
             assert provider.call_count > 0
         except RuntimeError:
@@ -197,12 +198,11 @@ class TestBidirectionalProviders:
         goal = Vertex({"x": 1, "y": 0})
 
         # Run planning multiple times to test caching
+        from contextlib import suppress
+
         for _ in range(3):
-            try:
+            with suppress(RuntimeError):
                 engine.plan(start=start, goal=goal)
-            except RuntimeError:
-                # Planning might fail, but that's okay for cache testing
-                pass
 
         # Cache should be working - verify that provider was called
         stats = engine.get_stats()

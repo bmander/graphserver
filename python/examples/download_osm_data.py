@@ -29,6 +29,7 @@ from urllib.request import urlopen
 HTTP_OK = 200
 MAX_AREA_DEG_SQUARED = 0.01  # About 1km x 1km at mid-latitudes
 MB_SIZE = 1024 * 1024  # 1 MB in bytes
+PROGRESS_UPDATE_INTERVAL = 0.5  # Update progress every 0.5 seconds
 
 # Predefined locations with their bounding boxes
 PREDEFINED_LOCATIONS = {
@@ -164,9 +165,9 @@ def download_osm_data(
                     break
                 data += chunk
 
-                # Update progress every 0.5 seconds
+                # Update progress every interval
                 current_time = time.time()
-                if current_time - last_update >= 0.5:
+                if current_time - last_update >= PROGRESS_UPDATE_INTERVAL:
                     size_mb = len(data) / MB_SIZE
 
                     # Calculate rate based on data downloaded since last update
@@ -299,10 +300,7 @@ Examples:
         print("Use --location <location_name> or --bbox <coords> to specify an area.")
         sys.exit(0)
 
-    if args.output:
-        output_file = args.output
-    else:
-        output_file = "out.osm"
+    output_file = args.output or "out.osm"
 
     # Validate bounding box
     if lat_min >= lat_max:
