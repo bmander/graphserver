@@ -63,24 +63,20 @@ def test_provider_reference_counting() -> None:
 
     provider_obj = ProviderClass()
 
-    # Create a callable wrapper for the C extension
-    def provider_func(_vertex: Vertex) -> Sequence[VertexEdgePair]:
-        return provider_obj.out_edges(_vertex)
-
-    # Create weak reference to track lifetime
-    weak_ref = weakref.ref(provider_func)
+    # Create weak reference to track provider object lifetime
+    weak_ref = weakref.ref(provider_obj)
 
     engine = _graphserver.create_engine()
-    _graphserver.register_provider(engine, "test", provider_func)
+    _graphserver.register_provider(engine, "test", provider_obj)
 
-    # Function should still be alive due to C extension holding reference
+    # Provider object should still be alive due to C extension holding reference
     assert weak_ref() is not None
 
     # Delete our reference
-    del provider_func
+    del provider_obj
     gc.collect()
 
-    # Function should still be alive (held by C extension)
+    # Provider object should still be alive (held by C extension)
     assert weak_ref() is not None
 
     # Delete engine (should release provider reference)

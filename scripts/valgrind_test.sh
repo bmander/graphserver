@@ -35,6 +35,7 @@ TESTS=(
     "test_memory"
     "test_engine"
     "test_planner"
+    "test_bidirectional_engine"
     "test_integration"
 )
 

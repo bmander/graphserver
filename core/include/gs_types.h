@@ -85,6 +85,13 @@ typedef bool (*gs_goal_predicate_fn)(
     void* user_data
 );
 
+// Function pointer type for generating incoming edges to a vertex
+typedef int (*gs_generate_incoming_edges_fn)(
+    const GraphserverVertex* current_vertex,
+    GraphserverEdgeList* in_edges,
+    void* user_data
+);
+
 typedef void (*gs_heuristic_fn)(
     const GraphserverVertex* vertex,
     double* out_distance_vector,

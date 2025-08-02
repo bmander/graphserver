@@ -219,7 +219,7 @@ def test_standardized_error_handling() -> None:
 
         # Test 2: Provider validation with specific error message
         engine_capsule = _graphserver.create_engine()
-        with pytest.raises(TypeError, match="Provider must be callable"):
+        with pytest.raises(TypeError, match="Provider must have out_edges method"):
             _graphserver.register_provider(
                 engine_capsule, "bad_provider", "not_callable"
             )

@@ -99,6 +99,24 @@ GraphserverResult gs_engine_register_provider(
 );
 
 /**
+ * Register a bidirectional edge provider with the engine
+ * @param engine Target engine
+ * @param provider_name Unique name for the provider
+ * @param outgoing_generator Function that generates outgoing edges (can be NULL)
+ * @param incoming_generator Function that generates incoming edges (can be NULL)
+ * @param user_data Optional user data passed to the generator functions
+ * @return Result code
+ * @note At least one of the generator functions must be non-NULL
+ */
+GraphserverResult gs_engine_register_bidirectional_provider(
+    GraphserverEngine* engine,
+    const char* provider_name,
+    gs_generate_edges_fn outgoing_generator,
+    gs_generate_incoming_edges_fn incoming_generator,
+    void* user_data
+);
+
+/**
  * Unregister an edge provider from the engine
  * @param engine Target engine
  * @param provider_name Name of the provider to remove
@@ -162,6 +180,20 @@ GraphserverResult gs_engine_expand_vertex(
     GraphserverEngine* engine,
     const GraphserverVertex* vertex,
     GraphserverEdgeList* out_edges
+);
+
+/**
+ * Expand a vertex to get all incoming edges
+ * This is used by bidirectional planning algorithms
+ * @param engine Engine instance
+ * @param vertex Vertex to expand
+ * @param in_edges List to store generated edges (must be created by caller)
+ * @return Result code
+ */
+GraphserverResult gs_engine_expand_vertex_incoming(
+    GraphserverEngine* engine,
+    const GraphserverVertex* vertex,
+    GraphserverEdgeList* in_edges
 );
 
 /**

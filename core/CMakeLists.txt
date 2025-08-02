@@ -79,6 +79,10 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     target_link_libraries(test_precache graphserver_core)
     add_test(NAME precache_tests COMMAND test_precache)
 
+    add_executable(test_bidirectional_engine tests/test_bidirectional_engine.c)
+    target_link_libraries(test_bidirectional_engine graphserver_core)
+    add_test(NAME bidirectional_engine_tests COMMAND test_bidirectional_engine)
+
     add_executable(test_integration tests/test_integration.c ${EXAMPLE_SOURCES})
     target_link_libraries(test_integration graphserver_core m)
     target_include_directories(test_integration PRIVATE ../examples/include)
@@ -93,7 +97,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     # Custom target to run all tests
     add_custom_target(run_tests
         COMMAND ${CMAKE_CTEST_COMMAND} --verbose
-        DEPENDS test_vertex test_edge test_memory test_cache test_engine test_planner test_precache test_integration
+        DEPENDS test_vertex test_edge test_memory test_cache test_engine test_planner test_precache test_bidirectional_engine test_integration
         COMMENT "Running all tests"
     )
 endif()

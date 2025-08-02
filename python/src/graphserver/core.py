@@ -320,12 +320,9 @@ class Engine:
             msg = "C extension not available"
             raise RuntimeError(msg)
 
-        # Create a wrapper function that adapts the new protocol to the old callable interface
-        # The C extension currently only supports outgoing edges, so we use out_edges
-        def provider_wrapper(vertex: Vertex) -> Sequence[VertexEdgePair]:
-            return provider.out_edges(vertex)
-
-        _graphserver.register_provider(self._engine, name, provider_wrapper)
+        # Pass the provider object directly to the C extension
+        # The C extension now supports bidirectional providers
+        _graphserver.register_provider(self._engine, name, provider)
         self._providers[name] = provider
 
     def plan(

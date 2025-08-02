@@ -55,6 +55,12 @@ static int python_provider_wrapper(
     GraphserverEdgeList* out_edges,
     void* user_data);
 
+// Provider wrapper for calling Python incoming edge functions from C
+static int python_incoming_provider_wrapper(
+    const GraphserverVertex* current_vertex,
+    GraphserverEdgeList* in_edges,
+    void* user_data);
+
 // Goal predicate for identity-aware vertex equality checking
 static bool identity_aware_goal_predicate(
     const GraphserverVertex* vertex,
@@ -62,7 +68,8 @@ static bool identity_aware_goal_predicate(
 
 // Data structure for Python provider information
 typedef struct {
-    PyObject* python_function;
+    PyObject* out_edges_function;
+    PyObject* in_edges_function;
     char* provider_name;
 } PythonProviderData;
 
@@ -118,43 +125,87 @@ static PyObject* py_register_provider(PyObject* self, PyObject* args) {
     
     PyObject* engine_capsule;
     const char* provider_name;
-    PyObject* provider_function;
+    PyObject* provider_object;
     
     if (!PyArg_ParseTuple(args, "O!sO", &PyCapsule_Type, &engine_capsule, 
-                         &provider_name, &provider_function)) {
+                         &provider_name, &provider_object)) {
         return NULL;
     }
     
-    if (validate_callable(provider_function, "Provider") < 0) {
+    // Extract out_edges and in_edges methods from provider object
+    PyObject* out_edges_method = PyObject_GetAttrString(provider_object, "out_edges");
+    if (!out_edges_method) {
+        PyErr_SetString(PyExc_TypeError, "Provider must have out_edges method");
+        return NULL;
+    }
+    
+    if (!PyCallable_Check(out_edges_method)) {
+        Py_DECREF(out_edges_method);
+        PyErr_SetString(PyExc_TypeError, "Provider out_edges must be callable");
+        return NULL;
+    }
+    
+    PyObject* in_edges_method = PyObject_GetAttrString(provider_object, "in_edges");
+    if (!in_edges_method) {
+        Py_DECREF(out_edges_method);
+        PyErr_SetString(PyExc_TypeError, "Provider must have in_edges method");
+        return NULL;
+    }
+    
+    if (!PyCallable_Check(in_edges_method)) {
+        Py_DECREF(out_edges_method);
+        Py_DECREF(in_edges_method);
+        PyErr_SetString(PyExc_TypeError, "Provider in_edges must be callable");
         return NULL;
     }
     
     GraphserverEngine* engine;
     if (validate_engine_capsule(engine_capsule, &engine) < 0) {
+        Py_DECREF(out_edges_method);
+        Py_DECREF(in_edges_method);
         return NULL;
     }
     
     // Create provider data with proper reference counting
     PythonProviderData* provider_data = malloc(sizeof(PythonProviderData));
     if (!provider_data) {
+        Py_DECREF(out_edges_method);
+        Py_DECREF(in_edges_method);
         PyErr_NoMemory();
         return NULL;
     }
     
-    provider_data->python_function = provider_function;
-    Py_INCREF(provider_function);  // Keep reference alive
+    provider_data->out_edges_function = out_edges_method;
+    provider_data->in_edges_function = in_edges_method;
+    Py_INCREF(out_edges_method);  // Keep reference alive
+    Py_INCREF(in_edges_method);   // Keep reference alive
     provider_data->provider_name = strdup(provider_name);
     
-    // Register with C engine
-    int result = gs_engine_register_provider(engine, provider_name, 
-                                           python_provider_wrapper, provider_data);
+    // Determine which wrapper functions to use based on available methods
+    gs_generate_edges_fn outgoing_wrapper = out_edges_method ? python_provider_wrapper : NULL;
+    gs_generate_incoming_edges_fn incoming_wrapper = in_edges_method ? python_incoming_provider_wrapper : NULL;
+    
+    // Register with C engine using bidirectional API
+    int result = gs_engine_register_bidirectional_provider(
+        engine, 
+        provider_name, 
+        outgoing_wrapper,
+        incoming_wrapper,
+        provider_data
+    );
+    
     if (result != 0) {
         free(provider_data->provider_name);
         free(provider_data);
-        Py_DECREF(provider_function);
+        Py_DECREF(out_edges_method);
+        Py_DECREF(in_edges_method);
         PyErr_SetString(PyExc_RuntimeError, "Failed to register provider");
         return NULL;
     }
+    
+    // Clean up local references (provider_data holds its own references)
+    Py_DECREF(out_edges_method);
+    Py_DECREF(in_edges_method);
     
     Py_RETURN_NONE;
 }
@@ -242,7 +293,7 @@ static int python_provider_wrapper(
     }
     
     PythonProviderData* provider_data = (PythonProviderData*)user_data;
-    PyObject* python_function = provider_data->python_function;
+    PyObject* python_function = provider_data->out_edges_function;
     
     // Ensure we're in a thread that can call Python (GIL)
     PyGILState_STATE gstate = PyGILState_Ensure();
@@ -270,6 +321,62 @@ static int python_provider_wrapper(
     
     // Convert Python (Vertex, Edge) pairs back to C structures
     if (python_vertex_edge_pairs_to_c_edges(py_result, out_edges) == 0) {
+        result = 0; // Success
+    } else {
+        // Conversion failed
+        PyErr_Print(); // Print the error for debugging
+    }
+    
+    Py_DECREF(py_result);
+    PyGILState_Release(gstate);
+    
+    return result;
+}
+
+// Provider wrapper function that calls Python incoming edge functions from C
+static int python_incoming_provider_wrapper(
+    const GraphserverVertex* current_vertex,
+    GraphserverEdgeList* in_edges,
+    void* user_data) {
+    
+    if (!current_vertex || !in_edges || !user_data) {
+        return -1;
+    }
+    
+    PythonProviderData* provider_data = (PythonProviderData*)user_data;
+    PyObject* python_function = provider_data->in_edges_function;
+    
+    // If no incoming edge function is provided, return empty result
+    if (!python_function) {
+        return 0; // Success with no edges
+    }
+    
+    // Ensure we're in a thread that can call Python (GIL)
+    PyGILState_STATE gstate = PyGILState_Ensure();
+    
+    int result = -1; // Default to error
+    
+    // Convert C vertex to Python Vertex object
+    PyObject* vertex_obj = vertex_to_python_vertex_object(current_vertex);
+    if (!vertex_obj) {
+        PyErr_Print(); // Print the error for debugging
+        PyGILState_Release(gstate);
+        return -1;
+    }
+    
+    // Call the Python provider function
+    PyObject* py_result = PyObject_CallFunctionObjArgs(python_function, vertex_obj, NULL);
+    Py_DECREF(vertex_obj);
+    
+    if (!py_result) {
+        // Python function raised an exception
+        PyErr_Print(); // Print the error for debugging
+        PyGILState_Release(gstate);
+        return -1;
+    }
+    
+    // Convert Python (Vertex, Edge) pairs back to C structures
+    if (python_vertex_edge_pairs_to_c_edges(py_result, in_edges) == 0) {
         result = 0; // Success
     } else {
         // Conversion failed

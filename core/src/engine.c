@@ -13,9 +13,11 @@
 // Provider registration entry
 typedef struct {
     char* name;
-    gs_generate_edges_fn generator;
+    gs_generate_edges_fn outgoing_generator;
+    gs_generate_incoming_edges_fn incoming_generator;
     void* user_data;
     bool is_enabled;
+    bool supports_incoming;  // Whether this provider has incoming edge support
 } Provider;
 
 // Engine structure
@@ -198,14 +200,62 @@ GraphserverResult gs_engine_register_provider(
     provider->name = duplicate_string(provider_name);
     if (!provider->name) return GS_ERROR_OUT_OF_MEMORY;
     
-    provider->generator = generator_func;
+    provider->outgoing_generator = generator_func;
+    provider->incoming_generator = NULL;  // Legacy providers only support outgoing
     provider->user_data = user_data;
     provider->is_enabled = true;
+    provider->supports_incoming = false;
     
     engine->provider_count++;
     
     // Clear cache since adding a provider changes graph topology
     gs_engine_clear_cache(engine);
+    
+    return GS_SUCCESS;
+}
+
+GraphserverResult gs_engine_register_bidirectional_provider(
+    GraphserverEngine* engine,
+    const char* provider_name,
+    gs_generate_edges_fn outgoing_generator,
+    gs_generate_incoming_edges_fn incoming_generator,
+    void* user_data) {
+    
+    if (!engine || !provider_name) {
+        return GS_ERROR_NULL_POINTER;
+    }
+    
+    // At least one generator must be provided
+    if (!outgoing_generator && !incoming_generator) {
+        return GS_ERROR_INVALID_ARGUMENT;
+    }
+    
+    // Check if provider already exists
+    if (find_provider(engine, provider_name) != NULL) {
+        return GS_ERROR_INVALID_ARGUMENT; // Provider already exists
+    }
+    
+    // Ensure capacity
+    GraphserverResult result = ensure_provider_capacity(engine, engine->provider_count + 1);
+    if (result != GS_SUCCESS) return result;
+    
+    // Add new provider
+    Provider* provider = &engine->providers[engine->provider_count];
+    provider->name = duplicate_string(provider_name);
+    if (!provider->name) return GS_ERROR_OUT_OF_MEMORY;
+    
+    provider->outgoing_generator = outgoing_generator;
+    provider->incoming_generator = incoming_generator;
+    provider->user_data = user_data;
+    provider->is_enabled = true;
+    provider->supports_incoming = (incoming_generator != NULL);
+    
+    engine->provider_count++;
+    
+    // Clear cache since adding a provider changes graph topology
+    if (engine->edge_cache) {
+        edge_cache_clear(engine->edge_cache);
+    }
     
     return GS_SUCCESS;
 }
@@ -277,7 +327,7 @@ GraphserverResult gs_engine_list_providers(
     
     for (size_t i = 0; i < engine->provider_count; i++) {
         info[i].name = engine->providers[i].name;
-        info[i].generator = engine->providers[i].generator;
+        info[i].generator = engine->providers[i].outgoing_generator;
         info[i].user_data = engine->providers[i].user_data;
         info[i].is_enabled = engine->providers[i].is_enabled;
     }
@@ -370,7 +420,9 @@ static GraphserverResult call_providers(
             break;
         }
 
-        int provider_result = provider->generator(vertex, provider_edges, provider->user_data);
+        // Use outgoing generator for normal expansion
+        int provider_result = provider->outgoing_generator ? 
+            provider->outgoing_generator(vertex, provider_edges, provider->user_data) : -1;
 
         if (provider_result == 0) {
             size_t provider_edge_count = gs_edge_list_get_count(provider_edges);
@@ -417,6 +469,69 @@ GraphserverResult gs_engine_expand_vertex(
         engine->last_plan_stats.cache_puts++;
     }
 
+    return overall_result;
+}
+
+// Invoke all enabled providers to generate incoming edges for a vertex.
+// Returns GS_SUCCESS unless a memory allocation failure occurs.
+static GraphserverResult call_providers_incoming(
+    GraphserverEngine* engine,
+    const GraphserverVertex* vertex,
+    GraphserverEdgeList* in_edges)
+{
+    if (!engine || !vertex || !in_edges) {
+        return GS_ERROR_NULL_POINTER;
+    }
+    
+    GraphserverResult overall_result = GS_SUCCESS;
+    
+    for (size_t i = 0; i < engine->provider_count; i++) {
+        Provider* provider = &engine->providers[i];
+        
+        if (!provider->is_enabled || !provider->incoming_generator) {
+            continue;
+        }
+        
+        GraphserverEdgeList* provider_edges = gs_edge_list_create();
+        if (!provider_edges) {
+            overall_result = GS_ERROR_OUT_OF_MEMORY;
+            break;
+        }
+        
+        int provider_result = provider->incoming_generator(vertex, provider_edges, provider->user_data);
+        
+        if (provider_result == 0) {
+            size_t provider_edge_count = gs_edge_list_get_count(provider_edges);
+            for (size_t j = 0; j < provider_edge_count; j++) {
+                GraphserverEdge* edge;
+                if (gs_edge_list_get_edge(provider_edges, j, &edge) == GS_SUCCESS && edge) {
+                    gs_edge_list_add_edge(in_edges, edge);
+                }
+            }
+            engine->last_plan_stats.edges_generated += provider_edge_count;
+        }
+        
+        engine->last_plan_stats.providers_called++;
+        gs_edge_list_destroy(provider_edges);
+    }
+    
+    return overall_result;
+}
+
+GraphserverResult gs_engine_expand_vertex_incoming(
+    GraphserverEngine* engine,
+    const GraphserverVertex* vertex,
+    GraphserverEdgeList* in_edges) {
+    
+    if (!engine || !vertex || !in_edges) return GS_ERROR_NULL_POINTER;
+    
+    // Clear the output edge list
+    gs_edge_list_clear(in_edges);
+    
+    // For now, incoming edges are not cached (could be added later with separate cache)
+    // Generate edges using providers directly
+    GraphserverResult overall_result = call_providers_incoming(engine, vertex, in_edges);
+    
     return overall_result;
 }
 
@@ -915,7 +1030,8 @@ static GraphserverEdgeList* bfs_precache_generate_and_cache_edges(
     gs_edge_list_set_owns_edges(edges, true);
     
     // Call provider to generate edges
-    int provider_result = provider->generator(vertex, edges, provider->user_data);
+    int provider_result = provider->outgoing_generator ? 
+        provider->outgoing_generator(vertex, edges, provider->user_data) : -1;
     
     if (provider_result == 0) { // Success
         // Cache the edges
