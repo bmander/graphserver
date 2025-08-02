@@ -214,12 +214,20 @@ class OSMDataSource:
             radius_m: Search radius in meters
 
         Returns:
-            List of nearby OSM nodes
+            List of nearby OSM nodes sorted by distance
         """
+        # Use spatial index if available for efficient search
+        if self.spatial_index is not None:
+            # spatial index returns (node, distance) tuples already sorted by distance
+            results = self.spatial_index.find_nearest_nodes(
+                lat, lon, radius_m, max_results=1000
+            )
+            return [node for node, _ in results]
+
+        # Fallback to linear search if no spatial index
         from .spatial import calculate_distance
 
         nearby_nodes = []
-
         for node in self.nodes.values():
             distance = calculate_distance(lat, lon, node.lat, node.lon)
             if distance <= radius_m:
@@ -227,7 +235,6 @@ class OSMDataSource:
 
         # Sort by distance
         nearby_nodes.sort(key=lambda n: calculate_distance(lat, lon, n.lat, n.lon))
-
         return nearby_nodes
 
     def get_ways_for_node(self, node_id: int) -> list[OSMWay]:
