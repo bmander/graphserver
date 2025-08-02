@@ -211,15 +211,21 @@ class EdgeProvider(Protocol):
         """
         ...
 
-    def seed_vertices(self) -> Sequence[Vertex]:
+    def seed_vertices(self, *, max_vertices: int | None = None) -> Sequence[Vertex]:
         """Return seed vertices from which all other vertices are reachable.
 
         This method returns a sequence of vertices that form the basis for graph
         exploration. These vertices represent the entry points into the provider's
         graph from which all other vertices can be reached through edge traversal.
 
+        Args:
+            max_vertices: Maximum number of vertices to return. If None (default),
+                returns all available seed vertices. If 0, returns empty sequence.
+                If positive integer, returns up to that many vertices.
+
         Returns:
-            Sequence of vertices that serve as graph exploration entry points
+            Sequence of vertices that serve as graph exploration entry points,
+            limited to at most 'max_vertices' vertices if specified
 
         Raises:
             NotImplementedError: If provider does not implement seed vertex discovery

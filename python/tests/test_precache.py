@@ -60,13 +60,25 @@ class GridProvider:
         # For a grid, incoming edges are the same as outgoing edges (bidirectional)
         return self.out_edges(vertex)
 
-    def seed_vertices(self) -> Sequence[Vertex]:
+    def seed_vertices(self, *, max_vertices: int | None = None) -> Sequence[Vertex]:
         """Return all grid positions as seed vertices for graph exploration."""
         vertices = []
+        count = 0
+
         for x in range(self.width):
             for y in range(self.height):
+                # Check max limit
+                if max_vertices is not None and count >= max_vertices:
+                    break
+
                 vertex = Vertex({"x": x, "y": y})
                 vertices.append(vertex)
+                count += 1
+
+            # Break outer loop too if we've hit the limit
+            if max_vertices is not None and count >= max_vertices:
+                break
+
         return vertices
 
     def reset(self) -> None:

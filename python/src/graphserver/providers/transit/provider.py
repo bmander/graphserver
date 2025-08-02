@@ -412,28 +412,42 @@ class TransitProvider:
         """Get number of transit trips."""
         return self.parser.trip_count
 
-    def seed_vertices(self) -> Sequence[Vertex]:
+    def seed_vertices(self, *, max_vertices: int | None = None) -> Sequence[Vertex]:
         """Return all transit stops as seed vertices for graph exploration.
 
         Returns all transit stops in the GTFS data as vertices with coordinates
         and a base time. These stops form the foundation for transit network
         exploration, as all transit trips operate between these stops.
 
+        Args:
+            max_vertices: Maximum number of vertices to return. If None (default),
+                returns all transit stops. If 0, returns empty sequence.
+                If positive integer, returns up to that many stops.
+
         Returns:
-            Sequence of Vertex objects representing all transit stops
+            Sequence of Vertex objects representing transit stops,
+            limited to at most 'max_vertices' vertices if specified
 
         Note:
             Each stop vertex includes a default time of 0. For realistic routing,
             vertices with actual departure times should be used.
+            Large GTFS datasets can contain thousands of stops - use max_vertices
+            parameter to limit results for performance testing.
         """
         from graphserver.core import Vertex
 
         vertices = []
-        for stop in self.parser.stops.values():
+
+        for count, stop in enumerate(self.parser.stops.values()):
+            # Check max limit
+            if max_vertices is not None and count >= max_vertices:
+                break
+
             stop_data = {
                 "stop_id": stop.stop_id,
             }
 
             vertex = Vertex(stop_data)
             vertices.append(vertex)
+
         return vertices

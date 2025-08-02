@@ -165,8 +165,11 @@ def test_type_checking() -> None:
         def in_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
             return []
 
-        def seed_vertices(self) -> Sequence[Vertex]:
-            return [Vertex({"x": 0, "y": 0})]
+        def seed_vertices(self, *, max_vertices: int | None = None) -> Sequence[Vertex]:
+            vertices = [Vertex({"x": 0, "y": 0})]
+            if max_vertices is not None and max_vertices < len(vertices):
+                return vertices[:max_vertices]
+            return vertices
 
     valid_provider = ValidProvider()
 
