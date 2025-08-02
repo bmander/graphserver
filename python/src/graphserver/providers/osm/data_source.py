@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 try:
     import osmium
@@ -16,8 +15,6 @@ except ImportError as e:
     msg = "PyOsmium is required for OSM parsing. Install with: pip install osmium"
     raise ImportError(msg) from e
 
-if TYPE_CHECKING:
-    from collections.abc import Mapping
 
 from .spatial import SpatialIndex
 from .types import OSMNode, OSMWay, WalkingProfile
@@ -105,7 +102,8 @@ class OSMDataSource:
         Args:
             osm_file: Path to OSM XML or PBF file
             walking_profile: Configuration for pedestrian routing preferences
-            build_spatial_index: Whether to build spatial index (recommended for performance)
+            build_spatial_index: Whether to build spatial index (recommended for
+                performance)
 
         Raises:
             FileNotFoundError: If OSM file doesn't exist

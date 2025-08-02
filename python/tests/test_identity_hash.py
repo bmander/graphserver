@@ -10,7 +10,6 @@ def test_coordinate_identity_hash_matching():
     try:
         import tempfile
         from pathlib import Path
-        from graphserver.providers.osm.types import WalkingProfile
 
         # Create minimal OSM XML for testing
         minimal_osm = """<?xml version="1.0" encoding="UTF-8"?>
@@ -59,7 +58,6 @@ def test_osm_node_identity_hash():
     try:
         import tempfile
         from pathlib import Path
-        from graphserver.providers.osm.types import WalkingProfile
 
         # Create minimal OSM XML for testing
         minimal_osm = """<?xml version="1.0" encoding="UTF-8"?>
@@ -122,7 +120,6 @@ def test_provider_generated_identity_hashes():
     try:
         import tempfile
         from pathlib import Path
-        from graphserver.providers.osm.types import WalkingProfile
 
         # Create minimal OSM XML for testing
         minimal_osm = """<?xml version="1.0" encoding="UTF-8"?>

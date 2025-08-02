@@ -46,7 +46,6 @@ class OSMProviderStats:
 
 # Type alias for progress callback function
 ProgressCallback = Callable[[str, int, int], None] | None
-# Arguments: (description, current_step, total_steps)
 
 
 class ProviderError(Exception):
@@ -323,9 +322,10 @@ class ProviderManager:
                 description: str,
                 file_current: int,
                 file_total: int,  # noqa: ARG001
+                base_step: int = current_step,  # Capture current value
             ) -> None:
                 if progress_callback:
-                    overall_current = current_step + file_current
+                    overall_current = base_step + file_current
                     progress_callback(description, overall_current, total_steps)
 
             feed_stats = self._process_single_gtfs_file(

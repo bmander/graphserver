@@ -15,11 +15,10 @@ def _import_c_extension():
     try:
         # Try package import first (modern approach)
         from graphserver import _graphserver
-
-        return _graphserver
     except ImportError:
         # Fallback to direct import for development builds
-        _graphserver = _import_c_extension()
+        return _import_c_extension()
+    else:
         return _graphserver
 
 

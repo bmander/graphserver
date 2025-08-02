@@ -14,7 +14,8 @@ if TYPE_CHECKING:
 
 from graphserver.core import Edge, GraphserverDataType, Vertex, VertexEdgePair
 
-from .data_source import OSMDataSource
+if TYPE_CHECKING:
+    from .data_source import OSMDataSource
 
 logger = logging.getLogger(__name__)
 
@@ -116,10 +117,9 @@ class OSMNetworkProvider:
 
                 # Check if this is a oneway that prevents this direction
                 oneway = way.tags.get("oneway", "no")
-                if oneway in {"yes", "true", "1"}:
+                if oneway in {"yes", "true", "1"} and target_index < node_index:
                     # For oneway, only allow forward direction (increasing index)
-                    if target_index < node_index:
-                        continue
+                    continue
 
                 target_node = self.data_source.nodes[target_node_id]
                 from_node = self.data_source.nodes[node_id]

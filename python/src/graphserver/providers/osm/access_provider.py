@@ -14,7 +14,8 @@ if TYPE_CHECKING:
 
 from graphserver.core import Edge, GraphserverDataType, Vertex, VertexEdgePair
 
-from .data_source import OSMDataSource
+if TYPE_CHECKING:
+    from .data_source import OSMDataSource
 
 logger = logging.getLogger(__name__)
 
