@@ -225,7 +225,7 @@ class ProviderManager:
         # Step 2: Show parsing results
         raw_nodes = osm_data.node_count
         raw_ways = osm_data.way_count
-        raw_edges = osm_data.edge_count
+        raw_edges = osm_data.way_count
         if progress_callback:
             progress_callback(
                 f"Parsed: {raw_nodes} nodes, {raw_ways} ways, {raw_edges} edges", 1, 4

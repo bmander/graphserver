@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-import gtfs_kit as gk
+import gtfs_kit as gk  # type: ignore[import-untyped]
 import pandas as pd
 
 from .types import Departure, Route, Stop, StopTime, Trip

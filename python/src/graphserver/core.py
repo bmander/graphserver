@@ -9,13 +9,13 @@ GraphserverDataType = str | int | float
 
 # Import will be available after C extension is built
 try:
-    from . import _graphserver
+    from . import _graphserver  # type: ignore[attr-defined]
 except ImportError:
     try:
         import _graphserver
     except ImportError:
         # Graceful handling during development
-        _graphserver = None  # type: ignore[assignment]
+        _graphserver = None
 
 
 class Vertex:
@@ -362,7 +362,7 @@ class Engine:
             msg = "C extension not available"
             raise RuntimeError(msg)
 
-        return _graphserver.get_engine_stats(self._engine)
+        return _graphserver.get_engine_stats(self._engine)  # type: ignore[no-any-return]
 
     @property
     def cache_enabled(self) -> bool:

@@ -395,4 +395,4 @@ class OSMAccessProvider:
     @property
     def edge_count(self) -> int:
         """Get number of walkable edges in the provider."""
-        return self.data_source.edge_count
+        return self.data_source.way_count
