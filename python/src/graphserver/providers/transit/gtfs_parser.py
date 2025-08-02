@@ -17,6 +17,10 @@ import pandas as pd
 
 from .types import Departure, Route, Stop, StopTime, Trip
 
+# Progress display formatting constants
+MILLION_THRESHOLD = 1_000_000
+THOUSAND_THRESHOLD = 1_000
+
 logger = logging.getLogger(__name__)
 
 
@@ -245,15 +249,15 @@ class GTFSParser:
             if processed_rows % update_interval == 0 or processed_rows == total_rows:
                 sub_progress = processed_rows / total_rows
                 # Format numbers with K/M suffixes for readability
-                if total_rows >= 1_000_000:
+                if total_rows >= MILLION_THRESHOLD:
                     progress_text = (
-                        f"({processed_rows / 1_000_000:.1f}M/"
-                        f"{total_rows / 1_000_000:.1f}M records)"
+                        f"({processed_rows / MILLION_THRESHOLD:.1f}M/"
+                        f"{total_rows / MILLION_THRESHOLD:.1f}M records)"
                     )
-                elif total_rows >= 1_000:
+                elif total_rows >= THOUSAND_THRESHOLD:
                     progress_text = (
-                        f"({processed_rows / 1_000:.1f}K/"
-                        f"{total_rows / 1_000:.1f}K records)"
+                        f"({processed_rows / THOUSAND_THRESHOLD:.1f}K/"
+                        f"{total_rows / THOUSAND_THRESHOLD:.1f}K records)"
                     )
                 else:
                     progress_text = f"({processed_rows}/{total_rows} records)"

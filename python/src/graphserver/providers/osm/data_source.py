@@ -17,7 +17,7 @@ except ImportError as e:
 
 
 from .spatial import SpatialIndex
-from .types import OSMNode, OSMWay, WalkingProfile
+from .types import MIN_WAY_NODES, OSMNode, OSMWay, WalkingProfile
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class OSMHandler(osmium.SimpleHandler):
         # Extract node references
         node_refs = [node.ref for node in w.nodes]
 
-        if len(node_refs) < 2:
+        if len(node_refs) < MIN_WAY_NODES:
             return  # Skip ways with insufficient nodes
 
         way = OSMWay(id=w.id, node_refs=node_refs, tags=tags)

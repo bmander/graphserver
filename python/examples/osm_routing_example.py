@@ -30,17 +30,29 @@ except ImportError as e:
     sys.exit(1)
 
 
+# Routing configuration constants
+WALKING_SPEED = 1.2  # m/s walking speed
+MAX_DETOUR_FACTOR = 1.5
+SEARCH_RADIUS_M = 150.0
+MAX_NEARBY_NODES = 5
+MINUTES_PER_SECOND = 60
+LAT_MIN = -90
+LAT_MAX = 90
+LON_MIN = -180
+LON_MAX = 180
+
+
 def _validate_latitude(lat: float) -> None:
     """Validate latitude is in valid range."""
-    if not (-90 <= lat <= 90):
-        msg = f"Invalid latitude: {lat} (must be between -90 and 90)"
+    if not (LAT_MIN <= lat <= LAT_MAX):
+        msg = f"Invalid latitude: {lat} (must be between {LAT_MIN} and {LAT_MAX})"
         raise ValueError(msg)
 
 
 def _validate_longitude(lon: float) -> None:
     """Validate longitude is in valid range."""
-    if not (-180 <= lon <= 180):
-        msg = f"Invalid longitude: {lon} (must be between -180 and 180)"
+    if not (LON_MIN <= lon <= LON_MAX):
+        msg = f"Invalid longitude: {lon} (must be between {LON_MIN} and {LON_MAX})"
         raise ValueError(msg)
 
 
@@ -80,7 +92,8 @@ def parse_coordinates(coord_str: str) -> tuple[float, float]:
 
 def main() -> None:
     """Main pathfinding example."""
-    if len(sys.argv) != 4:
+    required_args = 4
+    if len(sys.argv) != required_args:
         print(
             "Usage: python osm_routing_example.py <osm_file> <start_lat,start_lon> <end_lat,end_lon>"
         )
@@ -110,10 +123,10 @@ def main() -> None:
     start_time = time.time()
     try:
         walking_profile = WalkingProfile(
-            base_speed_ms=1.2,  # 1.2 m/s walking speed
+            base_speed_ms=WALKING_SPEED,  # m/s walking speed
             avoid_stairs=False,
             avoid_busy_roads=True,
-            max_detour_factor=1.5,
+            max_detour_factor=MAX_DETOUR_FACTOR,
         )
 
         network_provider = OSMNetworkProvider(
@@ -124,8 +137,8 @@ def main() -> None:
         access_provider = OSMAccessProvider(
             parser=network_provider.parser,
             walking_profile=walking_profile,
-            search_radius_m=150.0,
-            max_nearby_nodes=5,
+            search_radius_m=SEARCH_RADIUS_M,
+            max_nearby_nodes=MAX_NEARBY_NODES,
             build_index=True,
         )
     except Exception as e:
@@ -224,7 +237,7 @@ def main() -> None:
             print(f"✅ Route found in {planning_time:.3f}s")
             print(f"   Path: {len(result)} OSM edges + access")
             print(
-                f"   Total time: {total_cost_with_access:.1f}s ({total_cost_with_access / 60:.1f} minutes)"
+                f"   Total time: {total_cost_with_access:.1f}s ({total_cost_with_access / MINUTES_PER_SECOND:.1f} minutes)"
             )
             if access_cost > 0:
                 print(f"   (includes {access_cost:.1f}s access time)")

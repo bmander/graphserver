@@ -47,6 +47,9 @@ class OSMProviderStats:
 # Type alias for progress callback function
 ProgressCallback = Callable[[str, int, int], None] | None
 
+# Display constants
+MAX_ERROR_EXAMPLES = 3
+
 
 class ProviderError(Exception):
     """Raised when provider initialization fails."""
@@ -447,13 +450,13 @@ class ProviderManager:
                     f"(too far from OSM nodes)"
                 )
                 # Show first few failures as examples
-                if failed_count <= 3:
+                if failed_count <= MAX_ERROR_EXAMPLES:
                     for error in failed_links:
                         print(f"     {error}")
                 else:
-                    for error in failed_links[:3]:
+                    for error in failed_links[:MAX_ERROR_EXAMPLES]:
                         print(f"     {error}")
-                    print(f"     ... and {failed_count - 3} more")
+                    print(f"     ... and {failed_count - MAX_ERROR_EXAMPLES} more")
         else:
             print("⚠️  No transit stops found to link")
 

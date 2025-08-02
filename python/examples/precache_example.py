@@ -14,6 +14,32 @@ from typing import Any
 
 from graphserver import Edge, Engine, Vertex
 
+# Demo configuration constants
+GRID_SIZE = 20
+DEFAULT_TEST_ROUTES = 50
+DEFAULT_PRECACHE_ROUTES = 20
+PRECACHE_MAX_DEPTH = 3
+PRECACHE_MAX_VERTICES = 500
+RANDOM_SEED = 42
+DOWNTOWN_X_START = 8
+DOWNTOWN_X_END = 13
+DOWNTOWN_Y_START = 8
+DOWNTOWN_Y_END = 13
+BUSINESS_X_START = 13
+BUSINESS_X_END = 18
+BUSINESS_Y_START = 6
+BUSINESS_Y_END = 11
+SHOPPING_X_START = 3
+SHOPPING_X_END = 8
+SHOPPING_Y_START = 13
+SHOPPING_Y_END = 18
+DOWNTOWN_TRAFFIC_MULTIPLIER = 2.0
+BUSINESS_TRAFFIC_MULTIPLIER = 1.5
+SHOPPING_TRAFFIC_MULTIPLIER = 1.8
+BASE_COST = 1.0
+SIGNIFICANT_IMPROVEMENT_THRESHOLD = 10
+PERCENTAGE_MULTIPLIER = 100
+
 
 class CityGridProvider:
     """Simulated city grid provider for demonstration.
@@ -35,9 +61,9 @@ class CityGridProvider:
 
         # Define some high-traffic areas with higher costs
         self.high_traffic_zones = {
-            (10, 10): 2.0,  # Downtown center
-            (15, 8): 1.5,  # Business district
-            (5, 15): 1.8,  # Shopping area
+            (10, 10): DOWNTOWN_TRAFFIC_MULTIPLIER,  # Downtown center
+            (15, 8): BUSINESS_TRAFFIC_MULTIPLIER,  # Business district
+            (5, 15): SHOPPING_TRAFFIC_MULTIPLIER,  # Shopping area
         }
 
     def __call__(self, vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
@@ -64,7 +90,7 @@ class CityGridProvider:
                 target = Vertex({"x": new_x, "y": new_y, "type": "intersection"})
 
                 # Base cost is distance (1 block)
-                base_cost = 1.0
+                base_cost = BASE_COST
 
                 # Add traffic multiplier for high-traffic zones
                 traffic_multiplier = self.high_traffic_zones.get((new_x, new_y), 1.0)
@@ -102,22 +128,22 @@ def create_high_traffic_seeds(width: int, height: int) -> list[Vertex]:
     # Downtown core area
     seeds.extend(
         Vertex({"x": x, "y": y, "type": "intersection"})
-        for x in range(8, 13)
-        for y in range(8, 13)
+        for x in range(DOWNTOWN_X_START, DOWNTOWN_X_END)
+        for y in range(DOWNTOWN_Y_START, DOWNTOWN_Y_END)
     )
 
     # Business district
     seeds.extend(
         Vertex({"x": x, "y": y, "type": "intersection"})
-        for x in range(13, 18)
-        for y in range(6, 11)
+        for x in range(BUSINESS_X_START, BUSINESS_X_END)
+        for y in range(BUSINESS_Y_START, BUSINESS_Y_END)
     )
 
     # Shopping area
     seeds.extend(
         Vertex({"x": x, "y": y, "type": "intersection"})
-        for x in range(3, 8)
-        for y in range(13, 18)
+        for x in range(SHOPPING_X_START, SHOPPING_X_END)
+        for y in range(SHOPPING_Y_START, SHOPPING_Y_END)
     )
 
     return seeds
@@ -169,7 +195,7 @@ def benchmark_routing_performance(
 
 
 def create_test_routes(
-    width: int, height: int, num_routes: int = 20
+    width: int, height: int, num_routes: int = DEFAULT_PRECACHE_ROUTES
 ) -> list[tuple[Vertex, Vertex]]:
     """Create test routes for benchmarking.
 
@@ -184,7 +210,7 @@ def create_test_routes(
     import random
 
     routes = []
-    random.seed(42)  # For reproducible results
+    random.seed(RANDOM_SEED)  # For reproducible results
 
     for _ in range(num_routes):
         start_x = random.randint(0, width - 1)  # noqa: S311
@@ -204,12 +230,14 @@ def demonstrate_precaching():
     print("🚗 Graphserver Precaching Performance Demo")
     print("=" * 50)
 
-    # Create city grid (20x20 blocks)
-    print("📍 Creating 20x20 city grid...")
-    provider = CityGridProvider(width=20, height=20)
+    # Create city grid
+    print(f"📍 Creating {GRID_SIZE}x{GRID_SIZE} city grid...")
+    provider = CityGridProvider(width=GRID_SIZE, height=GRID_SIZE)
 
     # Create test routes
-    test_routes = create_test_routes(20, 20, num_routes=50)
+    test_routes = create_test_routes(
+        GRID_SIZE, GRID_SIZE, num_routes=DEFAULT_TEST_ROUTES
+    )
     print(f"🛣️  Generated {len(test_routes)} test routes")
 
     print("\n" + "=" * 50)
@@ -245,7 +273,7 @@ def demonstrate_precaching():
 
     # Perform strategic precaching
     print("🎯 Identifying high-traffic areas for precaching...")
-    high_traffic_seeds = create_high_traffic_seeds(20, 20)
+    high_traffic_seeds = create_high_traffic_seeds(GRID_SIZE, GRID_SIZE)
     print(f"🌱 Created {len(high_traffic_seeds)} seed vertices")
 
     print("⚡ Precaching high-traffic areas...")
@@ -255,8 +283,8 @@ def demonstrate_precaching():
     engine_with_cache.precache_subgraph(
         provider_name="city",
         seed_vertices=high_traffic_seeds,
-        max_depth=3,  # 3 blocks from each seed
-        max_vertices=500,  # Reasonable cache size limit
+        max_depth=PRECACHE_MAX_DEPTH,  # blocks from each seed
+        max_vertices=PRECACHE_MAX_VERTICES,  # Reasonable cache size limit
     )
 
     precache_time = time.time() - precache_start
@@ -291,7 +319,7 @@ def demonstrate_precaching():
     time_improvement = (
         (metrics_no_precache["elapsed_time"] - metrics_with_precache["elapsed_time"])
         / metrics_no_precache["elapsed_time"]
-        * 100
+        * PERCENTAGE_MULTIPLIER
     )
     call_reduction = (
         (
@@ -299,7 +327,7 @@ def demonstrate_precaching():
             - metrics_with_precache["provider_calls"]
         )
         / metrics_no_precache["provider_calls"]
-        * 100
+        * PERCENTAGE_MULTIPLIER
     )
 
     print(f"🚀 Speed improvement: {time_improvement:+.1f}%")
@@ -312,7 +340,7 @@ def demonstrate_precaching():
                 metrics_with_precache["cache_hits"]
                 + metrics_with_precache["cache_misses"]
             )
-            * 100
+            * PERCENTAGE_MULTIPLIER
         )
         print(f"🎯 Cache hit rate: {hit_rate:.1f}%")
 
@@ -334,7 +362,7 @@ def demonstrate_precaching():
     print("💡 RECOMMENDATIONS")
     print("=" * 50)
 
-    if time_improvement > 10:
+    if time_improvement > SIGNIFICANT_IMPROVEMENT_THRESHOLD:
         print("✅ Precaching shows significant performance benefits!")
         print("   Consider using precaching for:")
         print("   - High-traffic routing areas")

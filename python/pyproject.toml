@@ -76,7 +76,6 @@ select = ["E", "F", "W", "C90", "I", "N", "UP", "YTT", "S", "BLE", "FBT", "B", "
 ignore = [
     "COM812",  # Conflicts with formatter
     "S101",    # Use of assert detected (normal in tests)
-    "PLR2004", # Magic value comparisons (common in tests)
     "PLC0415", # Import at top-level (tests often have conditional imports)
     "ARG001",  # Unused function arguments (common in test stubs)
     "TC003",   # Standard library imports in type-checking (Path used at runtime)

@@ -24,6 +24,10 @@ from pathlib import Path
 from urllib.parse import quote
 from urllib.request import urlopen
 
+# HTTP and area constants
+HTTP_OK = 200
+MAX_AREA_DEG_SQUARED = 0.01  # About 1km x 1km at mid-latitudes
+
 
 def get_overpass_query(
     profile: str, lat_min: float, lon_min: float, lat_max: float, lon_max: float
@@ -122,7 +126,7 @@ def download_osm_data(
         start_time = time.time()
 
         with urlopen(url) as response:
-            if response.status != 200:
+            if response.status != HTTP_OK:
                 print(f"Error: HTTP {response.status}")
                 sys.exit(1)
 
@@ -221,7 +225,7 @@ Examples:
     lon_diff = lon_max - lon_min
     area_deg2 = lat_diff * lon_diff
 
-    if area_deg2 > 0.01:  # About 1km x 1km at mid-latitudes
+    if area_deg2 > MAX_AREA_DEG_SQUARED:  # About 1km x 1km at mid-latitudes
         print(f"Warning: Large area requested ({area_deg2:.4f} deg²)")
         print("This may take a long time or fail. Consider a smaller area.")
         response = input("Continue anyway? (y/N): ")

@@ -34,8 +34,22 @@ except ImportError as e:
     sys.exit(1)
 
 
+# Performance test constants
+DEFAULT_NUM_ROUTES = 10
+DEFAULT_REPETITIONS = 3
+SEARCH_RADIUS_M = 150.0
+MAX_NEARBY_NODES = 5
+BASE_WALKING_SPEED = 1.4
+MAX_DETOUR_FACTOR = 1.3
+EXCELLENT_SPEEDUP_THRESHOLD = 2.0
+GOOD_SPEEDUP_THRESHOLD = 1.5
+MODERATE_SPEEDUP_THRESHOLD = 1.1
+EXCELLENT_HIT_RATIO = 50
+GOOD_HIT_RATIO = 25
+
+
 def create_test_routes(
-    num_routes: int = 10,
+    num_routes: int = DEFAULT_NUM_ROUTES,
 ) -> list[tuple[tuple[float, float], tuple[float, float]]]:
     """Create test route pairs for benchmarking.
 
@@ -98,8 +112,8 @@ def _load_providers(
         access_provider = OSMAccessProvider(
             parser=network_provider.parser,
             walking_profile=walking_profile,
-            search_radius_m=150.0,
-            max_nearby_nodes=5,
+            search_radius_m=SEARCH_RADIUS_M,
+            max_nearby_nodes=MAX_NEARBY_NODES,
             build_index=True,
         )
     except Exception as e:  # pragma: no cover - demo helper
@@ -223,7 +237,9 @@ def _calculate_metrics(
 
 
 def benchmark_routing_performance(
-    osm_file: Path, num_routes: int = 10, repetitions: int = 3
+    osm_file: Path,
+    num_routes: int = DEFAULT_NUM_ROUTES,
+    repetitions: int = DEFAULT_REPETITIONS,
 ) -> dict[str, Any]:
     """Benchmark routing performance with and without caching.
 
@@ -239,10 +255,10 @@ def benchmark_routing_performance(
 
     # Create walking profile
     walking_profile = WalkingProfile(
-        base_speed_ms=1.4,  # Normal walking speed
+        base_speed_ms=BASE_WALKING_SPEED,  # Normal walking speed
         avoid_stairs=False,
         avoid_busy_roads=True,
-        max_detour_factor=1.3,
+        max_detour_factor=MAX_DETOUR_FACTOR,
     )
 
     # Load OSM data
@@ -359,20 +375,20 @@ def print_performance_results(results: dict[str, Any]) -> None:
         print(f"   Providers called: {cache_stats.providers_called}")
 
         # Cache efficiency analysis
-        if cache["speedup"] >= 2.0:
+        if cache["speedup"] >= EXCELLENT_SPEEDUP_THRESHOLD:
             print(f"\\n✅ EXCELLENT: Cache provides {cache['speedup']:.1f}x speedup!")
-        elif cache["speedup"] >= 1.5:
+        elif cache["speedup"] >= GOOD_SPEEDUP_THRESHOLD:
             print(f"\\n✅ GOOD: Cache provides {cache['speedup']:.1f}x speedup")
-        elif cache["speedup"] >= 1.1:
+        elif cache["speedup"] >= MODERATE_SPEEDUP_THRESHOLD:
             print(f"\\n⚠️  MODERATE: Cache provides {cache['speedup']:.1f}x speedup")
         else:
             print(f"\\n❌ LIMITED: Cache speedup is only {cache['speedup']:.1f}x")
 
-        if hit_ratio >= 50:
+        if hit_ratio >= EXCELLENT_HIT_RATIO:
             print(
                 f"   Cache hit ratio of {hit_ratio:.1f}% is excellent for real-world scenarios"
             )
-        elif hit_ratio >= 25:
+        elif hit_ratio >= GOOD_HIT_RATIO:
             print(
                 f"   Cache hit ratio of {hit_ratio:.1f}% shows good cache utilization"
             )
@@ -384,7 +400,8 @@ def print_performance_results(results: dict[str, Any]) -> None:
 
 def main() -> None:
     """Main function."""
-    if len(sys.argv) < 2:
+    min_args = 2
+    if len(sys.argv) < min_args:
         print("Usage: python osm_cache_performance_test.py <osm_file> [num_routes]")
         print("\\nExample:")
         print("  python osm_cache_performance_test.py uw_campus.osm")
@@ -396,8 +413,9 @@ def main() -> None:
         print(f"❌ OSM file not found: {osm_file}")
         sys.exit(1)
 
-    num_routes = 10
-    if len(sys.argv) >= 3:
+    num_routes = DEFAULT_NUM_ROUTES
+    optional_args = 3
+    if len(sys.argv) >= optional_args:
         try:
             num_routes = int(sys.argv[2])
         except ValueError:
@@ -407,10 +425,12 @@ def main() -> None:
     print("🧪 Starting OSM Cache Performance Test")
     print(f"   OSM file: {osm_file}")
     print(f"   Routes to test: {num_routes}")
-    print("   Repetitions: 3")
+    print(f"   Repetitions: {DEFAULT_REPETITIONS}")
 
     # Run performance benchmark
-    results = benchmark_routing_performance(osm_file, num_routes, repetitions=3)
+    results = benchmark_routing_performance(
+        osm_file, num_routes, repetitions=DEFAULT_REPETITIONS
+    )
 
     # Display results
     print_performance_results(results)

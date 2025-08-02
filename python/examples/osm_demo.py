@@ -10,6 +10,14 @@ from graphserver import Engine, Vertex
 from graphserver.providers.osm import OSMAccessProvider, OSMNetworkProvider
 from graphserver.providers.osm.types import WalkingProfile
 
+# Demo configuration constants
+WALKING_SPEED = 1.3
+MAX_DETOUR_FACTOR = 1.5
+SEARCH_RADIUS_M = 100.0
+MAX_NEARBY_NODES = 5
+COORDINATE_OFFSET = 0.001
+MAX_EDGES_TO_SHOW = 3
+
 
 def main():
     """Demonstrate OSM provider functionality."""
@@ -28,10 +36,10 @@ def main():
 
     # Create walking profile optimized for campus navigation
     campus_profile = WalkingProfile(
-        base_speed_ms=1.3,  # Comfortable walking pace
+        base_speed_ms=WALKING_SPEED,  # Comfortable walking pace
         avoid_stairs=False,  # Stairs are OK on campus
         avoid_busy_roads=True,  # Prefer pedestrian paths
-        max_detour_factor=1.5,
+        max_detour_factor=MAX_DETOUR_FACTOR,
     )
 
     # Initialize providers with spatial indexing
@@ -43,8 +51,8 @@ def main():
     access_provider = OSMAccessProvider(
         parser=network_provider.parser,
         walking_profile=campus_profile,
-        search_radius_m=100.0,
-        max_nearby_nodes=5,
+        search_radius_m=SEARCH_RADIUS_M,
+        max_nearby_nodes=MAX_NEARBY_NODES,
         build_index=True,
     )
 
@@ -103,7 +111,9 @@ def main():
         print(
             f"Found {len(node_edges)} connections from node {nearest['osm_node_id']}:"
         )
-        for i, (target, edge) in enumerate(node_edges[:3]):  # Show first 3
+        for i, (target, edge) in enumerate(
+            node_edges[:MAX_EDGES_TO_SHOW]
+        ):  # Show first few
             distance = edge.metadata.get("distance_m", 0)
             highway = edge.metadata.get("highway", "unknown")
             way_id = edge.metadata.get("way_id", "N/A")
@@ -113,8 +123,10 @@ def main():
                 f"     Way ID: {way_id}, Distance: {distance:.1f}m, Cost: {edge.cost:.1f}s"
             )
 
-        if len(node_edges) > 3:
-            print(f"     ... and {len(node_edges) - 3} more connections")
+        if len(node_edges) > MAX_EDGES_TO_SHOW:
+            print(
+                f"     ... and {len(node_edges) - MAX_EDGES_TO_SHOW} more connections"
+            )
 
     # Demonstrate Graphserver integration
     print("\n🚀 Graphserver Engine Integration")
@@ -135,11 +147,15 @@ def main():
 
     # Try to find a path between nearby points
     start_coord = Vertex({"lat": test_lat, "lon": test_lon})
-    goal_coord = Vertex({"lat": test_lat + 0.001, "lon": test_lon + 0.001})
+    goal_coord = Vertex(
+        {"lat": test_lat + COORDINATE_OFFSET, "lon": test_lon + COORDINATE_OFFSET}
+    )
 
     # Link both vertices to the OSM network
     access_provider.link(start_coord, test_lat, test_lon)
-    access_provider.link(goal_coord, test_lat + 0.001, test_lon + 0.001)
+    access_provider.link(
+        goal_coord, test_lat + COORDINATE_OFFSET, test_lon + COORDINATE_OFFSET
+    )
 
     print("Attempting to plan route:")
     print(f"  From: ({start_coord['lat']}, {start_coord['lon']})")

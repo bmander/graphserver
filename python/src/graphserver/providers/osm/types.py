@@ -8,6 +8,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+# Geographic coordinate constants
+MIN_LATITUDE = -90.0
+MAX_LATITUDE = 90.0
+MIN_LONGITUDE = -180.0
+MAX_LONGITUDE = 180.0
+
+# OSM geometry constants
+MIN_WAY_NODES = 2
+
 
 @dataclass
 class OSMNode:
@@ -20,10 +29,10 @@ class OSMNode:
 
     def __post_init__(self) -> None:
         """Validate node data after initialization."""
-        if not (-90.0 <= self.lat <= 90.0):
+        if not (MIN_LATITUDE <= self.lat <= MAX_LATITUDE):
             msg = f"Invalid latitude: {self.lat}"
             raise ValueError(msg)
-        if not (-180.0 <= self.lon <= 180.0):
+        if not (MIN_LONGITUDE <= self.lon <= MAX_LONGITUDE):
             msg = f"Invalid longitude: {self.lon}"
             raise ValueError(msg)
 
@@ -38,8 +47,8 @@ class OSMWay:
 
     def __post_init__(self) -> None:
         """Validate way data after initialization."""
-        if len(self.node_refs) < 2:
-            msg = f"Way {self.id} must have at least 2 nodes"
+        if len(self.node_refs) < MIN_WAY_NODES:
+            msg = f"Way {self.id} must have at least {MIN_WAY_NODES} nodes"
             raise ValueError(msg)
 
     def is_walkable(self) -> bool:

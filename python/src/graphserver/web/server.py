@@ -13,6 +13,10 @@ from typing import Any
 from .handlers import GraphRequestHandler
 from .providers import ProgressCallback, ProviderError, ProviderManager
 
+# Network constants
+MIN_PORT = 1
+MAX_PORT = 65535
+
 
 class GraphWebServer:
     """Web server for graph browsing."""
@@ -148,8 +152,8 @@ def main() -> None:
     args = parser.parse_args()
 
     # Validate port
-    if not (1 <= args.port <= 65535):
-        print("Error: Port must be between 1 and 65535")
+    if not (MIN_PORT <= args.port <= MAX_PORT):
+        print(f"Error: Port must be between {MIN_PORT} and {MAX_PORT}")
         sys.exit(1)
 
     # Create and run server
