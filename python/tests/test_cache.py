@@ -30,11 +30,16 @@ class MockProvider:
         self.call_count = 0
         self.called_with: list[Vertex] = []
 
-    def __call__(self, vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
-        """Mock provider implementation."""
+    def out_edges(self, vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
+        """Mock provider implementation for outgoing edges."""
         self.call_count += 1
         self.called_with.append(vertex)
         return self.edges_to_return
+
+    def in_edges(self, vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
+        """Mock provider implementation for incoming edges."""
+        # For testing, incoming edges are the same as outgoing edges
+        return self.out_edges(vertex)
 
     def reset(self) -> None:
         """Reset call tracking."""
@@ -327,9 +332,16 @@ class TestCacheErrorHandling:
         engine = Engine(enable_edge_caching=True)
 
         # Create provider that raises exceptions
-        def failing_provider(_vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
-            msg = "Provider failure"
-            raise ValueError(msg)
+        class FailingProvider:
+            def out_edges(self, _vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
+                msg = "Provider failure"
+                raise ValueError(msg)
+
+            def in_edges(self, _vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
+                msg = "Provider failure"
+                raise ValueError(msg)
+
+        failing_provider = FailingProvider()
 
         engine.register_provider("failing", failing_provider)
 

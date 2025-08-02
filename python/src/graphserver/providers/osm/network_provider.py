@@ -62,14 +62,32 @@ class OSMNetworkProvider:
         # Convert string to stable unsigned integer hash
         return hash(hash_string) & 0xFFFFFFFFFFFFFFFF
 
-    def __call__(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
-        """Generate edges from an OSM node (implements EdgeProvider protocol).
+    def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+        """Generate outgoing edges from an OSM node (implements EdgeProvider protocol).
 
         Args:
             vertex: Input vertex containing OSM node ID
 
         Returns:
             List of (target_vertex, edge) tuples to connected OSM nodes
+        """
+        # Only handle OSM node vertices
+        if "osm_node_id" not in vertex:
+            return []
+
+        return self._edges_from_node_id(vertex)
+
+    def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+        """Generate incoming edges to an OSM node.
+
+        For OSM networks, incoming edges are the same as outgoing edges since
+        roads are typically bidirectional (unless marked as oneway).
+
+        Args:
+            vertex: Input vertex containing OSM node ID
+
+        Returns:
+            List of (source_vertex, edge) tuples from connected OSM nodes
         """
         # Only handle OSM node vertices
         if "osm_node_id" not in vertex:

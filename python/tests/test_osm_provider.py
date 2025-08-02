@@ -229,7 +229,9 @@ class TestOSMDataSource:
             osm_file = Path(f.name)
 
         try:
-            data_source = OSMDataSource(osm_file, walking_profile=walking_profile)
+            data_source = OSMDataSource(
+                osm_file, walking_profile=walking_profile, build_spatial_index=False
+            )
             assert data_source.walking_profile == walking_profile
             assert len(data_source.nodes) == 0
             assert len(data_source.ways) == 0
@@ -325,7 +327,7 @@ class TestOSMNetworkProvider:
         node_vertex = Vertex({"osm_node_id": 1})
 
         # Generate edges
-        edges = provider(node_vertex)
+        edges = provider.out_edges(node_vertex)
 
         assert len(edges) > 0
 
@@ -382,14 +384,14 @@ class TestOSMAccessProvider:
         coord_vertex = Vertex({"lat": 47.6063, "lon": -122.3322})
 
         # Initially, unlinked vertex should produce no edges
-        edges = provider(coord_vertex)
+        edges = provider.out_edges(coord_vertex)
         assert len(edges) == 0
 
         # Link the vertex to nearest OSM node
         provider.link(coord_vertex, 47.6063, -122.3322)
 
         # Now it should generate edges
-        edges = provider(coord_vertex)
+        edges = provider.out_edges(coord_vertex)
         assert len(edges) == 1  # Should have one edge to linked OSM node
 
         # Check edge structure
@@ -421,7 +423,7 @@ class TestOSMAccessProvider:
         coord_vertex = Vertex({"lat": 47.6063, "lon": -122.3322})
 
         # Should generate no edges since vertex is not linked
-        edges = provider(coord_vertex)
+        edges = provider.out_edges(coord_vertex)
         assert len(edges) == 0
 
         # Clean up
@@ -451,7 +453,7 @@ class TestOSMAccessProvider:
         osm_vertex = Vertex({"osm_node_id": 1})
 
         # Generate edges from OSM node
-        edges = provider(osm_vertex)
+        edges = provider.out_edges(osm_vertex)
 
         assert len(edges) > 0
 
@@ -489,14 +491,14 @@ class TestOSMAccessProvider:
         provider.link(vertex, 47.6063, -122.3322)
 
         # Test that the vertex is now linked
-        edges = provider(vertex)
+        edges = provider.out_edges(vertex)
         assert len(edges) == 1
         assert edges[0][1].metadata["edge_type"] == "linked_vertex_to_node"
 
         # Test that the OSM node now has an edge back to the vertex
         osm_node_id = edges[0][0]["osm_node_id"]
         osm_vertex = Vertex({"osm_node_id": osm_node_id})
-        back_edges = provider(osm_vertex)
+        back_edges = provider.out_edges(osm_vertex)
 
         # Should have at least one edge back to our linked vertex
         linked_back_edges = [
@@ -551,14 +553,14 @@ class TestOSMAccessProvider:
         provider.link(vertex, 47.6063, -122.3322)
 
         # Verify it's linked
-        edges = provider(vertex)
+        edges = provider.out_edges(vertex)
         assert len(edges) == 1
 
         # Clear all links
         provider.clear_links()
 
         # Verify vertex is no longer linked
-        edges = provider(vertex)
+        edges = provider.out_edges(vertex)
         assert len(edges) == 0
 
         # Clean up
@@ -591,8 +593,8 @@ class TestOSMAccessProvider:
         provider.link(vertex2, 47.6063, -122.3322)
 
         # Both should generate edges to the same OSM node
-        edges1 = provider(vertex1)
-        edges2 = provider(vertex2)
+        edges1 = provider.out_edges(vertex1)
+        edges2 = provider.out_edges(vertex2)
 
         assert len(edges1) == 1
         assert len(edges2) == 1
@@ -630,7 +632,7 @@ class TestOSMAccessProvider:
         provider.link(vertex_with_time, 47.6063, -122.3322)
 
         # Generate edges - should preserve time in target OSM node
-        edges = provider(vertex_with_time)
+        edges = provider.out_edges(vertex_with_time)
         assert len(edges) == 1
 
         target_vertex, edge = edges[0]
@@ -660,14 +662,14 @@ class TestOSMAccessProvider:
         provider.link(linked_vertex, 47.6063, -122.3322)
 
         # Get the OSM node ID that was linked
-        edges = provider(linked_vertex)
+        edges = provider.out_edges(linked_vertex)
         osm_node_id = edges[0][0]["osm_node_id"]
 
         # Create OSM node vertex with time
         osm_vertex_with_time = Vertex({"osm_node_id": osm_node_id, "time": 54321})
 
         # Generate edges from OSM node - should preserve time in target linked vertex
-        back_edges = provider(osm_vertex_with_time)
+        back_edges = provider.out_edges(osm_vertex_with_time)
 
         # Find the edge to our linked vertex
         linked_back_edges = [
@@ -705,7 +707,7 @@ class TestOSMAccessProvider:
         )  # Close to node 1 in test data
 
         # Should still generate edges (using node coordinates as fallback)
-        edges = provider(vertex_no_coords)
+        edges = provider.out_edges(vertex_no_coords)
         assert len(edges) == 1
 
         target_vertex, edge = edges[0]
@@ -754,7 +756,7 @@ class TestOSMAccessProvider:
         osm_vertex = Vertex({"osm_node_id": 1})
 
         # Generate edges from OSM node - should get multiple linked vertex edges
-        edges = provider(osm_vertex)
+        edges = provider.out_edges(osm_vertex)
 
         # Should have edges to both linked vertices
         assert len(edges) >= 2
@@ -785,7 +787,7 @@ class TestOSMAccessProvider:
         unknown_vertex = Vertex({"unknown_key": "unknown_value"})
 
         # Should return empty edges
-        edges = provider(unknown_vertex)
+        edges = provider.out_edges(unknown_vertex)
         assert len(edges) == 0
 
         # Clean up
@@ -845,7 +847,7 @@ class TestIntegrationWithGraphserver:
             goal = Vertex({"lat": 47.6082, "lon": -122.3301})
 
             # Test that access provider can handle coordinate vertices directly
-            start_edges = access_provider(start)
+            start_edges = access_provider.out_edges(start)
             assert len(start_edges) >= 0  # Should find nearby OSM nodes
 
             # This should work with the OSM providers

@@ -183,14 +183,31 @@ VertexEdgePair = tuple[Vertex, Edge]
 class EdgeProvider(Protocol):
     """Protocol for edge provider functions."""
 
-    def __call__(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
-        """Generate edges from a vertex.
+    def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+        """Generate outgoing edges from a vertex.
 
         Args:
             vertex: Vertex object containing state data
 
         Returns:
-            List of (target_vertex, edge) tuples
+            List of (target_vertex, edge) tuples for outgoing edges
+
+        Raises:
+            NotImplementedError: If provider does not support outgoing edges
+        """
+        ...
+
+    def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+        """Generate incoming edges to a vertex.
+
+        Args:
+            vertex: Vertex object containing state data
+
+        Returns:
+            List of (source_vertex, edge) tuples for incoming edges
+
+        Raises:
+            NotImplementedError: If provider does not support incoming edges
         """
         ...
 
@@ -276,25 +293,39 @@ class Engine:
         self._config = merged_config
 
     def register_provider(self, name: str, provider: EdgeProvider) -> None:
-        """Register a Python function as an edge provider.
+        """Register a Python edge provider.
 
         Args:
             name: Unique name for the provider
-            provider: Callable that generates edges from vertices
+            provider: EdgeProvider implementing out_edges and in_edges methods
 
         Raises:
-            TypeError: If provider is not callable
+            TypeError: If provider doesn't implement required methods
             RuntimeError: If registration fails
         """
-        if not callable(provider):
-            msg = "Provider must be callable"
+        # Validate that provider has required methods
+        if not hasattr(provider, "out_edges") or not callable(
+            getattr(provider, "out_edges")
+        ):
+            msg = "Provider must implement out_edges method"
+            raise TypeError(msg)
+
+        if not hasattr(provider, "in_edges") or not callable(
+            getattr(provider, "in_edges")
+        ):
+            msg = "Provider must implement in_edges method"
             raise TypeError(msg)
 
         if _graphserver is None:
             msg = "C extension not available"
             raise RuntimeError(msg)
 
-        _graphserver.register_provider(self._engine, name, provider)
+        # Create a wrapper function that adapts the new protocol to the old callable interface
+        # The C extension currently only supports outgoing edges, so we use out_edges
+        def provider_wrapper(vertex: Vertex) -> Sequence[VertexEdgePair]:
+            return provider.out_edges(vertex)
+
+        _graphserver.register_provider(self._engine, name, provider_wrapper)
         self._providers[name] = provider
 
     def plan(

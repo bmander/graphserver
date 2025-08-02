@@ -96,6 +96,7 @@ def create_simple_progress_callback(task_name: str) -> ProgressCallback:
     Returns:
         A progress callback function that prints simple status lines
     """
+
     def callback(description: str) -> None:
         print(f"\r{description}", end="", flush=True)
 

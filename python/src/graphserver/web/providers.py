@@ -217,9 +217,7 @@ class ProviderManager:
 
         # Step 1: Create OSM data source
         if progress_callback:
-            progress_callback(
-                f"Parsing OSM file ({osm_path.name}, {size_info})..."
-            )
+            progress_callback(f"Parsing OSM file ({osm_path.name}, {size_info})...")
         osm_data = OSMDataSource(osm_path, progress_callback=progress_callback)
 
         # Step 2: Show parsing results

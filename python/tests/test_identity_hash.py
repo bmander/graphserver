@@ -29,7 +29,7 @@ def test_coordinate_identity_hash_matching():
 
         try:
             # Create data source and access provider
-            data_source = OSMDataSource(osm_file, build_spatial_index=True)
+            data_source = OSMDataSource(osm_file, build_spatial_index=False)
             access_provider = OSMAccessProvider(data_source)
 
             # Test coordinate hash generation directly
@@ -77,7 +77,7 @@ def test_osm_node_identity_hash():
 
         try:
             # Create data source and access provider
-            data_source = OSMDataSource(osm_file, build_spatial_index=True)
+            data_source = OSMDataSource(osm_file, build_spatial_index=False)
             access_provider = OSMAccessProvider(data_source)
 
             # Test OSM node hash generation via vertex creation
@@ -139,7 +139,7 @@ def test_provider_generated_identity_hashes():
 
         try:
             # Create data source and access provider
-            data_source = OSMDataSource(osm_file, build_spatial_index=True)
+            data_source = OSMDataSource(osm_file, build_spatial_index=False)
             access_provider = OSMAccessProvider(data_source)
 
             # Test the hash generation methods directly

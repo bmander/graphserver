@@ -54,8 +54,18 @@ def test_provider_reference_counting() -> None:
         pytest.skip("C extension not built yet")
         return
 
+    class ProviderClass:
+        def out_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
+            return []
+
+        def in_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
+            return []
+
+    provider_obj = ProviderClass()
+
+    # Create a callable wrapper for the C extension
     def provider_func(_vertex: Vertex) -> Sequence[VertexEdgePair]:
-        return []
+        return provider_obj.out_edges(_vertex)
 
     # Create weak reference to track lifetime
     weak_ref = weakref.ref(provider_func)
@@ -87,8 +97,14 @@ def test_repeated_operations() -> None:
         pytest.skip("Python wrapper not available")
         return
 
-    def provider_func(_vertex: Vertex) -> Sequence[VertexEdgePair]:
-        return []
+    class ProviderClass:
+        def out_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
+            return []
+
+        def in_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
+            return []
+
+    provider_func = ProviderClass()
 
     # Perform many operations
     for i in range(100):

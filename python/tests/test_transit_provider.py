@@ -112,7 +112,7 @@ def test_transit_provider_coordinate_expansion() -> None:
             }
         )
 
-        edges = provider(coord_vertex)
+        edges = provider.out_edges(coord_vertex)
 
         # Should find nearby stops
         assert len(edges) > 0
@@ -150,7 +150,7 @@ def test_transit_provider_stop_expansion() -> None:
             }
         )
 
-        edges = provider(stop_vertex)
+        edges = provider.out_edges(stop_vertex)
 
         # Should find departures (might be empty if time calculation is off)
         # This tests the logic even if no departures found due to time issues
@@ -241,7 +241,7 @@ def test_vertex_state_transitions() -> None:
             }
         )
 
-        boarding_edges = provider(boarding_vertex)
+        boarding_edges = provider.out_edges(boarding_vertex)
 
         # Should transition to alight vertex at next stop
         if boarding_edges:  # May be empty due to time calculations
@@ -261,7 +261,7 @@ def test_vertex_state_transitions() -> None:
             }
         )
 
-        alight_edges = provider(alight_vertex)
+        alight_edges = provider.out_edges(alight_vertex)
 
         # Should have two edges: to boarding vertex and to stop vertex
         assert len(alight_edges) == 2
@@ -302,7 +302,7 @@ def test_first_and_last_stop_behavior() -> None:
             }
         )
 
-        first_stop_alight_edges = provider(first_stop_alight_vertex)
+        first_stop_alight_edges = provider.out_edges(first_stop_alight_vertex)
 
         # Should have TWO edges: to boarding vertex and to stop vertex
         assert len(first_stop_alight_edges) == 2
@@ -325,7 +325,7 @@ def test_first_and_last_stop_behavior() -> None:
             }
         )
 
-        middle_stop_alight_edges = provider(middle_stop_alight_vertex)
+        middle_stop_alight_edges = provider.out_edges(middle_stop_alight_vertex)
 
         # Should have TWO edges: to boarding vertex and to stop vertex
         assert len(middle_stop_alight_edges) == 2
@@ -348,7 +348,7 @@ def test_first_and_last_stop_behavior() -> None:
             }
         )
 
-        last_stop_alight_edges = provider(last_stop_alight_vertex)
+        last_stop_alight_edges = provider.out_edges(last_stop_alight_vertex)
 
         # Should have only ONE edge: to stop vertex (no alight_to_boarding)
         assert len(last_stop_alight_edges) == 1
@@ -370,7 +370,7 @@ def test_first_and_last_stop_behavior() -> None:
             }
         )
 
-        last_stop_boarding_edges = provider(last_stop_boarding_vertex)
+        last_stop_boarding_edges = provider.out_edges(last_stop_boarding_vertex)
 
         # Should have NO edges (end of trip, can't continue)
         assert len(last_stop_boarding_edges) == 0
@@ -384,7 +384,7 @@ def test_first_and_last_stop_behavior() -> None:
             }
         )
 
-        last_stop_edges = provider(last_stop_vertex)
+        last_stop_edges = provider.out_edges(last_stop_vertex)
 
         # Should have NO edges (no departures from terminus stop)
         assert len(last_stop_edges) == 0
@@ -398,7 +398,7 @@ def test_first_and_last_stop_behavior() -> None:
             }
         )
 
-        first_stop_edges = provider(first_stop_vertex)
+        first_stop_edges = provider.out_edges(first_stop_vertex)
 
         # Should have at least one departure edge
         if first_stop_edges:  # May be empty due to time calculations

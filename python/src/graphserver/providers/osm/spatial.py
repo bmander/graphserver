@@ -78,7 +78,7 @@ class SpatialIndex:
         self.properties = index.Property()
         self.properties.leaf_capacity = 1000  # Optimize for many points
         self.properties.fill_factor = 0.9
-        
+
         # R-tree will be created during bulk loading for better performance
         self.rtree = None
 
@@ -88,7 +88,7 @@ class SpatialIndex:
 
     def add_node(self, node: OSMNode) -> None:
         """Add an OSM node to the spatial index.
-        
+
         DEPRECATED: This method is inefficient for bulk loading.
         Use add_nodes() for better performance.
 
@@ -98,7 +98,7 @@ class SpatialIndex:
         # For backwards compatibility, create an index if it doesn't exist
         if self.rtree is None:
             self.rtree = index.Index(properties=self.properties)
-            
+
         # R-tree expects (minx, miny, maxx, maxy) bounding box
         # For points, min and max are the same
         bbox = (node.lon, node.lat, node.lon, node.lat)
@@ -219,7 +219,7 @@ class SpatialIndex:
         if self.rtree is None:
             msg = "Spatial index not initialized. Call add_nodes() first."
             raise RuntimeError(msg)
-            
+
         node_ids = self.rtree.intersection((min_lon, min_lat, max_lon, max_lat))
 
         for node_id in node_ids:

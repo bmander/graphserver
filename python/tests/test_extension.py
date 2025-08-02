@@ -47,19 +47,25 @@ def test_engine_creation() -> None:
 def test_provider_registration() -> None:
     """Test provider registration functionality."""
     try:
-        _graphserver = _import_c_extension()
+        from graphserver import Engine
 
-        def dummy_provider(vertex: Vertex) -> Sequence[VertexEdgePair]:
-            return []
+        class DummyProvider:
+            def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+                return []
 
-        engine = _graphserver.create_engine()
+            def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+                return []
+
+        dummy_provider = DummyProvider()
+
+        engine = Engine()
 
         # Should not raise exception
-        _graphserver.register_provider(engine, "test", dummy_provider)
+        engine.register_provider("test", dummy_provider)
 
         # Test error cases
-        with pytest.raises(TypeError):
-            _graphserver.register_provider(engine, "bad", "not_callable")
+        with pytest.raises(TypeError, match="Provider must implement out_edges method"):
+            engine.register_provider("bad", "not_callable")  # type: ignore[arg-type]
     except ImportError:
         pytest.skip("C extension not built yet")
 
@@ -67,39 +73,41 @@ def test_provider_registration() -> None:
 def test_plan_with_provider() -> None:
     """Test plan function with actual provider."""
     try:
-        _graphserver = _import_c_extension()
+        from graphserver import Engine, Vertex
 
-        engine = _graphserver.create_engine()
+        engine = Engine()
 
         # Register a simple provider that creates a path from x=0 to x=1
-        def simple_provider(vertex: Vertex) -> Sequence[VertexEdgePair]:
-            from graphserver import Edge, Vertex
+        class SimpleProvider:
+            def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+                from graphserver import Edge, Vertex
 
-            x = vertex.get("x", 0)
-            if x == 0:
-                target = Vertex({"x": 1})
-                edge = Edge(cost=1.0)
-                return [(target, edge)]
-            return []
+                x = vertex.get("x", 0)
+                if x == 0:
+                    target = Vertex({"x": 1})
+                    edge = Edge(cost=1.0)
+                    return [(target, edge)]
+                return []
 
-        _graphserver.register_provider(engine, "simple", simple_provider)
+            def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+                return []
+
+        simple_provider = SimpleProvider()
+
+        engine.register_provider("simple", simple_provider)
 
         # Now planning should work
-        from graphserver import Vertex
-
-        result = _graphserver.plan(engine, Vertex({"x": 0}), Vertex({"x": 1}))
+        result = engine.plan(start=Vertex({"x": 0}), goal=Vertex({"x": 1}))
         assert result is not None
-        assert isinstance(result, list)
-        assert len(result) == 2  # (None, start_vertex) + (edge, target_vertex)
+        from graphserver import PathResult
 
-        # First tuple: (None, start_vertex)
-        assert result[0][0] is None  # No incoming edge to start vertex
-        assert result[0][1]["x"] == 0  # Start vertex
+        assert isinstance(result, PathResult)
+        assert len(result) == 1  # One edge in the path
 
-        # Second tuple: (edge, target_vertex)
-        assert result[1][0] is not None  # Edge object
-        assert result[1][0].cost == 1.0  # Edge cost
-        assert result[1][1]["x"] == 1  # Target vertex
+        # Check the path edge
+        path_edge = result[0]
+        assert path_edge.edge.cost == 1.0  # Edge cost
+        assert path_edge.target["x"] == 1  # Target vertex
     except ImportError:
         pytest.skip("C extension not built yet")
 
@@ -113,15 +121,21 @@ def test_python_api() -> None:
         assert engine is not None
 
         # Test provider registration with working provider
-        def simple_provider(vertex: Vertex) -> Sequence[VertexEdgePair]:
-            from graphserver import Vertex
+        class SimpleProvider:
+            def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+                from graphserver import Vertex
 
-            x = vertex.get("x", 0)
-            if x == 0:
-                target = Vertex({"x": 1})
-                edge = Edge(cost=1.0)
-                return [(target, edge)]
-            return []
+                x = vertex.get("x", 0)
+                if x == 0:
+                    target = Vertex({"x": 1})
+                    edge = Edge(cost=1.0)
+                    return [(target, edge)]
+                return []
+
+            def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+                return []
+
+        simple_provider = SimpleProvider()
 
         engine.register_provider("simple", simple_provider)
         assert "simple" in engine.providers
@@ -142,10 +156,16 @@ def test_type_checking() -> None:
     """Test that type hints work correctly."""
     from graphserver import Edge, EdgeProvider, Engine, Vertex
 
-    def valid_provider(vertex: Vertex) -> Sequence[VertexEdgePair]:
-        target = Vertex({"x": 1})
-        edge = Edge(cost=1.0)
-        return [(target, edge)]
+    class ValidProvider:
+        def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+            target = Vertex({"x": 1})
+            edge = Edge(cost=1.0)
+            return [(target, edge)]
+
+        def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+            return []
+
+    valid_provider = ValidProvider()
 
     # Should pass type checking
     assert isinstance(valid_provider, EdgeProvider)
@@ -162,12 +182,18 @@ def test_error_handling() -> None:
         engine = Engine()
 
         # Test invalid provider
-        with pytest.raises(TypeError, match="Provider must be callable"):
+        with pytest.raises(TypeError, match="Provider must implement out_edges method"):
             engine.register_provider("bad", "not_callable")  # type: ignore[arg-type]
 
         # Test invalid start/goal
-        def dummy_provider(vertex: Vertex) -> Sequence[VertexEdgePair]:
-            return []
+        class DummyProvider:
+            def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+                return []
+
+            def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+                return []
+
+        dummy_provider = DummyProvider()
 
         engine.register_provider("test", dummy_provider)
 
@@ -202,8 +228,14 @@ def test_standardized_error_handling() -> None:
         engine = Engine()
 
         # Register a test provider
-        def test_provider(vertex: Vertex) -> Sequence[VertexEdgePair]:
-            return []
+        class TestProvider:
+            def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+                return []
+
+            def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+                return []
+
+        test_provider = TestProvider()
 
         engine.register_provider("test", test_provider)
 
@@ -230,22 +262,30 @@ def test_data_conversion() -> None:
         engine = Engine()
 
         # Test complex data types
-        def complex_provider(vertex: Vertex) -> Sequence[VertexEdgePair]:
-            from graphserver import Vertex
+        class ComplexProvider:
+            def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+                from graphserver import Vertex
 
-            if vertex.get("start", False):
-                target = Vertex(
-                    {
-                        "x": 10,
-                        "y": 20.5,
-                        "name": "destination",
-                        "active": True,
-                        "path": [1, 2, 3],
-                    }
-                )
-                edge = Edge(cost=15.5, metadata={"direction": "north", "distance": 100})
-                return [(target, edge)]
-            return []
+                if vertex.get("start", False):
+                    target = Vertex(
+                        {
+                            "x": 10,
+                            "y": 20.5,
+                            "name": "destination",
+                            "active": True,
+                            "path": [1, 2, 3],
+                        }
+                    )
+                    edge = Edge(
+                        cost=15.5, metadata={"direction": "north", "distance": 100}
+                    )
+                    return [(target, edge)]
+                return []
+
+            def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+                return []
+
+        complex_provider = ComplexProvider()
 
         engine.register_provider("complex", complex_provider)
 
@@ -292,12 +332,18 @@ def test_vertex_immutability_integration() -> None:
         engine = Engine()
 
         # Create a provider that returns vertices
-        def test_provider(vertex: Vertex) -> Sequence[VertexEdgePair]:
-            if vertex.get("start", False):
-                target = Vertex({"x": 100, "y": 200, "name": "target"})
-                edge = Edge(cost=10.0)
-                return [(target, edge)]
-            return []
+        class TestProvider:
+            def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+                if vertex.get("start", False):
+                    target = Vertex({"x": 100, "y": 200, "name": "target"})
+                    edge = Edge(cost=10.0)
+                    return [(target, edge)]
+                return []
+
+            def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+                return []
+
+        test_provider = TestProvider()
 
         engine.register_provider("test", test_provider)
 
@@ -335,13 +381,19 @@ def test_hash_preservation_through_planning() -> None:
         start_vertex = Vertex({"start": True}, hash_value=custom_hash)
         target_hash = 888888
 
-        def hash_preserving_provider(vertex: Vertex) -> Sequence[VertexEdgePair]:
-            if vertex.get("start", False):
-                # Create target with custom hash
-                target = Vertex({"x": 50, "y": 75}, hash_value=target_hash)
-                edge = Edge(cost=5.0)
-                return [(target, edge)]
-            return []
+        class HashPreservingProvider:
+            def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+                if vertex.get("start", False):
+                    # Create target with custom hash
+                    target = Vertex({"x": 50, "y": 75}, hash_value=target_hash)
+                    edge = Edge(cost=5.0)
+                    return [(target, edge)]
+                return []
+
+            def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+                return []
+
+        hash_preserving_provider = HashPreservingProvider()
 
         engine.register_provider("hash_test", hash_preserving_provider)
 

@@ -187,14 +187,39 @@ class OSMAccessProvider:
         if hasattr(self, "_link_distances"):
             self._link_distances.clear()
 
-    def __call__(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
-        """Generate edges from a vertex (implements EdgeProvider protocol).
+    def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+        """Generate outgoing edges from a vertex (implements EdgeProvider protocol).
 
         Args:
             vertex: Input vertex containing either linked coordinates or OSM node ID
 
         Returns:
             List of (target_vertex, edge) tuples
+        """
+
+        # Handle OSM node vertices - return edges to linked vertices
+        if "osm_node_id" in vertex:
+            return self._edges_to_linked_vertices(vertex)
+
+        # Handle other linked vertices (without coordinates) - check if linked
+        vertex_hash = self._get_time_agnostic_hash(vertex)
+        if vertex_hash in self._vertex_to_osm_node:
+            return self._edges_from_linked_vertex(vertex)
+
+        # Unknown vertex type
+        return []
+
+    def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+        """Generate incoming edges to a vertex.
+
+        For OSM access providers, incoming edges are the same as outgoing edges
+        since access links are bidirectional.
+
+        Args:
+            vertex: Input vertex containing either linked coordinates or OSM node ID
+
+        Returns:
+            List of (source_vertex, edge) tuples
         """
 
         # Handle OSM node vertices - return edges to linked vertices

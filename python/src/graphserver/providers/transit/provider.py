@@ -106,8 +106,8 @@ class TransitProvider:
         self.spatial_index = SpatialIndex()
         self.spatial_index.add_stops(self.parser.stops)
 
-    def __call__(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
-        """Generate edges from a vertex (implements EdgeProvider protocol).
+    def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+        """Generate outgoing edges from a vertex (implements EdgeProvider protocol).
 
         Args:
             vertex: Input vertex containing location/time or transit state
@@ -381,6 +381,22 @@ class TransitProvider:
             edges.append((stop_vertex, alighting_edge))
 
         return edges
+
+    def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+        """Generate incoming edges to a vertex.
+
+        Transit providers do not support incoming edge generation as transit
+        is inherently directional (board -> travel -> alight).
+
+        Args:
+            vertex: Input vertex containing location/time or transit state
+
+        Raises:
+            NotImplementedError: Transit providers do not support incoming edges
+        """
+        raise NotImplementedError(
+            "Transit providers do not support incoming edge generation"
+        )
 
     @property
     def stop_count(self) -> int:

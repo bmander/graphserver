@@ -32,8 +32,8 @@ class GridProvider:
         self.call_count = 0
         self.called_with: list[Vertex] = []
 
-    def __call__(self, vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
-        """Grid provider implementation."""
+    def out_edges(self, vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
+        """Grid provider implementation for outgoing edges."""
         self.call_count += 1
         self.called_with.append(vertex)
 
@@ -54,6 +54,11 @@ class GridProvider:
                 edges.append((target, edge))
 
         return edges
+
+    def in_edges(self, vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
+        """Grid provider implementation for incoming edges."""
+        # For a grid, incoming edges are the same as outgoing edges (bidirectional)
+        return self.out_edges(vertex)
 
     def reset(self) -> None:
         """Reset call tracking."""
