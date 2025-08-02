@@ -28,6 +28,7 @@ from urllib.request import urlopen
 # HTTP and area constants
 HTTP_OK = 200
 MAX_AREA_DEG_SQUARED = 0.01  # About 1km x 1km at mid-latitudes
+MB_SIZE = 1024 * 1024  # 1 MB in bytes
 
 # Predefined locations with their bounding boxes
 PREDEFINED_LOCATIONS = {
@@ -148,42 +149,41 @@ def download_osm_data(
                 sys.exit(1)
 
             print("Request successful, downloading data...")
-            
+
             # Get content length if available for percentage progress
-            content_length = response.getheader('Content-Length')
-            total_size = int(content_length) if content_length else None
-            
+
             # Download with progress feedback using larger chunks
             data = b""
-            chunk_size = 1024 * 1024  # 1MB chunks for better performance
+            chunk_size = MB_SIZE
             last_update = start_time
             last_size = 0
-            
+
             while True:
-                chunk_start = time.time()
                 chunk = response.read(chunk_size)
                 if not chunk:
                     break
-                chunk_time = time.time() - chunk_start
                 data += chunk
-                
+
                 # Update progress every 0.5 seconds
                 current_time = time.time()
                 if current_time - last_update >= 0.5:
-                    size_mb = len(data) / (1024 * 1024)
-                    
+                    size_mb = len(data) / MB_SIZE
+
                     # Calculate rate based on data downloaded since last update
                     downloaded_since_last = len(data) - last_size
                     time_since_last = current_time - last_update
-                    rate_mbps = (downloaded_since_last / (1024 * 1024)) / time_since_last if time_since_last > 0 else 0
-                    
-                    if total_size:
-                        progress_pct = (len(data) / total_size) * 100
-                        total_mb = total_size / (1024 * 1024)
-                        print(f"\r  Downloaded: {size_mb:.1f}/{total_mb:.1f} MB ({progress_pct:.1f}%), Rate: {rate_mbps:.1f} MB/s", end="", flush=True)
-                    else:
-                        print(f"\r  Downloaded: {size_mb:.1f} MB, Rate: {rate_mbps:.1f} MB/s", end="", flush=True)
-                    
+                    rate_mbps = (
+                        (downloaded_since_last / MB_SIZE) / time_since_last
+                        if time_since_last > 0
+                        else 0
+                    )
+
+                    print(
+                        f"\r  Downloaded: {size_mb:.1f} MB, Rate: {rate_mbps:.1f} MB/s",
+                        end="",
+                        flush=True,
+                    )
+
                     last_update = current_time
                     last_size = len(data)
 
