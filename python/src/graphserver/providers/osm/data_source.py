@@ -239,8 +239,4 @@ class OSMDataSource:
         Returns:
             List of OSMWay objects that reference the given node
         """
-        ways_for_node = []
-        for way in self.ways.values():
-            if node_id in way.node_refs:
-                ways_for_node.append(way)
-        return ways_for_node
+        return [way for way in self.ways.values() if node_id in way.node_refs]
