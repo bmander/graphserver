@@ -2,19 +2,20 @@
 """Download OSM Data from Overpass API
 
 This script downloads OpenStreetMap data for testing the OSM provider.
-It supports different profiles for filtering the downloaded data.
+It supports different profiles for filtering the downloaded data and 
+predefined locations for convenience.
 
 Usage:
-    python download_osm_data.py --profile walking [--bbox lat_min lon_min lat_max lon_max] \\
-        [--output output_file]
-    python download_osm_data.py --profile all [--bbox lat_min lon_min lat_max lon_max] \\
-        [--output output_file]
+    python download_osm_data.py --profile walking [--location LOCATION] [--output output_file]
+    python download_osm_data.py --profile all [--bbox lat_min lon_min lat_max lon_max] [--output output_file]
+    python download_osm_data.py --list-locations
 
 Examples:
-    python download_osm_data.py --profile walking --bbox 47.653 -122.315 47.657 -122.305 \\
-        --output campus.osm
-    python download_osm_data.py --profile travel --output travel_data.osm
-    python download_osm_data.py --profile all --output all_data.osm
+    python download_osm_data.py --profile walking --location uw-campus --output campus.osm
+    python download_osm_data.py --profile travel --location downtown-seattle
+    python download_osm_data.py --profile all --location capitol-hill
+    python download_osm_data.py --list-locations
+    python download_osm_data.py --profile walking --bbox 47.653 -122.315 47.657 -122.305
 """
 
 import argparse
@@ -27,6 +28,40 @@ from urllib.request import urlopen
 # HTTP and area constants
 HTTP_OK = 200
 MAX_AREA_DEG_SQUARED = 0.01  # About 1km x 1km at mid-latitudes
+
+# Predefined locations with their bounding boxes
+PREDEFINED_LOCATIONS = {
+    "uw-campus": {
+        "name": "University of Washington Campus",
+        "bbox": (47.649542342421846, -122.3146476835271, 47.661035800431776, -122.30256914707921),
+        "description": "UW Campus area with good pedestrian infrastructure"
+    },
+    "downtown-seattle": {
+        "name": "Downtown Seattle",
+        "bbox": (47.595, -122.345, 47.615, -122.315),
+        "description": "Seattle downtown core with dense street network"
+    },
+    "capitol-hill": {
+        "name": "Capitol Hill, Seattle",
+        "bbox": (47.610, -122.325, 47.625, -122.305),
+        "description": "Capitol Hill neighborhood with mixed residential/commercial streets"
+    },
+    "fremont": {
+        "name": "Fremont, Seattle",
+        "bbox": (47.645, -122.360, 47.660, -122.340),
+        "description": "Fremont neighborhood with local streets and arterials"
+    },
+    "ballard": {
+        "name": "Ballard, Seattle",
+        "bbox": (47.660, -122.390, 47.675, -122.370),
+        "description": "Ballard neighborhood with industrial and residential mix"
+    },
+    "west-seattle": {
+        "name": "West Seattle",
+        "bbox": (47.560, -122.390, 47.580, -122.370),
+        "description": "West Seattle area across the harbor"
+    }
+}
 
 
 def get_overpass_query(
@@ -167,10 +202,11 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  %(prog)s --profile walking --location uw-campus --output campus.osm
+  %(prog)s --profile travel --location downtown-seattle
+  %(prog)s --profile all --location capitol-hill
+  %(prog)s --list-locations
   %(prog)s --profile walking --bbox 47.653 -122.315 47.657 -122.305 --output campus.osm
-  %(prog)s --profile travel --output travel_data.osm
-  %(prog)s --profile all --output all_data.osm
-  %(prog)s --profile walking  # Uses default bbox and filename
         """,
     )
 
@@ -190,15 +226,56 @@ Examples:
         help="Bounding box coordinates (lat_min lon_min lat_max lon_max)",
     )
 
+    parser.add_argument(
+        "--location",
+        help="Use predefined location (e.g., 'uw-campus', 'downtown-seattle'). "
+        "Use --list-locations to see all available locations."
+    )
+
+    parser.add_argument(
+        "--list-locations",
+        action="store_true",
+        help="List all available predefined locations and exit"
+    )
+
     parser.add_argument("--output", help="Output OSM XML file path")
 
     args = parser.parse_args()
 
-    # Set defaults if not provided
+    # Handle --list-locations first
+    if args.list_locations:
+        print("Available predefined locations:")
+        print()
+        for key, location in PREDEFINED_LOCATIONS.items():
+            lat_min, lon_min, lat_max, lon_max = location["bbox"]
+            print(f"  {key}")
+            print(f"    Name: {location['name']}")
+            print(f"    Description: {location['description']}")
+            print(f"    Bounding box: ({lat_min}, {lon_min}) to ({lat_max}, {lon_max})")
+            print()
+        sys.exit(0)
+
+    # Validate mutually exclusive arguments
+    if args.bbox and args.location:
+        print("Error: --bbox and --location are mutually exclusive")
+        sys.exit(1)
+
+    # Set coordinates based on arguments
     if args.bbox:
         lat_min, lon_min, lat_max, lon_max = args.bbox
+    elif args.location:
+        location_key = args.location.lower()
+        if location_key not in PREDEFINED_LOCATIONS:
+            print(f"Error: Unknown location '{args.location}'")
+            print("Use --list-locations to see available locations")
+            sys.exit(1)
+        
+        location = PREDEFINED_LOCATIONS[location_key]
+        lat_min, lon_min, lat_max, lon_max = location["bbox"]
+        print(f"Using predefined location: {location['name']}")
+        print(f"Description: {location['description']}")
     else:
-        print("No bounding box provided, using default location (UW Campus, Seattle)")
+        print("No location specified, using default location (UW Campus, Seattle)")
         # University of Washington campus area - good pedestrian infrastructure
         lat_min, lon_min = 47.649542342421846, -122.3146476835271  # South-West
         lat_max, lon_max = 47.661035800431776, -122.30256914707921  # North-East
