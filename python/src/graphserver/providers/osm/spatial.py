@@ -73,12 +73,14 @@ class SpatialIndex:
 
     def __init__(self) -> None:
         """Initialize the spatial index."""
-        # Create R-tree index
+        # Store R-tree properties for later bulk loading
         # Using Property to set leaf capacity for better performance with point data
-        p = index.Property()
-        p.leaf_capacity = 1000  # Optimize for many points
-        p.fill_factor = 0.9
-        self.rtree = index.Index(properties=p)
+        self.properties = index.Property()
+        self.properties.leaf_capacity = 1000  # Optimize for many points
+        self.properties.fill_factor = 0.9
+        
+        # R-tree will be created during bulk loading for better performance
+        self.rtree = None
 
         # Keep reference to node data
         self.nodes: dict[int, OSMNode] = {}
@@ -86,10 +88,17 @@ class SpatialIndex:
 
     def add_node(self, node: OSMNode) -> None:
         """Add an OSM node to the spatial index.
+        
+        DEPRECATED: This method is inefficient for bulk loading.
+        Use add_nodes() for better performance.
 
         Args:
             node: OSM node to add to the index
         """
+        # For backwards compatibility, create an index if it doesn't exist
+        if self.rtree is None:
+            self.rtree = index.Index(properties=self.properties)
+            
         # R-tree expects (minx, miny, maxx, maxy) bounding box
         # For points, min and max are the same
         bbox = (node.lon, node.lat, node.lon, node.lat)
@@ -101,19 +110,27 @@ class SpatialIndex:
         self.nodes[node.id] = node
         self._indexed_count += 1
 
-        if self._indexed_count % 10000 == 0:
-            logger.debug("Indexed %d nodes", self._indexed_count)
-
     def add_nodes(self, nodes: dict[int, OSMNode]) -> None:
-        """Add multiple OSM nodes to the spatial index.
+        """Add multiple OSM nodes to the spatial index using bulk loading.
 
         Args:
             nodes: Dictionary of node ID to OSMNode objects
         """
-        logger.info("Adding %d nodes to spatial index", len(nodes))
+        logger.info("Bulk loading %d nodes to spatial index", len(nodes))
 
-        for node in nodes.values():
-            self.add_node(node)
+        # Store node reference
+        self.nodes = nodes
+        self._indexed_count = len(nodes)
+
+        # Generator function for bulk loading
+        def node_generator():
+            for node in nodes.values():
+                # Yield (id, bbox, object) - bbox is (minx, miny, maxx, maxy)
+                # For points, min and max coordinates are the same
+                yield (node.id, (node.lon, node.lat, node.lon, node.lat), None)
+
+        # Create index using generator - this is MUCH faster than individual inserts
+        self.rtree = index.Index(node_generator(), properties=self.properties)
 
         logger.info("Spatial index created with %d nodes", len(self.nodes))
 
@@ -141,6 +158,11 @@ class SpatialIndex:
         max_lon = lon + radius_deg
         min_lat = lat - radius_deg
         max_lat = lat + radius_deg
+
+        # Check if index is initialized
+        if self.rtree is None:
+            msg = "Spatial index not initialized. Call add_nodes() first."
+            raise RuntimeError(msg)
 
         # Query R-tree for nodes in bounding box
         candidate_ids = list(
@@ -193,6 +215,11 @@ class SpatialIndex:
         Yields:
             OSM nodes within the bounding box
         """
+        # Check if index is initialized
+        if self.rtree is None:
+            msg = "Spatial index not initialized. Call add_nodes() first."
+            raise RuntimeError(msg)
+            
         node_ids = self.rtree.intersection((min_lon, min_lat, max_lon, max_lat))
 
         for node_id in node_ids:
