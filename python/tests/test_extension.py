@@ -165,6 +165,9 @@ def test_type_checking() -> None:
         def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
             return []
 
+        def seed_vertices(self) -> Sequence[Vertex]:
+            return [Vertex({"x": 0, "y": 0})]
+
     valid_provider = ValidProvider()
 
     # Should pass type checking

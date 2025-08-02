@@ -60,6 +60,15 @@ class GridProvider:
         # For a grid, incoming edges are the same as outgoing edges (bidirectional)
         return self.out_edges(vertex)
 
+    def seed_vertices(self) -> Sequence[Vertex]:
+        """Return all grid positions as seed vertices for graph exploration."""
+        vertices = []
+        for x in range(self.width):
+            for y in range(self.height):
+                vertex = Vertex({"x": x, "y": y})
+                vertices.append(vertex)
+        return vertices
+
     def reset(self) -> None:
         """Reset call tracking."""
         self.call_count = 0
@@ -381,3 +390,33 @@ class TestPrecacheMemory:
 
         stats = engine.get_stats()
         assert stats.cache_puts > 0
+
+    def test_precache_with_seed_vertices(self):
+        """Test using provider's seed_vertices method with precache_subgraph."""
+        engine = Engine(enable_edge_caching=True)
+        provider = GridProvider(5, 5)
+        engine.register_provider("grid", provider)
+
+        # Get seed vertices from provider instead of manual creation
+        seed_vertices = provider.seed_vertices()
+
+        # Should have all grid positions
+        assert len(seed_vertices) == 25  # 5x5 grid
+
+        # Use subset of seed vertices for precaching
+        subset_seeds = seed_vertices[:10]  # First 10 vertices
+
+        # Test precaching with provider's seed vertices
+        engine.precache_subgraph(
+            provider_name="grid",
+            seed_vertices=subset_seeds,
+            max_depth=2,
+        )
+
+        stats = engine.get_stats()
+        assert stats.cache_puts > 0
+
+        # Verify that seed vertices can be used as actual vertices
+        for seed_vertex in subset_seeds:
+            edges = provider.out_edges(seed_vertex)
+            assert len(edges) >= 0  # Should work without error

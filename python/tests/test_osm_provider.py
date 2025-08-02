@@ -867,3 +867,57 @@ class TestIntegrationWithGraphserver:
         finally:
             # Clean up
             sample_osm_file.unlink()
+
+    def test_network_provider_seed_vertices(
+        self, sample_osm_file: Path, walking_profile: WalkingProfile
+    ) -> None:
+        """Test OSMNetworkProvider seed_vertices method."""
+        data_source = OSMDataSource(sample_osm_file, walking_profile=walking_profile)
+        provider = OSMNetworkProvider(data_source)
+
+        # Get seed vertices
+        seed_vertices = provider.seed_vertices()
+
+        # Should return all OSM nodes
+        assert len(seed_vertices) == len(data_source.nodes)
+
+        # Each seed vertex should have osm_node_id
+        for vertex in seed_vertices:
+            assert "osm_node_id" in vertex
+            assert isinstance(vertex["osm_node_id"], int)
+
+        # Check specific nodes from our sample data
+        node_ids = {vertex["osm_node_id"] for vertex in seed_vertices}
+        assert 1 in node_ids  # Start Node
+        assert 2 in node_ids  # Middle Node
+        assert 3 in node_ids  # End Node
+        assert 4 in node_ids  # Isolated Node
+
+    def test_access_provider_seed_vertices(
+        self, sample_osm_file: Path, walking_profile: WalkingProfile
+    ) -> None:
+        """Test OSMAccessProvider seed_vertices method."""
+        data_source = OSMDataSource(sample_osm_file, walking_profile=walking_profile)
+        provider = OSMAccessProvider(data_source)
+
+        # Initially no linked vertices
+        seed_vertices = provider.seed_vertices()
+        assert len(seed_vertices) == 0
+
+        # Link some vertices
+        from graphserver.core import Vertex
+
+        test_vertex1 = Vertex({"place": "library", "id": "lib1"})
+        test_vertex2 = Vertex({"place": "station", "id": "st1"})
+
+        provider.link(test_vertex1, 47.6062, -122.3321)  # Near Start Node
+        provider.link(test_vertex2, 47.6082, -122.3301)  # Near End Node
+
+        # Now should have linked vertices
+        seed_vertices = provider.seed_vertices()
+        assert len(seed_vertices) == 2
+
+        # Check that linked vertices are returned
+        linked_places = {v.get("place") for v in seed_vertices}
+        assert "library" in linked_places
+        assert "station" in linked_places

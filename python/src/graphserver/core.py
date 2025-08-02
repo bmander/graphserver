@@ -211,6 +211,21 @@ class EdgeProvider(Protocol):
         """
         ...
 
+    def seed_vertices(self) -> Sequence[Vertex]:
+        """Return seed vertices from which all other vertices are reachable.
+
+        This method returns a sequence of vertices that form the basis for graph
+        exploration. These vertices represent the entry points into the provider's
+        graph from which all other vertices can be reached through edge traversal.
+
+        Returns:
+            Sequence of vertices that serve as graph exploration entry points
+
+        Raises:
+            NotImplementedError: If provider does not implement seed vertex discovery
+        """
+        ...
+
 
 @dataclass(frozen=True)
 class EngineStats:

@@ -241,3 +241,29 @@ class OSMNetworkProvider:
                 else:
                     estimated_edges += segments * 2  # Bidirectional
         return estimated_edges
+
+    def seed_vertices(self) -> Sequence[Vertex]:
+        """Return all OSM nodes as seed vertices for graph exploration.
+
+        Returns all OSM nodes in the network as vertices. These nodes form the
+        complete set of vertices from which all network connectivity can be
+        explored through the out_edges method.
+
+        Returns:
+            Sequence of Vertex objects representing all OSM nodes
+
+        Note:
+            This may return a large number of vertices for large OSM datasets.
+            Consider using spatial filtering or other constraints if needed.
+        """
+        vertices = []
+        for node in self.data_source.nodes.values():
+            node_data: dict[str, GraphserverDataType] = {
+                "osm_node_id": node.id,
+                **node.tags,
+            }
+            # Create vertex with identity hash
+            identity_hash = self._get_identity_hash(node_data)
+            vertex = Vertex(node_data, hash_value=identity_hash)
+            vertices.append(vertex)
+        return vertices

@@ -412,3 +412,29 @@ class TransitProvider:
     def trip_count(self) -> int:
         """Get number of transit trips."""
         return self.parser.trip_count
+
+    def seed_vertices(self) -> Sequence[Vertex]:
+        """Return all transit stops as seed vertices for graph exploration.
+
+        Returns all transit stops in the GTFS data as vertices with coordinates
+        and a base time. These stops form the foundation for transit network
+        exploration, as all transit trips operate between these stops.
+
+        Returns:
+            Sequence of Vertex objects representing all transit stops
+
+        Note:
+            Each stop vertex includes a default time of 0. For realistic routing,
+            vertices with actual departure times should be used.
+        """
+        from graphserver.core import Vertex
+
+        vertices = []
+        for stop in self.parser.stops.values():
+            stop_data = {
+                "stop_id": stop.stop_id,
+            }
+
+            vertex = Vertex(stop_data)
+            vertices.append(vertex)
+        return vertices

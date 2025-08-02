@@ -421,3 +421,25 @@ class OSMAccessProvider:
     def edge_count(self) -> int:
         """Get number of walkable edges in the provider."""
         return self.data_source.way_count
+
+    def seed_vertices(self) -> Sequence[Vertex]:
+        """Return all linked access points as seed vertices for graph exploration.
+
+        Returns all vertices that have been explicitly linked to OSM nodes via the
+        link() method. These represent the access points that can connect external
+        vertices to the OSM network.
+
+        Returns:
+            Sequence of Vertex objects representing all linked access points
+
+        Note:
+            This only returns vertices that have been explicitly linked using the
+            link() method. To get all possible vertices, you must first link them.
+        """
+        vertices = []
+        for osm_node_id, linked_vertex_list in self._linked_vertices.items():
+            for vertex_template in linked_vertex_list:
+                # Use the template vertex as-is since it already represents
+                # the access point
+                vertices.append(vertex_template)
+        return vertices

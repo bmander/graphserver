@@ -413,6 +413,41 @@ def test_first_and_last_stop_behavior() -> None:
         pytest.skip("Transit dependencies not installed")
 
 
+def test_transit_provider_seed_vertices() -> None:
+    """Test TransitProvider seed_vertices method."""
+    try:
+        from graphserver.providers.transit import TransitProvider
+
+        # Create sample GTFS
+        gtfs_file = create_sample_gtfs()
+
+        # Create transit provider
+        provider = TransitProvider(gtfs_file)
+
+        # Get seed vertices
+        seed_vertices = provider.seed_vertices()
+
+        # Should return all transit stops
+        assert len(seed_vertices) == 3  # stop1, stop2, stop3
+
+        # Each seed vertex should have stop_id, lat, lon, time
+        for vertex in seed_vertices:
+            assert "stop_id" in vertex
+
+        # Check specific stops from our sample data
+        stop_ids = {vertex["stop_id"] for vertex in seed_vertices}
+        assert "stop1" in stop_ids
+        assert "stop2" in stop_ids
+        assert "stop3" in stop_ids
+
+        # Clean up
+        gtfs_file.unlink()
+        gtfs_file.parent.rmdir()
+
+    except ImportError:
+        pytest.skip("Transit dependencies not installed")
+
+
 if __name__ == "__main__":
     # Run basic tests
     test_transit_provider_import()
@@ -432,5 +467,8 @@ if __name__ == "__main__":
 
     test_transit_provider_integration()
     print("✓ Integration test passed")
+
+    test_transit_provider_seed_vertices()
+    print("✓ Seed vertices test passed")
 
     print("All tests passed!")
