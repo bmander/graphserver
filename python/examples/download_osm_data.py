@@ -148,9 +148,47 @@ def download_osm_data(
                 sys.exit(1)
 
             print("Request successful, downloading data...")
-            data = response.read()
+            
+            # Get content length if available for percentage progress
+            content_length = response.getheader('Content-Length')
+            total_size = int(content_length) if content_length else None
+            
+            # Download with progress feedback using larger chunks
+            data = b""
+            chunk_size = 1024 * 1024  # 1MB chunks for better performance
+            last_update = start_time
+            last_size = 0
+            
+            while True:
+                chunk_start = time.time()
+                chunk = response.read(chunk_size)
+                if not chunk:
+                    break
+                chunk_time = time.time() - chunk_start
+                data += chunk
+                
+                # Update progress every 0.5 seconds
+                current_time = time.time()
+                if current_time - last_update >= 0.5:
+                    size_mb = len(data) / (1024 * 1024)
+                    
+                    # Calculate rate based on data downloaded since last update
+                    downloaded_since_last = len(data) - last_size
+                    time_since_last = current_time - last_update
+                    rate_mbps = (downloaded_since_last / (1024 * 1024)) / time_since_last if time_since_last > 0 else 0
+                    
+                    if total_size:
+                        progress_pct = (len(data) / total_size) * 100
+                        total_mb = total_size / (1024 * 1024)
+                        print(f"\r  Downloaded: {size_mb:.1f}/{total_mb:.1f} MB ({progress_pct:.1f}%), Rate: {rate_mbps:.1f} MB/s", end="", flush=True)
+                    else:
+                        print(f"\r  Downloaded: {size_mb:.1f} MB, Rate: {rate_mbps:.1f} MB/s", end="", flush=True)
+                    
+                    last_update = current_time
+                    last_size = len(data)
 
         download_time = time.time() - start_time
+        print()  # New line after progress updates
 
         # Write to file
         output_path = Path(output_file)
