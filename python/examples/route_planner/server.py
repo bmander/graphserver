@@ -33,8 +33,64 @@ def create_vertex_from_coordinates(lat: float, lng: float) -> "Vertex":
     return Vertex({"lat": lat, "lng": lng, "type": "coordinate"})
 
 
+
+
+def extract_way_segment_coordinates(
+    osm_data, way_id: int, from_node_id: int, to_node_id: int
+) -> list[list[float]]:
+    """Extract coordinates for a segment of an OSM way.
+
+    Args:
+        osm_data: OSM data source containing ways and nodes
+        way_id: ID of the OSM way
+        from_node_id: Starting node ID for the segment
+        to_node_id: Ending node ID for the segment
+
+    Returns:
+        List of [lng, lat] coordinate pairs for the segment (excluding the first point)
+    """
+    if not osm_data:
+        return []
+        
+    if way_id not in osm_data.ways:
+        return []
+
+    way = osm_data.ways[way_id]
+    node_refs = way.node_refs
+
+    try:
+        # Find the indices of the from and to nodes
+        from_index = node_refs.index(from_node_id)
+        to_index = node_refs.index(to_node_id)
+    except ValueError:
+        # One of the nodes isn't in this way
+        return []
+
+    # Determine direction and extract the segment
+    if from_index < to_index:
+        # Forward direction
+        segment_nodes = node_refs[
+            from_index + 1 : to_index + 1
+        ]  # Exclude from_node, include to_node
+    else:
+        # Reverse direction
+        segment_nodes = node_refs[to_index:from_index][::-1]  # Reverse the segment
+
+    # Convert node IDs to coordinates
+    coordinates = []
+    for node_id in segment_nodes:
+        if node_id in osm_data.nodes:
+            node = osm_data.nodes[node_id]
+            coordinates.append([node.lon, node.lat])  # GeoJSON format: [lng, lat]
+
+    return coordinates
+
+
 def path_result_to_geojson(
-    path_result: "graphserver.PathResult", origin: dict, destination: dict
+    path_result: "graphserver.PathResult",
+    origin: dict,
+    destination: dict,
+    osm_data=None,
 ) -> dict:
     """Convert a PathResult to GeoJSON format.
 
@@ -53,22 +109,49 @@ def path_result_to_geojson(
             "properties": {"total_cost": 0, "total_distance": 0, "status": "no_route"},
         }
 
-    # Extract coordinates from path
+    # Extract coordinates from path - now with actual OSM way geometry
     coordinates = [[origin["lng"], origin["lat"]]]
     total_cost = 0
     waypoints = []
+    previous_node_id = None
 
     for i, path_edge in enumerate(path_result):
-        # Get target vertex coordinates
+        # Get target vertex and edge information
         target = path_edge.target
-        if "lat" in target and "lng" in target:
-            coordinates.append([target["lng"], target["lat"]])
+        edge = path_edge.edge
+
 
         # Add to total cost
-        if hasattr(path_edge.edge, "cost"):
-            cost = path_edge.edge.cost
+        if hasattr(edge, "cost"):
+            cost = edge.cost
             if isinstance(cost, int | float):
                 total_cost += float(cost)
+
+        # Try to extract actual way geometry if we have OSM data
+        if osm_data and "osm_node_id" in target and previous_node_id:
+            current_node_id = target["osm_node_id"]
+            
+            # Get way_id from metadata
+            way_id = None
+            if hasattr(edge, "metadata") and edge.metadata:
+                way_id = edge.metadata.get("way_id")
+    
+            if way_id and previous_node_id and current_node_id:
+                # Extract the way segment coordinates
+                segment_coords = extract_way_segment_coordinates(
+                    osm_data, way_id, previous_node_id, current_node_id
+                )
+                coordinates.extend(segment_coords)
+            elif "lat" in target and "lng" in target:
+                # Fallback to direct coordinates if we can't get way geometry
+                coordinates.append([target["lng"], target["lat"]])
+        elif "lat" in target and "lng" in target:
+            # Direct coordinate target (access edge to destination)
+            coordinates.append([target["lng"], target["lat"]])
+
+        # Update previous node for next iteration
+        if "osm_node_id" in target:
+            previous_node_id = target["osm_node_id"]
 
         # Create waypoint information
         waypoint = {
@@ -395,7 +478,10 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
                 return
 
             # Successfully found route
-            geojson_result = path_result_to_geojson(path_result, origin, destination)
+            osm_data = getattr(self.__class__, "osm_data", None)
+            geojson_result = path_result_to_geojson(
+                path_result, origin, destination, osm_data
+            )
             geojson_result["request"] = {
                 "origin": origin,
                 "destination": destination,
@@ -490,6 +576,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
             },
         }
         self.send_json_response(response)
+
 
 
 def parse_osm_bounds(osm_file_path: str) -> dict:
@@ -589,6 +676,7 @@ class RoutePlannerServer:
         # Store non-serializable objects separately for route calculation
         RoutePlannerHandler.engine = self.engine
         RoutePlannerHandler.providers = self.providers
+        RoutePlannerHandler.osm_data = getattr(self, "osm_data", None)
 
     def _init_routing_engine(self) -> None:
         """Initialize the graphserver engine and load providers."""
@@ -630,6 +718,9 @@ class RoutePlannerServer:
             osm_data = OSMDataSource(
                 self.osm_file, progress_callback=lambda msg: print(f"  {msg}")
             )
+
+            # Store OSM data source for geometry lookups
+            self.osm_data = osm_data
 
             # Create and register OSM providers
             network_provider = OSMNetworkProvider(osm_data)

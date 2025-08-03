@@ -177,14 +177,15 @@ class OSMNetworkProvider:
                 target_vertex = Vertex(target_data, hash_value=identity_hash)
 
                 # Create edge
+                metadata = {
+                    "edge_type": "osm_way",
+                    "way_id": way.id,
+                    "distance_m": distance_m,
+                    "duration_s": duration_s,
+                }
                 edge = Edge(
                     cost=final_cost,
-                    metadata={
-                        "edge_type": "osm_way",
-                        "way_id": way.id,
-                        "distance_m": distance_m,
-                        "duration_s": duration_s,
-                    },
+                    metadata=metadata,
                 )
 
                 edges.append((target_vertex, edge))

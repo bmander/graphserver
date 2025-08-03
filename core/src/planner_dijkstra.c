@@ -8,6 +8,7 @@
 #include <time.h>
 #include <math.h>
 #include <assert.h>
+#include <stdio.h>
 
 // Forward declare the internal path structure
 struct GraphserverPath {
@@ -82,6 +83,7 @@ static DijkstraNode* get_or_create_dijkstra_node(DijkstraState* state, Graphserv
             node->vertex = vertex;
             node->parent = NULL;
             node->cost = INFINITY;
+            node->incoming_edge = NULL;
             node->next = NULL;
             state->node_count++;
             return node;
@@ -195,27 +197,41 @@ static GraphserverResult build_path_edges(
             return GS_ERROR_NO_PATH_FOUND;
         }
 
-        double edge_cost = current->cost - parent_node->cost;
-        GraphserverVertex* target_vertex_copy = gs_vertex_clone(current->vertex);
-        if (!target_vertex_copy) {
-            for (size_t j = 0; j < path_length; j++) {
-                if (edges[j]) gs_edge_destroy(edges[j]);
+        // Use the original edge if available, otherwise create a simple cost-only edge
+        GraphserverEdge* edge;
+        if (current->incoming_edge) {
+            // Clone the original edge to preserve metadata
+            edge = gs_edge_clone(current->incoming_edge);
+            if (!edge) {
+                for (size_t j = 0; j < path_length; j++) {
+                    if (edges[j]) gs_edge_destroy(edges[j]);
+                }
+                free(edges);
+                return GS_ERROR_OUT_OF_MEMORY;
             }
-            free(edges);
-            return GS_ERROR_OUT_OF_MEMORY;
-        }
-
-        GraphserverEdge* edge = gs_edge_create(target_vertex_copy, &edge_cost, 1);
-        if (!edge) {
-            gs_vertex_destroy(target_vertex_copy);
-            for (size_t j = 0; j < path_length; j++) {
-                if (edges[j]) gs_edge_destroy(edges[j]);
+        } else {
+            // Fallback: create simple edge with cost only (for start node or missing edges)
+            double edge_cost = current->cost - parent_node->cost;
+            GraphserverVertex* target_vertex_copy = gs_vertex_clone(current->vertex);
+            if (!target_vertex_copy) {
+                for (size_t j = 0; j < path_length; j++) {
+                    if (edges[j]) gs_edge_destroy(edges[j]);
+                }
+                free(edges);
+                return GS_ERROR_OUT_OF_MEMORY;
             }
-            free(edges);
-            return GS_ERROR_OUT_OF_MEMORY;
-        }
 
-        gs_edge_set_owns_target_vertex(edge, true);
+            edge = gs_edge_create(target_vertex_copy, &edge_cost, 1);
+            if (!edge) {
+                gs_vertex_destroy(target_vertex_copy);
+                for (size_t j = 0; j < path_length; j++) {
+                    if (edges[j]) gs_edge_destroy(edges[j]);
+                }
+                free(edges);
+                return GS_ERROR_OUT_OF_MEMORY;
+            }
+            gs_edge_set_owns_target_vertex(edge, true);
+        }
         edges[i] = edge;
         current = parent_node;
     }
@@ -333,6 +349,12 @@ static GraphserverResult relax_edges(
         if (new_cost < target_node->cost) {
             target_node->cost = new_cost;
             target_node->parent = current_vertex;
+            
+            // Clone the edge to preserve it beyond the edge list's lifetime
+            target_node->incoming_edge = gs_edge_clone(edge);
+            if (!target_node->incoming_edge) {
+                target_node->incoming_edge = NULL;
+            }
 
             if (pq_contains(state->open_set, target_copy)) {
                 pq_decrease_key(state->open_set, target_copy, new_cost);
@@ -443,12 +465,15 @@ GraphserverResult dijkstra_search(
 void dijkstra_cleanup(DijkstraState* state) {
     if (!state) return;
     
-    // Clean up cloned vertices in the node table
+    // Clean up cloned vertices and edges in the node table
     if (state->nodes) {
         for (size_t i = 0; i < state->node_capacity; i++) {
             DijkstraNode* node = &state->nodes[i];
             if (node->vertex) {
                 gs_vertex_destroy(node->vertex);
+            }
+            if (node->incoming_edge) {
+                gs_edge_destroy(node->incoming_edge);
             }
         }
     }
@@ -470,6 +495,7 @@ GraphserverResult gs_plan_dijkstra(
     GraphserverArena* arena,
     GraphserverPath** out_path,
     GraphserverPlanStats* out_stats) {
+    
     
     if (!engine || !start_vertex || !is_goal || !arena || !out_path) {
         return GS_ERROR_NULL_POINTER;

@@ -190,6 +190,7 @@ typedef struct DijkstraNode {
     GraphserverVertex* vertex;
     GraphserverVertex* parent;
     double cost;
+    GraphserverEdge* incoming_edge; // The original edge used to reach this node
     struct DijkstraNode* next; // For hash table chaining
 } DijkstraNode;
 

@@ -311,17 +311,96 @@ PyObject* create_python_edge_object(const GraphserverEdge* edge) {
         return NULL;
     }
     
-    // Create Edge constructor arguments tuple: (cost, metadata=None)
+    // Extract metadata from C GraphserverEdge
+    PyObject* metadata_dict = NULL;
+    size_t metadata_count = gs_edge_get_metadata_count(edge);
+    
+    if (metadata_count > 0) {
+        metadata_dict = PyDict_New();
+        if (!metadata_dict) {
+            Py_DECREF(cost_obj);
+            return NULL;
+        }
+        
+        // Iterate through metadata directly from the C structure
+        for (size_t i = 0; i < metadata_count; i++) {
+            const char* key = edge->metadata[i].key;
+            const GraphserverValue* gs_value = &edge->metadata[i].value;
+            
+            // Convert GraphserverValue to Python object
+            PyObject* py_value = NULL;
+            switch (gs_value->type) {
+                case GS_VALUE_INT:
+                    py_value = PyLong_FromLongLong(gs_value->as.i_val);
+                    break;
+                case GS_VALUE_FLOAT:
+                    py_value = PyFloat_FromDouble(gs_value->as.f_val);
+                    break;
+                case GS_VALUE_STRING:
+                    py_value = PyUnicode_FromString(gs_value->as.s_val);
+                    break;
+                case GS_VALUE_BOOL:
+                    py_value = PyBool_FromLong(gs_value->as.b_val ? 1 : 0);
+                    break;
+                case GS_VALUE_INT_ARRAY:
+                case GS_VALUE_FLOAT_ARRAY:
+                case GS_VALUE_STRING_ARRAY: 
+                case GS_VALUE_BOOL_ARRAY:
+                    // Skip array handling for now - create placeholder string
+                    py_value = PyUnicode_FromString("[array]");
+                    break;
+                default:
+                    // Unsupported value type - skip this metadata entry
+                    continue;
+            }
+            
+            if (!py_value) {
+                Py_DECREF(metadata_dict);
+                Py_DECREF(cost_obj);
+                return NULL;
+            }
+            
+            // Add to metadata dictionary
+            if (PyDict_SetItemString(metadata_dict, key, py_value) < 0) {
+                Py_DECREF(py_value);
+                Py_DECREF(metadata_dict);
+                Py_DECREF(cost_obj);
+                return NULL;
+            }
+            Py_DECREF(py_value); // PyDict_SetItemString increments reference
+        }
+    }
+    
+    // Create Edge constructor arguments: Edge(cost, metadata)
     PyObject* args = PyTuple_New(1);
     if (!args) {
+        Py_XDECREF(metadata_dict);
         Py_DECREF(cost_obj);
         return NULL;
     }
     PyTuple_SetItem(args, 0, cost_obj); // steals reference
     
+    PyObject* kwargs = NULL;
+    if (metadata_dict) {
+        kwargs = PyDict_New();
+        if (!kwargs) {
+            Py_DECREF(metadata_dict);
+            Py_DECREF(args);
+            return NULL;
+        }
+        if (PyDict_SetItemString(kwargs, "metadata", metadata_dict) < 0) {
+            Py_DECREF(metadata_dict);
+            Py_DECREF(kwargs);
+            Py_DECREF(args);
+            return NULL;
+        }
+        Py_DECREF(metadata_dict); // PyDict_SetItemString increments reference
+    }
+    
     // Get Edge class from graphserver.core module
     PyObject* core_module = PyImport_ImportModule("graphserver.core");
     if (!core_module) {
+        Py_XDECREF(kwargs);
         Py_DECREF(args);
         return NULL;
     }
@@ -329,14 +408,16 @@ PyObject* create_python_edge_object(const GraphserverEdge* edge) {
     PyObject* edge_class = PyObject_GetAttrString(core_module, "Edge");
     Py_DECREF(core_module);
     if (!edge_class) {
+        Py_XDECREF(kwargs);
         Py_DECREF(args);
         return NULL;
     }
     
-    // Create Edge instance
-    PyObject* edge_obj = PyObject_CallObject(edge_class, args);
+    // Create Edge instance: Edge(cost, metadata=metadata_dict)
+    PyObject* edge_obj = PyObject_Call(edge_class, args, kwargs);
     Py_DECREF(edge_class);
     Py_DECREF(args);
+    Py_XDECREF(kwargs);
     
     return edge_obj;
 }
@@ -1232,6 +1313,7 @@ int python_vertex_edge_pairs_to_c_edges(PyObject* pair_list, GraphserverEdgeList
         if (metadata_attr) {
             Py_DECREF(metadata_attr);
         }
+        
         
         // Add edge to the list
         GraphserverResult result = gs_edge_list_add_edge(out_edges, edge);
