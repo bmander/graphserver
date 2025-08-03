@@ -461,12 +461,17 @@ class RoutePlanner {
         // Update route information
         const statusElement = document.getElementById('route-status');
         const distanceElement = document.getElementById('route-distance');
+        const costElement = document.getElementById('route-cost');
         const waypointsElement = document.getElementById('route-waypoints');
         
         if (statusElement) statusElement.textContent = 'Route Found';
         if (distanceElement) {
             const distance = routeData.properties?.total_distance || 0;
             distanceElement.textContent = `${(distance / 1000).toFixed(2)} km`;
+        }
+        if (costElement) {
+            const cost = routeData.properties?.total_cost || 0;
+            costElement.textContent = `${cost.toFixed(1)} units`;
         }
         if (waypointsElement) {
             const waypoints = routeData.properties?.waypoint_count || 0;
