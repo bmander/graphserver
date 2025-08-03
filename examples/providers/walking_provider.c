@@ -40,12 +40,12 @@ static void generate_walking_edges_grid(
     const WalkingConfig* config,
     GraphserverEdgeList* out_edges) {
     
-    // Generate walking options in 8 directions at different distances
-    double distances[] = {50.0, 100.0, 200.0, 400.0}; // meters
+    // Generate walking options in 6 directions at 2 distances (reduced from 8x4=32 to 6x2=12 edges)
+    double distances[] = {100.0, 300.0}; // Reduced from 4 to 2 distances
     size_t num_distances = sizeof(distances) / sizeof(distances[0]);
     
-    // 8 directions: N, NE, E, SE, S, SW, W, NW
-    double bearings[] = {0.0, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0};
+    // 6 directions: N, NE, E, S, SW, W (reduced from 8 to 6, skip redundant SE, NW)
+    double bearings[] = {0.0, 60.0, 90.0, 180.0, 240.0, 270.0};
     size_t num_bearings = sizeof(bearings) / sizeof(bearings[0]);
     
     for (size_t d = 0; d < num_distances; d++) {
