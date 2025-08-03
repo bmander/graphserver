@@ -194,13 +194,14 @@ typedef struct DijkstraNode {
     struct DijkstraNode* next; // For hash table chaining
 } DijkstraNode;
 
+// Forward declaration for HashMap
+typedef struct HashMap HashMap;
+
 // Dijkstra search state
 typedef struct {
     PriorityQueue* open_set;
-    VertexSet* closed_set;
-    DijkstraNode* nodes;
-    size_t node_count;
-    size_t node_capacity;
+    HashMap* closed_set;
+    HashMap* node_map; // Maps vertex -> DijkstraNode*
     GraphserverArena* arena;
     
     // Search configuration

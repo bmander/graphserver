@@ -3,6 +3,7 @@
 #include "../include/gs_vertex.h"
 #include "../include/gs_edge.h"
 #include "../include/gs_memory.h"
+#include "../include/gs_hashmap.h"
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -28,8 +29,10 @@ struct GraphserverPath {
  */
 
 // Constants
-#define INITIAL_NODE_CAPACITY 256
-#define NODE_HASH_SIZE 1024
+
+// External vertex hash and equality functions (defined in hashmap.c)
+extern size_t vertex_hash(const void* vertex_ptr);
+extern bool vertex_equals(const void* a, const void* b);
 
 // Helper function to get current time in seconds
 static double get_current_time_seconds(void) {
@@ -42,59 +45,48 @@ static double get_current_time_seconds(void) {
     #endif
 }
 
-// Hash function for vertex pointer (simple pointer hash)
-static size_t hash_vertex_pointer(const GraphserverVertex* vertex) {
-    uintptr_t addr = (uintptr_t)vertex;
-    return (addr >> 3) % NODE_HASH_SIZE; // Simple hash
+// Find or create Dijkstra node for vertex
+static DijkstraNode* get_or_create_dijkstra_node(DijkstraState* state, GraphserverVertex* vertex) {
+    // Check if node already exists
+    DijkstraNode* existing_node = (DijkstraNode*)hashmap_get(state->node_map, vertex);
+    if (existing_node) {
+        return existing_node;
+    }
+    
+    // Create new node
+    DijkstraNode* node;
+    if (state->arena) {
+        node = gs_arena_alloc_type(state->arena, DijkstraNode);
+    } else {
+        node = malloc(sizeof(DijkstraNode));
+    }
+    
+    if (!node) {
+        return NULL;
+    }
+    
+    // Initialize node
+    node->vertex = vertex;
+    node->parent = NULL;
+    node->cost = INFINITY;
+    node->incoming_edge = NULL;
+    node->next = NULL;
+    
+    // Add to hash map
+    if (!hashmap_put(state->node_map, vertex, node)) {
+        // Failed to add to map, free node
+        if (!state->arena) {
+            free(node);
+        }
+        return NULL;
+    }
+    
+    return node;
 }
 
 // Find Dijkstra node for vertex
 static DijkstraNode* find_dijkstra_node(DijkstraState* state, const GraphserverVertex* vertex) {
-    size_t hash = hash_vertex_pointer(vertex);
-    
-    // Linear probing for collision resolution
-    for (size_t i = 0; i < state->node_capacity; i++) {
-        size_t index = (hash + i) % state->node_capacity;
-        DijkstraNode* current = &state->nodes[index];
-        
-        if (!current->vertex) {
-            return NULL; // Not found, empty slot
-        }
-        
-        if (gs_vertex_equals(current->vertex, vertex)) {
-            return current; // Found
-        }
-    }
-    
-    return NULL; // Table full or not found
-}
-
-// Create or update Dijkstra node
-static DijkstraNode* get_or_create_dijkstra_node(DijkstraState* state, GraphserverVertex* vertex) {
-    size_t hash = hash_vertex_pointer(vertex);
-    
-    // Linear probing for insertion
-    for (size_t i = 0; i < state->node_capacity; i++) {
-        size_t index = (hash + i) % state->node_capacity;
-        DijkstraNode* node = &state->nodes[index];
-        
-        if (!node->vertex) {
-            // Empty slot, create new node
-            node->vertex = vertex;
-            node->parent = NULL;
-            node->cost = INFINITY;
-            node->incoming_edge = NULL;
-            node->next = NULL;
-            state->node_count++;
-            return node;
-        }
-        
-        if (gs_vertex_equals(node->vertex, vertex)) {
-            return node; // Found existing
-        }
-    }
-    
-    return NULL; // Table full
+    return (DijkstraNode*)hashmap_get(state->node_map, vertex);
 }
 
 // Initialize Dijkstra search state
@@ -124,16 +116,15 @@ GraphserverResult dijkstra_init(
         return GS_ERROR_OUT_OF_MEMORY;
     }
     
-    // Create closed set
-    state->closed_set = vertex_set_create(arena);
+    // Create closed set (hashmap for vertices)
+    state->closed_set = hashmap_create(vertex_hash, vertex_equals, arena);
     if (!state->closed_set) {
         return GS_ERROR_OUT_OF_MEMORY;
     }
     
-    // Allocate node table
-    state->node_capacity = NODE_HASH_SIZE;
-    state->nodes = gs_arena_calloc_array(arena, DijkstraNode, state->node_capacity);
-    if (!state->nodes) {
+    // Create node map (vertex -> DijkstraNode*)
+    state->node_map = hashmap_create(vertex_hash, vertex_equals, arena);
+    if (!state->node_map) {
         return GS_ERROR_OUT_OF_MEMORY;
     }
     
@@ -323,7 +314,7 @@ static GraphserverResult relax_edges(
         }
 
         // Skip if in closed set
-        if (vertex_set_contains(state->closed_set, target)) {
+        if (hashmap_contains(state->closed_set, target)) {
             continue;
         }
 
@@ -379,7 +370,7 @@ static GraphserverResult process_current_vertex(
     double current_cost,
     GraphserverPath** out_path) {
 
-    vertex_set_add(state->closed_set, current_vertex);
+    hashmap_put(state->closed_set, current_vertex, current_vertex); // Value doesn't matter for set
 
     if (state->is_goal(current_vertex, state->goal_user_data)) {
         state->goal_found = true;
@@ -465,20 +456,30 @@ GraphserverResult dijkstra_search(
 void dijkstra_cleanup(DijkstraState* state) {
     if (!state) return;
     
-    // Clean up cloned vertices and edges in the node table
-    if (state->nodes) {
-        for (size_t i = 0; i < state->node_capacity; i++) {
-            DijkstraNode* node = &state->nodes[i];
-            if (node->vertex) {
-                gs_vertex_destroy(node->vertex);
+    // Clean up nodes stored in the node map
+    if (state->node_map) {
+        HashMapIterator iter = hashmap_iterator_create(state->node_map);
+        void* key;
+        void* value;
+        
+        while (hashmap_iterator_next(&iter, &key, &value)) {
+            GraphserverVertex* vertex = (GraphserverVertex*)key;
+            DijkstraNode* node = (DijkstraNode*)value;
+            
+            if (vertex) {
+                gs_vertex_destroy(vertex);
             }
-            if (node->incoming_edge) {
+            if (node && node->incoming_edge) {
                 gs_edge_destroy(node->incoming_edge);
+            }
+            // Don't free the node itself if using arena allocation
+            if (!state->arena && node) {
+                free(node);
             }
         }
     }
     
-    // Priority queue and vertex set will be cleaned up with arena
+    // Hash maps and priority queue will be cleaned up with arena
     // No explicit cleanup needed for arena-allocated memory
     
     // Clear state
