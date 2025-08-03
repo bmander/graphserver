@@ -306,6 +306,53 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
                 start_vertex = create_vertex_from_coordinates(origin["lat"], origin["lng"])
                 goal_vertex = create_vertex_from_coordinates(destination["lat"], destination["lng"])
                 
+                # Link coordinate vertices to nearest OSM nodes via access provider
+                providers = getattr(self.__class__, "providers", {})
+                access_provider = providers.get("osm_access")
+                
+                if not access_provider:
+                    self.send_json_response({
+                        "type": "FeatureCollection", 
+                        "features": [],
+                        "properties": {
+                            "status": "error",
+                            "error": "OSM access provider not available",
+                            "total_cost": 0
+                        }
+                    })
+                    return
+                
+                # Link start and goal vertices to OSM network
+                try:
+                    access_provider.link(start_vertex, origin["lat"], origin["lng"])
+                    access_provider.link(goal_vertex, destination["lat"], destination["lng"])
+                except ValueError as e:
+                    # Handle case where coordinates are too far from road network
+                    error_msg = str(e)
+                    if "No OSM node found" in error_msg:
+                        self.send_json_response({
+                            "type": "FeatureCollection", 
+                            "features": [],
+                            "properties": {
+                                "status": "error",
+                                "error": "No roads found near the specified coordinates",
+                                "message": f"Try clicking closer to streets or roads. Search radius: {access_provider.search_radius_m}m",
+                                "total_cost": 0
+                            }
+                        })
+                    else:
+                        self.send_json_response({
+                            "type": "FeatureCollection", 
+                            "features": [],
+                            "properties": {
+                                "status": "error",
+                                "error": f"Coordinate linking failed: {error_msg}",
+                                "total_cost": 0
+                            }
+                        })
+                    return
+                
+                # Now perform the route planning
                 path_result = engine.plan(start=start_vertex, goal=goal_vertex, planner="dijkstra")
                 
                 # Convert to GeoJSON
