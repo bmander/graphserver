@@ -195,7 +195,6 @@ class GTFSParser:
             return
 
         stop_times_df = self.feed.stop_times.copy()  # Avoid modifying original
-        total_rows = len(stop_times_df)
 
         # Vectorized type conversions and defaults - much faster than row-by-row
         if "pickup_type" in stop_times_df.columns:
@@ -224,10 +223,13 @@ class GTFSParser:
 
         # Group by trip_id for efficient processing
         grouped = stop_times_df.groupby("trip_id", sort=False)
-        processed_rows = 0
-        update_interval = max(1, total_rows // 100)  # Update every 1% of records
+        total_trips = len(grouped)
 
-        for trip_id, group_df in grouped:
+        for processed_trips, (trip_id, group_df) in enumerate(grouped, 1):
+            if processed_trips % 100 == 0 or processed_trips == total_trips:
+                self.progress_callback(
+                    f"Parsing stop times... trip {processed_trips}/{total_trips}"
+                )
             # Convert group to StopTime objects using list comprehension
             self.stop_times[trip_id] = [
                 StopTime(
@@ -241,28 +243,6 @@ class GTFSParser:
                 )
                 for row in group_df.itertuples(index=False)
             ]
-
-            # Update progress periodically
-            processed_rows += len(group_df)
-            if processed_rows % update_interval == 0 or processed_rows == total_rows:
-                sub_progress = processed_rows / total_rows
-                # Format numbers with K/M suffixes for readability
-                if total_rows >= MILLION_THRESHOLD:
-                    progress_text = (
-                        f"({processed_rows / MILLION_THRESHOLD:.1f}M/"
-                        f"{total_rows / MILLION_THRESHOLD:.1f}M records)"
-                    )
-                elif total_rows >= THOUSAND_THRESHOLD:
-                    progress_text = (
-                        f"({processed_rows / THOUSAND_THRESHOLD:.1f}K/"
-                        f"{total_rows / THOUSAND_THRESHOLD:.1f}K records)"
-                    )
-                else:
-                    progress_text = f"({processed_rows}/{total_rows} records)"
-
-                self.progress_callback(
-                    f"Parsing stop times... {progress_text}", 5, 7, sub_progress
-                )
 
     def _prepare_time_window(
         self, start_time: int, max_hours: int
