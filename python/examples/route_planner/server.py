@@ -466,6 +466,8 @@ class RoutePlannerServer:
         port: int = 8080,
         osm_file: str | None = None,
         gtfs_files: list[str] | None = None,
+        *,
+        enable_caching: bool = False,
     ) -> None:
         """Initialize the route planner server.
 
@@ -474,11 +476,13 @@ class RoutePlannerServer:
             port: Port to listen on
             osm_file: Path to OSM file
             gtfs_files: List of paths to GTFS files
+            enable_caching: Enable graph edge caching for better performance
         """
         self.host = host
         self.port = port
         self.osm_file = osm_file
         self.gtfs_files = gtfs_files or []
+        self.enable_caching = enable_caching
 
         # Initialize graphserver engine and providers
         self.engine = None
@@ -491,6 +495,7 @@ class RoutePlannerServer:
             "gtfs_files": self.gtfs_files,
             "routing_available": self.engine is not None,
             "provider_count": len(self.providers),
+            "caching_enabled": self.enable_caching,
         }
 
         # Store non-serializable objects separately for route calculation
@@ -506,9 +511,10 @@ class RoutePlannerServer:
             return
 
         try:
-            # Initialize the graphserver engine with edge caching
-            print("🚀 Initializing graphserver engine...")
-            self.engine = Engine(enable_edge_caching=True)
+            # Initialize the graphserver engine
+            caching_status = "enabled" if self.enable_caching else "disabled"
+            print(f"🚀 Initializing graphserver engine (caching {caching_status})...")
+            self.engine = Engine(enable_edge_caching=self.enable_caching)
 
             # Load OSM providers if OSM file is provided
             if self.osm_file:

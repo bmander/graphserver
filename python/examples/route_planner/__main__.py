@@ -16,6 +16,7 @@ def main() -> None:
 Examples:
   python -m route_planner --osm examples/uw_campus.osm
   python -m route_planner --osm city.osm --gtfs transit.zip --port 8080
+  python -m route_planner --osm city.osm --enable-caching
         """,
     )
 
@@ -43,6 +44,12 @@ Examples:
         action="append",
         dest="gtfs_files",
         help="GTFS file path (can be specified multiple times)",
+    )
+
+    parser.add_argument(
+        "--enable-caching",
+        action="store_true",
+        help="Enable graph edge caching for better performance (default: disabled)",
     )
 
     args = parser.parse_args()
@@ -74,6 +81,7 @@ Examples:
             port=args.port,
             osm_file=args.osm,
             gtfs_files=args.gtfs_files,
+            enable_caching=args.enable_caching,
         )
         server.run()
     except KeyboardInterrupt:
