@@ -6,8 +6,8 @@ for the Route Planner web application.
 """
 
 import sys
-import urllib.request
 import urllib.error
+import urllib.request
 from pathlib import Path
 
 
@@ -94,11 +94,10 @@ def setup_leaflet(base_dir: Path) -> bool:
     if success_count == len(files):
         print(f"\n✅ Leaflet.js v{version} setup complete!")
         return True
-    else:
-        print(
-            f"\n⚠️  Leaflet.js setup partially failed ({success_count}/{len(files)} files downloaded)"
-        )
-        return False
+    print(
+        f"\n⚠️  Leaflet.js setup partially failed ({success_count}/{len(files)} files downloaded)"
+    )
+    return False
 
 
 def verify_setup(base_dir: Path) -> bool:
@@ -131,13 +130,12 @@ def verify_setup(base_dir: Path) -> bool:
             print(f"  ✓ {file_path}")
 
     if missing_files:
-        print(f"\n⚠️  Missing files:")
+        print("\n⚠️  Missing files:")
         for file_path in missing_files:
             print(f"  ✗ {file_path}")
         return False
-    else:
-        print(f"\n✅ All required files are present!")
-        return True
+    print("\n✅ All required files are present!")
+    return True
 
 
 def main() -> int:
@@ -179,13 +177,12 @@ def main() -> int:
         print("2. Open http://localhost:8080 in your browser")
         print("3. Click on the map to set route points!")
         return 0
-    else:
-        print("\n❌ Setup failed. Please check the errors above and try again.")
-        print("\nTroubleshooting:")
-        print("- Ensure you have internet connection for downloading files")
-        print("- Check that you have write permissions in this directory")
-        print("- Try running the script again")
-        return 1
+    print("\n❌ Setup failed. Please check the errors above and try again.")
+    print("\nTroubleshooting:")
+    print("- Ensure you have internet connection for downloading files")
+    print("- Check that you have write permissions in this directory")
+    print("- Try running the script again")
+    return 1
 
 
 if __name__ == "__main__":

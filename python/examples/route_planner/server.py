@@ -2,7 +2,6 @@
 
 import json
 import mimetypes
-import os
 import xml.etree.ElementTree as ET
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -13,9 +12,9 @@ try:
     import graphserver
     from graphserver import Engine, Vertex
     from graphserver.providers.osm import (
+        OSMAccessProvider,
         OSMDataSource,
         OSMNetworkProvider,
-        OSMAccessProvider,
     )
 
     try:
@@ -179,7 +178,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
 
             with open(full_path, "rb") as f:
                 self.wfile.write(f.read())
-        except (OSError, IOError) as e:
+        except OSError as e:
             self.send_error(500, f"Error reading file: {e}")
 
     def send_json_response(self, data: dict) -> None:
@@ -593,9 +592,7 @@ class RoutePlannerServer:
             print(f"🚌 GTFS files: {', '.join(self.gtfs_files)}")
 
         print(
-            "\n✅ Server ready! Open http://localhost:{} in your browser".format(
-                self.port
-            )
+            f"\n✅ Server ready! Open http://localhost:{self.port} in your browser"
         )
         print("Press Ctrl+C to stop\n")
 
