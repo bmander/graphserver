@@ -388,12 +388,19 @@ class RoutePlanner {
                 this.showRouteResult(routeResult);
                 this.visualizeRoute(routeResult);
             } else {
-                this.showRouteError(routeResult.properties?.error || 'No route found');
+                this.showRouteError(routeResult.properties || { error: 'No route found' });
             }
             
         } catch (error) {
             console.error('Route calculation failed:', error);
-            this.showRouteError(`Route calculation failed: ${error.message}`);
+            this.showRouteError({
+                error: 'Route calculation failed',
+                error_details: `Network or server error: ${error.message}`,
+                debug_info: {
+                    error_type: 'network_error',
+                    original_message: error.message
+                }
+            });
         } finally {
             this.isCalculatingRoute = false;
         }
@@ -438,7 +445,7 @@ class RoutePlanner {
         }
     }
     
-    showRouteError(errorMessage) {
+    showRouteError(errorData) {
         const routeLoading = document.getElementById('route-loading');
         const routeResult = document.getElementById('route-result');
         const routeError = document.getElementById('route-error');
@@ -447,7 +454,35 @@ class RoutePlanner {
         if (routeLoading) routeLoading.classList.add('hidden');
         if (routeResult) routeResult.classList.add('hidden');
         if (routeError) routeError.classList.remove('hidden');
-        if (routeErrorText) routeErrorText.textContent = errorMessage;
+        
+        if (routeErrorText && errorData) {
+            let errorHtml = `<strong>${errorData.error || 'Route Error'}</strong>`;
+            
+            // Add error details if available
+            if (errorData.error_details) {
+                errorHtml += `<br><small style="color: #666;">${errorData.error_details}</small>`;
+            }
+            
+            // Log debug info to console for troubleshooting
+            if (errorData.debug_info) {
+                console.log('Route Error Debug Info:', errorData.debug_info);
+                
+                // Show some key debug info in the UI
+                const debugInfo = errorData.debug_info;
+                if (debugInfo.search_radius_m || debugInfo.approximate_distance_km) {
+                    errorHtml += '<br><small style="color: #888;">Debug: ';
+                    if (debugInfo.search_radius_m) {
+                        errorHtml += `Search radius: ${debugInfo.search_radius_m}m `;
+                    }
+                    if (debugInfo.approximate_distance_km) {
+                        errorHtml += `Distance: ${debugInfo.approximate_distance_km}km`;
+                    }
+                    errorHtml += '</small>';
+                }
+            }
+            
+            routeErrorText.innerHTML = errorHtml;
+        }
     }
     
     visualizeRoute(routeData) {

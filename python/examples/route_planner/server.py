@@ -327,18 +327,22 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
             access_provider = providers.get("osm_access")
 
             if not access_provider:
-                self.send_json_response(
-                    {
-                        "type": "FeatureCollection",
-                        "features": [],
-                        "properties": {
-                            "status": "error",
-                            "error": "OSM access provider not available",
-                            "total_cost": 0,
-                        },
-                    }
+                self._send_error_response(
+                    error_code="PROVIDER_UNAVAILABLE",
+                    error_message="OSM access provider not available",
+                    error_details="The routing engine could not access OSM network data. This may indicate a configuration issue.",
+                    debug_info={"providers_available": list(providers.keys())},
                 )
                 return
+
+            # Calculate distance between points for diagnostics
+            import math
+
+            lat_diff = abs(destination["lat"] - origin["lat"])
+            lng_diff = abs(destination["lng"] - origin["lng"])
+            approx_distance_km = (
+                math.sqrt(lat_diff**2 + lng_diff**2) * 111
+            )  # Rough conversion
 
             # Link vertices to network
             try:
@@ -347,13 +351,50 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
                     goal_vertex, destination["lat"], destination["lng"]
                 )
             except ValueError as e:
-                self._handle_linking_error(e, access_provider)
+                self._handle_linking_error(
+                    e, access_provider, origin, destination, approx_distance_km
+                )
                 return
 
             # Perform route planning
-            path_result = engine.plan(
-                start=start_vertex, goal=goal_vertex, planner="dijkstra"
-            )
+            try:
+                path_result = engine.plan(
+                    start=start_vertex, goal=goal_vertex, planner="dijkstra"
+                )
+
+                # Check if route was found
+                if not path_result or len(path_result) == 0:
+                    self._send_error_response(
+                        error_code="NO_ROUTE_FOUND",
+                        error_message="No route could be calculated between the selected points",
+                        error_details="The routing algorithm could not find a connected path between the origin and destination.",
+                        debug_info={
+                            "origin": origin,
+                            "destination": destination,
+                            "approximate_distance_km": round(approx_distance_km, 2),
+                            "algorithm": "dijkstra",
+                            "search_radius_m": getattr(
+                                access_provider, "search_radius_m", None
+                            ),
+                        },
+                    )
+                    return
+
+            except Exception as routing_error:
+                self._send_error_response(
+                    error_code="ROUTING_ENGINE_ERROR",
+                    error_message="Route calculation failed due to an internal error",
+                    error_details=f"The routing engine encountered an error: {str(routing_error)}",
+                    debug_info={
+                        "engine_error": str(routing_error),
+                        "origin": origin,
+                        "destination": destination,
+                        "approximate_distance_km": round(approx_distance_km, 2),
+                    },
+                )
+                return
+
+            # Successfully found route
             geojson_result = path_result_to_geojson(path_result, origin, destination)
             geojson_result["request"] = {
                 "origin": origin,
@@ -365,42 +406,89 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
 
         except Exception as e:
             print(f"Route calculation error: {e}")
-            self.send_json_response(
-                {
-                    "type": "FeatureCollection",
-                    "features": [],
-                    "properties": {
-                        "status": "error",
-                        "error": str(e),
-                        "total_cost": 0,
-                    },
-                }
+            self._send_error_response(
+                error_code="UNKNOWN_ERROR",
+                error_message="An unexpected error occurred during route calculation",
+                error_details=f"Internal server error: {str(e)}",
+                debug_info={
+                    "exception_type": type(e).__name__,
+                    "exception_message": str(e),
+                },
             )
 
-    def _handle_linking_error(self, error: ValueError, access_provider) -> None:
-        """Handle coordinate linking errors."""
+    def _handle_linking_error(
+        self,
+        error: ValueError,
+        access_provider,
+        origin: dict,
+        destination: dict,
+        approx_distance_km: float,
+    ) -> None:
+        """Handle coordinate linking errors with detailed diagnostics."""
         error_msg = str(error)
+        search_radius = getattr(access_provider, "search_radius_m", "unknown")
+
         if "No OSM node found" in error_msg:
-            response = {
-                "type": "FeatureCollection",
-                "features": [],
-                "properties": {
-                    "status": "error",
-                    "error": "No roads found near the specified coordinates",
-                    "message": f"Try clicking closer to streets or roads. Search radius: {access_provider.search_radius_m}m",
-                    "total_cost": 0,
+            # Determine which point failed by checking coordinates in error message
+            failed_point = "unknown"
+            if (
+                f"{origin['lat']:.6f}" in error_msg
+                or f"{origin['lng']:.6f}" in error_msg
+            ):
+                failed_point = "origin"
+            elif (
+                f"{destination['lat']:.6f}" in error_msg
+                or f"{destination['lng']:.6f}" in error_msg
+            ):
+                failed_point = "destination"
+
+            self._send_error_response(
+                error_code="NO_NEARBY_ROADS",
+                error_message="No roads found near the selected coordinates",
+                error_details=f"Could not find any OSM road network within {search_radius}m of the {failed_point} point.",
+                debug_info={
+                    "failed_point": failed_point,
+                    "search_radius_m": search_radius,
+                    "origin": origin,
+                    "destination": destination,
+                    "approximate_distance_km": round(approx_distance_km, 2),
+                    "raw_error": error_msg,
                 },
-            }
+            )
         else:
-            response = {
-                "type": "FeatureCollection",
-                "features": [],
-                "properties": {
-                    "status": "error",
-                    "error": f"Coordinate linking failed: {error_msg}",
-                    "total_cost": 0,
+            self._send_error_response(
+                error_code="COORDINATE_LINKING_FAILED",
+                error_message="Failed to connect coordinates to the road network",
+                error_details=f"Coordinate linking error: {error_msg}",
+                debug_info={
+                    "search_radius_m": search_radius,
+                    "origin": origin,
+                    "destination": destination,
+                    "approximate_distance_km": round(approx_distance_km, 2),
+                    "raw_error": error_msg,
                 },
-            }
+            )
+
+    def _send_error_response(
+        self,
+        error_code: str,
+        error_message: str,
+        error_details: str,
+        debug_info: dict,
+    ) -> None:
+        """Send a structured error response with detailed information."""
+        response = {
+            "type": "FeatureCollection",
+            "features": [],
+            "properties": {
+                "status": "error",
+                "error": error_message,
+                "error_code": error_code,
+                "error_details": error_details,
+                "debug_info": debug_info,
+                "total_cost": 0,
+            },
+        }
         self.send_json_response(response)
 
 
