@@ -555,7 +555,7 @@ class ProviderManager:
         # Test vertex with each provider
         for provider_name, provider in self.providers.items():
             try:
-                edges = list(provider(vertex))
+                edges = list(provider.out_edges(vertex))
                 if edges:
                     compatible_providers.append(provider_name)
                     provider_results.append(f"{provider_name}: {len(edges)} edges")
@@ -571,3 +571,34 @@ class ProviderManager:
             f"No providers can handle this vertex. "
             f"Results: {'; '.join(provider_results)}",
         )
+
+    def get_sample_vertices_for_providers(
+        self, max_samples: int = 5
+    ) -> dict[str, list[dict[str, GraphserverDataType]]]:
+        """Get sample vertices from each provider for web UI display.
+
+        Args:
+            max_samples: Maximum number of sample vertices to return per provider
+
+        Returns:
+            Dict mapping provider names to lists of sample vertex data dictionaries
+        """
+        samples: dict[str, list[dict[str, GraphserverDataType]]] = {}
+
+        for provider_name, provider in self.providers.items():
+            try:
+                # Use the new max_vertices parameter we just implemented
+                if hasattr(provider, "seed_vertices"):
+                    vertex_list = provider.seed_vertices(max_vertices=max_samples)
+                    samples[provider_name] = [
+                        vertex.to_dict() for vertex in vertex_list
+                    ]
+                else:
+                    samples[provider_name] = []
+            except Exception as e:  # noqa: BLE001
+                print(
+                    f"Warning: Failed to get sample vertices from {provider_name}: {e}"
+                )
+                samples[provider_name] = []  # Fallback to empty if provider fails
+
+        return samples

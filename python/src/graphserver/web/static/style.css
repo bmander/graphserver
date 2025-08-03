@@ -159,3 +159,59 @@ pre {
     margin: 0;
     color: #cc0000;
 }
+
+/* Provider Samples Section */
+.providers {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+    margin-bottom: 20px;
+}
+
+.provider-section {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #fff;
+    border-radius: 3px;
+    border: 1px solid #e9ecef;
+}
+
+.provider-section h4 {
+    margin: 0 0 10px 0;
+    color: #495057;
+    font-size: 1.1em;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 5px;
+}
+
+.sample-vertices {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.sample-vertex {
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 3px;
+    border: 1px solid #e9ecef;
+    transition: background-color 0.2s;
+}
+
+.sample-vertex:hover {
+    background: #e9ecef;
+}
+
+.sample-vertex .link {
+    text-decoration: none;
+    font-family: monospace;
+    font-size: 0.9em;
+    display: block;
+    color: #007acc;
+}
+
+.sample-vertex .link:hover {
+    background: none;
+    text-decoration: underline;
+}

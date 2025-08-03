@@ -83,7 +83,7 @@ class GraphRequestHandler(BaseHTTPRequestHandler):
         """
         edges_data = []
         try:
-            provider_edges = list(provider(vertex))
+            provider_edges = list(provider.out_edges(vertex))
 
             for target_vertex, edge in provider_edges:
                 # Extract edge information

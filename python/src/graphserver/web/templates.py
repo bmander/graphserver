@@ -1,4 +1,5 @@
 """HTML template generation for the graph web browser."""
+# ruff: noqa: T201
 
 from __future__ import annotations
 
@@ -72,7 +73,100 @@ def generate_usage_content(server_config: dict[str, Any]) -> str:
         <p>{" | ".join(config_items)}</p>
     </div>"""
 
-    return usage_template.substitute(config_info=config_info)
+    # Generate provider samples section
+    provider_samples_info = _generate_provider_samples_section(server_config)
+
+    return usage_template.substitute(
+        config_info=config_info, provider_samples_info=provider_samples_info
+    )
+
+
+def _generate_provider_samples_section(server_config: dict[str, Any]) -> str:
+    """Generate HTML section showing sample vertices for each provider."""
+    from .providers import ProviderManager
+
+    provider_manager = server_config.get("provider_manager")
+    if not isinstance(provider_manager, ProviderManager):
+        return ""  # No provider manager available
+
+    try:
+        # Get sample vertices from all providers
+        provider_samples = provider_manager.get_sample_vertices_for_providers(
+            max_samples=5
+        )
+
+        if not provider_samples:
+            return ""  # No providers or no samples
+
+        # Generate HTML for provider samples
+        provider_sections = []
+
+        for provider_name, sample_vertices in provider_samples.items():
+            if not sample_vertices:
+                continue  # Skip providers with no samples
+
+            # Generate sample vertex links
+            sample_links = []
+            for i, vertex_data in enumerate(sample_vertices, 1):
+                link_html = _generate_sample_vertex_link(vertex_data, i)
+                sample_links.append(link_html)
+
+            if sample_links:
+                provider_section = f"""
+                <div class="provider-section">
+                    <h4>{provider_name}</h4>
+                    <div class="sample-vertices">
+                        {"".join(sample_links)}
+                    </div>
+                </div>"""
+                provider_sections.append(provider_section)
+
+        if provider_sections:
+            return f"""
+            <div class="providers">
+                <h3>Available Providers & Sample Vertices</h3>
+                {"".join(provider_sections)}
+            </div>"""
+
+    except Exception as e:  # noqa: BLE001
+        # Graceful fallback if provider samples fail
+        print(f"Warning: Failed to generate provider samples: {e}")
+
+    return ""
+
+
+def _format_provider_name(provider_name: str) -> str:
+    """Format provider name for display."""
+    # Convert snake_case to Title Case
+    name_parts = provider_name.replace("_", " ").split()
+    return " ".join(word.capitalize() for word in name_parts)
+
+
+def _generate_sample_vertex_link(vertex_data: dict[str, Any], index: int) -> str:
+    """Generate HTML link for a sample vertex."""
+    # Create query string from vertex data
+    query_params = []
+    for key, value in vertex_data.items():
+        if key == "_hash":
+            continue  # Skip internal hash field
+        if isinstance(value, str):
+            # Quote string values to preserve them
+            query_params.append(f"{key}={quote('"' + str(value) + '"')}")
+        else:
+            query_params.append(f"{key}={value}")
+
+    query_string = "&".join(query_params)
+
+    # Format vertex data for display (compact JSON)
+    display_data = {k: v for k, v in vertex_data.items() if k != "_hash"}
+    vertex_display = json.dumps(display_data, separators=(",", ":"))
+
+    return f"""
+    <div class="sample-vertex">
+        <a href="/?{query_string}" class="link">
+            {vertex_display}
+        </a>
+    </div>"""
 
 
 def generate_vertex_content(
