@@ -297,6 +297,65 @@ footer a:hover {
     text-decoration: underline;
 }
 
+/* Route calculation states */
+#route-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: #e8f4fd;
+    border-radius: 6px;
+    color: #2980b9;
+    font-weight: 500;
+}
+
+.loading-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.error-message {
+    padding: 1rem;
+    background: #fee;
+    border-radius: 6px;
+    color: #c0392b;
+    border-left: 4px solid #e74c3c;
+    font-weight: 500;
+}
+
+#route-result {
+    padding: 1rem 0;
+}
+
+#clear-route {
+    background: #e67e22;
+    box-shadow: 0 2px 4px rgba(230, 126, 34, 0.2);
+    margin-top: 1rem;
+}
+
+#clear-route:hover:not(:disabled) {
+    background: #d35400;
+    box-shadow: 0 4px 8px rgba(230, 126, 34, 0.3);
+}
+
+/* Route visualization styles */
+.route-line {
+    stroke: #e74c3c !important;
+    stroke-width: 4px !important;
+    stroke-opacity: 0.8 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+}
+
+.route-waypoint {
+    color: #e67e22 !important;
+    fill: #e67e22 !important;
+}
+
 /* Utility classes */
 .hidden {
     display: none !important;

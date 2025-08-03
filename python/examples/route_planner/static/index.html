@@ -27,7 +27,8 @@
                 <div class="control-group">
                     <h3>Route Planning</h3>
                     <p class="instructions">
-                        Click on the map to set origin (green) and destination (red) points
+                        Click on the map to set origin (green) and destination (red) points<br>
+                        <small>Keyboard shortcuts: R = Route, C = Clear points, Esc = Clear route</small>
                     </p>
                     
                     <div class="point-status">
@@ -66,14 +67,39 @@
                 <div id="route-info" class="control-group hidden">
                     <h3>Route Information</h3>
                     <div id="route-details">
-                        <!-- Route details will be populated here -->
+                        <div id="route-loading" class="hidden">
+                            <span class="loading-spinner">⏳</span>
+                            <span>Calculating route...</span>
+                        </div>
+                        <div id="route-result" class="hidden">
+                            <div class="info-item">
+                                <span class="label">Status:</span>
+                                <span id="route-status">Ready</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Distance:</span>
+                                <span id="route-distance">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Waypoints:</span>
+                                <span id="route-waypoints">-</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Algorithm:</span>
+                                <span id="route-algorithm">Dijkstra</span>
+                            </div>
+                        </div>
+                        <div id="route-error" class="error-message hidden">
+                            <span id="route-error-text">No route found</span>
+                        </div>
+                        <button id="clear-route" class="hidden">Clear Route</button>
                     </div>
                 </div>
             </div>
         </main>
         
         <footer>
-            <p>Route Planner - Phase 1 (Basic Infrastructure)</p>
+            <p>Route Planner - Phase 3 (Routing Integration)</p>
             <p>Built with Graphserver • <a href="https://github.com/bmander/graphserver" target="_blank">GitHub</a></p>
         </footer>
     </div>

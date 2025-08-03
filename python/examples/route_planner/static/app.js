@@ -1,6 +1,6 @@
 /**
  * Route Planner Interactive Map Application
- * Phase 2: Map interface with click-to-set points
+ * Phase 3: Routing integration with visualization
  */
 
 class RoutePlanner {
@@ -10,6 +10,11 @@ class RoutePlanner {
         this.destinationMarker = null;
         this.origin = null;
         this.destination = null;
+        
+        // Route visualization
+        this.routeLayer = null;
+        this.routeData = null;
+        this.isCalculatingRoute = false;
         
         // Initialize the application
         this.initializeApp();
@@ -276,10 +281,8 @@ class RoutePlanner {
         const calculateButton = document.getElementById('calculate-route');
         if (calculateButton) {
             calculateButton.addEventListener('click', () => {
-                if (this.origin && this.destination) {
-                    alert('Route calculation will be implemented in Phase 3!\n\n' +
-                          `Origin: ${this.origin.lat.toFixed(6)}, ${this.origin.lng.toFixed(6)}\n` +
-                          `Destination: ${this.destination.lat.toFixed(6)}, ${this.destination.lng.toFixed(6)}`);
+                if (this.origin && this.destination && !this.isCalculatingRoute) {
+                    this.calculateRoute();
                 }
             });
         }
@@ -291,6 +294,39 @@ class RoutePlanner {
                 this.clearPoints();
             });
         }
+        
+        // Clear route button
+        const clearRouteButton = document.getElementById('clear-route');
+        if (clearRouteButton) {
+            clearRouteButton.addEventListener('click', () => {
+                this.clearRoute();
+            });
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (event) => {
+            // Only trigger shortcuts if not typing in an input field
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                return;
+            }
+            
+            switch (event.key.toLowerCase()) {
+                case 'r':
+                    if (this.origin && this.destination && !this.isCalculatingRoute) {
+                        event.preventDefault();
+                        this.calculateRoute();
+                    }
+                    break;
+                case 'c':
+                    event.preventDefault();
+                    this.clearPoints();
+                    break;
+                case 'escape':
+                    event.preventDefault();
+                    this.clearRoute();
+                    break;
+            }
+        });
         
         // Refresh status every 30 seconds
         setInterval(() => {
@@ -318,6 +354,199 @@ class RoutePlanner {
                     </div>
                 </div>
             `;
+        }
+    }
+    
+    async calculateRoute() {
+        if (!this.origin || !this.destination || this.isCalculatingRoute) {
+            return;
+        }
+        
+        this.isCalculatingRoute = true;
+        this.showRouteLoading();
+        
+        try {
+            const response = await fetch('/api/route', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    origin: this.origin,
+                    destination: this.destination
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const routeResult = await response.json();
+            
+            if (routeResult.properties && routeResult.properties.status === 'success') {
+                this.routeData = routeResult;
+                this.showRouteResult(routeResult);
+                this.visualizeRoute(routeResult);
+            } else {
+                this.showRouteError(routeResult.properties?.error || 'No route found');
+            }
+            
+        } catch (error) {
+            console.error('Route calculation failed:', error);
+            this.showRouteError(`Route calculation failed: ${error.message}`);
+        } finally {
+            this.isCalculatingRoute = false;
+        }
+    }
+    
+    showRouteLoading() {
+        const routeInfo = document.getElementById('route-info');
+        const routeLoading = document.getElementById('route-loading');
+        const routeResult = document.getElementById('route-result');
+        const routeError = document.getElementById('route-error');
+        
+        if (routeInfo) routeInfo.classList.remove('hidden');
+        if (routeLoading) routeLoading.classList.remove('hidden');
+        if (routeResult) routeResult.classList.add('hidden');
+        if (routeError) routeError.classList.add('hidden');
+    }
+    
+    showRouteResult(routeData) {
+        const routeLoading = document.getElementById('route-loading');
+        const routeResult = document.getElementById('route-result');
+        const routeError = document.getElementById('route-error');
+        const clearRouteButton = document.getElementById('clear-route');
+        
+        if (routeLoading) routeLoading.classList.add('hidden');
+        if (routeResult) routeResult.classList.remove('hidden');
+        if (routeError) routeError.classList.add('hidden');
+        if (clearRouteButton) clearRouteButton.classList.remove('hidden');
+        
+        // Update route information
+        const statusElement = document.getElementById('route-status');
+        const distanceElement = document.getElementById('route-distance');
+        const waypointsElement = document.getElementById('route-waypoints');
+        
+        if (statusElement) statusElement.textContent = 'Route Found';
+        if (distanceElement) {
+            const distance = routeData.properties?.total_distance || 0;
+            distanceElement.textContent = `${(distance / 1000).toFixed(2)} km`;
+        }
+        if (waypointsElement) {
+            const waypoints = routeData.properties?.waypoint_count || 0;
+            waypointsElement.textContent = waypoints;
+        }
+    }
+    
+    showRouteError(errorMessage) {
+        const routeLoading = document.getElementById('route-loading');
+        const routeResult = document.getElementById('route-result');
+        const routeError = document.getElementById('route-error');
+        const routeErrorText = document.getElementById('route-error-text');
+        
+        if (routeLoading) routeLoading.classList.add('hidden');
+        if (routeResult) routeResult.classList.add('hidden');
+        if (routeError) routeError.classList.remove('hidden');
+        if (routeErrorText) routeErrorText.textContent = errorMessage;
+    }
+    
+    visualizeRoute(routeData) {
+        // Clear existing route
+        this.clearRouteVisualization();
+        
+        if (!routeData.features || routeData.features.length === 0) {
+            return;
+        }
+        
+        // Create a layer group for the route
+        this.routeLayer = L.layerGroup();
+        
+        // Add each feature to the route layer
+        routeData.features.forEach(feature => {
+            if (feature.geometry.type === 'LineString') {
+                const coordinates = feature.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                
+                const routeLine = L.polyline(coordinates, {
+                    color: '#e74c3c',
+                    weight: 4,
+                    opacity: 0.8,
+                    className: 'route-line'
+                });
+                
+                this.routeLayer.addLayer(routeLine);
+                
+                // Add waypoint markers if available
+                if (feature.properties.waypoints) {
+                    feature.properties.waypoints.forEach((waypoint, index) => {
+                        const waypointMarker = L.circleMarker([waypoint.position[1], waypoint.position[0]], {
+                            radius: 6,
+                            fillColor: '#e67e22',
+                            color: '#d35400',
+                            weight: 2,
+                            opacity: 1,
+                            fillOpacity: 0.8,
+                            className: 'route-waypoint'
+                        });
+                        
+                        waypointMarker.bindPopup(`
+                            <strong>Waypoint ${index + 1}</strong><br>
+                            ${waypoint.instruction}<br>
+                            Cost: ${waypoint.cost.toFixed(2)}
+                        `);
+                        
+                        this.routeLayer.addLayer(waypointMarker);
+                    });
+                }
+            }
+        });
+        
+        // Add the route layer to the map
+        this.routeLayer.addTo(this.map);
+        
+        // Fit the map view to show the entire route
+        if (this.routeLayer.getBounds && this.routeLayer.getBounds().isValid()) {
+            this.map.fitBounds(this.routeLayer.getBounds(), { padding: [20, 20] });
+        }
+    }
+    
+    clearPoints() {
+        // Clear route first
+        this.clearRoute();
+        
+        // Clear markers
+        if (this.originMarker) {
+            this.map.removeLayer(this.originMarker);
+            this.originMarker = null;
+        }
+        if (this.destinationMarker) {
+            this.map.removeLayer(this.destinationMarker);
+            this.destinationMarker = null;
+        }
+        
+        // Clear point data
+        this.origin = null;
+        this.destination = null;
+        
+        // Update UI
+        this.updateUI();
+    }
+    
+    clearRoute() {
+        this.clearRouteVisualization();
+        this.routeData = null;
+        
+        // Hide route info
+        const routeInfo = document.getElementById('route-info');
+        const clearRouteButton = document.getElementById('clear-route');
+        
+        if (routeInfo) routeInfo.classList.add('hidden');
+        if (clearRouteButton) clearRouteButton.classList.add('hidden');
+    }
+    
+    clearRouteVisualization() {
+        if (this.routeLayer) {
+            this.map.removeLayer(this.routeLayer);
+            this.routeLayer = null;
         }
     }
 }
