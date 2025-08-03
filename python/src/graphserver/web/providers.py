@@ -279,19 +279,8 @@ class ProviderManager:
             # Parse GTFS data with detailed progress
             provider_name = f"transit_{i}" if i > 0 else "transit"
 
-            # Create a sub-progress callback for the TransitProvider
-            def transit_progress_callback(
-                step_name: str,
-                current: int,
-                total: int,
-                sub_progress: float | None = None,  # noqa: ARG001
-            ) -> None:
-                if progress_callback:
-                    # Map the 9 parsing steps to our progress
-                    progress_callback(f"{step_name} ({current + 1}/{total})")
-
             transit_provider = TransitProvider(
-                str(gtfs_path), progress_callback=transit_progress_callback
+                str(gtfs_path), progress_callback=progress_callback
             )
 
             # Register provider and collect statistics (step 10)

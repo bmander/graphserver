@@ -51,7 +51,7 @@ class TransitProvider:
         *,
         config: TransitConfig | None = None,
         build_index: bool = True,
-        progress_callback: Callable[[str, int, int, float | None], None] | None = None,
+        progress_callback: Callable[[str], None] | None = None,
     ) -> None:
         """Initialize transit provider from a GTFS file.
 
@@ -60,7 +60,6 @@ class TransitProvider:
             config: Transit configuration options
             build_index: Whether to build spatial index (recommended for performance)
             progress_callback: Callback function for progress updates
-                (step_name, current_step, total_steps, sub_progress)
 
         Raises:
             FileNotFoundError: If GTFS file doesn't exist
@@ -88,20 +87,13 @@ class TransitProvider:
             self.parser.trip_count,
         )
 
-    def _default_progress_callback(
-        self,
-        step_name: str,
-        current_step: int,
-        total_steps: int,
-        sub_progress: float | None = None,
-    ) -> None:
+    def _default_progress_callback(self, step_name: str) -> None:
         """Default progress callback that does nothing."""
 
     def _build_spatial_index(self) -> None:
         """Build spatial index for fast coordinate-based lookups."""
-        # Step 9: Build spatial index
         callback = self.progress_callback or self._default_progress_callback
-        callback("Building spatial index...", 9, 9, None)
+        callback("Building spatial index...")
         logger.info("Building spatial index for transit stops")
         self.spatial_index = SpatialIndex()
         self.spatial_index.add_stops(self.parser.stops)

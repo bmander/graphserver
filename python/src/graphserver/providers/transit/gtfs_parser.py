@@ -30,21 +30,19 @@ class GTFSParser:
     def __init__(
         self,
         gtfs_path: str | Path,
-        progress_callback: Callable[[str, int, int, float | None], None],
+        progress_callback: Callable[[str], None],
     ) -> None:
         """Initialize GTFS parser.
 
         Args:
             gtfs_path: Path to GTFS zip file or directory
             progress_callback: Callback function for progress updates
-                (step_name, current_step, total_steps, sub_progress)
-                sub_progress is 0.0-1.0 for progress within step, complete=None
         """
         self.gtfs_path = Path(gtfs_path)
         self.progress_callback = progress_callback
 
-        # Step 1: Read GTFS feed
-        self.progress_callback("Reading GTFS file...", 1, 9, None)
+        # Read GTFS feed
+        self.progress_callback("Reading GTFS file...")
         self.feed = gk.read_feed(str(self.gtfs_path), dist_units="m")
 
         # Parse and store data
@@ -67,33 +65,33 @@ class GTFSParser:
         """Parse GTFS data into internal structures."""
         logger.info("Parsing GTFS data from %s", self.gtfs_path)
 
-        # Step 2: Parse agency timezone
-        self.progress_callback("Parsing agency timezone...", 2, 9, None)
+        # Parse agency timezone
+        self.progress_callback("Parsing agency timezone...")
         self._parse_agency_timezone()
 
-        # Step 3: Parse stops
-        self.progress_callback("Parsing stops...", 3, 9, None)
+        # Parse stops
+        self.progress_callback("Parsing stops...")
         self._parse_stops()
 
-        # Step 4: Parse routes
-        self.progress_callback("Parsing routes...", 4, 9, None)
+        # Parse routes
+        self.progress_callback("Parsing routes...")
         self._parse_routes()
 
-        # Step 5: Parse trips
-        self.progress_callback("Parsing trips...", 5, 9, None)
+        # Parse trips
+        self.progress_callback("Parsing trips...")
         self._parse_trips()
 
-        # Step 6: Parse stop times (often the largest/slowest)
-        self.progress_callback("Parsing stop times...", 6, 9, None)
+        # Parse stop times (often the largest/slowest)
+        self.progress_callback("Parsing stop times...")
         self._parse_stop_times()
 
-        # Step 7: Sort stop times by sequence
-        self.progress_callback("Sorting stop times...", 7, 9, None)
+        # Sort stop times by sequence
+        self.progress_callback("Sorting stop times...")
         for trip_id in self.stop_times:
             self.stop_times[trip_id].sort(key=lambda st: st.stop_sequence)
 
-        # Step 8: Build service calendar and indices
-        self.progress_callback("Building service calendar and indices...", 8, 9, None)
+        # Build service calendar and indices
+        self.progress_callback("Building service calendar and indices...")
         self._build_service_calendar()
         self._build_stop_indices()
 
