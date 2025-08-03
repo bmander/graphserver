@@ -82,28 +82,34 @@ main {
     width: 100%;
     height: 100%;
     position: relative;
+    background: #e8f4f8;
+    border-radius: 4px;
+    overflow: hidden;
 }
 
-.map-placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
-    color: white;
-    text-align: center;
+/* Leaflet map adjustments */
+.leaflet-container {
+    font-family: inherit;
 }
 
-.placeholder-content h2 {
-    font-size: 2rem;
-    margin-bottom: 1rem;
-    font-weight: 300;
+/* Custom marker styles */
+.custom-marker {
+    background: transparent;
+    border: none;
 }
 
-.placeholder-content p {
-    font-size: 1.1rem;
-    margin-bottom: 0.5rem;
-    opacity: 0.9;
+/* Map loading indicator */
+#map.loading::before {
+    content: "Loading map...";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 1rem 2rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 /* Controls panel */
@@ -168,6 +174,17 @@ main {
 .point-label {
     font-size: 0.9rem;
     color: #666;
+    transition: color 0.2s ease;
+}
+
+.point-indicator.point-set {
+    background: #e8f5e8;
+    border: 1px solid #c8e6c9;
+}
+
+.point-indicator.point-set .point-label {
+    color: #2e7d32;
+    font-weight: 500;
 }
 
 /* Server info */

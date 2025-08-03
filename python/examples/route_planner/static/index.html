@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Route Planner</title>
+    <link rel="stylesheet" href="/static/lib/leaflet/leaflet.css" />
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -18,13 +19,7 @@
         <main>
             <div id="map-container">
                 <div id="map">
-                    <div class="map-placeholder">
-                        <div class="placeholder-content">
-                            <h2>📍 Interactive Map</h2>
-                            <p>Map will be loaded here in Phase 2</p>
-                            <p>This placeholder shows where the Leaflet.js map will be integrated</p>
-                        </div>
-                    </div>
+                    <!-- Leaflet map will be initialized here -->
                 </div>
             </div>
             
@@ -32,22 +27,22 @@
                 <div class="control-group">
                     <h3>Route Planning</h3>
                     <p class="instructions">
-                        In the next phase, you'll be able to click on the map to set origin and destination points
+                        Click on the map to set origin (green) and destination (red) points
                     </p>
                     
                     <div class="point-status">
-                        <div class="point-indicator">
+                        <div class="point-indicator" id="origin-status">
                             <span class="point-icon origin">🟢</span>
-                            <span class="point-label">Origin: Not set</span>
+                            <span class="point-label">Origin: Click map to set</span>
                         </div>
-                        <div class="point-indicator">
+                        <div class="point-indicator" id="destination-status">
                             <span class="point-icon destination">🔴</span>
-                            <span class="point-label">Destination: Not set</span>
+                            <span class="point-label">Destination: Set origin first</span>
                         </div>
                     </div>
                     
                     <button id="calculate-route" disabled>Calculate Route</button>
-                    <button id="clear-points" disabled>Clear Points</button>
+                    <button id="clear-points">Clear Points</button>
                 </div>
                 
                 <div class="control-group">
@@ -83,79 +78,7 @@
         </footer>
     </div>
     
-    <script>
-        // Basic connectivity test and server info loading
-        async function checkServerStatus() {
-            const statusElement = document.getElementById('status');
-            const statusText = statusElement.querySelector('.status-text');
-            const connectionStatus = document.getElementById('connection-status');
-            const osmFile = document.getElementById('osm-file');
-            const gtfsFiles = document.getElementById('gtfs-files');
-            
-            try {
-                const response = await fetch('/api/status');
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                // Update main status indicator
-                statusElement.className = 'status-indicator status-ok';
-                statusText.textContent = '✓ Connected';
-                
-                // Update server info panel
-                connectionStatus.textContent = 'Connected';
-                connectionStatus.className = 'status-connected';
-                
-                // Display OSM file info
-                if (data.config && data.config.osm_file) {
-                    const fileName = data.config.osm_file.split('/').pop();
-                    osmFile.textContent = fileName;
-                } else {
-                    osmFile.textContent = 'Not specified';
-                }
-                
-                // Display GTFS files info
-                if (data.config && data.config.gtfs_files && data.config.gtfs_files.length > 0) {
-                    const fileNames = data.config.gtfs_files.map(f => f.split('/').pop());
-                    gtfsFiles.textContent = fileNames.join(', ');
-                } else {
-                    gtfsFiles.textContent = 'None';
-                }
-                
-            } catch (error) {
-                console.error('Server connection failed:', error);
-                
-                // Update main status indicator
-                statusElement.className = 'status-indicator status-error';
-                statusText.textContent = '✗ Connection failed';
-                
-                // Update server info panel
-                connectionStatus.textContent = 'Failed';
-                connectionStatus.className = 'status-failed';
-                osmFile.textContent = 'Unknown';
-                gtfsFiles.textContent = 'Unknown';
-            }
-        }
-        
-        // Placeholder event handlers for buttons
-        document.getElementById('calculate-route').addEventListener('click', () => {
-            alert('Route calculation will be implemented in Phase 3!');
-        });
-        
-        document.getElementById('clear-points').addEventListener('click', () => {
-            alert('Point clearing will be implemented in Phase 2!');
-        });
-        
-        // Run status check when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            checkServerStatus();
-            
-            // Check status every 30 seconds
-            setInterval(checkServerStatus, 30000);
-        });
-    </script>
+    <script src="/static/lib/leaflet/leaflet.js"></script>
+    <script src="/static/app.js"></script>
 </body>
 </html>

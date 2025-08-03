@@ -17,6 +17,8 @@ The Route Planner provides a modern web interface for calculating routes using O
 
 ## Installation
 
+### 1. Install Graphserver
+
 This example requires the graphserver package to be installed:
 
 ```bash
@@ -24,14 +26,55 @@ cd python
 pip install -e .
 ```
 
+### 2. Setup Route Planner Dependencies
+
+Run the setup script to download required JavaScript libraries:
+
+```bash
+cd python/examples/route_planner
+python setup.py
+```
+
+This will automatically download:
+- Leaflet.js v1.9.4 (map library)
+- Leaflet CSS and marker icons
+- All required assets for the web interface
+
+**Alternative Manual Setup:**
+If the setup script fails, you can manually download the files:
+```bash
+mkdir -p static/lib/leaflet/images
+curl -o static/lib/leaflet/leaflet.css https://unpkg.com/leaflet@1.9.4/dist/leaflet.css
+curl -o static/lib/leaflet/leaflet.js https://unpkg.com/leaflet@1.9.4/dist/leaflet.js
+curl -o static/lib/leaflet/images/marker-icon.png https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png
+curl -o static/lib/leaflet/images/marker-shadow.png https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png
+```
+
 ## Usage
+
+### Quick Start
+
+1. **Setup dependencies** (one-time setup):
+   ```bash
+   cd python/examples/route_planner
+   python setup.py
+   ```
+
+2. **Run the application**:
+   ```bash
+   export PYTHONPATH=python
+   python -m examples.route_planner --osm examples/uw_campus.osm
+   ```
+
+3. **Open your browser** to http://localhost:8080 and start clicking on the map!
 
 ### Basic Usage
 
 Run the route planner with an OSM file:
 
 ```bash
-python -m route_planner --osm examples/uw_campus.osm
+export PYTHONPATH=python
+python -m examples.route_planner --osm examples/uw_campus.osm
 ```
 
 ### With Transit Data
