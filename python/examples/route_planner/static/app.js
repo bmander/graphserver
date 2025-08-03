@@ -125,24 +125,6 @@ class RoutePlanner {
         this.calculateRoute();
     }
     
-    clearPoints() {
-        // Clear origin
-        if (this.originMarker) {
-            this.map.removeLayer(this.originMarker);
-            this.originMarker = null;
-        }
-        this.origin = null;
-        
-        // Clear destination
-        if (this.destinationMarker) {
-            this.map.removeLayer(this.destinationMarker);
-            this.destinationMarker = null;
-        }
-        this.destination = null;
-        
-        this.updateUI();
-        console.log('Points cleared');
-    }
     
     createIcon(color) {
         const colorMap = {
@@ -358,20 +340,20 @@ class RoutePlanner {
             }
             
             switch (event.key.toLowerCase()) {
-                case 'r':
-                    if (this.origin && this.destination && !this.isCalculatingRoute) {
-                        event.preventDefault();
-                        this.calculateRoute();
-                    }
-                    break;
-                case 'c':
+            case 'r':
+                if (this.origin && this.destination && !this.isCalculatingRoute) {
                     event.preventDefault();
-                    this.clearPoints();
-                    break;
-                case 'escape':
-                    event.preventDefault();
-                    this.clearRoute();
-                    break;
+                    this.calculateRoute();
+                }
+                break;
+            case 'c':
+                event.preventDefault();
+                this.clearPoints();
+                break;
+            case 'escape':
+                event.preventDefault();
+                this.clearRoute();
+                break;
             }
         });
         
