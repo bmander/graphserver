@@ -82,13 +82,17 @@ class RoutePlanner {
             this.map.removeLayer(this.originMarker);
         }
         
-        // Create new origin marker (green)
+        // Create new origin marker (green) - now draggable
         this.originMarker = L.marker([lat, lng], {
-            icon: this.createIcon('green')
+            icon: this.createIcon('green'),
+            draggable: true
         }).addTo(this.map);
         
         // Add popup
         this.originMarker.bindPopup(`Origin<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}`);
+        
+        // Add drag event handler
+        this.originMarker.on('dragend', this.onOriginDragEnd.bind(this));
         
         this.updateUI();
         console.log('Origin set:', { lat, lng });
@@ -102,16 +106,23 @@ class RoutePlanner {
             this.map.removeLayer(this.destinationMarker);
         }
         
-        // Create new destination marker (red)
+        // Create new destination marker (red) - now draggable
         this.destinationMarker = L.marker([lat, lng], {
-            icon: this.createIcon('red')
+            icon: this.createIcon('red'),
+            draggable: true
         }).addTo(this.map);
         
         // Add popup
         this.destinationMarker.bindPopup(`Destination<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}`);
         
+        // Add drag event handler
+        this.destinationMarker.on('dragend', this.onDestinationDragEnd.bind(this));
+        
         this.updateUI();
         console.log('Destination set:', { lat, lng });
+        
+        // Automatically start routing when both points are set
+        this.calculateRoute();
     }
     
     clearPoints() {
@@ -152,6 +163,42 @@ class RoutePlanner {
             iconSize: [20, 20],
             iconAnchor: [10, 10]
         });
+    }
+    
+    onOriginDragEnd(event) {
+        const { lat, lng } = event.target.getLatLng();
+        
+        // Update internal coordinates
+        this.origin = { lat, lng };
+        
+        // Update popup content
+        this.originMarker.bindPopup(`Origin<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}`);
+        
+        // Update UI and trigger routing if destination exists
+        this.updateUI();
+        console.log('Origin dragged to:', { lat, lng });
+        
+        if (this.destination) {
+            this.calculateRoute();
+        }
+    }
+    
+    onDestinationDragEnd(event) {
+        const { lat, lng } = event.target.getLatLng();
+        
+        // Update internal coordinates
+        this.destination = { lat, lng };
+        
+        // Update popup content
+        this.destinationMarker.bindPopup(`Destination<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}`);
+        
+        // Update UI and trigger routing if origin exists
+        this.updateUI();
+        console.log('Destination dragged to:', { lat, lng });
+        
+        if (this.origin) {
+            this.calculateRoute();
+        }
     }
     
     async getOSMBounds() {
