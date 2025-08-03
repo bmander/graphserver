@@ -460,6 +460,65 @@ TEST(dijkstra_timeout) {
     gs_engine_destroy(engine);
 }
 
+// Metadata provider: generates edges with metadata for testing
+static int metadata_provider(const GraphserverVertex* current_vertex,
+                            GraphserverEdgeList* out_edges,
+                            void* user_data) {
+    (void)user_data; // Unused parameter
+    
+    GraphserverValue x_val, y_val;
+    if (gs_vertex_get_value(current_vertex, "x", &x_val) != GS_SUCCESS ||
+        gs_vertex_get_value(current_vertex, "y", &y_val) != GS_SUCCESS) {
+        return -1;
+    }
+    
+    int x = (int)x_val.as.i_val;
+    int y = (int)y_val.as.i_val;
+    
+    // Add edges to 4-connected neighbors with metadata
+    int dx[] = {-1, 1, 0, 0};
+    int dy[] = {0, 0, -1, 1};
+    const char* directions[] = {"west", "east", "south", "north"};
+    
+    for (int i = 0; i < 4; i++) {
+        int nx = x + dx[i];
+        int ny = y + dy[i];
+        
+        // Stay within reasonable bounds
+        if (nx < 0 || nx > 10 || ny < 0 || ny > 10) continue;
+        
+        GraphserverVertex* neighbor = create_coordinate_vertex(nx, ny);
+        if (!neighbor) continue;
+        
+        double distance = 1.0; // Unit distance for grid
+        GraphserverEdge* edge = gs_edge_create(neighbor, &distance, 1);
+        if (!edge) {
+            gs_vertex_destroy(neighbor);
+            continue;
+        }
+        
+        // Add rich metadata
+        GraphserverValue way_id_val = gs_value_create_int(x * 100 + y * 10 + i);
+        gs_edge_set_metadata(edge, "way_id", way_id_val);
+        
+        GraphserverValue edge_type_val = gs_value_create_string("test_road");
+        gs_edge_set_metadata(edge, "edge_type", edge_type_val);
+        
+        GraphserverValue direction_val = gs_value_create_string(directions[i]);
+        gs_edge_set_metadata(edge, "direction", direction_val);
+        
+        GraphserverValue speed_val = gs_value_create_float(5.0);
+        gs_edge_set_metadata(edge, "speed_kmh", speed_val);
+        
+        // Set edge to own the target vertex since we created it specifically for this edge
+        gs_edge_set_owns_target_vertex(edge, true);
+        
+        gs_edge_list_add_edge(out_edges, edge);
+    }
+    
+    return 0;
+}
+
 // Test vertex set (closed set) operations
 TEST(vertex_set_operations) {
     GraphserverArena* arena = gs_arena_create(4096);
@@ -493,6 +552,194 @@ TEST(vertex_set_operations) {
     gs_arena_destroy(arena);
 }
 
+// Test that Dijkstra preserves metadata in path results
+TEST(dijkstra_metadata_preservation) {
+    GraphserverEngine* engine = gs_engine_create();
+    ASSERT_NOT_NULL(engine);
+    
+    // Register metadata provider that adds rich metadata to edges
+    gs_engine_register_provider(engine, "metadata", metadata_provider, NULL);
+    
+    // Plan from (0,0) to (2,0) - should be straight line
+    GraphserverVertex* start = create_coordinate_vertex(0, 0);
+    CoordinateGoal goal = {2, 0};
+    
+    GraphserverPath* path = gs_plan_simple(
+        engine, start, coordinate_goal_predicate, &goal, NULL);
+    
+    ASSERT_NOT_NULL(path);
+    ASSERT_EQ(2, gs_path_get_num_edges(path)); // 2 edges for 3 vertices
+    
+    // Check that each edge in the path has preserved metadata
+    for (size_t i = 0; i < gs_path_get_num_edges(path); i++) {
+        const GraphserverEdge* edge = gs_path_get_edge(path, i);
+        ASSERT_NOT_NULL(edge);
+        
+        // Verify metadata count
+        ASSERT_EQ(4, gs_edge_get_metadata_count(edge)); // way_id, edge_type, direction, speed_kmh
+        
+        // Check specific metadata values
+        GraphserverValue way_id_val;
+        GraphserverResult result = gs_edge_get_metadata(edge, "way_id", &way_id_val);
+        ASSERT_EQ(GS_SUCCESS, result);
+        ASSERT_EQ(GS_VALUE_INT, way_id_val.type);
+        // way_id should be > 0 (calculated as x * 100 + y * 10 + direction_index)
+        ASSERT(way_id_val.as.i_val > 0);
+        
+        GraphserverValue edge_type_val;
+        result = gs_edge_get_metadata(edge, "edge_type", &edge_type_val);
+        ASSERT_EQ(GS_SUCCESS, result);
+        ASSERT_EQ(GS_VALUE_STRING, edge_type_val.type);
+        ASSERT(strcmp(edge_type_val.as.s_val, "test_road") == 0);
+        gs_value_destroy(&edge_type_val);
+        
+        GraphserverValue direction_val;
+        result = gs_edge_get_metadata(edge, "direction", &direction_val);
+        ASSERT_EQ(GS_SUCCESS, result);
+        ASSERT_EQ(GS_VALUE_STRING, direction_val.type);
+        // For a straight line from (0,0) to (2,0), all edges should go "east"
+        ASSERT(strcmp(direction_val.as.s_val, "east") == 0);
+        gs_value_destroy(&direction_val);
+        
+        GraphserverValue speed_val;
+        result = gs_edge_get_metadata(edge, "speed_kmh", &speed_val);
+        ASSERT_EQ(GS_SUCCESS, result);
+        ASSERT_EQ(GS_VALUE_FLOAT, speed_val.type);
+        ASSERT_DOUBLE_EQ(5.0, speed_val.as.f_val, 1e-6);
+    }
+    
+    gs_path_destroy(path);
+    gs_vertex_destroy(start);
+    gs_engine_destroy(engine);
+}
+
+// Test DijkstraNode incoming_edge field behavior through planning
+TEST(dijkstra_node_incoming_edge) {
+    GraphserverEngine* engine = gs_engine_create();
+    gs_engine_register_provider(engine, "metadata", metadata_provider, NULL);
+    
+    // Run a simple plan that should exercise the incoming_edge logic
+    GraphserverVertex* start = create_coordinate_vertex(0, 0);
+    CoordinateGoal goal = {1, 0}; // Single step east
+    
+    GraphserverPath* path = gs_plan_simple(
+        engine, start, coordinate_goal_predicate, &goal, NULL);
+    
+    ASSERT_NOT_NULL(path);
+    ASSERT_EQ(1, gs_path_get_num_edges(path)); // Single edge
+    
+    // The fact that we get a path with metadata means incoming_edge worked
+    const GraphserverEdge* edge = gs_path_get_edge(path, 0);
+    ASSERT_NOT_NULL(edge);
+    ASSERT_EQ(4, gs_edge_get_metadata_count(edge)); // Metadata preserved
+    
+    // Verify the metadata came through the incoming_edge mechanism
+    GraphserverValue edge_type_val;
+    GraphserverResult result = gs_edge_get_metadata(edge, "edge_type", &edge_type_val);
+    ASSERT_EQ(GS_SUCCESS, result);
+    ASSERT_EQ(GS_VALUE_STRING, edge_type_val.type);
+    ASSERT(strcmp(edge_type_val.as.s_val, "test_road") == 0);
+    gs_value_destroy(&edge_type_val);
+    
+    gs_path_destroy(path);
+    gs_vertex_destroy(start);
+    gs_engine_destroy(engine);
+}
+
+// Test path reconstruction preserves original edge metadata
+TEST(dijkstra_path_reconstruction_metadata) {
+    GraphserverEngine* engine = gs_engine_create();
+    gs_engine_register_provider(engine, "metadata", metadata_provider, NULL);
+    
+    // Plan a longer path to test multiple edge reconstructions
+    GraphserverVertex* start = create_coordinate_vertex(0, 0);
+    CoordinateGoal goal = {0, 3}; // North 3 steps
+    
+    GraphserverPath* path = gs_plan_simple(
+        engine, start, coordinate_goal_predicate, &goal, NULL);
+    
+    ASSERT_NOT_NULL(path);
+    ASSERT_EQ(3, gs_path_get_num_edges(path)); // 3 edges for 4 vertices
+    
+    // Each edge should have preserved metadata from path reconstruction
+    for (size_t i = 0; i < gs_path_get_num_edges(path); i++) {
+        const GraphserverEdge* edge = gs_path_get_edge(path, i);
+        ASSERT_NOT_NULL(edge);
+        
+        // All edges should be going north, so direction should be "north"
+        GraphserverValue direction_val;
+        GraphserverResult result = gs_edge_get_metadata(edge, "direction", &direction_val);
+        ASSERT_EQ(GS_SUCCESS, result);
+        ASSERT_EQ(GS_VALUE_STRING, direction_val.type);
+        ASSERT(strcmp(direction_val.as.s_val, "north") == 0);
+        gs_value_destroy(&direction_val);
+        
+        // Each edge should have a different way_id based on the formula
+        GraphserverValue way_id_val;
+        result = gs_edge_get_metadata(edge, "way_id", &way_id_val);
+        ASSERT_EQ(GS_SUCCESS, result);
+        ASSERT_EQ(GS_VALUE_INT, way_id_val.type);
+        
+        // For path (0,0) -> (0,1) -> (0,2) -> (0,3), way_ids should be:
+        // Edge 0: 0*100 + 0*10 + 3 = 3 (north from (0,0))
+        // Edge 1: 0*100 + 1*10 + 3 = 13 (north from (0,1))  
+        // Edge 2: 0*100 + 2*10 + 3 = 23 (north from (0,2))
+        int expected_way_id = (int)i * 10 + 3;
+        ASSERT_EQ(expected_way_id, way_id_val.as.i_val);
+    }
+    
+    gs_path_destroy(path);
+    gs_vertex_destroy(start);
+    gs_engine_destroy(engine);
+}
+
+// Test edge cloning during relaxation phase
+TEST(dijkstra_edge_cloning_relaxation) {
+    GraphserverEngine* engine = gs_engine_create();
+    gs_engine_register_provider(engine, "metadata", metadata_provider, NULL);
+    
+    // Create a diamond-shaped graph to test edge relaxation:
+    // (0,0) -> (1,0) -> (2,1)
+    //   |        \      /
+    //   v         v    v  
+    // (0,1) -> (1,1) -> (2,1)
+    GraphserverVertex* start = create_coordinate_vertex(0, 0);
+    CoordinateGoal goal = {2, 1};
+    
+    GraphserverPath* path = gs_plan_simple(
+        engine, start, coordinate_goal_predicate, &goal, NULL);
+    
+    ASSERT_NOT_NULL(path);
+    
+    // Verify that the path has edges with properly cloned metadata
+    for (size_t i = 0; i < gs_path_get_num_edges(path); i++) {
+        const GraphserverEdge* edge = gs_path_get_edge(path, i);
+        ASSERT_NOT_NULL(edge);
+        
+        // Each edge should have been cloned during relaxation, preserving metadata
+        ASSERT_EQ(4, gs_edge_get_metadata_count(edge));
+        
+        // Verify that metadata is accessible and correct
+        GraphserverValue edge_type_val;
+        GraphserverResult result = gs_edge_get_metadata(edge, "edge_type", &edge_type_val);
+        ASSERT_EQ(GS_SUCCESS, result);
+        ASSERT_EQ(GS_VALUE_STRING, edge_type_val.type);
+        ASSERT(strcmp(edge_type_val.as.s_val, "test_road") == 0);
+        gs_value_destroy(&edge_type_val);
+        
+        // Metadata should not be corrupted or pointing to invalid memory
+        GraphserverValue speed_val;
+        result = gs_edge_get_metadata(edge, "speed_kmh", &speed_val);
+        ASSERT_EQ(GS_SUCCESS, result);
+        ASSERT_EQ(GS_VALUE_FLOAT, speed_val.type);
+        ASSERT_DOUBLE_EQ(5.0, speed_val.as.f_val, 1e-6);
+    }
+    
+    gs_path_destroy(path);
+    gs_vertex_destroy(start);
+    gs_engine_destroy(engine);
+}
+
 // Main test runner
 int main(void) {
     printf("Running Graphserver Planner Tests\n");
@@ -509,6 +756,10 @@ int main(void) {
     run_test_dijkstra_memory_efficiency();
     run_test_dijkstra_timeout();
     run_test_vertex_set_operations();
+    run_test_dijkstra_metadata_preservation();
+    run_test_dijkstra_node_incoming_edge();
+    run_test_dijkstra_path_reconstruction_metadata();
+    run_test_dijkstra_edge_cloning_relaxation();
     
     printf("\n==================================\n");
     printf("Tests completed: %d/%d passed\n", tests_passed, tests_run);

@@ -398,6 +398,229 @@ TEST(memory_management) {
     ASSERT(true);
 }
 
+// Goal predicate for latitude-based testing
+static bool lat_goal_predicate(const GraphserverVertex* vertex, void* user_data) {
+    typedef struct {
+        double target_lat;
+    } LatGoal;
+    
+    LatGoal* goal = (LatGoal*)user_data;
+    GraphserverValue lat_val;
+    if (gs_vertex_get_value(vertex, "lat", &lat_val) != GS_SUCCESS) {
+        return false;
+    }
+    return lat_val.as.f_val >= goal->target_lat;
+}
+
+// Rich metadata provider for integration testing
+static int rich_metadata_provider(const GraphserverVertex* current_vertex,
+                                 GraphserverEdgeList* out_edges,
+                                 void* user_data) {
+    (void)user_data; // Unused parameter
+    
+    GraphserverValue lat_val, lng_val;
+    if (gs_vertex_get_value(current_vertex, "lat", &lat_val) != GS_SUCCESS ||
+        gs_vertex_get_value(current_vertex, "lng", &lng_val) != GS_SUCCESS) {
+        return -1;
+    }
+    
+    double lat = lat_val.as.f_val;
+    double lng = lng_val.as.f_val;
+    
+    // Create one outgoing edge with rich metadata (similar to OSM)
+    double target_lat = lat + 0.001; // Move north
+    double target_lng = lng;
+    
+    GraphserverKeyPair target_pairs[] = {
+        {"lat", gs_value_create_float(target_lat)},
+        {"lng", gs_value_create_float(target_lng)},
+        {"type", gs_value_create_string("location")}
+    };
+    
+    GraphserverVertex* target = gs_vertex_create(target_pairs, 3, NULL);
+    if (!target) return -1;
+    
+    double distance = 111.0; // Approximate meters per degree
+    GraphserverEdge* edge = gs_edge_create(target, &distance, 1);
+    if (!edge) {
+        gs_vertex_destroy(target);
+        return -1;
+    }
+    
+    // Add comprehensive metadata similar to OSM provider
+    GraphserverValue way_id_val = gs_value_create_int(12345);
+    gs_edge_set_metadata(edge, "way_id", way_id_val);
+    
+    GraphserverValue edge_type_val = gs_value_create_string("osm_way");
+    gs_edge_set_metadata(edge, "edge_type", edge_type_val);
+    
+    GraphserverValue distance_m_val = gs_value_create_float(distance);
+    gs_edge_set_metadata(edge, "distance_m", distance_m_val);
+    
+    GraphserverValue duration_s_val = gs_value_create_float(distance / 1.4); // ~5 km/h walking
+    gs_edge_set_metadata(edge, "duration_s", duration_s_val);
+    
+    GraphserverValue highway_val = gs_value_create_string("residential");
+    gs_edge_set_metadata(edge, "highway", highway_val);
+    
+    gs_edge_set_owns_target_vertex(edge, true);
+    gs_edge_list_add_edge(out_edges, edge);
+    
+    return 0;
+}
+
+// Test isolated metadata preservation without other provider interference
+TEST(metadata_preservation_isolated) {
+    GraphserverEngine* engine = gs_engine_create();
+    ASSERT_NOT_NULL(engine);
+    
+    // Register provider that creates edges with rich metadata
+    gs_engine_register_provider(engine, "rich_metadata", rich_metadata_provider, NULL);
+    
+    // Create start vertex (location-based)
+    GraphserverKeyPair start_pairs[] = {
+        {"lat", gs_value_create_float(40.7074)},
+        {"lng", gs_value_create_float(-74.0113)},
+        {"type", gs_value_create_string("location")}
+    };
+    GraphserverVertex* start = gs_vertex_create(start_pairs, 3, NULL);
+    
+    // Simple goal predicate: reach a certain latitude
+    typedef struct {
+        double target_lat;
+    } LatGoal;
+    
+    LatGoal goal = {40.7084}; // 0.001 degrees north (about 111m)
+    
+    // Run pathfinding
+    GraphserverPath* path = gs_plan_simple(
+        engine, start, lat_goal_predicate, &goal, NULL);
+    
+    ASSERT_NOT_NULL(path);
+    ASSERT_EQ(1, gs_path_get_num_edges(path)); // Single edge to reach goal
+    
+    // Verify metadata flowed through entire pipeline
+    const GraphserverEdge* edge = gs_path_get_edge(path, 0);
+    ASSERT_NOT_NULL(edge);
+    
+    // Check that all metadata from provider is preserved
+    ASSERT_EQ(5, gs_edge_get_metadata_count(edge)); // way_id, edge_type, distance_m, duration_s, highway
+    
+    // Verify each metadata field
+    GraphserverValue way_id_val;
+    GraphserverResult result = gs_edge_get_metadata(edge, "way_id", &way_id_val);
+    ASSERT_EQ(GS_SUCCESS, result);
+    ASSERT_EQ(GS_VALUE_INT, way_id_val.type);
+    ASSERT_EQ(12345, way_id_val.as.i_val);
+    
+    GraphserverValue edge_type_val;
+    result = gs_edge_get_metadata(edge, "edge_type", &edge_type_val);
+    ASSERT_EQ(GS_SUCCESS, result);
+    ASSERT_EQ(GS_VALUE_STRING, edge_type_val.type);
+    ASSERT(strcmp(edge_type_val.as.s_val, "osm_way") == 0);
+    gs_value_destroy(&edge_type_val);
+    
+    GraphserverValue distance_m_val;
+    result = gs_edge_get_metadata(edge, "distance_m", &distance_m_val);
+    ASSERT_EQ(GS_SUCCESS, result);
+    ASSERT_EQ(GS_VALUE_FLOAT, distance_m_val.type);
+    ASSERT_DOUBLE_EQ(111.0, distance_m_val.as.f_val, 1e-6);
+    
+    GraphserverValue duration_s_val;
+    result = gs_edge_get_metadata(edge, "duration_s", &duration_s_val);
+    ASSERT_EQ(GS_SUCCESS, result);
+    ASSERT_EQ(GS_VALUE_FLOAT, duration_s_val.type);
+    ASSERT_DOUBLE_EQ(111.0 / 1.4, duration_s_val.as.f_val, 1e-6);
+    
+    GraphserverValue highway_val;
+    result = gs_edge_get_metadata(edge, "highway", &highway_val);
+    ASSERT_EQ(GS_SUCCESS, result);
+    ASSERT_EQ(GS_VALUE_STRING, highway_val.type);
+    ASSERT(strcmp(highway_val.as.s_val, "residential") == 0);
+    gs_value_destroy(&highway_val);
+    
+    // Clean up
+    gs_path_destroy(path);
+    gs_vertex_destroy(start);
+    gs_engine_destroy(engine);
+}
+
+// Test integration: Provider → Engine → Dijkstra → Path with metadata flow
+TEST(provider_metadata_flow_integration) {
+    GraphserverEngine* engine = gs_engine_create();
+    ASSERT_NOT_NULL(engine);
+    
+    // Register provider that creates edges with rich metadata
+    gs_engine_register_provider(engine, "rich_metadata", rich_metadata_provider, NULL);
+    
+    // Create start vertex (location-based)
+    GraphserverKeyPair start_pairs[] = {
+        {"lat", gs_value_create_float(40.7074)},
+        {"lng", gs_value_create_float(-74.0113)},
+        {"type", gs_value_create_string("location")}
+    };
+    GraphserverVertex* start = gs_vertex_create(start_pairs, 3, NULL);
+    
+    // Simple goal predicate: reach a certain latitude
+    typedef struct {
+        double target_lat;
+    } LatGoal;
+    
+    LatGoal goal = {40.7084}; // 0.001 degrees north (about 111m)
+    
+    // Run pathfinding
+    GraphserverPath* path = gs_plan_simple(
+        engine, start, lat_goal_predicate, &goal, NULL);
+    
+    ASSERT_NOT_NULL(path);
+    ASSERT_EQ(1, gs_path_get_num_edges(path)); // Single edge to reach goal
+    
+    // Verify metadata flowed through entire pipeline
+    const GraphserverEdge* edge = gs_path_get_edge(path, 0);
+    ASSERT_NOT_NULL(edge);
+    
+    // Check that all metadata from provider is preserved
+    ASSERT_EQ(5, gs_edge_get_metadata_count(edge)); // way_id, edge_type, distance_m, duration_s, highway
+    
+    // Verify each metadata field
+    GraphserverValue way_id_val;
+    GraphserverResult result = gs_edge_get_metadata(edge, "way_id", &way_id_val);
+    ASSERT_EQ(GS_SUCCESS, result);
+    ASSERT_EQ(GS_VALUE_INT, way_id_val.type);
+    ASSERT_EQ(12345, way_id_val.as.i_val);
+    
+    GraphserverValue edge_type_val;
+    result = gs_edge_get_metadata(edge, "edge_type", &edge_type_val);
+    ASSERT_EQ(GS_SUCCESS, result);
+    ASSERT_EQ(GS_VALUE_STRING, edge_type_val.type);
+    ASSERT(strcmp(edge_type_val.as.s_val, "osm_way") == 0);
+    gs_value_destroy(&edge_type_val);
+    
+    GraphserverValue distance_m_val;
+    result = gs_edge_get_metadata(edge, "distance_m", &distance_m_val);
+    ASSERT_EQ(GS_SUCCESS, result);
+    ASSERT_EQ(GS_VALUE_FLOAT, distance_m_val.type);
+    ASSERT_DOUBLE_EQ(111.0, distance_m_val.as.f_val, 1e-6);
+    
+    GraphserverValue duration_s_val;
+    result = gs_edge_get_metadata(edge, "duration_s", &duration_s_val);
+    ASSERT_EQ(GS_SUCCESS, result);
+    ASSERT_EQ(GS_VALUE_FLOAT, duration_s_val.type);
+    ASSERT_DOUBLE_EQ(111.0 / 1.4, duration_s_val.as.f_val, 1e-6);
+    
+    GraphserverValue highway_val;
+    result = gs_edge_get_metadata(edge, "highway", &highway_val);
+    ASSERT_EQ(GS_SUCCESS, result);
+    ASSERT_EQ(GS_VALUE_STRING, highway_val.type);
+    ASSERT(strcmp(highway_val.as.s_val, "residential") == 0);
+    gs_value_destroy(&highway_val);
+    
+    // Clean up
+    gs_path_destroy(path);
+    gs_vertex_destroy(start);
+    gs_engine_destroy(engine);
+}
+
 // Main test runner
 int main(void) {
     printf("Running Graphserver Integration Tests\n");
@@ -411,6 +634,8 @@ int main(void) {
     run_test_large_network_performance();
     run_test_edge_cases();
     run_test_memory_management();
+    run_test_metadata_preservation_isolated();
+    run_test_provider_metadata_flow_integration();
     
     printf("\n=====================================\n");
     printf("Tests completed: %d/%d passed\n", tests_passed, tests_run);
