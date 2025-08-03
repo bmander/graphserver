@@ -112,6 +112,7 @@ def path_result_to_geojson(
     # Extract coordinates from path - now with actual OSM way geometry
     coordinates = [[origin["lng"], origin["lat"]]]
     total_cost = 0
+    total_distance = 0
     waypoints = []
     previous_node_id = None
 
@@ -126,6 +127,12 @@ def path_result_to_geojson(
             cost = edge.cost
             if isinstance(cost, int | float):
                 total_cost += float(cost)
+
+        # Add to total distance using actual OSM distance metadata
+        if hasattr(edge, "metadata") and edge.metadata:
+            distance_m = edge.metadata.get("distance_m", 0)
+            if isinstance(distance_m, (int, float)):
+                total_distance += float(distance_m)
 
         # Try to extract actual way geometry if we have OSM data
         if osm_data and "osm_node_id" in target and previous_node_id:
@@ -176,7 +183,7 @@ def path_result_to_geojson(
         "features": [route_feature],
         "properties": {
             "total_cost": total_cost,
-            "total_distance": len(coordinates) * 100,  # Rough estimate
+            "total_distance": total_distance,  # Actual distance from OSM edge metadata
             "status": "success",
             "waypoint_count": len(waypoints),
         },
