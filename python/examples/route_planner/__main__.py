@@ -48,8 +48,9 @@ Examples:
     args = parser.parse_args()
 
     # Validate port range
-    if not (1 <= args.port <= 65535):
-        print(f"Error: Port must be between 1 and 65535, got {args.port}")
+    max_port = 65535
+    if not (1 <= args.port <= max_port):
+        print(f"Error: Port must be between 1 and {max_port}, got {args.port}")
         sys.exit(1)
 
     # Validate OSM file exists

@@ -26,13 +26,14 @@ def download_file(url: str, dest_path: Path, description: str) -> bool:
         print(f"Downloading {description}...")
         urllib.request.urlretrieve(url, dest_path)
         print(f"  ✓ Saved to {dest_path}")
-        return True
     except urllib.error.URLError as e:
         print(f"  ✗ Failed to download {description}: {e}")
         return False
     except Exception as e:
         print(f"  ✗ Error downloading {description}: {e}")
         return False
+    else:
+        return True
 
 
 def setup_leaflet(base_dir: Path) -> bool:

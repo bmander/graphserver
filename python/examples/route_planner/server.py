@@ -2,7 +2,6 @@
 
 import json
 import mimetypes
-import xml.etree.ElementTree as ET
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
@@ -68,14 +67,14 @@ def path_result_to_geojson(
         # Add to total cost
         if hasattr(path_edge.edge, "cost"):
             cost = path_edge.edge.cost
-            if isinstance(cost, (int, float)):
+            if isinstance(cost, int | float):
                 total_cost += float(cost)
 
         # Create waypoint information
         waypoint = {
             "position": [target.get("lng", 0), target.get("lat", 0)],
             "instruction": f"Continue to waypoint {i + 1}",
-            "cost": float(cost) if isinstance(cost, (int, float)) else 0,
+            "cost": float(cost) if isinstance(cost, int | float) else 0,
         }
         waypoints.append(waypoint)
 
@@ -104,7 +103,7 @@ def path_result_to_geojson(
 class RoutePlannerHandler(BaseHTTPRequestHandler):
     """HTTP request handler for route planner."""
 
-    def do_GET(self) -> None:
+    def do_GET(self) -> None:  # noqa: N802
         """Handle GET requests."""
         parsed_url = urlparse(self.path)
         path = parsed_url.path
@@ -132,7 +131,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
         else:
             self.send_error(404, "Not found")
 
-    def do_POST(self) -> None:
+    def do_POST(self) -> None:  # noqa: N802
         """Handle POST requests."""
         parsed_url = urlparse(self.path)
         path = parsed_url.path
@@ -196,9 +195,9 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
         except (TypeError, ValueError) as e:
             self.send_error(500, f"Error serializing JSON: {e}")
 
-    def log_message(self, format: str, *args) -> None:
+    def log_message(self, fmt: str, *args) -> None:
         """Custom log format."""
-        print(f"[{self.address_string()}] {format % args}")
+        print(f"[{self.address_string()}] {fmt % args}")
 
     def _get_osm_bounds(self) -> dict:
         """Get OSM file bounds for map initialization."""
@@ -251,48 +250,16 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
     def _handle_route_request(self) -> None:
         """Handle route calculation requests."""
         try:
-            # Read request body
-            content_length = int(self.headers.get("Content-Length", 0))
-            if content_length == 0:
-                self.send_error(400, "Empty request body")
+            # Validate and parse request data
+            request_data = self._validate_and_parse_request()
+            if request_data is None:
                 return
-
-            post_data = self.rfile.read(content_length)
-            try:
-                request_data = json.loads(post_data.decode("utf-8"))
-            except (json.JSONDecodeError, UnicodeDecodeError) as e:
-                self.send_error(400, f"Invalid JSON: {e}")
-                return
-
-            # Validate request data
-            required_fields = ["origin", "destination"]
-            for field in required_fields:
-                if field not in request_data:
-                    self.send_error(400, f"Missing required field: {field}")
-                    return
 
             origin = request_data["origin"]
             destination = request_data["destination"]
 
-            # Validate coordinates
-            for point_name, point in [("origin", origin), ("destination", destination)]:
-                if (
-                    not isinstance(point, dict)
-                    or "lat" not in point
-                    or "lng" not in point
-                ):
-                    self.send_error(400, f"Invalid {point_name} coordinates")
-                    return
-                try:
-                    float(point["lat"])
-                    float(point["lng"])
-                except (ValueError, TypeError):
-                    self.send_error(400, f"Invalid {point_name} coordinate values")
-                    return
-
-            # Get engine from class attribute
+            # Check engine availability
             engine = getattr(self.__class__, "engine", None)
-
             if not engine:
                 self.send_json_response(
                     {
@@ -302,105 +269,139 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
                 )
                 return
 
-            # Calculate route
+            # Perform routing
+            self._perform_routing(engine, origin, destination)
+
+        except Exception as e:
+            print(f"Route request handling error: {e}")
+            self.send_error(500, f"Internal server error: {e}")
+
+    def _validate_and_parse_request(self) -> dict | None:
+        """Validate and parse route request. Returns None if there's an error."""
+        content_length = int(self.headers.get("Content-Length", 0))
+        if content_length == 0:
+            self.send_error(400, "Empty request body")
+            return None
+
+        try:
+            post_data = self.rfile.read(content_length)
+            request_data = json.loads(post_data.decode("utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            self.send_error(400, f"Invalid JSON: {e}")
+            return None
+
+        # Validate required fields
+        required_fields = ["origin", "destination"]
+        for field in required_fields:
+            if field not in request_data:
+                self.send_error(400, f"Missing required field: {field}")
+                return None
+
+        # Validate coordinates
+        for point_name, point in [
+            ("origin", request_data["origin"]),
+            ("destination", request_data["destination"]),
+        ]:
+            if not isinstance(point, dict) or "lat" not in point or "lng" not in point:
+                self.send_error(400, f"Invalid {point_name} coordinates")
+                return None
             try:
-                start_vertex = create_vertex_from_coordinates(
-                    origin["lat"], origin["lng"]
-                )
-                goal_vertex = create_vertex_from_coordinates(
-                    destination["lat"], destination["lng"]
-                )
+                float(point["lat"])
+                float(point["lng"])
+            except (ValueError, TypeError):
+                self.send_error(400, f"Invalid {point_name} coordinate values")
+                return None
 
-                # Link coordinate vertices to nearest OSM nodes via access provider
-                providers = getattr(self.__class__, "providers", {})
-                access_provider = providers.get("osm_access")
+        return request_data
 
-                if not access_provider:
-                    self.send_json_response(
-                        {
-                            "type": "FeatureCollection",
-                            "features": [],
-                            "properties": {
-                                "status": "error",
-                                "error": "OSM access provider not available",
-                                "total_cost": 0,
-                            },
-                        }
-                    )
-                    return
+    def _perform_routing(self, engine, origin: dict, destination: dict) -> None:
+        """Perform the actual routing calculation."""
+        try:
+            start_vertex = create_vertex_from_coordinates(origin["lat"], origin["lng"])
+            goal_vertex = create_vertex_from_coordinates(
+                destination["lat"], destination["lng"]
+            )
 
-                # Link start and goal vertices to OSM network
-                try:
-                    access_provider.link(start_vertex, origin["lat"], origin["lng"])
-                    access_provider.link(
-                        goal_vertex, destination["lat"], destination["lng"]
-                    )
-                except ValueError as e:
-                    # Handle case where coordinates are too far from road network
-                    error_msg = str(e)
-                    if "No OSM node found" in error_msg:
-                        self.send_json_response(
-                            {
-                                "type": "FeatureCollection",
-                                "features": [],
-                                "properties": {
-                                    "status": "error",
-                                    "error": "No roads found near the specified coordinates",
-                                    "message": f"Try clicking closer to streets or roads. Search radius: {access_provider.search_radius_m}m",
-                                    "total_cost": 0,
-                                },
-                            }
-                        )
-                    else:
-                        self.send_json_response(
-                            {
-                                "type": "FeatureCollection",
-                                "features": [],
-                                "properties": {
-                                    "status": "error",
-                                    "error": f"Coordinate linking failed: {error_msg}",
-                                    "total_cost": 0,
-                                },
-                            }
-                        )
-                    return
+            # Get access provider
+            providers = getattr(self.__class__, "providers", {})
+            access_provider = providers.get("osm_access")
 
-                # Now perform the route planning
-                path_result = engine.plan(
-                    start=start_vertex, goal=goal_vertex, planner="dijkstra"
-                )
-
-                # Convert to GeoJSON
-                geojson_result = path_result_to_geojson(
-                    path_result, origin, destination
-                )
-
-                # Add additional metadata
-                geojson_result["request"] = {
-                    "origin": origin,
-                    "destination": destination,
-                    "algorithm": "dijkstra",
-                }
-
-                self.send_json_response(geojson_result)
-
-            except Exception as e:
-                print(f"Route calculation error: {e}")
+            if not access_provider:
                 self.send_json_response(
                     {
                         "type": "FeatureCollection",
                         "features": [],
                         "properties": {
                             "status": "error",
-                            "error": str(e),
+                            "error": "OSM access provider not available",
                             "total_cost": 0,
                         },
                     }
                 )
+                return
+
+            # Link vertices to network
+            try:
+                access_provider.link(start_vertex, origin["lat"], origin["lng"])
+                access_provider.link(
+                    goal_vertex, destination["lat"], destination["lng"]
+                )
+            except ValueError as e:
+                self._handle_linking_error(e, access_provider)
+                return
+
+            # Perform route planning
+            path_result = engine.plan(
+                start=start_vertex, goal=goal_vertex, planner="dijkstra"
+            )
+            geojson_result = path_result_to_geojson(path_result, origin, destination)
+            geojson_result["request"] = {
+                "origin": origin,
+                "destination": destination,
+                "algorithm": "dijkstra",
+            }
+
+            self.send_json_response(geojson_result)
 
         except Exception as e:
-            print(f"Route request handling error: {e}")
-            self.send_error(500, f"Internal server error: {e}")
+            print(f"Route calculation error: {e}")
+            self.send_json_response(
+                {
+                    "type": "FeatureCollection",
+                    "features": [],
+                    "properties": {
+                        "status": "error",
+                        "error": str(e),
+                        "total_cost": 0,
+                    },
+                }
+            )
+
+    def _handle_linking_error(self, error: ValueError, access_provider) -> None:
+        """Handle coordinate linking errors."""
+        error_msg = str(error)
+        if "No OSM node found" in error_msg:
+            response = {
+                "type": "FeatureCollection",
+                "features": [],
+                "properties": {
+                    "status": "error",
+                    "error": "No roads found near the specified coordinates",
+                    "message": f"Try clicking closer to streets or roads. Search radius: {access_provider.search_radius_m}m",
+                    "total_cost": 0,
+                },
+            }
+        else:
+            response = {
+                "type": "FeatureCollection",
+                "features": [],
+                "properties": {
+                    "status": "error",
+                    "error": f"Coordinate linking failed: {error_msg}",
+                    "total_cost": 0,
+                },
+            }
+        self.send_json_response(response)
 
 
 def parse_osm_bounds(osm_file_path: str) -> dict:
@@ -413,7 +414,9 @@ def parse_osm_bounds(osm_file_path: str) -> dict:
         Dict with south, west, north, east bounds
     """
     try:
-        tree = ET.parse(osm_file_path)
+        from defusedxml import ElementTree
+
+        tree = ElementTree.parse(osm_file_path)
         root = tree.getroot()
 
         # Method 1: Try to find explicit bounds element
@@ -581,7 +584,8 @@ class RoutePlannerServer:
             httpd = HTTPServer(server_address, RoutePlannerHandler)
         except OSError as e:
             if "Address already in use" in str(e):
-                raise OSError(f"Port {self.port} is already in use") from e
+                msg = f"Port {self.port} is already in use"
+                raise OSError(msg) from e
             raise
 
         print("🚀 Route Planner Server starting...")
@@ -591,9 +595,7 @@ class RoutePlannerServer:
         if self.gtfs_files:
             print(f"🚌 GTFS files: {', '.join(self.gtfs_files)}")
 
-        print(
-            f"\n✅ Server ready! Open http://localhost:{self.port} in your browser"
-        )
+        print(f"\n✅ Server ready! Open http://localhost:{self.port} in your browser")
         print("Press Ctrl+C to stop\n")
 
         try:
