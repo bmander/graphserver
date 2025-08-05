@@ -83,6 +83,10 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     target_link_libraries(test_planner graphserver_core)
     add_test(NAME planner_tests COMMAND test_planner)
 
+    add_executable(test_dijkstra_internals tests/test_dijkstra_internals.c)
+    target_link_libraries(test_dijkstra_internals graphserver_core)
+    add_test(NAME dijkstra_internals_tests COMMAND test_dijkstra_internals)
+
     add_executable(test_precache tests/test_precache.c)
     target_link_libraries(test_precache graphserver_core)
     add_test(NAME precache_tests COMMAND test_precache)
@@ -105,7 +109,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     # Custom target to run all tests
     add_custom_target(run_tests
         COMMAND ${CMAKE_CTEST_COMMAND} --verbose
-        DEPENDS test_vertex test_edge test_memory test_hashmap test_cache test_engine test_priority_queue test_planner test_precache test_bidirectional_engine test_integration
+        DEPENDS test_vertex test_edge test_memory test_hashmap test_cache test_engine test_priority_queue test_planner test_dijkstra_internals test_precache test_bidirectional_engine test_integration
         COMMENT "Running all tests"
     )
 endif()
