@@ -72,6 +72,7 @@ static size_t next_power_of_2(size_t n) {
  */
 static size_t find_position(HashMap* map, const void* key, size_t hash) {
     size_t pos = hash & map->mask;
+    size_t original_pos = pos;
     
     while (map->entries[pos].key != NULL) {
         if (map->entries[pos].hash == hash && 
@@ -79,9 +80,14 @@ static size_t find_position(HashMap* map, const void* key, size_t hash) {
             return pos; // Found
         }
         pos = (pos + 1) & map->mask;
+        
+        // Prevent infinite loop if table is full
+        if (pos == original_pos) {
+            break;
+        }
     }
     
-    return pos; // Empty slot
+    return pos; // Empty slot or table full
 }
 
 /**
@@ -107,6 +113,13 @@ static void robin_hood_insert(HashMap* map, void* key, void* value, size_t hash)
         
         pos = (pos + 1) & map->mask;
         distance++;
+        
+        // Safety check to prevent infinite loop (shouldn't happen if load factor is maintained)
+        if (distance > map->capacity) {
+            // This should never happen if resize logic is correct, but prevents infinite loops
+            assert(false && "Robin Hood insertion infinite loop detected");
+            return;
+        }
     }
     
     // Insert at empty position
@@ -212,19 +225,20 @@ bool hashmap_put(HashMap* map, void* key, void* value) {
     size_t hash = map->hash_fn(key);
     if (hash == EMPTY_HASH) hash = 1;
     
+    // Check load factor and resize if needed BEFORE finding position
+    if ((double)(map->size + 1) / map->capacity > MAX_LOAD_FACTOR) {
+        if (!resize_hashmap(map)) {
+            return false;
+        }
+        // After resize, find position in the new table
+    }
+    
     // Check if key already exists
     size_t pos = find_position(map, key, hash);
     if (map->entries[pos].key != NULL) {
         // Update existing entry
         map->entries[pos].value = value;
         return true;
-    }
-    
-    // Check load factor and resize if needed
-    if ((double)(map->size + 1) / map->capacity > MAX_LOAD_FACTOR) {
-        if (!resize_hashmap(map)) {
-            return false;
-        }
     }
     
     // Insert new entry

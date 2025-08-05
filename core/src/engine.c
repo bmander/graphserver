@@ -704,8 +704,10 @@ GraphserverPathList* gs_plan(
     
     if (!engine || !options) return NULL;
     
-    // Clear previous stats
-    memset(&engine->last_plan_stats, 0, sizeof(GraphserverPlanStats));
+    // Preserve existing stats (e.g., from precaching) and only reset planning-specific counters
+    // Keep: cache_hits, cache_misses, cache_puts, providers_called, edges_generated from precaching
+    // Reset: vertices_expanded (will be set by planner)
+    engine->last_plan_stats.vertices_expanded = 0;
     
     // Create arena for planning operations
     GraphserverArena* arena = gs_arena_create(engine->config.default_arena_size);
@@ -752,8 +754,14 @@ GraphserverPathList* gs_plan(
         path_list->num_paths = 1;
     }
     
-    // Store stats in engine
-    engine->last_plan_stats = stats;
+    // Merge planner stats with existing engine stats (preserving precaching stats)
+    engine->last_plan_stats.vertices_expanded = stats.vertices_expanded;
+    // Keep existing cache stats and add any new ones from planning
+    engine->last_plan_stats.cache_hits += stats.cache_hits;
+    engine->last_plan_stats.cache_misses += stats.cache_misses;
+    engine->last_plan_stats.cache_puts += stats.cache_puts;
+    engine->last_plan_stats.providers_called += stats.providers_called;
+    engine->last_plan_stats.edges_generated += stats.edges_generated;
     
     if (out_stats) {
         *out_stats = stats;
@@ -791,8 +799,14 @@ GraphserverPath* gs_plan_simple(
         &stats
     );
     
-    // Store stats in engine
-    engine->last_plan_stats = stats;
+    // Merge planner stats with existing engine stats (preserving precaching stats)
+    engine->last_plan_stats.vertices_expanded = stats.vertices_expanded;
+    // Keep existing cache stats and add any new ones from planning
+    engine->last_plan_stats.cache_hits += stats.cache_hits;
+    engine->last_plan_stats.cache_misses += stats.cache_misses;
+    engine->last_plan_stats.cache_puts += stats.cache_puts;
+    engine->last_plan_stats.providers_called += stats.providers_called;
+    engine->last_plan_stats.edges_generated += stats.edges_generated;
     
     if (out_stats) {
         *out_stats = stats;
@@ -1034,16 +1048,19 @@ static GraphserverEdgeList* bfs_precache_generate_and_cache_edges(
         provider->outgoing_generator(vertex, edges, provider->user_data) : -1;
     
     if (provider_result == 0) { // Success
-        // Cache the edges
-        edge_cache_put(engine->edge_cache, vertex, edges);
+        size_t edge_count = gs_edge_list_get_count(edges);
+        
+        // Only cache non-empty edge lists to avoid corrupting cache with empty data
+        if (edge_count > 0) {
+            edge_cache_put(engine->edge_cache, vertex, edges);
+            engine->last_plan_stats.cache_puts++;
+        }
         
         // Update statistics
         engine->last_plan_stats.providers_called++;
-        engine->last_plan_stats.cache_puts++;
-        
-        size_t edge_count = gs_edge_list_get_count(edges);
         engine->last_plan_stats.edges_generated += edge_count;
         
+        // Return edges even if empty (for BFS processing), but don't cache empty lists
         return edges;
     }
     
