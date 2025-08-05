@@ -1,16 +1,23 @@
 #include "../include/gs_memory.h"
 #include "../include/gs_vertex.h"
+#include "../include/gs_hashmap.h"
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
 /**
  * @file priority_queue.c
- * @brief Binary min-heap priority queue for Dijkstra's algorithm
+ * @brief Optimized binary min-heap priority queue for Dijkstra's algorithm
  * 
  * This implementation provides a binary min-heap specifically optimized for
- * pathfinding algorithms. It supports decrease_key operations for efficient
- * cost updates during planning.
+ * pathfinding algorithms. It supports efficient O(log n) decrease_key operations 
+ * using a vertex-to-index HashMap for O(1) vertex lookups, transforming Dijkstra's 
+ * algorithm from O(V²) to O(E log V) complexity.
+ * 
+ * Key optimizations:
+ * - HashMap-based vertex-to-index mapping for O(1) lookups
+ * - Binary heap with proper bubble-up/bubble-down operations
+ * - Maintains heap indices for efficient swapping and position tracking
  */
 
 // Priority queue entry
@@ -26,6 +33,7 @@ typedef struct {
     size_t size;
     size_t capacity;
     GraphserverArena* arena;
+    HashMap* vertex_to_index;  // Maps vertex -> index for O(1) lookups
 } PriorityQueue;
 
 // Constants
@@ -35,6 +43,10 @@ typedef struct {
 #define PARENT(i) (((i) - 1) / 2)
 #define LEFT_CHILD(i) (2 * (i) + 1)
 #define RIGHT_CHILD(i) (2 * (i) + 2)
+
+// External vertex hash and equality functions (defined in hashmap.c)
+extern size_t vertex_hash(const void* vertex_ptr);
+extern bool vertex_equals(const void* a, const void* b);
 
 // Create priority queue
 PriorityQueue* pq_create(GraphserverArena* arena) {
@@ -50,6 +62,16 @@ PriorityQueue* pq_create(GraphserverArena* arena) {
     }
     
     if (!pq || !entries) {
+        if (!arena) {
+            free(pq);
+            free(entries);
+        }
+        return NULL;
+    }
+    
+    // Create vertex-to-index map for O(1) lookups
+    pq->vertex_to_index = hashmap_create(vertex_hash, vertex_equals, arena);
+    if (!pq->vertex_to_index) {
         if (!arena) {
             free(pq);
             free(entries);
@@ -74,6 +96,10 @@ static void pq_swap(PriorityQueue* pq, size_t i, size_t j) {
     // Update heap indices
     pq->entries[i].heap_index = i;
     pq->entries[j].heap_index = j;
+    
+    // Update vertex-to-index mappings
+    hashmap_put(pq->vertex_to_index, pq->entries[i].vertex, (void*)(uintptr_t)i);
+    hashmap_put(pq->vertex_to_index, pq->entries[j].vertex, (void*)(uintptr_t)j);
 }
 
 // Bubble up an entry to maintain heap property
@@ -157,6 +183,11 @@ bool pq_insert(PriorityQueue* pq, GraphserverVertex* vertex, double cost) {
     pq->entries[index].cost = cost;
     pq->entries[index].heap_index = index;
     
+    // Add to vertex-to-index mapping
+    if (!hashmap_put(pq->vertex_to_index, vertex, (void*)(uintptr_t)index)) {
+        return false;
+    }
+    
     pq->size++;
     
     // Restore heap property
@@ -175,11 +206,17 @@ bool pq_extract_min(PriorityQueue* pq, GraphserverVertex** out_vertex, double* o
         *out_cost = pq->entries[0].cost;
     }
     
+    // Remove vertex from mapping
+    hashmap_remove(pq->vertex_to_index, pq->entries[0].vertex);
+    
     // Move last element to root
     pq->size--;
     if (pq->size > 0) {
         pq->entries[0] = pq->entries[pq->size];
         pq->entries[0].heap_index = 0;
+        
+        // Update mapping for moved element
+        hashmap_put(pq->vertex_to_index, pq->entries[0].vertex, (void*)(uintptr_t)0);
         
         // Restore heap property
         pq_bubble_down(pq, 0);
@@ -188,14 +225,13 @@ bool pq_extract_min(PriorityQueue* pq, GraphserverVertex** out_vertex, double* o
     return true;
 }
 
-// Find entry for vertex (linear search for now)
+// Find entry for vertex (O(1) hash map lookup)
 static size_t pq_find_vertex(PriorityQueue* pq, const GraphserverVertex* vertex) {
-    for (size_t i = 0; i < pq->size; i++) {
-        if (gs_vertex_equals(pq->entries[i].vertex, vertex)) {
-            return i;
-        }
+    void* index_ptr = hashmap_get(pq->vertex_to_index, vertex);
+    if (!index_ptr) {
+        return SIZE_MAX; // Not found
     }
-    return SIZE_MAX; // Not found
+    return (size_t)(uintptr_t)index_ptr;
 }
 
 // Decrease key for vertex (if it exists in queue)
@@ -229,6 +265,7 @@ size_t pq_size(const PriorityQueue* pq) {
 void pq_clear(PriorityQueue* pq) {
     if (pq) {
         pq->size = 0;
+        hashmap_clear(pq->vertex_to_index);
     }
 }
 
@@ -259,7 +296,7 @@ bool pq_peek_min(const PriorityQueue* pq, GraphserverVertex** out_vertex, double
 // Check if vertex exists in priority queue
 bool pq_contains(const PriorityQueue* pq, const GraphserverVertex* vertex) {
     if (!pq || !vertex) return false;
-    return pq_find_vertex((PriorityQueue*)pq, vertex) != SIZE_MAX;
+    return hashmap_contains(pq->vertex_to_index, vertex);
 }
 
 // Validate heap property (for debugging)
