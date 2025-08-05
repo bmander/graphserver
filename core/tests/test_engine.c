@@ -918,6 +918,41 @@ TEST(engine_cache_invalidation_on_config_change) {
     gs_engine_destroy(engine);
 }
 
+// Test that gs_plan returns NULL when no path is found (memory leak fix)
+TEST(gs_plan_memory_leak_no_path) {
+    GraphserverEngine* engine = gs_engine_create();
+    ASSERT_NOT_NULL(engine);
+    
+    gs_engine_register_provider(engine, "test_provider", mock_provider_simple, NULL);
+    
+    GraphserverVertex* start = create_test_vertex("start");
+    ASSERT_NOT_NULL(start);
+    
+    // Create plan options with unsatisfiable goal
+    GraphserverPlanOptions options = {0};
+    options.start_vertex = start;
+    options.is_goal_fn = never_satisfied_goal;
+    options.is_goal_user_data = NULL;
+    options.timeout_seconds = 1.0; // Short timeout to avoid long test
+    
+    GraphserverPlanStats stats;
+    
+    // Test the fix: gs_plan should return NULL when no path is found
+    // This prevents memory leaks since callers don't expect to free empty lists
+    for (int i = 0; i < 50; i++) {
+        GraphserverPathList* path_list = gs_plan(engine, &options, &stats);
+        
+        // Fixed behavior: function should return NULL for no path found
+        ASSERT_NULL(path_list);
+        
+        // No memory leak: NULL return means no cleanup needed by caller
+        // This is the expected API contract for "no path found"
+    }
+    
+    gs_vertex_destroy(start);
+    gs_engine_destroy(engine);
+}
+
 // Test utility functions
 TEST(utility_functions) {
     // Test version string
@@ -962,6 +997,7 @@ int main(void) {
     run_test_engine_cache_invalidation_on_provider_unregister();
     run_test_engine_cache_invalidation_on_provider_disable();
     run_test_engine_cache_invalidation_on_config_change();
+    run_test_gs_plan_memory_leak_no_path();
     run_test_utility_functions();
     
     printf("\n=================================\n");

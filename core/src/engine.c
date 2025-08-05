@@ -728,31 +728,33 @@ GraphserverPathList* gs_plan(
         &stats
     );
     
-    // Create path list result
-    GraphserverPathList* path_list = gs_pathlist_create();
-    if (!path_list) {
-        if (path) gs_path_destroy(path);
+    // Only create path list if we have a valid path
+    // Return NULL for no path found (fixes memory leak)
+    if (result != GS_SUCCESS || !path) {
         gs_arena_destroy(arena);
         return NULL;
     }
     
-    // Add path to list if found
-    if (result == GS_SUCCESS && path) {
-        // Expand path list capacity if needed
-        if (path_list->capacity == 0) {
-            path_list->capacity = 1;
-            path_list->paths = malloc(sizeof(GraphserverPath*) * path_list->capacity);
-            if (!path_list->paths) {
-                gs_path_destroy(path);
-                gs_pathlist_destroy(path_list);
-                gs_arena_destroy(arena);
-                return NULL;
-            }
-        }
-        
-        path_list->paths[0] = path;
-        path_list->num_paths = 1;
+    // Create path list result for successful path
+    GraphserverPathList* path_list = gs_pathlist_create();
+    if (!path_list) {
+        gs_path_destroy(path);
+        gs_arena_destroy(arena);
+        return NULL;
     }
+    
+    // Expand path list capacity and add the path
+    path_list->capacity = 1;
+    path_list->paths = malloc(sizeof(GraphserverPath*) * path_list->capacity);
+    if (!path_list->paths) {
+        gs_path_destroy(path);
+        gs_pathlist_destroy(path_list);
+        gs_arena_destroy(arena);
+        return NULL;
+    }
+    
+    path_list->paths[0] = path;
+    path_list->num_paths = 1;
     
     // Merge planner stats with existing engine stats (preserving precaching stats)
     engine->last_plan_stats.vertices_expanded = stats.vertices_expanded;
