@@ -139,79 +139,6 @@ static bool coordinate_goal_predicate(const GraphserverVertex* vertex, void* use
     return (x == goal->target_x && y == goal->target_y);
 }
 
-// Test priority queue basic operations
-TEST(priority_queue_basic) {
-    GraphserverArena* arena = gs_arena_create(4096);
-    ASSERT_NOT_NULL(arena);
-    
-    PriorityQueue* pq = pq_create(arena);
-    ASSERT_NOT_NULL(pq);
-    
-    ASSERT(pq_is_empty(pq));
-    ASSERT_EQ(0, pq_size(pq));
-    
-    // Insert some vertices
-    GraphserverVertex* v1 = create_coordinate_vertex(1, 1);
-    GraphserverVertex* v2 = create_coordinate_vertex(2, 2);
-    GraphserverVertex* v3 = create_coordinate_vertex(3, 3);
-    
-    ASSERT(pq_insert(pq, v1, 5.0));
-    ASSERT(pq_insert(pq, v2, 2.0));
-    ASSERT(pq_insert(pq, v3, 8.0));
-    
-    ASSERT(!pq_is_empty(pq));
-    ASSERT_EQ(3, pq_size(pq));
-    
-    // Extract minimum (should be v2 with cost 2.0)
-    GraphserverVertex* min_vertex;
-    double min_cost;
-    ASSERT(pq_extract_min(pq, &min_vertex, &min_cost));
-    ASSERT(gs_vertex_equals(min_vertex, v2));
-    ASSERT_DOUBLE_EQ(2.0, min_cost, 1e-6);
-    
-    // Extract next minimum (should be v1 with cost 5.0)
-    ASSERT(pq_extract_min(pq, &min_vertex, &min_cost));
-    ASSERT(gs_vertex_equals(min_vertex, v1));
-    ASSERT_DOUBLE_EQ(5.0, min_cost, 1e-6);
-    
-    // Extract last (should be v3 with cost 8.0)
-    ASSERT(pq_extract_min(pq, &min_vertex, &min_cost));
-    ASSERT(gs_vertex_equals(min_vertex, v3));
-    ASSERT_DOUBLE_EQ(8.0, min_cost, 1e-6);
-    
-    ASSERT(pq_is_empty(pq));
-    
-    gs_vertex_destroy(v1);
-    gs_vertex_destroy(v2);
-    gs_vertex_destroy(v3);
-    gs_arena_destroy(arena);
-}
-
-// Test priority queue decrease key operation
-TEST(priority_queue_decrease_key) {
-    GraphserverArena* arena = gs_arena_create(4096);
-    PriorityQueue* pq = pq_create(arena);
-    
-    GraphserverVertex* v1 = create_coordinate_vertex(1, 1);
-    GraphserverVertex* v2 = create_coordinate_vertex(2, 2);
-    
-    pq_insert(pq, v1, 10.0);
-    pq_insert(pq, v2, 5.0);
-    
-    // Decrease key for v1
-    ASSERT(pq_decrease_key(pq, v1, 3.0));
-    
-    // v1 should now be minimum
-    GraphserverVertex* min_vertex;
-    double min_cost;
-    ASSERT(pq_extract_min(pq, &min_vertex, &min_cost));
-    ASSERT(gs_vertex_equals(min_vertex, v1));
-    ASSERT_DOUBLE_EQ(3.0, min_cost, 1e-6);
-    
-    gs_vertex_destroy(v1);
-    gs_vertex_destroy(v2);
-    gs_arena_destroy(arena);
-}
 
 // Test simple straight-line path
 TEST(dijkstra_simple_path) {
@@ -745,8 +672,6 @@ int main(void) {
     printf("Running Graphserver Planner Tests\n");
     printf("==================================\n");
     
-    run_test_priority_queue_basic();
-    run_test_priority_queue_decrease_key();
     run_test_dijkstra_simple_path();
     run_test_dijkstra_l_shaped_path();
     run_test_dijkstra_no_path();
