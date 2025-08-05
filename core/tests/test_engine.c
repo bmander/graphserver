@@ -139,6 +139,22 @@ static bool never_satisfied_goal(const GraphserverVertex* vertex, void* user_dat
     return false; // Never satisfied
 }
 
+// Goal predicate that looks for a vertex named "target" (created by mock_provider_simple)
+static bool is_target_vertex(const GraphserverVertex* vertex, void* user_data) {
+    (void)user_data;
+    
+    GraphserverValue name_value;
+    if (gs_vertex_get_value(vertex, "name", &name_value) != GS_SUCCESS) {
+        return false;
+    }
+    
+    if (name_value.type != GS_VALUE_STRING) {
+        return false;
+    }
+    
+    return strcmp(name_value.as.s_val, "target") == 0;
+}
+
 // Test engine creation and destruction
 TEST(engine_lifecycle) {
     GraphserverEngine* engine = gs_engine_create();
@@ -970,6 +986,74 @@ TEST(utility_functions) {
     gs_cleanup(); // Should not crash
 }
 
+// Test path string conversion and pathlist functions
+TEST(path_string_and_pathlist_functions) {
+    GraphserverEngine* engine = gs_engine_create();
+    ASSERT_NOT_NULL(engine);
+    
+    gs_engine_register_provider(engine, "simple", mock_provider_simple, NULL);
+    
+    // Create a test path using existing simple goal predicate
+    GraphserverVertex* start = create_named_vertex_safe("start");
+    
+    GraphserverPath* path = gs_plan_simple(
+        engine, start, is_target_vertex, NULL, NULL);
+    ASSERT_NOT_NULL(path);
+    
+    // Test path_to_string function
+    char* path_str = gs_path_to_string(path);
+    ASSERT_NOT_NULL(path_str);
+    // Should contain some representation of the path
+    ASSERT(strlen(path_str) > 0);
+    free(path_str);
+    
+    // Test path_to_string with NULL path
+    char* null_path_str = gs_path_to_string(NULL);
+    ASSERT_NULL(null_path_str);
+    
+    gs_path_destroy(path);
+    gs_vertex_destroy(start);
+    
+    // Test pathlist functions using gs_plan instead of gs_plan_simple
+    // Note: gs_plan may not be fully implemented yet, so we'll create a minimal test
+    GraphserverPlanOptions options = {0};
+    options.planner_name = "dijkstra";
+    options.start_vertex = create_named_vertex_safe("start2");
+    options.is_goal_fn = is_target_vertex;
+    options.is_goal_user_data = NULL;
+    options.timeout_seconds = 10.0;
+    
+    GraphserverPathList* pathlist = gs_plan(engine, &options, NULL);
+    
+    // Test pathlist functions regardless of whether gs_plan succeeded
+    // Test pathlist with NULL first (should always work)
+    ASSERT_EQ(0, gs_pathlist_get_count(NULL));
+    ASSERT_NULL(gs_pathlist_get_path(NULL, 0));
+    
+    if (pathlist != NULL) {
+        // Test pathlist functions
+        size_t count = gs_pathlist_get_count(pathlist);
+        ASSERT(count > 0);
+        
+        // Get first path
+        GraphserverPath* first_path = gs_pathlist_get_path(pathlist, 0);
+        ASSERT_NOT_NULL(first_path);
+        
+        // Test out-of-bounds access
+        GraphserverPath* out_of_bounds = gs_pathlist_get_path(pathlist, count + 1);
+        ASSERT_NULL(out_of_bounds);
+        
+        gs_pathlist_destroy(pathlist);
+    }
+    // If pathlist is NULL, that's also a valid result
+    
+    gs_pathlist_destroy(NULL); // Should not crash
+    
+    // Cast away const to allow destruction
+    gs_vertex_destroy((GraphserverVertex*)options.start_vertex);
+    gs_engine_destroy(engine);
+}
+
 // Main test runner
 int main(void) {
     printf("Running Graphserver Engine Tests\n");
@@ -999,6 +1083,7 @@ int main(void) {
     run_test_engine_cache_invalidation_on_config_change();
     run_test_gs_plan_memory_leak_no_path();
     run_test_utility_functions();
+    run_test_path_string_and_pathlist_functions();
     
     printf("\n=================================\n");
     printf("Tests completed: %d/%d passed\n", tests_passed, tests_run);

@@ -312,6 +312,10 @@ TEST(vertex_string_representation) {
     free(str);
     gs_vertex_destroy(vertex);
     
+    // Test NULL input handling
+    char* null_str = gs_vertex_to_string(NULL);
+    ASSERT_NULL(null_str);
+    
     // Clean up original string value
     gs_value_destroy(&str_val);
 }

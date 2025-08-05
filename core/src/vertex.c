@@ -485,7 +485,7 @@ uint64_t gs_vertex_hash(const GraphserverVertex* vertex) {
 
 // Vertex serialization (for debugging)
 char* gs_vertex_to_string(const GraphserverVertex* vertex) {
-    if (!vertex) return duplicate_string("null");
+    if (!vertex) return NULL;
     
     // Estimate buffer size (this is a rough estimate)
     size_t buffer_size = 1024;

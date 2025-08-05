@@ -651,7 +651,7 @@ size_t gs_path_get_cost_vector_size(const GraphserverPath* path) {
 }
 
 char* gs_path_to_string(const GraphserverPath* path) {
-    if (!path) return duplicate_string("null");
+    if (!path) return NULL;
     
     // Simple implementation for now
     char* buffer = malloc(256);
