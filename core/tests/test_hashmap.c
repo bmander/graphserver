@@ -2,9 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <math.h>
 #include "../include/gs_hashmap.h"
 #include "../include/gs_vertex.h"
 #include "../include/gs_memory.h"
+#include "../include/gs_planner_internal.h"
 #include "test_utils.h"
 
 // Simple test framework
@@ -337,6 +339,238 @@ TEST(hashmap_error_conditions) {
     gs_arena_destroy(arena);
 }
 
+// Test load factor calculation and tracking
+TEST(hashmap_load_factor_tracking) {
+    GraphserverArena* arena = gs_arena_create(4096);
+    HashMap* map = hashmap_create(vertex_hash, vertex_equals, arena);
+    ASSERT_NOT_NULL(map);
+    
+    // Initially empty - load factor should be 0
+    ASSERT_EQ(0, hashmap_size(map));
+    ASSERT(hashmap_load_factor(map) == 0.0);
+    
+    // Add elements and check load factor increases
+    GraphserverVertex* vertices[20];
+    for (int i = 0; i < 10; i++) {
+        vertices[i] = create_coordinate_vertex_safe(i, i);
+        ASSERT(hashmap_put(map, vertices[i], vertices[i]));
+        
+        double load_factor = hashmap_load_factor(map);
+        ASSERT(load_factor > 0.0);
+        ASSERT(load_factor <= 1.0); // Should never exceed 1.0
+    }
+    
+    // Verify load factor calculation: size / capacity
+    double expected_load = (double)hashmap_size(map) / hashmap_capacity(map);
+    ASSERT(fabs(hashmap_load_factor(map) - expected_load) < 1e-6);
+    
+    // Cleanup
+    for (int i = 0; i < 10; i++) {
+        gs_vertex_destroy(vertices[i]);
+    }
+    gs_arena_destroy(arena);
+}
+
+// Test hashmap destruction edge cases
+TEST(hashmap_destroy_edge_cases) {
+    GraphserverArena* arena = gs_arena_create(4096);
+    
+    // Test destroying NULL map (should not crash)
+    hashmap_destroy(NULL);
+    
+    // Test destroying empty map
+    HashMap* empty_map = hashmap_create(vertex_hash, vertex_equals, arena);
+    ASSERT_NOT_NULL(empty_map);
+    hashmap_destroy(empty_map); // Should not crash
+    
+    // Test destroying map with elements
+    HashMap* filled_map = hashmap_create(vertex_hash, vertex_equals, arena);
+    GraphserverVertex* v1 = create_coordinate_vertex_safe(1, 1);
+    GraphserverVertex* v2 = create_coordinate_vertex_safe(2, 2);
+    
+    hashmap_put(filled_map, v1, v1);
+    hashmap_put(filled_map, v2, v2);
+    
+    hashmap_destroy(filled_map); // Should not crash or leak
+    
+    gs_vertex_destroy(v1);
+    gs_vertex_destroy(v2);
+    gs_arena_destroy(arena);
+}
+
+// Test vertex set wrapper functions
+TEST(hashmap_vertex_set_operations) {
+    GraphserverArena* arena = gs_arena_create(4096);
+    VertexSet* set = vertex_set_create(arena);
+    ASSERT_NOT_NULL(set);
+    
+    GraphserverVertex* v1 = create_coordinate_vertex_safe(1, 1);
+    GraphserverVertex* v2 = create_coordinate_vertex_safe(2, 2);
+    GraphserverVertex* v3 = create_coordinate_vertex_safe(3, 3);
+    
+    // Initially empty
+    ASSERT(!vertex_set_contains(set, v1));
+    ASSERT(!vertex_set_contains(set, v2));
+    
+    // Add vertices
+    ASSERT(vertex_set_add(set, v1));
+    ASSERT(vertex_set_add(set, v2));
+    
+    // Check contains
+    ASSERT(vertex_set_contains(set, v1));
+    ASSERT(vertex_set_contains(set, v2));
+    ASSERT(!vertex_set_contains(set, v3));
+    
+    // Add duplicate (should still work)
+    ASSERT(vertex_set_add(set, v1));
+    ASSERT(vertex_set_contains(set, v1));
+    
+    // Clear set
+    vertex_set_clear(set);
+    ASSERT(!vertex_set_contains(set, v1));
+    ASSERT(!vertex_set_contains(set, v2));
+    
+    // Test edge cases
+    ASSERT(!vertex_set_contains(NULL, v1));
+    ASSERT(!vertex_set_contains(set, NULL));
+    ASSERT(!vertex_set_add(NULL, v1));
+    ASSERT(!vertex_set_add(set, NULL));
+    
+    gs_vertex_destroy(v1);
+    gs_vertex_destroy(v2);
+    gs_vertex_destroy(v3);
+    vertex_set_destroy(set);
+    gs_arena_destroy(arena);
+}
+
+// Test hashmap with large datasets (stress test)
+TEST(hashmap_stress_testing) {
+    GraphserverArena* arena = gs_arena_create(1024 * 1024); // 1MB arena
+    HashMap* map = hashmap_create(vertex_hash, vertex_equals, arena);
+    ASSERT_NOT_NULL(map);
+    
+    const size_t num_elements = 1000;
+    GraphserverVertex** vertices = malloc(sizeof(GraphserverVertex*) * num_elements);
+    
+    // Insert many elements
+    for (size_t i = 0; i < num_elements; i++) {
+        vertices[i] = create_coordinate_vertex_safe((int)i, (int)(i * 2));
+        ASSERT(hashmap_put(map, vertices[i], vertices[i]));
+    }
+    
+    ASSERT_EQ(num_elements, hashmap_size(map));
+    
+    // Verify all elements can be retrieved
+    for (size_t i = 0; i < num_elements; i++) {
+        ASSERT(hashmap_contains(map, vertices[i]));
+        ASSERT(hashmap_get(map, vertices[i]) == vertices[i]);
+    }
+    
+    // Remove half the elements
+    for (size_t i = 0; i < num_elements / 2; i++) {
+        ASSERT(hashmap_remove(map, vertices[i]));
+        ASSERT(!hashmap_contains(map, vertices[i]));
+    }
+    
+    ASSERT_EQ(num_elements / 2, hashmap_size(map));
+    
+    // Verify remaining elements are still accessible
+    for (size_t i = num_elements / 2; i < num_elements; i++) {
+        ASSERT(hashmap_contains(map, vertices[i]));
+    }
+    
+    // Verify load factor is reasonable
+    ASSERT(hashmap_load_factor(map) > 0.0);
+    ASSERT(hashmap_load_factor(map) < 1.0);
+    
+    // Cleanup
+    for (size_t i = 0; i < num_elements; i++) {
+        gs_vertex_destroy(vertices[i]);
+    }
+    free(vertices);
+    
+    gs_arena_destroy(arena);
+}
+
+// Test memory management paths (arena vs malloc)
+TEST(hashmap_memory_management) {
+    // Test with arena allocation
+    GraphserverArena* arena = gs_arena_create(4096);
+    HashMap* arena_map = hashmap_create(vertex_hash, vertex_equals, arena);
+    ASSERT_NOT_NULL(arena_map);
+    
+    GraphserverVertex* v1 = create_coordinate_vertex_safe(1, 1);
+    ASSERT(hashmap_put(arena_map, v1, v1));
+    ASSERT(hashmap_contains(arena_map, v1));
+    
+    // Arena-based maps should work normally
+    ASSERT_EQ(1, hashmap_size(arena_map));
+    ASSERT(hashmap_capacity(arena_map) > 0);
+    
+    gs_vertex_destroy(v1);
+    gs_arena_destroy(arena); // This should clean up the map too
+    
+    // Test with NULL arena (malloc allocation)
+    HashMap* malloc_map = hashmap_create(vertex_hash, vertex_equals, NULL);
+    ASSERT_NOT_NULL(malloc_map);
+    
+    GraphserverVertex* v2 = create_coordinate_vertex_safe(2, 2);
+    ASSERT(hashmap_put(malloc_map, v2, v2));
+    ASSERT(hashmap_contains(malloc_map, v2));
+    
+    ASSERT_EQ(1, hashmap_size(malloc_map));
+    ASSERT(hashmap_capacity(malloc_map) > 0);
+    
+    // Must explicitly destroy malloc-based map
+    hashmap_destroy(malloc_map);
+    gs_vertex_destroy(v2);
+}
+
+// Test detailed capacity expansion behavior
+TEST(hashmap_capacity_expansion) {
+    GraphserverArena* arena = gs_arena_create(4096);
+    HashMap* map = hashmap_create(vertex_hash, vertex_equals, arena);
+    ASSERT_NOT_NULL(map);
+    
+    size_t initial_capacity = hashmap_capacity(map);
+    ASSERT(initial_capacity > 0);
+    
+    // Add elements until we trigger a resize
+    GraphserverVertex** vertices = malloc(sizeof(GraphserverVertex*) * 100);
+    size_t count = 0;
+    
+    for (int i = 0; i < 100; i++) {
+        vertices[i] = create_coordinate_vertex_safe(i, i);
+        ASSERT(hashmap_put(map, vertices[i], vertices[i]));
+        count++;
+        
+        size_t current_capacity = hashmap_capacity(map);
+        
+        // Check if capacity expanded
+        if (current_capacity > initial_capacity) {
+            // Capacity should have at least doubled
+            ASSERT(current_capacity >= initial_capacity * 2);
+            break;
+        }
+        
+        // Ensure we don't exceed reasonable load factor before resize
+        ASSERT(hashmap_load_factor(map) <= 0.75); // Common threshold
+    }
+    
+    // Verify all elements are still accessible after potential resizes
+    for (size_t i = 0; i < count; i++) {
+        ASSERT(hashmap_contains(map, vertices[i]));
+        ASSERT(hashmap_get(map, vertices[i]) == vertices[i]);
+    }
+    
+    // Cleanup
+    for (size_t i = 0; i < count; i++) {
+        gs_vertex_destroy(vertices[i]);
+    }
+    free(vertices);
+    gs_arena_destroy(arena);
+}
+
 // Main test runner
 int main(void) {
     printf("Running Graphserver HashMap Tests\n");
@@ -349,6 +583,12 @@ int main(void) {
     run_test_hashmap_clear();
     run_test_hashmap_backward_shift_bug();
     run_test_hashmap_error_conditions();
+    run_test_hashmap_load_factor_tracking();
+    run_test_hashmap_destroy_edge_cases();
+    run_test_hashmap_vertex_set_operations();
+    run_test_hashmap_stress_testing();
+    run_test_hashmap_memory_management();
+    run_test_hashmap_capacity_expansion();
     
     printf("\n=================================\n");
     printf("Tests completed: %d/%d passed\n", tests_passed, tests_run);
