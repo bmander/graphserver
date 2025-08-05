@@ -63,6 +63,10 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     target_link_libraries(test_memory graphserver_core)
     add_test(NAME memory_tests COMMAND test_memory)
 
+    add_executable(test_hashmap tests/test_hashmap.c)
+    target_link_libraries(test_hashmap graphserver_core)
+    add_test(NAME hashmap_tests COMMAND test_hashmap)
+
     add_executable(test_cache tests/test_cache.c)
     target_link_libraries(test_cache graphserver_core)
     add_test(NAME cache_tests COMMAND test_cache)
@@ -97,7 +101,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     # Custom target to run all tests
     add_custom_target(run_tests
         COMMAND ${CMAKE_CTEST_COMMAND} --verbose
-        DEPENDS test_vertex test_edge test_memory test_cache test_engine test_planner test_precache test_bidirectional_engine test_integration
+        DEPENDS test_vertex test_edge test_memory test_hashmap test_cache test_engine test_planner test_precache test_bidirectional_engine test_integration
         COMMENT "Running all tests"
     )
 endif()
