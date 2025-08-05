@@ -252,7 +252,16 @@ bool hashmap_put(HashMap* map, void* key, void* value) {
 }
 
 bool hashmap_contains(HashMap* map, const void* key) {
-    return hashmap_get(map, key) != NULL;
+    if (!map || !key) return false;
+
+    size_t hash = map->hash_fn(key);
+    if (hash == EMPTY_HASH) hash = 1; // Avoid empty marker
+
+    size_t pos = find_position(map, key, hash);
+    // The key is contained if the slot at the found position is not empty.
+    // find_position returns the position of the key if it exists, or an empty slot.
+    // So we just need to check if the key at that position is non-NULL.
+    return map->entries[pos].key != NULL;
 }
 
 bool hashmap_remove(HashMap* map, const void* key) {

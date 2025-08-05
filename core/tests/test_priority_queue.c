@@ -425,23 +425,19 @@ TEST(pq_swap_debug) {
     GraphserverVertex* v1 = create_coordinate_vertex(1, 1);
     GraphserverVertex* v2 = create_coordinate_vertex(2, 2);
     
-    printf("DEBUG: v1 hash = %lu\n", gs_vertex_hash(v1));
-    printf("DEBUG: Inserting v1 (cost 5.0) at index 0\n");
     ASSERT(pq_insert(pq, v1, 5.0));
-    printf("DEBUG: v1 in queue: %d\n", pq_contains(pq, v1));
-    printf("DEBUG: v1 hash after insertion = %lu\n", gs_vertex_hash(v1));
+    ASSERT(pq_contains(pq, v1));
     
-    printf("DEBUG: Inserting v2 (cost 3.0) at index 1 - should bubble up to 0\n");
     ASSERT(pq_insert(pq, v2, 3.0));
-    printf("DEBUG: After bubble up - v1 in queue: %d, v2 in queue: %d\n", 
-           pq_contains(pq, v1), pq_contains(pq, v2));
+    ASSERT(pq_contains(pq, v1));
+    ASSERT(pq_contains(pq, v2));
     
     // Check which vertex is at the root now
     GraphserverVertex* min_vertex;
     double min_cost;
     ASSERT(pq_peek_min(pq, &min_vertex, &min_cost));
-    printf("DEBUG: Minimum vertex should be v2, actual: %s, cost: %f\n", 
-           gs_vertex_equals(min_vertex, v2) ? "v2" : "v1", min_cost);
+    ASSERT(gs_vertex_equals(min_vertex, v2));
+    ASSERT_DOUBLE_EQ(3.0, min_cost, 1e-6);
     
     gs_vertex_destroy(v1);
     gs_vertex_destroy(v2);

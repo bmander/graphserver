@@ -99,12 +99,10 @@ static bool pq_swap(PriorityQueue* pq, size_t i, size_t j) {
     pq->entries[j].heap_index = j;
     
     // Update vertex-to-index mappings
-    bool result1 = hashmap_put(pq->vertex_to_index, pq->entries[i].vertex, (void*)(uintptr_t)i);
-    bool result2 = hashmap_put(pq->vertex_to_index, pq->entries[j].vertex, (void*)(uintptr_t)j);
-    
-    if (!result1 || !result2) {
-        // Debug: This should help us understand if hashmap_put is failing
-        printf("DEBUG: pq_swap hashmap_put failed: result1=%d, result2=%d\n", result1, result2);
+    if (!hashmap_put(pq->vertex_to_index, pq->entries[i].vertex, (void*)(uintptr_t)i)) {
+        return false;
+    }
+    if (!hashmap_put(pq->vertex_to_index, pq->entries[j].vertex, (void*)(uintptr_t)j)) {
         return false;
     }
     
@@ -199,9 +197,7 @@ bool pq_insert(PriorityQueue* pq, GraphserverVertex* vertex, double cost) {
     pq->entries[index].heap_index = index;
     
     // Add to vertex-to-index mapping
-    bool hashmap_result = hashmap_put(pq->vertex_to_index, vertex, (void*)(uintptr_t)index);
-    if (!hashmap_result) {
-        printf("DEBUG: pq_insert hashmap_put failed for vertex!\n");
+    if (!hashmap_put(pq->vertex_to_index, vertex, (void*)(uintptr_t)index)) {
         return false;
     }
     
