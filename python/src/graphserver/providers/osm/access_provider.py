@@ -178,7 +178,16 @@ class OSMAccessProvider:
 
         if nearest_node.id not in self._linked_vertices:
             self._linked_vertices[nearest_node.id] = []
-        self._linked_vertices[nearest_node.id].append(vertex_template)
+        
+        # Check if this vertex template is already linked to avoid duplicates
+        existing_templates = self._linked_vertices[nearest_node.id]
+        is_duplicate = any(
+            dict(template.items()) == vertex_template_data
+            for template in existing_templates
+        )
+        
+        if not is_duplicate:
+            self._linked_vertices[nearest_node.id].append(vertex_template)
 
     def clear_links(self) -> None:
         """Clear all vertex-OSM node links."""
