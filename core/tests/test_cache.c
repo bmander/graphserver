@@ -505,6 +505,197 @@ TEST(cache_deep_copy_verification) {
     edge_cache_destroy(cache);
 }
 
+// Test 13: Large scale stress testing
+TEST(cache_large_scale_stress) {
+    EdgeCache* cache = edge_cache_create();
+    ASSERT_NOT_NULL(cache);
+    
+    const size_t stress_count = 1000;
+    GraphserverVertex** vertices = malloc(sizeof(GraphserverVertex*) * stress_count);
+    GraphserverEdgeList** edge_lists = malloc(sizeof(GraphserverEdgeList*) * stress_count);
+    
+    // Create and cache many entries
+    for (size_t i = 0; i < stress_count; i++) {
+        char name[32];
+        snprintf(name, sizeof(name), "stress_vertex_%zu", i);
+        vertices[i] = create_test_vertex(name);
+        
+        // Create varying numbers of edges (1 to 10) to test different memory patterns
+        size_t num_edges = (i % 10) + 1;
+        edge_lists[i] = create_test_edge_list((int)num_edges);
+        
+        GraphserverResult result = edge_cache_put(cache, vertices[i], edge_lists[i]);
+        ASSERT_EQ(GS_SUCCESS, result);
+    }
+    
+    ASSERT_EQ(stress_count, edge_cache_size(cache));
+    
+    // Verify all entries can be retrieved correctly
+    for (size_t i = 0; i < stress_count; i++) {
+        ASSERT(edge_cache_contains(cache, vertices[i]));
+        
+        GraphserverEdgeList* retrieved = NULL;
+        GraphserverResult result = edge_cache_get(cache, vertices[i], &retrieved);
+        ASSERT_EQ(GS_SUCCESS, result);
+        ASSERT_NOT_NULL(retrieved);
+        
+        size_t expected_edges = (i % 10) + 1;
+        ASSERT_EQ(expected_edges, gs_edge_list_get_count(retrieved));
+        
+        gs_edge_list_destroy(retrieved);
+    }
+    
+    // Clean up
+    for (size_t i = 0; i < stress_count; i++) {
+        gs_edge_list_destroy(edge_lists[i]);
+        gs_vertex_destroy(vertices[i]);
+    }
+    free(edge_lists);
+    free(vertices);
+    edge_cache_destroy(cache);
+}
+
+// Test 14: Memory intensive edge lists
+TEST(cache_memory_intensive_edges) {
+    EdgeCache* cache = edge_cache_create();
+    ASSERT_NOT_NULL(cache);
+    
+    GraphserverVertex* vertex = create_test_vertex("memory_test");
+    
+    // Create a very large edge list to test memory handling
+    const size_t large_edge_count = 500;
+    GraphserverEdgeList* large_edges = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(large_edges, true);
+    
+    for (size_t i = 0; i < large_edge_count; i++) {
+        char target_name[64];
+        snprintf(target_name, sizeof(target_name), "large_target_%zu", i);
+        GraphserverVertex* target = create_test_vertex(target_name);
+        
+        double cost = (double)i * 1.5;
+        GraphserverEdge* edge = gs_edge_create(target, &cost, 1);
+        gs_edge_set_owns_target_vertex(edge, true);
+        gs_edge_list_add_edge(large_edges, edge);
+    }
+    
+    // Cache the large edge list
+    GraphserverResult result = edge_cache_put(cache, vertex, large_edges);
+    ASSERT_EQ(GS_SUCCESS, result);
+    
+    // Retrieve and verify
+    GraphserverEdgeList* retrieved = NULL;
+    result = edge_cache_get(cache, vertex, &retrieved);
+    ASSERT_EQ(GS_SUCCESS, result);
+    ASSERT_EQ(large_edge_count, gs_edge_list_get_count(retrieved));
+    
+    // Verify deep copy integrity with large dataset
+    ASSERT(large_edges != retrieved);
+    
+    gs_edge_list_destroy(retrieved);
+    gs_edge_list_destroy(large_edges);
+    gs_vertex_destroy(vertex);
+    edge_cache_destroy(cache);
+}
+
+// Test 15: Cache replacement and memory efficiency
+TEST(cache_replacement_patterns) {
+    EdgeCache* cache = edge_cache_create();
+    ASSERT_NOT_NULL(cache);
+    
+    const size_t pattern_size = 50;
+    GraphserverVertex** vertices = malloc(sizeof(GraphserverVertex*) * pattern_size);
+    GraphserverEdgeList** edge_lists = malloc(sizeof(GraphserverEdgeList*) * pattern_size);
+    
+    // Create initial cache entries
+    for (size_t i = 0; i < pattern_size; i++) {
+        char name[32];
+        snprintf(name, sizeof(name), "pattern_%zu", i);
+        vertices[i] = create_test_vertex(name);
+        edge_lists[i] = create_test_edge_list(5);
+        
+        edge_cache_put(cache, vertices[i], edge_lists[i]);
+    }
+    
+    ASSERT_EQ(pattern_size, edge_cache_size(cache));
+    
+    // Update half the entries with different edge lists
+    for (size_t i = 0; i < pattern_size / 2; i++) {
+        GraphserverEdgeList* new_edges = create_test_edge_list(10); // Different size
+        GraphserverResult result = edge_cache_put(cache, vertices[i], new_edges);
+        ASSERT_EQ(GS_SUCCESS, result);
+        gs_edge_list_destroy(new_edges);
+    }
+    
+    // Verify cache size remains the same (replacements, not additions)
+    ASSERT_EQ(pattern_size, edge_cache_size(cache));
+    
+    // Verify updated entries have correct new sizes
+    for (size_t i = 0; i < pattern_size / 2; i++) {
+        GraphserverEdgeList* retrieved = NULL;
+        edge_cache_get(cache, vertices[i], &retrieved);
+        ASSERT_EQ(10U, gs_edge_list_get_count(retrieved)); // New size
+        gs_edge_list_destroy(retrieved);
+    }
+    
+    // Verify non-updated entries still have original sizes
+    for (size_t i = pattern_size / 2; i < pattern_size; i++) {
+        GraphserverEdgeList* retrieved = NULL;
+        edge_cache_get(cache, vertices[i], &retrieved);
+        ASSERT_EQ(5U, gs_edge_list_get_count(retrieved)); // Original size
+        gs_edge_list_destroy(retrieved);
+    }
+    
+    // Clean up
+    for (size_t i = 0; i < pattern_size; i++) {
+        gs_edge_list_destroy(edge_lists[i]);
+        gs_vertex_destroy(vertices[i]);
+    }
+    free(edge_lists);
+    free(vertices);
+    edge_cache_destroy(cache);
+}
+
+// Test 16: Edge cases with vertex equality and hashing
+TEST(cache_vertex_equality_edge_cases) {
+    EdgeCache* cache = edge_cache_create();
+    ASSERT_NOT_NULL(cache);
+    
+    // Create two identical vertices (same content, different objects)
+    GraphserverKeyPair pairs[] = {
+        {"x", gs_value_create_int(100)},
+        {"y", gs_value_create_int(200)}
+    };
+    
+    GraphserverVertex* vertex1 = gs_vertex_create(pairs, 2, NULL);
+    GraphserverVertex* vertex2 = gs_vertex_create(pairs, 2, NULL);
+    
+    ASSERT_NOT_NULL(vertex1);
+    ASSERT_NOT_NULL(vertex2);
+    ASSERT(vertex1 != vertex2); // Different objects
+    
+    // Cache with first vertex
+    GraphserverEdgeList* edges1 = create_test_edge_list(3);
+    GraphserverResult result = edge_cache_put(cache, vertex1, edges1);
+    ASSERT_EQ(GS_SUCCESS, result);
+    
+    // Should be able to retrieve with second identical vertex
+    GraphserverEdgeList* retrieved = NULL;
+    result = edge_cache_get(cache, vertex2, &retrieved);
+    ASSERT_EQ(GS_SUCCESS, result);
+    ASSERT_NOT_NULL(retrieved);
+    ASSERT_EQ(3U, gs_edge_list_get_count(retrieved));
+    
+    // Should report contains for both vertices
+    ASSERT(edge_cache_contains(cache, vertex1));
+    ASSERT(edge_cache_contains(cache, vertex2));
+    
+    gs_edge_list_destroy(retrieved);
+    gs_edge_list_destroy(edges1);
+    gs_vertex_destroy(vertex1);
+    gs_vertex_destroy(vertex2);
+    edge_cache_destroy(cache);
+}
+
 // Main test runner
 int main(void) {
     printf("Running Edge Cache Unit Tests\n");
@@ -522,6 +713,10 @@ int main(void) {
     run_test_cache_resizing_performance();
     run_test_cache_hash_collision_handling();
     run_test_cache_deep_copy_verification();
+    run_test_cache_large_scale_stress();
+    run_test_cache_memory_intensive_edges();
+    run_test_cache_replacement_patterns();
+    run_test_cache_vertex_equality_edge_cases();
     
     printf("\n=============================\n");
     printf("Cache tests completed: %d/%d passed\n", tests_passed, tests_run);
