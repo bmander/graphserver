@@ -106,7 +106,10 @@ static void robin_hood_insert(HashMap* map, void* key, void* value, size_t hash)
         if (distance > existing_distance) {
             // Swap with existing entry (Robin Hood principle)
             HashEntry temp = map->entries[pos];
+            
             map->entries[pos] = entry;
+            map->entries[pos].distance = distance;
+            
             entry = temp;
             distance = existing_distance;
         }
@@ -275,8 +278,10 @@ bool hashmap_remove(HashMap* map, const void* key) {
     while (map->entries[next_pos].key != NULL && map->entries[next_pos].distance > 0) {
         // Shift entry back
         map->entries[pos] = map->entries[next_pos];
-        map->entries[pos].distance--;
         
+        // The moved entry is now 1 step closer to its ideal position
+        map->entries[pos].distance--;
+
         // Clear the old position
         map->entries[next_pos].key = NULL;
         map->entries[next_pos].value = NULL;
