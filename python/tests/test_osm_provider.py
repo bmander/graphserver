@@ -947,8 +947,10 @@ class TestIntegrationWithGraphserver:
             # Link vertex A to OSM node (near first node in sample data)
             access_provider.link(vertex_a, 47.6062, -122.3321)
 
-            # Get OSM node vertex and check initial edges
-            osm_node_1 = Vertex({"osm_node_id": 1})
+            # Get OSM node vertex with proper identity hash (like providers create)
+            osm_node_data = {"osm_node_id": 1}
+            osm_node_hash = hash(f"osm:1") & 0xFFFFFFFFFFFFFFFF
+            osm_node_1 = Vertex(osm_node_data, hash_value=osm_node_hash)
             initial_edges = access_provider.out_edges(osm_node_1)
             assert len(initial_edges) == 1  # Should have edge to vertex A
 
