@@ -12,7 +12,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
-from graphserver.core import Edge, GraphserverDataType, Vertex, VertexEdgePair
+from graphserver.core import (
+    CacheAwareEdgeProvider,
+    Edge,
+    GraphserverDataType,
+    Vertex,
+    VertexEdgePair,
+)
 
 if TYPE_CHECKING:
     from .data_source import OSMDataSource
@@ -20,7 +26,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class OSMAccessProvider:
+class OSMAccessProvider(CacheAwareEdgeProvider):
     """OSM access provider for connecting vertices to the OSM network.
 
     This provider uses explicit linking to connect vertices bidirectionally with OSM
@@ -50,6 +56,7 @@ class OSMAccessProvider:
             search_radius_m: Search radius for finding nearby nodes from coordinates
             max_nearby_nodes: Maximum number of nearby nodes to consider
         """
+        super().__init__()  # Initialize CacheAwareEdgeProvider
         self.data_source = data_source
         self.search_radius_m = search_radius_m
         self.max_nearby_nodes = max_nearby_nodes
@@ -185,9 +192,17 @@ class OSMAccessProvider:
             dict(template.items()) == vertex_template_data
             for template in existing_templates
         )
-        
+
         if not is_duplicate:
             self._linked_vertices[nearest_node.id].append(vertex_template)
+
+            # Invalidate cache for the OSM node to ensure new edges are discovered
+            osm_node_vertex = Vertex({"osm_node_id": nearest_node.id})
+            try:
+                self.invalidate_vertex(osm_node_vertex)
+            except ValueError:
+                # Vertex not in cache yet, no need to invalidate
+                pass
 
     def clear_links(self) -> None:
         """Clear all vertex-OSM node links."""
