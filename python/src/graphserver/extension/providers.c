@@ -290,8 +290,8 @@ bool identity_aware_goal_predicate(
     GraphserverValue id_hash_val;
     GraphserverValue goal_id_hash_val;
     
-    bool has_id = gs_vertex_get_value(vertex, "_id_hash", &id_hash_val) == GS_SUCCESS;
-    bool goal_has_id = gs_vertex_get_value(goal_data->goal_vertex, "_id_hash", &goal_id_hash_val) == GS_SUCCESS;
+    bool has_id = gs_vertex_get_value(vertex, "_hash", &id_hash_val) == GS_SUCCESS;
+    bool goal_has_id = gs_vertex_get_value(goal_data->goal_vertex, "_hash", &goal_id_hash_val) == GS_SUCCESS;
     
     // Debug logging
     char* vertex_str = gs_vertex_to_string(vertex);
