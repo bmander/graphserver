@@ -8,10 +8,12 @@ across various domains.
 from __future__ import annotations
 
 from .core import (
+    CacheAwareEdgeProvider,
     Edge,
     EdgeProvider,
     Engine,
     GraphserverDataType,
+    InvalidationHandler,
     PathEdge,
     PathResult,
     Vertex,
@@ -27,14 +29,16 @@ except ImportError:
 
 __version__ = "2.0.0"
 __all__ = [
-    "Engine",
-    "PathResult",
-    "EdgeProvider",
-    "Vertex",
+    "CacheAwareEdgeProvider",
     "Edge",
-    "PathEdge",
-    "VertexEdgePair",
+    "EdgeProvider",
+    "Engine",
     "GraphserverDataType",
+    "InvalidationHandler",
+    "PathEdge",
+    "PathResult",
+    "Vertex",
+    "VertexEdgePair",
 ]
 
 # Add providers to __all__ if available

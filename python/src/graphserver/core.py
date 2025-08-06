@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import ItemsView, Iterator, KeysView, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
+from abc import ABC, abstractmethod
 
 # Type alias for graphserver vertex data values
 GraphserverDataType = str | int | float
@@ -233,6 +234,107 @@ class EdgeProvider(Protocol):
         ...
 
 
+@runtime_checkable
+class InvalidationHandler(Protocol):
+    """Protocol for cache invalidation handlers.
+    
+    This protocol defines the interface that cache invalidation handlers
+    must implement to notify the engine about vertex cache invalidations.
+    """
+
+    def invalidate_vertex(self, vertex: Vertex) -> None:
+        """Invalidate cached edges for a single vertex.
+        
+        Args:
+            vertex: Vertex to remove from cache
+        """
+        ...
+
+    def invalidate_vertices(self, vertices: Sequence[Vertex]) -> None:
+        """Invalidate cached edges for multiple vertices efficiently.
+        
+        Args:
+            vertices: Sequence of vertices to remove from cache
+        """
+        ...
+
+
+class CacheAwareEdgeProvider(ABC):
+    """Base class for edge providers that need cache invalidation support.
+    
+    This abstract base class extends the EdgeProvider functionality with
+    built-in cache invalidation capabilities. Providers that inherit from
+    this class can notify the engine when their internal state changes,
+    triggering automatic cache invalidation for affected vertices.
+    
+    The engine automatically detects CacheAwareEdgeProvider instances during
+    registration and injects an invalidation handler that bridges Python
+    invalidation calls to the C engine.
+    """
+    
+    def __init__(self) -> None:
+        """Initialize cache-aware provider."""
+        self._invalidation_handler: InvalidationHandler | None = None
+    
+    def set_invalidation_handler(self, handler: InvalidationHandler) -> None:
+        """Set the invalidation handler (called by engine during registration).
+        
+        Args:
+            handler: InvalidationHandler instance for cache invalidation
+        """
+        self._invalidation_handler = handler
+    
+    def invalidate_vertex(self, vertex: Vertex) -> None:
+        """Notify engine that vertex cache should be invalidated.
+        
+        This method triggers immediate invalidation of cached edges for
+        the specified vertex. Use this when the provider's internal state
+        changes in a way that affects the edges for this vertex.
+        
+        Args:
+            vertex: Vertex whose cached edges should be invalidated
+        """
+        if self._invalidation_handler:
+            self._invalidation_handler.invalidate_vertex(vertex)
+    
+    def invalidate_vertices(self, vertices: Sequence[Vertex]) -> None:
+        """Notify engine that multiple vertex caches should be invalidated.
+        
+        This method efficiently invalidates cached edges for multiple vertices
+        in a single batch operation. Use this when multiple vertices are
+        affected by a state change.
+        
+        Args:
+            vertices: Sequence of vertices whose cached edges should be invalidated
+        """
+        if self._invalidation_handler:
+            self._invalidation_handler.invalidate_vertices(vertices)
+    
+    @abstractmethod
+    def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+        """Generate outgoing edges from a vertex.
+        
+        Args:
+            vertex: Vertex object containing state data
+            
+        Returns:
+            List of (target_vertex, edge) tuples for outgoing edges
+        """
+        ...
+    
+    @abstractmethod
+    def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+        """Generate incoming edges to a vertex.
+        
+        Args:
+            vertex: Vertex object containing state data
+            
+        Returns:
+            List of (source_vertex, edge) tuples for incoming edges
+        """
+        ...
+
+
 @dataclass(frozen=True)
 class EngineStats:
     """Engine statistics including cache performance metrics.
@@ -276,6 +378,40 @@ class EngineStats:
         return (self.cache_hits / total_lookups) * 100.0
 
 
+class _EngineInvalidationHandler:
+    """Internal handler that bridges Python invalidation calls to C engine.
+    
+    This class implements the InvalidationHandler protocol and provides
+    a bridge between Python provider invalidation calls and the underlying
+    C engine invalidation functions. It is automatically created by the
+    Engine during initialization.
+    """
+    
+    def __init__(self, engine: "Engine") -> None:
+        """Initialize handler with engine reference.
+        
+        Args:
+            engine: Engine instance to bridge invalidation calls to
+        """
+        self._engine = engine
+    
+    def invalidate_vertex(self, vertex: Vertex) -> None:
+        """Invalidate cached edges for a single vertex.
+        
+        Args:
+            vertex: Vertex to remove from cache
+        """
+        self._engine.invalidate_vertex_cache(vertex)
+    
+    def invalidate_vertices(self, vertices: Sequence[Vertex]) -> None:
+        """Invalidate cached edges for multiple vertices efficiently.
+        
+        Args:
+            vertices: Sequence of vertices to remove from cache
+        """
+        self._engine.invalidate_vertices_cache(vertices)
+
+
 class Engine:
     """Graphserver planning engine with Python edge provider support.
 
@@ -312,13 +448,16 @@ class Engine:
         )
         self._providers: dict[str, EdgeProvider] = {}
         self._config = merged_config
+        self._invalidation_handler = _EngineInvalidationHandler(self)
 
     def register_provider(self, name: str, provider: EdgeProvider) -> None:
         """Register a Python edge provider.
 
         Args:
             name: Unique name for the provider
-            provider: EdgeProvider implementing out_edges and in_edges methods
+            provider: EdgeProvider implementing out_edges and in_edges methods.
+                     If provider is a CacheAwareEdgeProvider, an invalidation
+                     handler will be automatically injected.
 
         Raises:
             TypeError: If provider doesn't implement required methods
@@ -336,6 +475,10 @@ class Engine:
         if _graphserver is None:
             msg = "C extension not available"
             raise RuntimeError(msg)
+
+        # If provider is cache-aware, inject invalidation handler
+        if isinstance(provider, CacheAwareEdgeProvider):
+            provider.set_invalidation_handler(self._invalidation_handler)
 
         # Pass the provider object directly to the C extension
         # The C extension now supports bidirectional providers
