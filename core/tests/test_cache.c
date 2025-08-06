@@ -696,6 +696,193 @@ TEST(cache_vertex_equality_edge_cases) {
     edge_cache_destroy(cache);
 }
 
+// Test cache invalidation for a single vertex
+TEST(cache_invalidate_single_vertex) {
+    EdgeCache* cache = edge_cache_create();
+    ASSERT(cache != NULL);
+    
+    // Create test vertex and edges
+    GraphserverVertex* vertex = create_test_vertex("test_vertex");
+    
+    GraphserverEdgeList* edges = gs_edge_list_create();
+    GraphserverVertex* target = create_test_vertex("target_vertex");
+    double cost = 5.0;
+    GraphserverEdge* edge = gs_edge_create(target, &cost, 1);
+    gs_edge_set_owns_target_vertex(edge, true);
+    gs_edge_list_add_edge(edges, edge);
+    
+    // Put entry in cache
+    GraphserverResult result = edge_cache_put(cache, vertex, edges);
+    ASSERT_EQ(GS_SUCCESS, result);
+    ASSERT_EQ(1, edge_cache_size(cache));
+    ASSERT(edge_cache_contains(cache, vertex));
+    
+    // Invalidate the vertex
+    result = edge_cache_invalidate(cache, vertex);
+    ASSERT_EQ(GS_SUCCESS, result);
+    
+    // Verify it's been removed
+    ASSERT_EQ(0, edge_cache_size(cache));
+    ASSERT(!edge_cache_contains(cache, vertex));
+    
+    // Verify can't retrieve it
+    GraphserverEdgeList* retrieved = NULL;
+    result = edge_cache_get(cache, vertex, &retrieved);
+    ASSERT_EQ(GS_ERROR_KEY_NOT_FOUND, result);
+    ASSERT_NULL(retrieved);
+    
+    gs_edge_list_destroy(edges);
+    gs_vertex_destroy(vertex);
+    edge_cache_destroy(cache);
+}
+
+// Test cache invalidation for non-existent vertex
+TEST(cache_invalidate_nonexistent_vertex) {
+    EdgeCache* cache = edge_cache_create();
+    ASSERT(cache != NULL);
+    
+    // Create test vertex
+    GraphserverVertex* vertex = create_test_vertex("nonexistent");
+    
+    // Try to invalidate non-existent vertex
+    GraphserverResult result = edge_cache_invalidate(cache, vertex);
+    ASSERT_EQ(GS_ERROR_KEY_NOT_FOUND, result);
+    
+    // Cache should remain empty
+    ASSERT_EQ(0, edge_cache_size(cache));
+    
+    gs_vertex_destroy(vertex);
+    edge_cache_destroy(cache);
+}
+
+// Test batch cache invalidation
+TEST(cache_invalidate_batch) {
+    EdgeCache* cache = edge_cache_create();
+    ASSERT(cache != NULL);
+    
+    // Create test vertices and cache them
+    GraphserverVertex* vertices[3];
+    for (int i = 0; i < 3; i++) {
+        char id[32];
+        sprintf(id, "vertex_%d", i);
+        vertices[i] = create_test_vertex(id);
+        
+        GraphserverEdgeList* edges = gs_edge_list_create();
+        char target_id[32];
+        sprintf(target_id, "target_%d", i);
+        GraphserverVertex* target = create_test_vertex(target_id);
+        double cost = i * 2.0;
+        GraphserverEdge* edge = gs_edge_create(target, &cost, 1);
+        gs_edge_set_owns_target_vertex(edge, true);
+        gs_edge_list_add_edge(edges, edge);
+        
+        edge_cache_put(cache, vertices[i], edges);
+        gs_edge_list_destroy(edges);
+    }
+    
+    ASSERT_EQ(3, edge_cache_size(cache));
+    
+    // Invalidate first two vertices in batch
+    const GraphserverVertex* to_invalidate[2] = {vertices[0], vertices[1]};
+    GraphserverResult result = edge_cache_invalidate_batch(cache, to_invalidate, 2);
+    ASSERT_EQ(GS_SUCCESS, result);
+    
+    // Verify first two are removed, third remains
+    ASSERT_EQ(1, edge_cache_size(cache));
+    ASSERT(!edge_cache_contains(cache, vertices[0]));
+    ASSERT(!edge_cache_contains(cache, vertices[1]));
+    ASSERT(edge_cache_contains(cache, vertices[2]));
+    
+    for (int i = 0; i < 3; i++) {
+        gs_vertex_destroy(vertices[i]);
+    }
+    edge_cache_destroy(cache);
+}
+
+// Test batch invalidation with empty array
+TEST(cache_invalidate_batch_empty) {
+    EdgeCache* cache = edge_cache_create();
+    ASSERT(cache != NULL);
+    
+    // Add one vertex to cache
+    GraphserverVertex* vertex = create_test_vertex("test");
+    
+    GraphserverEdgeList* edges = gs_edge_list_create();
+    edge_cache_put(cache, vertex, edges);
+    ASSERT_EQ(1, edge_cache_size(cache));
+    
+    // Invalidate with empty array
+    GraphserverResult result = edge_cache_invalidate_batch(cache, NULL, 0);
+    ASSERT_EQ(GS_SUCCESS, result);
+    
+    // Cache should be unchanged
+    ASSERT_EQ(1, edge_cache_size(cache));
+    
+    gs_edge_list_destroy(edges);
+    gs_vertex_destroy(vertex);
+    edge_cache_destroy(cache);
+}
+
+// Test cache invalidate all
+TEST(cache_invalidate_all) {
+    EdgeCache* cache = edge_cache_create();
+    ASSERT(cache != NULL);
+    
+    // Add multiple vertices
+    for (int i = 0; i < 5; i++) {
+        char id[32];
+        sprintf(id, "vertex_%d", i);
+        GraphserverVertex* vertex = create_test_vertex(id);
+        
+        GraphserverEdgeList* edges = gs_edge_list_create();
+        edge_cache_put(cache, vertex, edges);
+        
+        gs_edge_list_destroy(edges);
+        gs_vertex_destroy(vertex);
+    }
+    
+    ASSERT_EQ(5, edge_cache_size(cache));
+    
+    // Invalidate all
+    edge_cache_invalidate_all(cache);
+    
+    // Verify cache is empty
+    ASSERT_EQ(0, edge_cache_size(cache));
+    
+    edge_cache_destroy(cache);
+}
+
+// Test invalidation with NULL parameters
+TEST(cache_invalidate_null_params) {
+    EdgeCache* cache = edge_cache_create();
+    ASSERT(cache != NULL);
+    
+    GraphserverVertex* vertex = create_test_vertex("test_vertex");
+    
+    // Test NULL cache
+    GraphserverResult result = edge_cache_invalidate(NULL, vertex);
+    ASSERT_EQ(GS_ERROR_NULL_POINTER, result);
+    
+    // Test NULL vertex
+    result = edge_cache_invalidate(cache, NULL);
+    ASSERT_EQ(GS_ERROR_NULL_POINTER, result);
+    
+    // Test NULL cache for batch
+    const GraphserverVertex* vertices[1] = {vertex};
+    result = edge_cache_invalidate_batch(NULL, vertices, 1);
+    ASSERT_EQ(GS_ERROR_NULL_POINTER, result);
+    
+    // Test NULL vertices array
+    result = edge_cache_invalidate_batch(cache, NULL, 1);
+    ASSERT_EQ(GS_ERROR_NULL_POINTER, result);
+    
+    // Test invalidate all with NULL
+    edge_cache_invalidate_all(NULL); // Should not crash
+    
+    gs_vertex_destroy(vertex);
+    edge_cache_destroy(cache);
+}
+
 // Main test runner
 int main(void) {
     printf("Running Edge Cache Unit Tests\n");
@@ -717,6 +904,12 @@ int main(void) {
     run_test_cache_memory_intensive_edges();
     run_test_cache_replacement_patterns();
     run_test_cache_vertex_equality_edge_cases();
+    run_test_cache_invalidate_single_vertex();
+    run_test_cache_invalidate_nonexistent_vertex();
+    run_test_cache_invalidate_batch();
+    run_test_cache_invalidate_batch_empty();
+    run_test_cache_invalidate_all();
+    run_test_cache_invalidate_null_params();
     
     printf("\n=============================\n");
     printf("Cache tests completed: %d/%d passed\n", tests_passed, tests_run);

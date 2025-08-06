@@ -34,6 +34,7 @@ Python_add_library(_graphserver MODULE
     src/graphserver/extension/conversion.c
     src/graphserver/extension/validation.c
     src/graphserver/extension/cleanup.c
+    src/graphserver/extension/cache.c
 )
 
 # Link to core graphserver library

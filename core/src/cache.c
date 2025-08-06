@@ -258,3 +258,70 @@ bool edge_cache_contains(const EdgeCache* cache, const GraphserverVertex* vertex
     
     return false;
 }
+
+// Helper function to remove entry from cache
+static bool cache_entry_remove(EdgeCache* cache, const GraphserverVertex* vertex) {
+    if (!cache || !vertex) return false;
+    
+    uint64_t hash = gs_vertex_hash(vertex);
+    size_t bucket_index = hash & cache->mask;
+    
+    CacheEntry* prev = NULL;
+    CacheEntry* current = cache->buckets[bucket_index];
+    
+    while (current) {
+        if (current->hash == hash && gs_vertex_equals(current->vertex, vertex)) {
+            // Found - remove from chain
+            if (prev) {
+                prev->next = current->next;
+            } else {
+                cache->buckets[bucket_index] = current->next;
+            }
+            
+            cache_entry_destroy(current);
+            cache->size--;
+            return true;
+        }
+        prev = current;
+        current = current->next;
+    }
+    
+    return false;
+}
+
+GraphserverResult edge_cache_invalidate(
+    EdgeCache* cache,
+    const GraphserverVertex* vertex) {
+    
+    if (!cache || !vertex) return GS_ERROR_NULL_POINTER;
+    
+    // Remove entry from cache
+    if (cache_entry_remove(cache, vertex)) {
+        return GS_SUCCESS;
+    } else {
+        return GS_ERROR_KEY_NOT_FOUND;
+    }
+}
+
+GraphserverResult edge_cache_invalidate_batch(
+    EdgeCache* cache,
+    const GraphserverVertex** vertices,
+    size_t count) {
+    
+    if (!cache) return GS_ERROR_NULL_POINTER;
+    if (count == 0) return GS_SUCCESS;  // Allow NULL vertices when count is 0
+    if (!vertices) return GS_ERROR_NULL_POINTER;
+    
+    // Remove each vertex from cache
+    for (size_t i = 0; i < count; i++) {
+        if (vertices[i]) {
+            cache_entry_remove(cache, vertices[i]);
+        }
+    }
+    
+    return GS_SUCCESS;
+}
+
+void edge_cache_invalidate_all(EdgeCache* cache) {
+    edge_cache_clear(cache);
+}

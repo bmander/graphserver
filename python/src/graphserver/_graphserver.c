@@ -21,6 +21,12 @@ static PyMethodDef GraphserverMethods[] = {
      "Get engine statistics including cache performance metrics"},
     {"precache_subgraph", (PyCFunction)(void(*)(void))py_precache_subgraph, METH_VARARGS | METH_KEYWORDS,
      "Pre-cache a subgraph using breadth-first discovery"},
+    {"invalidate_vertex_cache", py_invalidate_vertex_cache, METH_VARARGS,
+     "Invalidate cached edges for a single vertex"},
+    {"invalidate_vertices_cache", py_invalidate_vertices_cache, METH_VARARGS,
+     "Invalidate cached edges for multiple vertices"},
+    {"clear_cache", py_clear_cache, METH_VARARGS,
+     "Clear the entire edge cache"},
     {NULL, NULL, 0, NULL}
 };
 

@@ -84,6 +84,36 @@ size_t edge_cache_size(const EdgeCache* cache);
  */
 bool edge_cache_contains(const EdgeCache* cache, const GraphserverVertex* vertex);
 
+/**
+ * Remove a cached entry for a specific vertex
+ * @param cache Edge cache
+ * @param vertex Vertex to remove from cache
+ * @return GS_SUCCESS on success, GS_ERROR_KEY_NOT_FOUND if not cached, error code on failure
+ */
+GraphserverResult edge_cache_invalidate(
+    EdgeCache* cache,
+    const GraphserverVertex* vertex
+);
+
+/**
+ * Remove cached entries for multiple vertices efficiently
+ * @param cache Edge cache
+ * @param vertices Array of vertices to remove from cache
+ * @param count Number of vertices in the array
+ * @return GS_SUCCESS on success, error code on failure
+ */
+GraphserverResult edge_cache_invalidate_batch(
+    EdgeCache* cache,
+    const GraphserverVertex** vertices,
+    size_t count
+);
+
+/**
+ * Clear all entries from the cache (alias for edge_cache_clear)
+ * @param cache Edge cache
+ */
+void edge_cache_invalidate_all(EdgeCache* cache);
+
 /** @} */
 
 #ifdef __cplusplus

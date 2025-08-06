@@ -517,5 +517,172 @@ class TestCacheOSMIntegration:
         assert hasattr(stats, "cache_hits")
 
 
+class TestEdgeProvider:
+    """Test provider that allows adding edges dynamically."""
+    
+    def __init__(self):
+        self.edge_map: dict[str, list[tuple[Vertex, Edge]]] = {}
+        
+    def add_edge(self, from_id: str, to_id: str, cost: float) -> None:
+        """Add an edge from one vertex to another."""
+        if from_id not in self.edge_map:
+            self.edge_map[from_id] = []
+        to_vertex = Vertex({"id": to_id})
+        edge = Edge(cost=cost)
+        self.edge_map[from_id].append((to_vertex, edge))
+    
+    def out_edges(self, vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
+        """Return outgoing edges for a vertex."""
+        vertex_id = vertex.get("id", "")
+        return self.edge_map.get(vertex_id, [])
+    
+    def in_edges(self, vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
+        """Return incoming edges for a vertex (empty for this simple test)."""
+        return []
+
+
+class TestCacheInvalidation:
+    """Test cache invalidation functionality."""
+
+    def test_invalidate_single_vertex(self):
+        """Test invalidating cache for a single vertex."""
+        engine = Engine(enable_edge_caching=True)
+        
+        # Create a simple provider
+        provider = TestEdgeProvider()
+        provider.add_edge("A", "B", 1.0)
+        provider.add_edge("A", "C", 2.0)
+        
+        engine.register_provider("test", provider)
+        
+        # Cache some edges by expanding vertex A
+        vertex_a = Vertex({"id": "A"})
+        result = engine.plan(start=vertex_a, goal=Vertex({"id": "B"}))
+        assert len(result) > 0  # Path was found
+        
+        # Verify cache has entries
+        stats = engine.get_stats()
+        initial_cache_puts = stats.cache_puts
+        assert initial_cache_puts > 0
+        
+        # Invalidate vertex A
+        engine.invalidate_vertex_cache(vertex_a)
+        
+        # Plan again - should require fresh provider calls
+        result2 = engine.plan(start=vertex_a, goal=Vertex({"id": "C"}))
+        assert len(result2) > 0  # Path was found
+        
+        # Should see additional cache puts from re-expansion
+        stats2 = engine.get_stats()
+        assert stats2.cache_puts > initial_cache_puts
+
+    def test_invalidate_multiple_vertices(self):
+        """Test invalidating cache for multiple vertices."""
+        engine = Engine(enable_edge_caching=True)
+        
+        # Create a simple provider
+        provider = TestEdgeProvider()
+        provider.add_edge("A", "B", 1.0)
+        provider.add_edge("B", "C", 1.0)
+        provider.add_edge("C", "D", 1.0)
+        
+        engine.register_provider("test", provider)
+        
+        # Cache edges by planning a path
+        start_vertex = Vertex({"id": "A"})
+        goal_vertex = Vertex({"id": "D"})
+        result = engine.plan(start=start_vertex, goal=goal_vertex)
+        assert len(result) > 0  # Path was found
+        
+        # Verify cache has entries
+        stats = engine.get_stats()
+        initial_cache_puts = stats.cache_puts
+        assert initial_cache_puts > 0
+        
+        # Invalidate multiple vertices
+        vertices_to_invalidate = [
+            Vertex({"id": "A"}),
+            Vertex({"id": "B"}),
+            Vertex({"id": "C"})
+        ]
+        engine.invalidate_vertices_cache(vertices_to_invalidate)
+        
+        # Plan again - should require fresh provider calls
+        result2 = engine.plan(start=start_vertex, goal=goal_vertex)
+        assert len(result2) > 0  # Path was found
+        
+        # Should see additional cache puts
+        stats2 = engine.get_stats()
+        assert stats2.cache_puts > initial_cache_puts
+
+    def test_clear_entire_cache(self):
+        """Test clearing the entire cache."""
+        engine = Engine(enable_edge_caching=True)
+        
+        # Create a simple provider
+        provider = TestEdgeProvider()
+        provider.add_edge("A", "B", 1.0)
+        provider.add_edge("B", "C", 1.0)
+        
+        engine.register_provider("test", provider)
+        
+        # Cache some edges
+        result = engine.plan(start=Vertex({"id": "A"}), goal=Vertex({"id": "C"}))
+        assert len(result) > 0  # Path was found
+        
+        # Verify cache has entries
+        stats = engine.get_stats()
+        initial_cache_puts = stats.cache_puts
+        assert initial_cache_puts > 0
+        
+        # Clear entire cache (this also resets cache statistics)
+        engine.clear_cache()
+        
+        # Verify cache statistics were reset
+        stats_after_clear = engine.get_stats()
+        assert stats_after_clear.cache_puts == 0
+        assert stats_after_clear.cache_hits == 0
+        assert stats_after_clear.cache_misses == 0
+        
+        # Plan again - should require fresh provider calls
+        result2 = engine.plan(start=Vertex({"id": "A"}), goal=Vertex({"id": "C"}))
+        assert len(result2) > 0  # Path was found
+        
+        # Should see cache puts from fresh planning (since cache was cleared)
+        stats2 = engine.get_stats()
+        assert stats2.cache_puts > 0  # New cache entries created
+        assert stats2.cache_misses > 0  # Cache misses occurred
+
+    def test_invalidation_with_cache_disabled(self):
+        """Test that invalidation operations work gracefully when cache is disabled."""
+        engine = Engine(enable_edge_caching=False)
+        
+        vertex = Vertex({"id": "A"})
+        
+        # These should not raise errors even though caching is disabled
+        engine.invalidate_vertex_cache(vertex)
+        engine.invalidate_vertices_cache([vertex])
+        engine.clear_cache()
+
+    def test_invalidation_type_validation(self):
+        """Test that invalidation methods validate input types."""
+        engine = Engine(enable_edge_caching=True)
+        
+        # Test invalid vertex type
+        with pytest.raises(TypeError, match="vertex must be a Vertex object"):
+            engine.invalidate_vertex_cache("not_a_vertex")
+        
+        # Test invalid vertices list
+        with pytest.raises(TypeError, match="Vertex at index 1 must be a Vertex object"):
+            engine.invalidate_vertices_cache([Vertex({"id": "A"}), "not_a_vertex"])
+
+    def test_empty_vertices_list_invalidation(self):
+        """Test invalidating empty list of vertices."""
+        engine = Engine(enable_edge_caching=True)
+        
+        # Should not raise any errors
+        engine.invalidate_vertices_cache([])
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

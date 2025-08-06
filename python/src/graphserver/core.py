@@ -480,6 +480,89 @@ class Engine:
             max_vertices=max_vertices,
         )
 
+    def invalidate_vertex_cache(self, vertex: Vertex) -> None:
+        """Invalidate cached edges for a single vertex.
+
+        Args:
+            vertex: Vertex to remove from cache
+
+        Raises:
+            TypeError: If vertex is not a Vertex object
+            RuntimeError: If C extension is not available or invalidation fails
+
+        Example:
+            >>> engine = Engine(enable_edge_caching=True)
+            >>> engine.register_provider("grid", grid_provider)
+            >>> vertex = Vertex({"x": 5, "y": 5})
+            >>> engine.invalidate_vertex_cache(vertex)
+        """
+        if not isinstance(vertex, Vertex):
+            msg = "vertex must be a Vertex object"
+            raise TypeError(msg)
+
+        if not self.cache_enabled:
+            return  # Nothing to invalidate
+
+        if _graphserver is None:
+            msg = "C extension not available"
+            raise RuntimeError(msg)
+
+        _graphserver.invalidate_vertex_cache(self._engine, vertex)
+
+    def invalidate_vertices_cache(self, vertices: Sequence[Vertex]) -> None:
+        """Invalidate cached edges for multiple vertices efficiently.
+
+        Args:
+            vertices: Sequence of vertices to remove from cache
+
+        Raises:
+            TypeError: If vertices contains non-Vertex objects
+            RuntimeError: If C extension is not available or invalidation fails
+
+        Example:
+            >>> engine = Engine(enable_edge_caching=True)
+            >>> engine.register_provider("grid", grid_provider)
+            >>> vertices = [Vertex({"x": i, "y": i}) for i in range(10)]
+            >>> engine.invalidate_vertices_cache(vertices)
+        """
+        if not vertices:
+            return  # Nothing to invalidate
+
+        # Validate all vertices are Vertex objects
+        for i, vertex in enumerate(vertices):
+            if not isinstance(vertex, Vertex):
+                msg = f"Vertex at index {i} must be a Vertex object"
+                raise TypeError(msg)
+
+        if not self.cache_enabled:
+            return  # Nothing to invalidate
+
+        if _graphserver is None:
+            msg = "C extension not available"
+            raise RuntimeError(msg)
+
+        _graphserver.invalidate_vertices_cache(self._engine, list(vertices))
+
+    def clear_cache(self) -> None:
+        """Clear the entire edge cache.
+
+        Raises:
+            RuntimeError: If C extension is not available or cache clearing fails
+
+        Example:
+            >>> engine = Engine(enable_edge_caching=True)
+            >>> engine.register_provider("grid", grid_provider)
+            >>> engine.clear_cache()
+        """
+        if not self.cache_enabled:
+            return  # Nothing to clear
+
+        if _graphserver is None:
+            msg = "C extension not available"
+            raise RuntimeError(msg)
+
+        _graphserver.clear_cache(self._engine)
+
 
 class PathResult:
     """Result of a pathfinding operation.

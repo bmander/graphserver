@@ -71,4 +71,9 @@ void cleanup_plan_resources(PyObject* python_path, GraphserverPath* path,
 void cleanup_vertex_pairs(GraphserverKeyPair* pairs, size_t count);
 void cleanup_vertex_array(GraphserverVertex** vertices, size_t count);
 
+// Cache functions (cache.c)
+PyObject* py_invalidate_vertex_cache(PyObject* self, PyObject* args);
+PyObject* py_invalidate_vertices_cache(PyObject* self, PyObject* args);
+PyObject* py_clear_cache(PyObject* self, PyObject* args);
+
 #endif // GRAPHSERVER_EXTENSION_H

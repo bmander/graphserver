@@ -259,6 +259,37 @@ GraphserverResult gs_engine_precache_subgraph(
  */
 GraphserverEngineConfig gs_engine_get_default_config(void);
 
+/**
+ * Invalidate cached edges for a single vertex
+ * @param engine Engine instance
+ * @param vertex Vertex to invalidate cache for
+ * @return Result code
+ */
+GraphserverResult gs_engine_invalidate_vertex_cache(
+    GraphserverEngine* engine,
+    const GraphserverVertex* vertex
+);
+
+/**
+ * Invalidate cached edges for multiple vertices efficiently
+ * @param engine Engine instance
+ * @param vertices Array of vertices to invalidate cache for
+ * @param count Number of vertices in the array
+ * @return Result code
+ */
+GraphserverResult gs_engine_invalidate_vertices_cache(
+    GraphserverEngine* engine,
+    const GraphserverVertex** vertices,
+    size_t count
+);
+
+/**
+ * Clear the entire edge cache
+ * @param engine Engine instance
+ * @return Result code
+ */
+GraphserverResult gs_engine_clear_cache(GraphserverEngine* engine);
+
 /** @} */
 
 /**

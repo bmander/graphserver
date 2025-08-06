@@ -160,8 +160,8 @@ void gs_engine_destroy(GraphserverEngine* engine) {
     free(engine);
 }
 
-// Internal helper function to clear the cache and reset statistics
-static void gs_engine_clear_cache(GraphserverEngine* engine) {
+// Internal helper function to clear the cache and reset statistics (used internally)
+static void gs_engine_clear_cache_internal(GraphserverEngine* engine) {
     if (!engine) return;
     
     // Clear the cache if caching is enabled and cache exists
@@ -173,6 +173,61 @@ static void gs_engine_clear_cache(GraphserverEngine* engine) {
         engine->last_plan_stats.cache_misses = 0;
         engine->last_plan_stats.cache_puts = 0;
     }
+}
+
+// Public cache invalidation functions
+
+GraphserverResult gs_engine_invalidate_vertex_cache(
+    GraphserverEngine* engine,
+    const GraphserverVertex* vertex) {
+    
+    if (!engine || !vertex) {
+        return GS_ERROR_NULL_POINTER;
+    }
+    
+    // Only proceed if caching is enabled and cache exists
+    if (!engine->config.enable_edge_caching || !engine->edge_cache) {
+        return GS_SUCCESS; // Nothing to invalidate
+    }
+    
+    return edge_cache_invalidate(engine->edge_cache, vertex);
+}
+
+GraphserverResult gs_engine_invalidate_vertices_cache(
+    GraphserverEngine* engine,
+    const GraphserverVertex** vertices,
+    size_t count) {
+    
+    if (!engine || !vertices) {
+        return GS_ERROR_NULL_POINTER;
+    }
+    
+    // Only proceed if caching is enabled and cache exists
+    if (!engine->config.enable_edge_caching || !engine->edge_cache) {
+        return GS_SUCCESS; // Nothing to invalidate
+    }
+    
+    return edge_cache_invalidate_batch(engine->edge_cache, vertices, count);
+}
+
+GraphserverResult gs_engine_clear_cache(GraphserverEngine* engine) {
+    if (!engine) {
+        return GS_ERROR_NULL_POINTER;
+    }
+    
+    // Only proceed if caching is enabled and cache exists
+    if (!engine->config.enable_edge_caching || !engine->edge_cache) {
+        return GS_SUCCESS; // Nothing to clear
+    }
+    
+    edge_cache_invalidate_all(engine->edge_cache);
+    
+    // Reset cache statistics
+    engine->last_plan_stats.cache_hits = 0;
+    engine->last_plan_stats.cache_misses = 0;
+    engine->last_plan_stats.cache_puts = 0;
+    
+    return GS_SUCCESS;
 }
 
 // Provider management
@@ -209,7 +264,7 @@ GraphserverResult gs_engine_register_provider(
     engine->provider_count++;
     
     // Clear cache since adding a provider changes graph topology
-    gs_engine_clear_cache(engine);
+    gs_engine_clear_cache_internal(engine);
     
     return GS_SUCCESS;
 }
@@ -280,7 +335,7 @@ GraphserverResult gs_engine_unregister_provider(
             engine->provider_count--;
             
             // Clear cache since removing a provider changes graph topology
-            gs_engine_clear_cache(engine);
+            gs_engine_clear_cache_internal(engine);
             
             return GS_SUCCESS;
         }
@@ -302,7 +357,7 @@ GraphserverResult gs_engine_set_provider_enabled(
     provider->is_enabled = enabled;
     
     // Clear cache since enabling/disabling a provider changes graph topology
-    gs_engine_clear_cache(engine);
+    gs_engine_clear_cache_internal(engine);
     
     return GS_SUCCESS;
 }
@@ -367,6 +422,11 @@ static GraphserverResult try_cache(
 
     if (cache_result == GS_SUCCESS && cached_edges) {
         size_t cached_edge_count = gs_edge_list_get_count(cached_edges);
+        char* vertex_str = gs_vertex_to_string(vertex);
+        printf("[CACHE HIT] Vertex %s: found %zu cached edges\n", 
+               vertex_str ? vertex_str : "<unknown>", cached_edge_count);
+        if (vertex_str) free(vertex_str);
+        
         for (size_t i = 0; i < cached_edge_count; i++) {
             GraphserverEdge* edge;
             if (gs_edge_list_get_edge(cached_edges, i, &edge) == GS_SUCCESS && edge) {
@@ -385,6 +445,10 @@ static GraphserverResult try_cache(
     }
 
     if (cache_result == GS_ERROR_KEY_NOT_FOUND) {
+        char* vertex_str = gs_vertex_to_string(vertex);
+        printf("[CACHE MISS] Vertex %s: not found in cache\n", 
+               vertex_str ? vertex_str : "<unknown>");
+        if (vertex_str) free(vertex_str);
         engine->last_plan_stats.cache_misses++;
     }
 
@@ -426,6 +490,12 @@ static GraphserverResult call_providers(
 
         if (provider_result == 0) {
             size_t provider_edge_count = gs_edge_list_get_count(provider_edges);
+            char* vertex_str = gs_vertex_to_string(vertex);
+            printf("[PROVIDER] %s generated %zu edges for vertex %s\n", 
+                   provider->name, provider_edge_count, 
+                   vertex_str ? vertex_str : "<unknown>");
+            if (vertex_str) free(vertex_str);
+            
             for (size_t j = 0; j < provider_edge_count; j++) {
                 GraphserverEdge* edge;
                 if (gs_edge_list_get_edge(provider_edges, j, &edge) == GS_SUCCESS && edge) {
@@ -568,7 +638,7 @@ GraphserverResult gs_engine_set_config(
         }
     } else if (caching_was_enabled && caching_will_be_enabled) {
         // Caching remains enabled - clear the cache as configuration might affect edge generation
-        gs_engine_clear_cache(engine);
+        gs_engine_clear_cache_internal(engine);
     }
     
     return GS_SUCCESS;
