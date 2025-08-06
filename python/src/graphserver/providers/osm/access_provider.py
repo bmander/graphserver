@@ -197,7 +197,10 @@ class OSMAccessProvider(CacheAwareEdgeProvider):
             self._linked_vertices[nearest_node.id].append(vertex_template)
 
             # Invalidate cache for the OSM node to ensure new edges are discovered
-            osm_node_vertex = Vertex({"osm_node_id": nearest_node.id})
+            # Must use the same identity hash that the network provider would use
+            osm_node_data = {"osm_node_id": nearest_node.id}
+            identity_hash = self._get_identity_hash(osm_node_data)
+            osm_node_vertex = Vertex(osm_node_data, hash_value=identity_hash)
             try:
                 self.invalidate_vertex(osm_node_vertex)
             except ValueError:

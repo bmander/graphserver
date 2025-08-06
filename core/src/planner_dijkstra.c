@@ -284,6 +284,11 @@ static GraphserverResult relax_edges(
     GraphserverVertex* current_vertex,
     double current_cost) {
 
+    char* vertex_str = gs_vertex_to_string(current_vertex);
+    printf("[DIJKSTRA] Expanding vertex %s with cost %.6f\n", 
+           vertex_str ? vertex_str : "<unknown>", current_cost);
+    if (vertex_str) free(vertex_str);
+
     GraphserverEdgeList* edges = gs_edge_list_create();
     if (!edges) {
         return GS_ERROR_OUT_OF_MEMORY;
@@ -300,6 +305,8 @@ static GraphserverResult relax_edges(
     }
 
     size_t edge_count = gs_edge_list_get_count(edges);
+    printf("[DIJKSTRA] Processing %zu edges from expanded vertex\n", edge_count);
+    
     for (size_t i = 0; i < edge_count; i++) {
         GraphserverEdge* edge;
         if (gs_edge_list_get_edge(edges, i, &edge) != GS_SUCCESS || !edge) {
@@ -325,6 +332,11 @@ static GraphserverResult relax_edges(
 
         double new_cost = current_cost + edge_distance[0];
 
+        char* target_str = gs_vertex_to_string(target);
+        printf("[DIJKSTRA] Edge to %s: distance=%.6f, new_cost=%.6f\n", 
+               target_str ? target_str : "<unknown>", edge_distance[0], new_cost);
+        if (target_str) free(target_str);
+
         GraphserverVertex* target_copy = gs_vertex_clone(target);
         if (!target_copy) {
             continue;
@@ -338,6 +350,12 @@ static GraphserverResult relax_edges(
         }
 
         if (new_cost < target_node->cost) {
+            char* target_str = gs_vertex_to_string(target);
+            printf("[DIJKSTRA] Improved path to %s: old_cost=%.6f -> new_cost=%.6f\n", 
+                   target_str ? target_str : "<unknown>", 
+                   target_node->cost == INFINITY ? -1.0 : target_node->cost, new_cost);
+            if (target_str) free(target_str);
+            
             target_node->cost = new_cost;
             target_node->parent = current_vertex;
             
