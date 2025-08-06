@@ -412,6 +412,143 @@ class _EngineInvalidationHandler:
         self._engine.invalidate_vertices_cache(vertices)
 
 
+class CacheManager:
+    """Context manager for efficient batch cache invalidation.
+    
+    This class provides a context manager interface for batching cache
+    invalidation operations to improve performance when multiple vertices
+    need to be invalidated. It supports both immediate and batched modes,
+    with automatic deduplication of vertices in batch mode.
+    
+    Example:
+        >>> engine = Engine(enable_edge_caching=True)
+        >>> with engine.create_cache_manager() as cm:
+        ...     cm.invalidate(vertex1)
+        ...     cm.invalidate(vertex2)
+        ...     # Batch invalidation happens here automatically
+        
+        >>> # Or use immediate mode for time-critical operations
+        >>> cm = engine.create_cache_manager()
+        >>> cm.set_immediate_mode(True)
+        >>> cm.invalidate(vertex)  # Invalidated immediately
+    """
+    
+    def __init__(self, engine: "Engine") -> None:
+        """Initialize cache manager with engine reference.
+        
+        Args:
+            engine: Engine instance to perform invalidations on
+        """
+        self._engine = engine
+        self._invalidated_vertices: set[Vertex] = set()
+        self._immediate_mode = False
+    
+    def invalidate(self, vertex: Vertex) -> None:
+        """Mark vertex for invalidation or invalidate immediately.
+        
+        In batch mode (default), vertices are accumulated and invalidated
+        when the context manager exits or flush() is called. In immediate
+        mode, vertices are invalidated immediately.
+        
+        Args:
+            vertex: Vertex to invalidate from cache
+        """
+        if self._immediate_mode:
+            self._engine.invalidate_vertex_cache(vertex)
+        else:
+            self._invalidated_vertices.add(vertex)
+    
+    def invalidate_vertices(self, vertices: Sequence[Vertex]) -> None:
+        """Mark multiple vertices for invalidation or invalidate immediately.
+        
+        Args:
+            vertices: Sequence of vertices to invalidate from cache
+        """
+        if self._immediate_mode:
+            self._engine.invalidate_vertices_cache(vertices)
+        else:
+            self._invalidated_vertices.update(vertices)
+    
+    def invalidate_immediate(self, vertex: Vertex) -> None:
+        """Immediately invalidate vertex without batching.
+        
+        This method bypasses the batching mechanism and invalidates
+        the vertex immediately, regardless of the current mode.
+        
+        Args:
+            vertex: Vertex to invalidate immediately
+        """
+        self._engine.invalidate_vertex_cache(vertex)
+    
+    def set_immediate_mode(self, immediate: bool) -> None:
+        """Toggle between batch and immediate invalidation modes.
+        
+        Args:
+            immediate: If True, switch to immediate mode where invalidations
+                      happen immediately. If False, use batch mode.
+        """
+        self._immediate_mode = immediate
+    
+    def flush(self) -> int:
+        """Manually execute all pending batch invalidations.
+        
+        This method processes all accumulated vertices and clears the
+        internal set. Useful for explicit control over when batch
+        invalidations occur.
+        
+        Returns:
+            Number of vertices that were invalidated
+        """
+        if not self._invalidated_vertices:
+            return 0
+        
+        vertex_list = list(self._invalidated_vertices)
+        self._engine.invalidate_vertices_cache(vertex_list)
+        count = len(self._invalidated_vertices)
+        self._invalidated_vertices.clear()
+        return count
+    
+    def clear(self) -> int:
+        """Discard all pending invalidations without executing them.
+        
+        Returns:
+            Number of vertices that were discarded
+        """
+        count = len(self._invalidated_vertices)
+        self._invalidated_vertices.clear()
+        return count
+    
+    @property
+    def pending_count(self) -> int:
+        """Get the number of vertices pending invalidation in batch mode.
+        
+        Returns:
+            Number of unique vertices awaiting batch invalidation
+        """
+        return len(self._invalidated_vertices)
+    
+    @property
+    def immediate_mode(self) -> bool:
+        """Check if cache manager is in immediate mode.
+        
+        Returns:
+            True if in immediate mode, False if in batch mode
+        """
+        return self._immediate_mode
+    
+    def __enter__(self) -> "CacheManager":
+        """Enter context manager - returns self for use in 'with' statements."""
+        return self
+    
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Exit context manager - automatically flush pending invalidations.
+        
+        All accumulated vertices are batch invalidated when exiting the
+        context manager, regardless of whether an exception occurred.
+        """
+        self.flush()
+
+
 class Engine:
     """Graphserver planning engine with Python edge provider support.
 
@@ -705,6 +842,25 @@ class Engine:
             raise RuntimeError(msg)
 
         _graphserver.clear_cache(self._engine)
+
+    def create_cache_manager(self) -> CacheManager:
+        """Create a cache manager for efficient batch invalidation.
+        
+        The cache manager provides a context manager interface for batching
+        cache invalidation operations to improve performance. It supports
+        both immediate and batched modes with automatic deduplication.
+        
+        Returns:
+            CacheManager instance bound to this engine
+            
+        Example:
+            >>> engine = Engine(enable_edge_caching=True)
+            >>> with engine.create_cache_manager() as cm:
+            ...     cm.invalidate(vertex1)
+            ...     cm.invalidate(vertex2)
+            ...     # Batch invalidation happens here automatically
+        """
+        return CacheManager(self)
 
 
 class PathResult:

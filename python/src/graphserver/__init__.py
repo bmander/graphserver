@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from .core import (
     CacheAwareEdgeProvider,
+    CacheManager,
     Edge,
     EdgeProvider,
     Engine,
@@ -30,6 +31,7 @@ except ImportError:
 __version__ = "2.0.0"
 __all__ = [
     "CacheAwareEdgeProvider",
+    "CacheManager",
     "Edge",
     "EdgeProvider",
     "Engine",
