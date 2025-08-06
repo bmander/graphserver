@@ -280,7 +280,6 @@ bool identity_aware_goal_predicate(
     void* user_data) {
     
     if (!vertex || !user_data) {
-        printf("[GOAL_PREDICATE] NULL vertex or user_data\n");
         return false;
     }
     
@@ -293,45 +292,11 @@ bool identity_aware_goal_predicate(
     bool has_id = gs_vertex_get_value(vertex, "_hash", &id_hash_val) == GS_SUCCESS;
     bool goal_has_id = gs_vertex_get_value(goal_data->goal_vertex, "_hash", &goal_id_hash_val) == GS_SUCCESS;
     
-    // Debug logging
-    char* vertex_str = gs_vertex_to_string(vertex);
-    char* goal_vertex_str = gs_vertex_to_string(goal_data->goal_vertex);
-    
-    printf("[GOAL_PREDICATE] Comparing vertex: %s\n", vertex_str ? vertex_str : "<null>");
-    printf("[GOAL_PREDICATE] With goal vertex: %s\n", goal_vertex_str ? goal_vertex_str : "<null>");
-    printf("[GOAL_PREDICATE] Current has_id: %s, Goal has_id: %s\n", 
-           has_id ? "true" : "false", goal_has_id ? "true" : "false");
-    
     if (has_id && goal_has_id) {
-        // Extract hash values for logging
-        uint64_t current_hash = 0, goal_hash = 0;
-        if (id_hash_val.type == GS_VALUE_INT) {
-            current_hash = (uint64_t)id_hash_val.as.i_val;
-        }
-        if (goal_id_hash_val.type == GS_VALUE_INT) {
-            goal_hash = (uint64_t)goal_id_hash_val.as.i_val;
-        }
-        
-        printf("[GOAL_PREDICATE] Current hash: %llu, Goal hash: %llu\n", 
-               (unsigned long long)current_hash, (unsigned long long)goal_hash);
-        
-        bool hash_match = gs_value_equals(&id_hash_val, &goal_id_hash_val);
-        printf("[GOAL_PREDICATE] Hash match: %s\n", hash_match ? "true" : "false");
-        
-        // Clean up strings
-        if (vertex_str) free(vertex_str);
-        if (goal_vertex_str) free(goal_vertex_str);
-        
-        return hash_match;
+        // Compare identity hashes - this allows coordinate matching with tolerance
+        return gs_value_equals(&id_hash_val, &goal_id_hash_val);
     }
     
     // Fall back to full vertex equality for vertices without identity hashes
-    bool vertex_match = gs_vertex_equals(vertex, goal_data->goal_vertex);
-    printf("[GOAL_PREDICATE] Vertex equality match: %s\n", vertex_match ? "true" : "false");
-    
-    // Clean up strings
-    if (vertex_str) free(vertex_str);
-    if (goal_vertex_str) free(goal_vertex_str);
-    
-    return vertex_match;
+    return gs_vertex_equals(vertex, goal_data->goal_vertex);
 }

@@ -422,10 +422,6 @@ static GraphserverResult try_cache(
 
     if (cache_result == GS_SUCCESS && cached_edges) {
         size_t cached_edge_count = gs_edge_list_get_count(cached_edges);
-        char* vertex_str = gs_vertex_to_string(vertex);
-        printf("[CACHE HIT] Vertex %s: found %zu cached edges\n", 
-               vertex_str ? vertex_str : "<unknown>", cached_edge_count);
-        if (vertex_str) free(vertex_str);
         
         for (size_t i = 0; i < cached_edge_count; i++) {
             GraphserverEdge* edge;
@@ -445,10 +441,6 @@ static GraphserverResult try_cache(
     }
 
     if (cache_result == GS_ERROR_KEY_NOT_FOUND) {
-        char* vertex_str = gs_vertex_to_string(vertex);
-        printf("[CACHE MISS] Vertex %s: not found in cache\n", 
-               vertex_str ? vertex_str : "<unknown>");
-        if (vertex_str) free(vertex_str);
         engine->last_plan_stats.cache_misses++;
     }
 
@@ -490,11 +482,6 @@ static GraphserverResult call_providers(
 
         if (provider_result == 0) {
             size_t provider_edge_count = gs_edge_list_get_count(provider_edges);
-            char* vertex_str = gs_vertex_to_string(vertex);
-            printf("[PROVIDER] %s generated %zu edges for vertex %s\n", 
-                   provider->name, provider_edge_count, 
-                   vertex_str ? vertex_str : "<unknown>");
-            if (vertex_str) free(vertex_str);
             
             for (size_t j = 0; j < provider_edge_count; j++) {
                 GraphserverEdge* edge;
