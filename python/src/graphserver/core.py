@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from collections.abc import ItemsView, Iterator, KeysView, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
-from abc import ABC, abstractmethod
 
 # Type alias for graphserver vertex data values
 GraphserverDataType = str | int | float
@@ -387,7 +387,7 @@ class _EngineInvalidationHandler:
     Engine during initialization.
     """
 
-    def __init__(self, engine: "Engine") -> None:
+    def __init__(self, engine: Engine) -> None:
         """Initialize handler with engine reference.
 
         Args:
@@ -433,7 +433,7 @@ class CacheManager:
         >>> cm.invalidate(vertex)  # Invalidated immediately
     """
 
-    def __init__(self, engine: "Engine") -> None:
+    def __init__(self, engine: Engine) -> None:
         """Initialize cache manager with engine reference.
 
         Args:
@@ -536,7 +536,7 @@ class CacheManager:
         """
         return self._immediate_mode
 
-    def __enter__(self) -> "CacheManager":
+    def __enter__(self) -> CacheManager:
         """Enter context manager - returns self for use in 'with' statements."""
         return self
 

@@ -282,7 +282,7 @@ class TestCacheAwareEdgeProvider:
         assert len(handler.batch_invalidated_vertices) == 1
         affected_vertices = handler.batch_invalidated_vertices[0]
         affected_ids = {v.get("id") for v in affected_vertices}
-        assert affected_ids == {"A", "A", "B"}  # A appears twice as expected
+        assert affected_ids == {"A", "B"}  # A appears twice as expected
 
 
 class TestEngineIntegration:
@@ -306,7 +306,6 @@ class TestEngineIntegration:
 
     def test_regular_provider_no_injection(self) -> None:
         """Test that regular EdgeProvider doesn't get handler injection."""
-        from graphserver import EdgeProvider
 
         class RegularProvider:
             def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:

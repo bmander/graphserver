@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import contextlib
 from collections.abc import Sequence
-from typing import Any
 
 import pytest
 
