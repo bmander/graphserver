@@ -536,7 +536,7 @@ class TestEdgeProvider:
         vertex_id = vertex.get("id", "")
         return self.edge_map.get(vertex_id, [])
 
-    def in_edges(self, vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
+    def in_edges(self, _vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
         """Return incoming edges for a vertex (empty for this simple test)."""
         return []
 

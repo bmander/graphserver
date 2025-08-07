@@ -6,6 +6,7 @@ geographic coordinates to the OSM network via bidirectional edges.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from typing import TYPE_CHECKING
 
@@ -201,11 +202,9 @@ class OSMAccessProvider(CacheAwareEdgeProvider):
             osm_node_data = {"osm_node_id": nearest_node.id}
             identity_hash = self._get_identity_hash(osm_node_data)
             osm_node_vertex = Vertex(osm_node_data, hash_value=identity_hash)
-            try:
-                self.invalidate_vertex(osm_node_vertex)
-            except ValueError:
+            with contextlib.suppress(ValueError):
                 # Vertex not in cache yet, no need to invalidate
-                pass
+                self.invalidate_vertex(osm_node_vertex)
 
     def clear_links(self) -> None:
         """Clear all vertex-OSM node links."""

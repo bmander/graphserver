@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import types
 from abc import ABC, abstractmethod
 from collections.abc import ItemsView, Iterator, KeysView, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Protocol, Self, runtime_checkable
 
 # Type alias for graphserver vertex data values
 GraphserverDataType = str | int | float
@@ -480,7 +481,7 @@ class CacheManager:
         """
         self._engine.invalidate_vertex_cache(vertex)
 
-    def set_immediate_mode(self, immediate: bool) -> None:
+    def set_immediate_mode(self, *, immediate: bool) -> None:
         """Toggle between batch and immediate invalidation modes.
 
         Args:
@@ -536,11 +537,16 @@ class CacheManager:
         """
         return self._immediate_mode
 
-    def __enter__(self) -> CacheManager:
+    def __enter__(self) -> Self:
         """Enter context manager - returns self for use in 'with' statements."""
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: types.TracebackType | None,
+    ) -> None:
         """Exit context manager - automatically flush pending invalidations.
 
         All accumulated vertices are batch invalidated when exiting the

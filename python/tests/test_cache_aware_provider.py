@@ -101,7 +101,7 @@ class DynamicGraphProvider(CacheAwareEdgeProvider):
         vertex_id = vertex.get("id", "")
         return self.graph.get(vertex_id, [])
 
-    def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+    def in_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
         """Generate incoming edges (empty for this test provider)."""
         return []
 
@@ -308,10 +308,10 @@ class TestEngineIntegration:
         """Test that regular EdgeProvider doesn't get handler injection."""
 
         class RegularProvider:
-            def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+            def out_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
                 return []
 
-            def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+            def in_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
                 return []
 
         engine = Engine(enable_edge_caching=True)
@@ -348,8 +348,8 @@ class TestEngineIntegration:
 
         # Plan same path again - should potentially use cache
         provider.reset_call_tracking()
-        result2 = engine.plan(start=start, goal=goal)
-        second_calls = provider.call_count
+        _result2 = engine.plan(start=start, goal=goal)
+        _second_calls = provider.call_count
 
         # Add new edge, which should trigger invalidation
         provider.add_edge("A", "D", 0.5)  # Cheaper path

@@ -6,6 +6,7 @@ including parsing, spatial indexing, and edge generation.
 
 from __future__ import annotations
 
+import contextlib
 import tempfile
 from pathlib import Path
 
@@ -955,11 +956,9 @@ class TestIntegrationWithGraphserver:
             assert len(initial_edges) == 1  # Should have edge to vertex A
 
             # Query edges to populate cache
-            try:
-                engine.plan(start=osm_node_1, goal=vertex_a)
-            except RuntimeError:
+            with contextlib.suppress(RuntimeError):
                 # Planning may fail, but cache should still be populated
-                pass
+                engine.plan(start=osm_node_1, goal=vertex_a)
 
             # Link vertex B to the same OSM node - should invalidate cache
             access_provider.link(vertex_b, 47.6062, -122.3321)

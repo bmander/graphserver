@@ -6,6 +6,7 @@ providers are modified after initial vertex expansion, solving the edge caching 
 
 from __future__ import annotations
 
+import contextlib
 from collections.abc import Sequence
 
 from graphserver import CacheAwareEdgeProvider, Edge, Engine, Vertex
@@ -25,12 +26,10 @@ class DynamicMockProvider(CacheAwareEdgeProvider):
         """Add edges from a vertex and invalidate its cache if needed."""
         self.edge_map[from_vertex_id] = edges
         # Invalidate cache for the modified vertex so new edges are discovered
-        # Use try/except to handle case where vertex hasn't been cached yet
-        try:
-            self.invalidate_vertex(Vertex({"id": from_vertex_id}))
-        except ValueError:
+        # Use contextlib.suppress to handle case where vertex hasn't been cached yet
+        with contextlib.suppress(ValueError):
             # Vertex not in cache yet, no need to invalidate
-            pass
+            self.invalidate_vertex(Vertex({"id": from_vertex_id}))
 
     def out_edges(self, vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
         """Return outgoing edges for a vertex."""
@@ -40,7 +39,7 @@ class DynamicMockProvider(CacheAwareEdgeProvider):
         vertex_id = vertex.get("id", "")
         return self.edge_map.get(vertex_id, [])
 
-    def in_edges(self, vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
+    def in_edges(self, _vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
         """Return incoming edges for a vertex."""
         # For simplicity, return empty list for incoming edges
         return []

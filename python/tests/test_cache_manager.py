@@ -205,18 +205,18 @@ class TestImmediateMode:
         assert not cm.immediate_mode
 
         # Switch to immediate mode
-        cm.set_immediate_mode(True)
+        cm.set_immediate_mode(immediate=True)
         assert cm.immediate_mode
 
         # Switch back to batch mode
-        cm.set_immediate_mode(False)
+        cm.set_immediate_mode(immediate=False)
         assert not cm.immediate_mode
 
     def test_immediate_mode_no_accumulation(self) -> None:
         """Test that immediate mode doesn't accumulate vertices."""
         engine = Engine(enable_edge_caching=False)  # Disable to avoid actual calls
         cm = engine.create_cache_manager()
-        cm.set_immediate_mode(True)
+        cm.set_immediate_mode(immediate=True)
 
         vertex = Vertex({"id": "A"})
 
@@ -230,7 +230,7 @@ class TestImmediateMode:
         """Test immediate mode with multiple vertices."""
         engine = Engine(enable_edge_caching=False)  # Disable to avoid actual calls
         cm = engine.create_cache_manager()
-        cm.set_immediate_mode(True)
+        cm.set_immediate_mode(immediate=True)
 
         vertices = [Vertex({"id": "A"}), Vertex({"id": "B"})]
 
@@ -285,11 +285,11 @@ class TestContextManager:
         vertex = Vertex({"id": "A"})
 
         # Test that flush still occurs even with exception
-        with contextlib.suppress(ValueError):
-            with engine.create_cache_manager() as cm:
-                cm.invalidate(vertex)
-                assert cm.pending_count == 1
-                raise ValueError("Test exception")
+        with contextlib.suppress(ValueError), engine.create_cache_manager() as cm:
+            cm.invalidate(vertex)
+            assert cm.pending_count == 1
+            msg = "Test exception"
+            raise ValueError(msg)
 
         # Flush should have occurred despite exception
         # (We can't easily verify without complex mocking)
@@ -344,7 +344,7 @@ class TestIntegrationWithProviders:
                 vertex_id = vertex.get("id", "")
                 return self.graph.get(vertex_id, [])
 
-            def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
+            def in_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
                 return []
 
         engine = Engine(enable_edge_caching=True)
@@ -415,7 +415,7 @@ class TestErrorHandling:
         assert not cm.immediate_mode
 
         # Switch to immediate mode
-        cm.set_immediate_mode(True)
+        cm.set_immediate_mode(immediate=True)
         assert cm.immediate_mode
         assert cm.pending_count == 5  # Pending count unchanged
 

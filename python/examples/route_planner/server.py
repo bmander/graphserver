@@ -128,7 +128,7 @@ def path_result_to_geojson(
         # Add to total distance using actual OSM distance metadata
         if hasattr(edge, "metadata") and edge.metadata:
             distance_m = edge.metadata.get("distance_m", 0)
-            if isinstance(distance_m, (int, float)):
+            if isinstance(distance_m, int | float):
                 total_distance += float(distance_m)
 
         # Try to extract actual way geometry if we have OSM data
