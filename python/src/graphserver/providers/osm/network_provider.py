@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 from graphserver.core import Edge, Vertex, VertexEdgePair
+
 from .utils import create_osm_node_vertex
 
 if TYPE_CHECKING:
@@ -180,8 +181,7 @@ class OSMNetworkProvider:
         if node_id not in self.data_source.nodes:
             return None
 
-        node = self.data_source.nodes[node_id]
-        return create_osm_node_vertex(node.id, tags=node.tags)
+        return create_osm_node_vertex(node_id)
 
     @property
     def node_count(self) -> int:
@@ -240,7 +240,7 @@ class OSMNetworkProvider:
             if max_vertices is not None and count >= max_vertices:
                 break
 
-            vertex = create_osm_node_vertex(node.id, tags=node.tags)
+            vertex = create_osm_node_vertex(node.id)
             vertices.append(vertex)
 
         return vertices

@@ -20,6 +20,7 @@ from graphserver.core import (
     Vertex,
     VertexEdgePair,
 )
+
 from .utils import create_osm_node_vertex
 
 if TYPE_CHECKING:
@@ -303,9 +304,7 @@ class OSMAccessProvider(CacheAwareEdgeProvider):
         duration_s = distance_m / self.data_source.walking_profile.base_speed_ms
 
         # Create target vertex with OSM node information
-        target_vertex = create_osm_node_vertex(
-            node.id, time=vertex.get("time")
-        )
+        target_vertex = create_osm_node_vertex(node.id, time=vertex.get("time"))
 
         # Create edge with cost based on walking time
         edge = Edge(
@@ -417,7 +416,7 @@ class OSMAccessProvider(CacheAwareEdgeProvider):
         if node is None:
             return None
 
-        return create_osm_node_vertex(node.id, tags=node.tags)
+        return create_osm_node_vertex(node.id)
 
     @property
     def node_count(self) -> int:
