@@ -10,9 +10,10 @@ import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Sequence
 
-from graphserver.core import Edge, GraphserverDataType, Vertex, VertexEdgePair
+from graphserver.core import Edge, Vertex, VertexEdgePair
+from .utils import create_osm_node_vertex
 
 if TYPE_CHECKING:
     from .data_source import OSMDataSource
@@ -41,26 +42,6 @@ class OSMNetworkProvider:
             len(self.data_source.nodes),
             len(self.data_source.ways),
         )
-
-    def _get_identity_hash(
-        self, vertex_data: Mapping[str, GraphserverDataType]
-    ) -> int | None:
-        """Generate identity hash for vertex data.
-
-        Args:
-            vertex_data: Dictionary of vertex data
-
-        Returns:
-            Identity hash value or None if no hashable identity found
-        """
-        # Prioritize OSM node ID over coordinates if both are present
-        if "osm_node_id" in vertex_data:
-            hash_string = f"osm:{vertex_data['osm_node_id']}"
-        else:
-            return None
-
-        # Convert string to stable unsigned integer hash
-        return hash(hash_string) & 0xFFFFFFFFFFFFFFFF
 
     def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
         """Generate outgoing edges from an OSM node (implements EdgeProvider protocol).
@@ -169,12 +150,7 @@ class OSMNetworkProvider:
                 final_cost = walking_profile.get_edge_cost(temp_edge, way)
 
                 # Create target vertex
-                target_data = {
-                    "osm_node_id": target_node.id,
-                }
-                # Create target vertex with identity hash
-                identity_hash = self._get_identity_hash(target_data)
-                target_vertex = Vertex(target_data, hash_value=identity_hash)
+                target_vertex = create_osm_node_vertex(target_node.id)
 
                 # Create edge
                 metadata = {
@@ -205,13 +181,7 @@ class OSMNetworkProvider:
             return None
 
         node = self.data_source.nodes[node_id]
-        node_data: dict[str, GraphserverDataType] = {
-            "osm_node_id": node.id,
-            **node.tags,
-        }
-        # Create vertex with identity hash
-        identity_hash = self._get_identity_hash(node_data)
-        return Vertex(node_data, hash_value=identity_hash)
+        return create_osm_node_vertex(node.id, tags=node.tags)
 
     @property
     def node_count(self) -> int:
@@ -270,13 +240,7 @@ class OSMNetworkProvider:
             if max_vertices is not None and count >= max_vertices:
                 break
 
-            node_data: dict[str, GraphserverDataType] = {
-                "osm_node_id": node.id,
-                **node.tags,
-            }
-            # Create vertex with identity hash
-            identity_hash = self._get_identity_hash(node_data)
-            vertex = Vertex(node_data, hash_value=identity_hash)
+            vertex = create_osm_node_vertex(node.id, tags=node.tags)
             vertices.append(vertex)
 
         return vertices
