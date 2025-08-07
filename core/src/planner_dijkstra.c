@@ -46,10 +46,11 @@ static double get_current_time_seconds(void) {
 }
 
 // Find or create Dijkstra node for vertex
-static DijkstraNode* get_or_create_dijkstra_node(DijkstraState* state, GraphserverVertex* vertex) {
+static DijkstraNode* get_or_create_dijkstra_node(DijkstraState* state, GraphserverVertex* vertex, bool* created_new_node) {
     // Check if node already exists
     DijkstraNode* existing_node = (DijkstraNode*)hashmap_get(state->node_map, vertex);
     if (existing_node) {
+        if (created_new_node) *created_new_node = false;
         return existing_node;
     }
     
@@ -81,6 +82,7 @@ static DijkstraNode* get_or_create_dijkstra_node(DijkstraState* state, Graphserv
         return NULL;
     }
     
+    if (created_new_node) *created_new_node = true;
     return node;
 }
 
@@ -326,21 +328,34 @@ static GraphserverResult relax_edges(
 
         double new_cost = current_cost + edge_distance[0];
 
+        // Clone vertex for potential use (we'll clean up if not needed)
         GraphserverVertex* target_copy = gs_vertex_clone(target);
         if (!target_copy) {
             continue;
         }
 
+        bool created_new_node = false;
         DijkstraNode* target_node =
-            get_or_create_dijkstra_node(state, target_copy);
+            get_or_create_dijkstra_node(state, target_copy, &created_new_node);
         if (!target_node) {
             gs_vertex_destroy(target_copy);
             continue;
+        }
+        
+        // If we didn't create a new node, the cloned vertex is not needed
+        if (!created_new_node) {
+            gs_vertex_destroy(target_copy);
+            target_copy = target_node->vertex; // Use the existing vertex
         }
 
         if (new_cost < target_node->cost) {
             target_node->cost = new_cost;
             target_node->parent = current_vertex;
+            
+            // Free the old incoming edge before replacing it
+            if (target_node->incoming_edge) {
+                gs_edge_destroy(target_node->incoming_edge);
+            }
             
             // Clone the edge to preserve it beyond the edge list's lifetime
             target_node->incoming_edge = gs_edge_clone(edge);
@@ -355,7 +370,9 @@ static GraphserverResult relax_edges(
                 state->nodes_generated++;
             }
         } else {
-            gs_vertex_destroy(target_copy);
+            // New cost is not better - if this was a new node, we might need to clean it up
+            // For now, we keep the node in the hashmap even with INFINITY cost for future lookups
+            // The vertex is owned by the node and will be cleaned up in dijkstra_cleanup
         }
     }
 
@@ -401,10 +418,18 @@ GraphserverResult dijkstra_search(
     }
     
     // Initialize start node
-    DijkstraNode* start_node = get_or_create_dijkstra_node(state, start_copy);
+    bool created_start_node = false;
+    DijkstraNode* start_node = get_or_create_dijkstra_node(state, start_copy, &created_start_node);
     if (!start_node) {
         gs_vertex_destroy(start_copy);
         return GS_ERROR_OUT_OF_MEMORY;
+    }
+    
+    // For the start node, we should always create a new node
+    if (!created_start_node) {
+        // This shouldn't happen for start node, but handle it gracefully
+        gs_vertex_destroy(start_copy);
+        start_copy = start_node->vertex;
     }
     
     start_node->cost = 0.0;

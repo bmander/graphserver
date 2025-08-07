@@ -303,6 +303,11 @@ void pq_clear(PriorityQueue* pq) {
 void pq_destroy(PriorityQueue* pq) {
     if (!pq) return;
     
+    // Clean up the hashmap regardless of arena usage
+    if (pq->vertex_to_index) {
+        hashmap_destroy(pq->vertex_to_index);
+    }
+    
     // If not using arena, free manually
     if (!pq->arena) {
         free(pq->entries);
