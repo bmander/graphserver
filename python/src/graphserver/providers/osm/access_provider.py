@@ -20,6 +20,7 @@ from graphserver.core import (
     Vertex,
     VertexEdgePair,
 )
+from .utils import create_osm_node_vertex
 
 if TYPE_CHECKING:
     from .data_source import OSMDataSource
@@ -198,10 +199,7 @@ class OSMAccessProvider(CacheAwareEdgeProvider):
             self._linked_vertices[nearest_node.id].append(vertex_template)
 
             # Invalidate cache for the OSM node to ensure new edges are discovered
-            # Must use the same identity hash that the network provider would use
-            osm_node_data = {"osm_node_id": nearest_node.id}
-            identity_hash = self._get_identity_hash(osm_node_data)
-            osm_node_vertex = Vertex(osm_node_data, hash_value=identity_hash)
+            osm_node_vertex = create_osm_node_vertex(nearest_node.id)
             with contextlib.suppress(ValueError):
                 # Vertex not in cache yet, no need to invalidate
                 self.invalidate_vertex(osm_node_vertex)
@@ -305,16 +303,9 @@ class OSMAccessProvider(CacheAwareEdgeProvider):
         duration_s = distance_m / self.data_source.walking_profile.base_speed_ms
 
         # Create target vertex with OSM node information
-        target_data = {
-            "osm_node_id": node.id,
-        }
-
-        # Preserve time from origin vertex if present
-        if "time" in vertex:
-            target_data["time"] = vertex["time"]
-
-        identity_hash = self._get_identity_hash(target_data)
-        target_vertex = Vertex(target_data, hash_value=identity_hash)
+        target_vertex = create_osm_node_vertex(
+            node.id, time=vertex.get("time")
+        )
 
         # Create edge with cost based on walking time
         edge = Edge(
@@ -426,12 +417,7 @@ class OSMAccessProvider(CacheAwareEdgeProvider):
         if node is None:
             return None
 
-        node_data: dict[str, GraphserverDataType] = {
-            "osm_node_id": node.id,
-            **node.tags,
-        }
-        identity_hash = self._get_identity_hash(node_data)
-        return Vertex(node_data, hash_value=identity_hash)
+        return create_osm_node_vertex(node.id, tags=node.tags)
 
     @property
     def node_count(self) -> int:
