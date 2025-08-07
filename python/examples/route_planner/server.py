@@ -33,8 +33,6 @@ def create_vertex_from_coordinates(lat: float, lng: float) -> "Vertex":
     return Vertex({"lat": lat, "lng": lng, "type": "coordinate"})
 
 
-
-
 def extract_way_segment_coordinates(
     osm_data, way_id: int, from_node_id: int, to_node_id: int
 ) -> list[list[float]]:
@@ -51,7 +49,7 @@ def extract_way_segment_coordinates(
     """
     if not osm_data:
         return []
-        
+
     if way_id not in osm_data.ways:
         return []
 
@@ -121,7 +119,6 @@ def path_result_to_geojson(
         target = path_edge.target
         edge = path_edge.edge
 
-
         # Add to total cost
         if hasattr(edge, "cost"):
             cost = edge.cost
@@ -137,12 +134,12 @@ def path_result_to_geojson(
         # Try to extract actual way geometry if we have OSM data
         if osm_data and "osm_node_id" in target and previous_node_id:
             current_node_id = target["osm_node_id"]
-            
+
             # Get way_id from metadata
             way_id = None
             if hasattr(edge, "metadata") and edge.metadata:
                 way_id = edge.metadata.get("way_id")
-    
+
             if way_id and previous_node_id and current_node_id:
                 # Extract the way segment coordinates
                 segment_coords = extract_way_segment_coordinates(
@@ -583,7 +580,6 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
             },
         }
         self.send_json_response(response)
-
 
 
 def parse_osm_bounds(osm_file_path: str) -> dict:

@@ -237,14 +237,14 @@ class EdgeProvider(Protocol):
 @runtime_checkable
 class InvalidationHandler(Protocol):
     """Protocol for cache invalidation handlers.
-    
+
     This protocol defines the interface that cache invalidation handlers
     must implement to notify the engine about vertex cache invalidations.
     """
 
     def invalidate_vertex(self, vertex: Vertex) -> None:
         """Invalidate cached edges for a single vertex.
-        
+
         Args:
             vertex: Vertex to remove from cache
         """
@@ -252,7 +252,7 @@ class InvalidationHandler(Protocol):
 
     def invalidate_vertices(self, vertices: Sequence[Vertex]) -> None:
         """Invalidate cached edges for multiple vertices efficiently.
-        
+
         Args:
             vertices: Sequence of vertices to remove from cache
         """
@@ -261,74 +261,74 @@ class InvalidationHandler(Protocol):
 
 class CacheAwareEdgeProvider(ABC):
     """Base class for edge providers that need cache invalidation support.
-    
+
     This abstract base class extends the EdgeProvider functionality with
     built-in cache invalidation capabilities. Providers that inherit from
     this class can notify the engine when their internal state changes,
     triggering automatic cache invalidation for affected vertices.
-    
+
     The engine automatically detects CacheAwareEdgeProvider instances during
     registration and injects an invalidation handler that bridges Python
     invalidation calls to the C engine.
     """
-    
+
     def __init__(self) -> None:
         """Initialize cache-aware provider."""
         self._invalidation_handler: InvalidationHandler | None = None
-    
+
     def set_invalidation_handler(self, handler: InvalidationHandler) -> None:
         """Set the invalidation handler (called by engine during registration).
-        
+
         Args:
             handler: InvalidationHandler instance for cache invalidation
         """
         self._invalidation_handler = handler
-    
+
     def invalidate_vertex(self, vertex: Vertex) -> None:
         """Notify engine that vertex cache should be invalidated.
-        
+
         This method triggers immediate invalidation of cached edges for
         the specified vertex. Use this when the provider's internal state
         changes in a way that affects the edges for this vertex.
-        
+
         Args:
             vertex: Vertex whose cached edges should be invalidated
         """
         if self._invalidation_handler:
             self._invalidation_handler.invalidate_vertex(vertex)
-    
+
     def invalidate_vertices(self, vertices: Sequence[Vertex]) -> None:
         """Notify engine that multiple vertex caches should be invalidated.
-        
+
         This method efficiently invalidates cached edges for multiple vertices
         in a single batch operation. Use this when multiple vertices are
         affected by a state change.
-        
+
         Args:
             vertices: Sequence of vertices whose cached edges should be invalidated
         """
         if self._invalidation_handler:
             self._invalidation_handler.invalidate_vertices(vertices)
-    
+
     @abstractmethod
     def out_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
         """Generate outgoing edges from a vertex.
-        
+
         Args:
             vertex: Vertex object containing state data
-            
+
         Returns:
             List of (target_vertex, edge) tuples for outgoing edges
         """
         ...
-    
+
     @abstractmethod
     def in_edges(self, vertex: Vertex) -> Sequence[VertexEdgePair]:
         """Generate incoming edges to a vertex.
-        
+
         Args:
             vertex: Vertex object containing state data
-            
+
         Returns:
             List of (source_vertex, edge) tuples for incoming edges
         """
@@ -380,32 +380,32 @@ class EngineStats:
 
 class _EngineInvalidationHandler:
     """Internal handler that bridges Python invalidation calls to C engine.
-    
+
     This class implements the InvalidationHandler protocol and provides
     a bridge between Python provider invalidation calls and the underlying
     C engine invalidation functions. It is automatically created by the
     Engine during initialization.
     """
-    
+
     def __init__(self, engine: "Engine") -> None:
         """Initialize handler with engine reference.
-        
+
         Args:
             engine: Engine instance to bridge invalidation calls to
         """
         self._engine = engine
-    
+
     def invalidate_vertex(self, vertex: Vertex) -> None:
         """Invalidate cached edges for a single vertex.
-        
+
         Args:
             vertex: Vertex to remove from cache
         """
         self._engine.invalidate_vertex_cache(vertex)
-    
+
     def invalidate_vertices(self, vertices: Sequence[Vertex]) -> None:
         """Invalidate cached edges for multiple vertices efficiently.
-        
+
         Args:
             vertices: Sequence of vertices to remove from cache
         """
@@ -414,42 +414,42 @@ class _EngineInvalidationHandler:
 
 class CacheManager:
     """Context manager for efficient batch cache invalidation.
-    
+
     This class provides a context manager interface for batching cache
     invalidation operations to improve performance when multiple vertices
     need to be invalidated. It supports both immediate and batched modes,
     with automatic deduplication of vertices in batch mode.
-    
+
     Example:
         >>> engine = Engine(enable_edge_caching=True)
         >>> with engine.create_cache_manager() as cm:
         ...     cm.invalidate(vertex1)
         ...     cm.invalidate(vertex2)
         ...     # Batch invalidation happens here automatically
-        
+
         >>> # Or use immediate mode for time-critical operations
         >>> cm = engine.create_cache_manager()
         >>> cm.set_immediate_mode(True)
         >>> cm.invalidate(vertex)  # Invalidated immediately
     """
-    
+
     def __init__(self, engine: "Engine") -> None:
         """Initialize cache manager with engine reference.
-        
+
         Args:
             engine: Engine instance to perform invalidations on
         """
         self._engine = engine
         self._invalidated_vertices: set[Vertex] = set()
         self._immediate_mode = False
-    
+
     def invalidate(self, vertex: Vertex) -> None:
         """Mark vertex for invalidation or invalidate immediately.
-        
+
         In batch mode (default), vertices are accumulated and invalidated
         when the context manager exits or flush() is called. In immediate
         mode, vertices are invalidated immediately.
-        
+
         Args:
             vertex: Vertex to invalidate from cache
         """
@@ -457,10 +457,10 @@ class CacheManager:
             self._engine.invalidate_vertex_cache(vertex)
         else:
             self._invalidated_vertices.add(vertex)
-    
+
     def invalidate_vertices(self, vertices: Sequence[Vertex]) -> None:
         """Mark multiple vertices for invalidation or invalidate immediately.
-        
+
         Args:
             vertices: Sequence of vertices to invalidate from cache
         """
@@ -468,81 +468,81 @@ class CacheManager:
             self._engine.invalidate_vertices_cache(vertices)
         else:
             self._invalidated_vertices.update(vertices)
-    
+
     def invalidate_immediate(self, vertex: Vertex) -> None:
         """Immediately invalidate vertex without batching.
-        
+
         This method bypasses the batching mechanism and invalidates
         the vertex immediately, regardless of the current mode.
-        
+
         Args:
             vertex: Vertex to invalidate immediately
         """
         self._engine.invalidate_vertex_cache(vertex)
-    
+
     def set_immediate_mode(self, immediate: bool) -> None:
         """Toggle between batch and immediate invalidation modes.
-        
+
         Args:
             immediate: If True, switch to immediate mode where invalidations
                       happen immediately. If False, use batch mode.
         """
         self._immediate_mode = immediate
-    
+
     def flush(self) -> int:
         """Manually execute all pending batch invalidations.
-        
+
         This method processes all accumulated vertices and clears the
         internal set. Useful for explicit control over when batch
         invalidations occur.
-        
+
         Returns:
             Number of vertices that were invalidated
         """
         if not self._invalidated_vertices:
             return 0
-        
+
         vertex_list = list(self._invalidated_vertices)
         self._engine.invalidate_vertices_cache(vertex_list)
         count = len(self._invalidated_vertices)
         self._invalidated_vertices.clear()
         return count
-    
+
     def clear(self) -> int:
         """Discard all pending invalidations without executing them.
-        
+
         Returns:
             Number of vertices that were discarded
         """
         count = len(self._invalidated_vertices)
         self._invalidated_vertices.clear()
         return count
-    
+
     @property
     def pending_count(self) -> int:
         """Get the number of vertices pending invalidation in batch mode.
-        
+
         Returns:
             Number of unique vertices awaiting batch invalidation
         """
         return len(self._invalidated_vertices)
-    
+
     @property
     def immediate_mode(self) -> bool:
         """Check if cache manager is in immediate mode.
-        
+
         Returns:
             True if in immediate mode, False if in batch mode
         """
         return self._immediate_mode
-    
+
     def __enter__(self) -> "CacheManager":
         """Enter context manager - returns self for use in 'with' statements."""
         return self
-    
+
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Exit context manager - automatically flush pending invalidations.
-        
+
         All accumulated vertices are batch invalidated when exiting the
         context manager, regardless of whether an exception occurred.
         """
@@ -845,14 +845,14 @@ class Engine:
 
     def create_cache_manager(self) -> CacheManager:
         """Create a cache manager for efficient batch invalidation.
-        
+
         The cache manager provides a context manager interface for batching
         cache invalidation operations to improve performance. It supports
         both immediate and batched modes with automatic deduplication.
-        
+
         Returns:
             CacheManager instance bound to this engine
-            
+
         Example:
             >>> engine = Engine(enable_edge_caching=True)
             >>> with engine.create_cache_manager() as cm:

@@ -185,7 +185,7 @@ class OSMAccessProvider(CacheAwareEdgeProvider):
 
         if nearest_node.id not in self._linked_vertices:
             self._linked_vertices[nearest_node.id] = []
-        
+
         # Check if this vertex template is already linked to avoid duplicates
         existing_templates = self._linked_vertices[nearest_node.id]
         is_duplicate = any(
