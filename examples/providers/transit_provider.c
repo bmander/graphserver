@@ -127,6 +127,11 @@ static GraphserverEdge* create_walk_to_stop_edge(
         {"mode", gs_value_create_string("walking")}
     };
     GraphserverVertex* stop_vertex = gs_vertex_create(pairs, 6, NULL);
+    
+    // Clean up string values since vertex makes copies
+    gs_value_destroy(&pairs[4].value); // stop_name
+    gs_value_destroy(&pairs[5].value); // mode
+    
     if (!stop_vertex) return NULL;
     
     // Create edge with walk time as cost
@@ -186,6 +191,12 @@ static GraphserverEdge* create_transit_edge(
         {"route_name", gs_value_create_string(route->route_name)}
     };
     GraphserverVertex* target_vertex = gs_vertex_create(pairs, 7, NULL);
+    
+    // Clean up string values since vertex makes copies
+    gs_value_destroy(&pairs[4].value); // stop_name
+    gs_value_destroy(&pairs[5].value); // mode
+    gs_value_destroy(&pairs[6].value); // route_name
+    
     if (!target_vertex) return NULL;
     
     // Create edge with multi-objective cost: [time, fare]
@@ -241,6 +252,7 @@ int transit_provider(
     if (at_stop) {
         // Generate transit edges from this stop
         int stop_id = (int)stop_id_val.as.i_val;
+        gs_value_destroy(&stop_id_val);
         
         // Find the stop in our network
         TransitStop* current_stop = NULL;
@@ -288,14 +300,20 @@ int transit_provider(
             {"mode", gs_value_create_string("walking")}
         };
         GraphserverVertex* walk_vertex = gs_vertex_create(pairs, 4, NULL);
+        
+        // Clean up string value since vertex makes copies
+        gs_value_destroy(&pairs[3].value); // mode
+        
         if (walk_vertex) {
-            
             double cost = 0.0; // No cost to start walking
             GraphserverEdge* walk_edge = gs_edge_create(walk_vertex, &cost, 1);
             if (walk_edge) {
+                gs_edge_set_owns_target_vertex(walk_edge, true);
                 GraphserverValue edge_mode = gs_value_create_string("walking");
                 gs_edge_set_metadata(walk_edge, "mode", edge_mode);
                 gs_edge_list_add_edge(out_edges, walk_edge);
+            } else {
+                gs_vertex_destroy(walk_vertex);
             }
         }
         

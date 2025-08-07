@@ -92,6 +92,10 @@ static void generate_walking_edges_grid(
                 {"mode", gs_value_create_string("walking")}
             };
             GraphserverVertex* dest_vertex = gs_vertex_create(pairs, 4, NULL);
+            
+            // Clean up the values since vertex makes copies
+            gs_value_destroy(&pairs[3].value); // mode
+            
             if (!dest_vertex) continue;
             
             // Create edge with walking time as cost
@@ -180,6 +184,12 @@ static void generate_walking_edges_poi(
             {"poi_type", gs_value_create_string(pois[i].type)}
         };
         GraphserverVertex* dest_vertex = gs_vertex_create(pairs, 6, NULL);
+        
+        // Clean up the string values since vertex makes copies
+        gs_value_destroy(&pairs[3].value); // mode
+        gs_value_destroy(&pairs[4].value); // poi_name
+        gs_value_destroy(&pairs[5].value); // poi_type
+        
         if (!dest_vertex) continue;
         
         // Create edge
@@ -238,6 +248,7 @@ int walking_provider(
                 in_transit = true;
             }
         }
+        gs_value_destroy(&mode_val);
     }
     
     if (in_transit) {

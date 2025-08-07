@@ -178,6 +178,11 @@ static void generate_road_edges(
                 {"segment_id", gs_value_create_int(segment->segment_id)}
             };
             GraphserverVertex* dest_vertex = gs_vertex_create(pairs, 6, NULL);
+            
+            // Clean up string values since vertex makes copies
+            gs_value_destroy(&pairs[3].value); // mode
+            gs_value_destroy(&pairs[4].value); // road_type
+            
             if (!dest_vertex) continue;
             
             // Create edge with travel time and fuel cost
@@ -230,6 +235,11 @@ static void generate_road_edges(
                     {"segment_id", gs_value_create_int(segment->segment_id)}
                 };
                 GraphserverVertex* dest_vertex = gs_vertex_create(pairs, 6, NULL);
+                
+                // Clean up string values since vertex makes copies
+                gs_value_destroy(&pairs[3].value); // mode
+                gs_value_destroy(&pairs[4].value); // road_type
+                
                 if (!dest_vertex) continue;
                 
                 // Create edge
@@ -292,9 +302,11 @@ int road_network_provider(
             const char* mode = mode_val.as.s_val;
             // Only generate road edges if we're in the right vehicle mode or walking
             if (strcmp(mode, network->vehicle_type) != 0 && strcmp(mode, "walking") != 0) {
+                gs_value_destroy(&mode_val);
                 return 0; // Wrong mode, no edges
             }
         }
+        gs_value_destroy(&mode_val);
     }
     
     // Generate road network edges

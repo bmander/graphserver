@@ -197,11 +197,11 @@ TEST(road_network_provider_basic) {
     GraphserverVertex* start = create_location_vertex(40.7074, -74.0113, time(NULL));
     
     // For now, create a new vertex with mode by extracting location and adding mode
-    GraphserverValue lat_val, lon_val, time_val, mode_val;
+    GraphserverValue lat_val, lon_val, time_val;
     gs_vertex_get_value(start, "lat", &lat_val);
     gs_vertex_get_value(start, "lon", &lon_val);
     bool has_time = (gs_vertex_get_value(start, "time", &time_val) == GS_SUCCESS);
-    mode_val = gs_value_create_string("car");
+    GraphserverValue mode_val = gs_value_create_string("car");
     
     GraphserverKeyPair pairs[4];
     size_t pair_count = 3;
@@ -217,6 +217,9 @@ TEST(road_network_provider_basic) {
     // Replace start vertex with new one that includes mode
     gs_vertex_destroy(start);
     start = create_vertex_safe(pairs, pair_count, NULL);
+    
+    // create_vertex_safe will clean up the values passed to it, so we don't need to
+    // clean up lat_val, lon_val, mode_val, or time_val here
     
     // Test vertex expansion
     GraphserverEdgeList* edges = gs_edge_list_create();
@@ -619,7 +622,6 @@ TEST(metadata_preservation_isolated) {
     ASSERT_EQ(GS_VALUE_STRING, highway_val.type);
     ASSERT(strcmp(highway_val.as.s_val, "residential") == 0);
     gs_value_destroy(&highway_val);
-    gs_value_destroy(&highway_val);
     
     // Clean up
     gs_path_destroy(path);
@@ -703,7 +705,6 @@ TEST(provider_metadata_flow_integration) {
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_STRING, highway_val.type);
     ASSERT(strcmp(highway_val.as.s_val, "residential") == 0);
-    gs_value_destroy(&highway_val);
     gs_value_destroy(&highway_val);
     
     // Clean up
