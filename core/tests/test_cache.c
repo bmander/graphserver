@@ -705,6 +705,7 @@ TEST(cache_invalidate_single_vertex) {
     GraphserverVertex* vertex = create_test_vertex("test_vertex");
     
     GraphserverEdgeList* edges = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(edges, true);
     GraphserverVertex* target = create_test_vertex("target_vertex");
     double cost = 5.0;
     GraphserverEdge* edge = gs_edge_create(target, &cost, 1);
@@ -768,6 +769,7 @@ TEST(cache_invalidate_batch) {
         vertices[i] = create_test_vertex(id);
         
         GraphserverEdgeList* edges = gs_edge_list_create();
+        gs_edge_list_set_owns_edges(edges, true);
         char target_id[32];
         sprintf(target_id, "target_%d", i);
         GraphserverVertex* target = create_test_vertex(target_id);

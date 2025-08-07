@@ -149,10 +149,13 @@ static bool is_target_vertex(const GraphserverVertex* vertex, void* user_data) {
     }
     
     if (name_value.type != GS_VALUE_STRING) {
+        gs_value_destroy(&name_value);
         return false;
     }
     
-    return strcmp(name_value.as.s_val, "target") == 0;
+    bool is_target = strcmp(name_value.as.s_val, "target") == 0;
+    gs_value_destroy(&name_value);
+    return is_target;
 }
 
 // Test engine creation and destruction

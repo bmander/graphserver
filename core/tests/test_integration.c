@@ -117,6 +117,7 @@ TEST(walking_provider_basic) {
     
     // Test vertex expansion
     GraphserverEdgeList* edges = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(edges, true);
     ASSERT_NOT_NULL(edges);
     
     result = gs_engine_expand_vertex(engine, start, edges);
@@ -138,6 +139,7 @@ TEST(walking_provider_basic) {
     if (gs_edge_get_metadata(edge, "mode", &mode_val) == GS_SUCCESS) {
         ASSERT_EQ(GS_VALUE_STRING, mode_val.type);
         ASSERT(strcmp(mode_val.as.s_val, "walking") == 0);
+        gs_value_destroy(&mode_val);
     }
     
     gs_edge_list_destroy(edges);
@@ -164,6 +166,7 @@ TEST(transit_provider_basic) {
     
     // Test vertex expansion
     GraphserverEdgeList* edges = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(edges, true);
     result = gs_engine_expand_vertex(engine, start, edges);
     ASSERT_EQ(GS_SUCCESS, result);
     
@@ -217,6 +220,7 @@ TEST(road_network_provider_basic) {
     
     // Test vertex expansion
     GraphserverEdgeList* edges = gs_edge_list_create();
+    gs_edge_list_set_owns_edges(edges, true);
     result = gs_engine_expand_vertex(engine, start, edges);
     ASSERT_EQ(GS_SUCCESS, result);
     
@@ -463,7 +467,9 @@ static bool lat_goal_predicate(const GraphserverVertex* vertex, void* user_data)
     if (gs_vertex_get_value(vertex, "lat", &lat_val) != GS_SUCCESS) {
         return false;
     }
-    return lat_val.as.f_val >= goal->target_lat;
+    bool result = lat_val.as.f_val >= goal->target_lat;
+    gs_value_destroy(&lat_val);
+    return result;
 }
 
 // Rich metadata provider for integration testing
@@ -473,13 +479,20 @@ static int rich_metadata_provider(const GraphserverVertex* current_vertex,
     (void)user_data; // Unused parameter
     
     GraphserverValue lat_val, lng_val;
-    if (gs_vertex_get_value(current_vertex, "lat", &lat_val) != GS_SUCCESS ||
-        gs_vertex_get_value(current_vertex, "lng", &lng_val) != GS_SUCCESS) {
+    if (gs_vertex_get_value(current_vertex, "lat", &lat_val) != GS_SUCCESS) {
+        return -1;
+    }
+    if (gs_vertex_get_value(current_vertex, "lng", &lng_val) != GS_SUCCESS) {
+        gs_value_destroy(&lat_val);
         return -1;
     }
     
     double lat = lat_val.as.f_val;
     double lng = lng_val.as.f_val;
+    
+    // Clean up the retrieved values
+    gs_value_destroy(&lat_val);
+    gs_value_destroy(&lng_val);
     
     // Create one outgoing edge with rich metadata (similar to OSM)
     double target_lat = lat + 0.001; // Move north
@@ -492,6 +505,12 @@ static int rich_metadata_provider(const GraphserverVertex* current_vertex,
     };
     
     GraphserverVertex* target = gs_vertex_create(target_pairs, 3, NULL);
+    
+    // Clean up the original values since vertex makes copies
+    gs_value_destroy(&target_pairs[0].value); // lat
+    gs_value_destroy(&target_pairs[1].value); // lng
+    gs_value_destroy(&target_pairs[2].value); // type
+    
     if (!target) return -1;
     
     double distance = 111.0; // Approximate meters per degree
@@ -539,6 +558,11 @@ TEST(metadata_preservation_isolated) {
     };
     GraphserverVertex* start = gs_vertex_create(start_pairs, 3, NULL);
     
+    // Clean up the original values since vertex makes copies
+    gs_value_destroy(&start_pairs[0].value); // lat
+    gs_value_destroy(&start_pairs[1].value); // lng
+    gs_value_destroy(&start_pairs[2].value); // type
+    
     // Simple goal predicate: reach a certain latitude
     typedef struct {
         double target_lat;
@@ -566,6 +590,7 @@ TEST(metadata_preservation_isolated) {
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_INT, way_id_val.type);
     ASSERT_EQ(12345, way_id_val.as.i_val);
+    gs_value_destroy(&way_id_val);
     
     GraphserverValue edge_type_val;
     result = gs_edge_get_metadata(edge, "edge_type", &edge_type_val);
@@ -579,18 +604,21 @@ TEST(metadata_preservation_isolated) {
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_FLOAT, distance_m_val.type);
     ASSERT_DOUBLE_EQ(111.0, distance_m_val.as.f_val, 1e-6);
+    gs_value_destroy(&distance_m_val);
     
     GraphserverValue duration_s_val;
     result = gs_edge_get_metadata(edge, "duration_s", &duration_s_val);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_FLOAT, duration_s_val.type);
     ASSERT_DOUBLE_EQ(111.0 / 1.4, duration_s_val.as.f_val, 1e-6);
+    gs_value_destroy(&duration_s_val);
     
     GraphserverValue highway_val;
     result = gs_edge_get_metadata(edge, "highway", &highway_val);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_STRING, highway_val.type);
     ASSERT(strcmp(highway_val.as.s_val, "residential") == 0);
+    gs_value_destroy(&highway_val);
     gs_value_destroy(&highway_val);
     
     // Clean up
@@ -615,6 +643,11 @@ TEST(provider_metadata_flow_integration) {
     };
     GraphserverVertex* start = gs_vertex_create(start_pairs, 3, NULL);
     
+    // Clean up the original values since vertex makes copies
+    gs_value_destroy(&start_pairs[0].value); // lat
+    gs_value_destroy(&start_pairs[1].value); // lng
+    gs_value_destroy(&start_pairs[2].value); // type
+    
     // Simple goal predicate: reach a certain latitude
     typedef struct {
         double target_lat;
@@ -642,6 +675,7 @@ TEST(provider_metadata_flow_integration) {
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_INT, way_id_val.type);
     ASSERT_EQ(12345, way_id_val.as.i_val);
+    gs_value_destroy(&way_id_val);
     
     GraphserverValue edge_type_val;
     result = gs_edge_get_metadata(edge, "edge_type", &edge_type_val);
@@ -655,18 +689,21 @@ TEST(provider_metadata_flow_integration) {
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_FLOAT, distance_m_val.type);
     ASSERT_DOUBLE_EQ(111.0, distance_m_val.as.f_val, 1e-6);
+    gs_value_destroy(&distance_m_val);
     
     GraphserverValue duration_s_val;
     result = gs_edge_get_metadata(edge, "duration_s", &duration_s_val);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_FLOAT, duration_s_val.type);
     ASSERT_DOUBLE_EQ(111.0 / 1.4, duration_s_val.as.f_val, 1e-6);
+    gs_value_destroy(&duration_s_val);
     
     GraphserverValue highway_val;
     result = gs_edge_get_metadata(edge, "highway", &highway_val);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_STRING, highway_val.type);
     ASSERT(strcmp(highway_val.as.s_val, "residential") == 0);
+    gs_value_destroy(&highway_val);
     gs_value_destroy(&highway_val);
     
     // Clean up
