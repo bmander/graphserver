@@ -98,7 +98,6 @@ class OSMNetworkProvider:
         ways_for_node = self.data_source.get_ways_for_node(node_id)
 
         for way in ways_for_node:
-
             node_indices = [i for i, n in enumerate(way.node_refs) if n == node_id]
 
             # Generate edges to adjacent nodes in the way
@@ -157,6 +156,8 @@ class OSMNetworkProvider:
                         "way_id": way.id,
                         "distance_m": distance_m,
                         "duration_s": duration_s,
+                        "from_node_index": node_index,
+                        "to_node_index": target_index,
                     }
                     edge = Edge(
                         cost=final_cost,

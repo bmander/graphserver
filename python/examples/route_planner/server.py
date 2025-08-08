@@ -34,7 +34,12 @@ def create_vertex_from_coordinates(lat: float, lng: float) -> "Vertex":
 
 
 def extract_way_segment_coordinates(
-    osm_data, way_id: int, from_node_id: int, to_node_id: int
+    osm_data,
+    way_id: int,
+    from_node_id: int,
+    to_node_id: int,
+    from_node_index: int | None = None,
+    to_node_index: int | None = None,
 ) -> list[list[float]]:
     """Extract coordinates for a segment of an OSM way.
 
@@ -43,36 +48,40 @@ def extract_way_segment_coordinates(
         way_id: ID of the OSM way
         from_node_id: Starting node ID for the segment
         to_node_id: Ending node ID for the segment
+        from_node_index: Index of from_node_id in the way (required)
+        to_node_index: Index of to_node_id in the way (required)
 
     Returns:
         List of [lng, lat] coordinate pairs for the segment (excluding the first point)
     """
-    if not osm_data:
+    if not osm_data or way_id not in osm_data.ways:
         return []
 
-    if way_id not in osm_data.ways:
-        return []
+    if from_node_index is None or to_node_index is None:
+        return []  # Indices are required for reliable operation
 
     way = osm_data.ways[way_id]
     node_refs = way.node_refs
 
-    try:
-        # Find the indices of the from and to nodes
-        from_index = node_refs.index(from_node_id)
-        to_index = node_refs.index(to_node_id)
-    except ValueError:
-        # One of the nodes isn't in this way
-        return []
+    # Validate that the provided indices match the expected nodes
+    if (
+        from_node_index >= len(node_refs)
+        or to_node_index >= len(node_refs)
+        or node_refs[from_node_index] != from_node_id
+        or node_refs[to_node_index] != to_node_id
+    ):
+        return []  # Invalid indices
 
-    # Determine direction and extract the segment
-    if from_index < to_index:
-        # Forward direction
-        segment_nodes = node_refs[
-            from_index + 1 : to_index + 1
-        ]  # Exclude from_node, include to_node
+    # Extract the segment based on the relationship between indices
+    if from_node_index < to_node_index:
+        # Forward direction: exclude from_node, include to_node
+        segment_nodes = node_refs[from_node_index + 1 : to_node_index + 1]
+    elif from_node_index > to_node_index:
+        # Reverse direction: reverse the segment
+        segment_nodes = node_refs[to_node_index:from_node_index][::-1]
     else:
-        # Reverse direction
-        segment_nodes = node_refs[to_index:from_index][::-1]  # Reverse the segment
+        # Same node - empty segment
+        segment_nodes = []
 
     # Convert node IDs to coordinates
     coordinates = []
@@ -141,9 +150,18 @@ def path_result_to_geojson(
                 way_id = edge.metadata.get("way_id")
 
             if way_id and previous_node_id and current_node_id:
+                # Get node indices from edge metadata if available
+                from_node_index = edge.metadata.get("from_node_index")
+                to_node_index = edge.metadata.get("to_node_index")
+
                 # Extract the way segment coordinates
                 segment_coords = extract_way_segment_coordinates(
-                    osm_data, way_id, previous_node_id, current_node_id
+                    osm_data,
+                    way_id,
+                    previous_node_id,
+                    current_node_id,
+                    from_node_index,
+                    to_node_index,
                 )
                 coordinates.extend(segment_coords)
             elif "lat" in target and "lng" in target:
