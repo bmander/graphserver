@@ -98,74 +98,72 @@ class OSMNetworkProvider:
         ways_for_node = self.data_source.get_ways_for_node(node_id)
 
         for way in ways_for_node:
-            # Find this node's position in the way
-            try:
-                node_index = way.node_refs.index(node_id)
-            except ValueError:
-                continue  # Node not in this way (shouldn't happen)
+
+            node_indices = [i for i, n in enumerate(way.node_refs) if n == node_id]
 
             # Generate edges to adjacent nodes in the way
-            for target_index in [node_index - 1, node_index + 1]:
-                if target_index < 0 or target_index >= len(way.node_refs):
-                    continue  # Out of bounds
+            for node_index in node_indices:
+                for target_index in [node_index - 1, node_index + 1]:
+                    if target_index < 0 or target_index >= len(way.node_refs):
+                        continue  # Out of bounds
 
-                target_node_id = way.node_refs[target_index]
+                    target_node_id = way.node_refs[target_index]
 
-                # Skip if target node doesn't exist
-                if target_node_id not in self.data_source.nodes:
-                    continue
+                    # Skip if target node doesn't exist
+                    if target_node_id not in self.data_source.nodes:
+                        continue
 
-                # Check if this is a oneway that prevents this direction
-                oneway = way.tags.get("oneway", "no")
-                if oneway in {"yes", "true", "1"} and target_index < node_index:
-                    # For oneway, only allow forward direction (increasing index)
-                    continue
+                    # Check if this is a oneway that prevents this direction
+                    oneway = way.tags.get("oneway", "no")
+                    if oneway in {"yes", "true", "1"} and target_index < node_index:
+                        # For oneway, only allow forward direction (increasing index)
+                        continue
 
-                target_node = self.data_source.nodes[target_node_id]
-                from_node = self.data_source.nodes[node_id]
+                    target_node = self.data_source.nodes[target_node_id]
+                    from_node = self.data_source.nodes[node_id]
 
-                # Calculate edge distance and cost
-                from .spatial import calculate_distance
+                    # Calculate edge distance and cost
+                    from .spatial import calculate_distance
 
-                distance_m = calculate_distance(
-                    from_node.lat, from_node.lon, target_node.lat, target_node.lon
-                )
+                    distance_m = calculate_distance(
+                        from_node.lat, from_node.lon, target_node.lat, target_node.lon
+                    )
 
-                # Get walking speed for this way type
-                walking_speed = way.get_walking_speed()
-                duration_s = distance_m / walking_speed
+                    # Get walking speed for this way type
+                    walking_speed = way.get_walking_speed()
+                    duration_s = distance_m / walking_speed
 
-                # Apply walking profile to get final cost
-                walking_profile = self.data_source.walking_profile
-                # Create a temporary edge-like object for the walking profile
-                from .types import OSMEdge
+                    # Apply walking profile to get final cost
+                    walking_profile = self.data_source.walking_profile
+                    # Create a temporary edge-like object for the walking profile
+                    from .types import OSMEdge
 
-                temp_edge = OSMEdge(
-                    from_node_id=node_id,
-                    to_node_id=target_node_id,
-                    way_id=way.id,
-                    distance_m=distance_m,
-                    duration_s=duration_s,
-                    tags={"highway": way.tags.get("highway", "")},
-                )
-                final_cost = walking_profile.get_edge_cost(temp_edge, way)
+                    temp_edge = OSMEdge(
+                        from_node_id=node_id,
+                        to_node_id=target_node_id,
+                        way_id=way.id,
+                        distance_m=distance_m,
+                        duration_s=duration_s,
+                        tags={"highway": way.tags.get("highway", "")},
+                    )
+                    final_cost = walking_profile.get_edge_cost(temp_edge, way)
 
-                # Create target vertex
-                target_vertex = create_osm_node_vertex(target_node.id)
+                    # Create target vertex
+                    target_vertex = create_osm_node_vertex(target_node.id)
 
-                # Create edge
-                metadata = {
-                    "edge_type": "osm_way",
-                    "way_id": way.id,
-                    "distance_m": distance_m,
-                    "duration_s": duration_s,
-                }
-                edge = Edge(
-                    cost=final_cost,
-                    metadata=metadata,
-                )
+                    # Create edge
+                    metadata = {
+                        "edge_type": "osm_way",
+                        "way_id": way.id,
+                        "distance_m": distance_m,
+                        "duration_s": duration_s,
+                    }
+                    edge = Edge(
+                        cost=final_cost,
+                        metadata=metadata,
+                    )
 
-                edges.append((target_vertex, edge))
+                    edges.append((target_vertex, edge))
 
         return edges
 
