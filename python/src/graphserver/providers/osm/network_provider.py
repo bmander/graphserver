@@ -9,14 +9,13 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from collections.abc import Sequence
-
 from graphserver.core import Edge, Vertex, VertexEdgePair
 
 from .utils import create_osm_node_vertex
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from .data_source import OSMDataSource
 
 logger = logging.getLogger(__name__)
