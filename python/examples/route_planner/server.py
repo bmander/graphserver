@@ -646,6 +646,7 @@ class RoutePlannerServer:
         gtfs_files: list[str] | None = None,
         *,
         enable_caching: bool = False,
+        enable_precaching: bool = False,
     ) -> None:
         """Initialize the route planner server.
 
@@ -655,12 +656,14 @@ class RoutePlannerServer:
             osm_file: Path to OSM file
             gtfs_files: List of paths to GTFS files
             enable_caching: Enable graph edge caching for better performance
+            enable_precaching: Pre-cache the entire OSM graph for maximum performance
         """
         self.host = host
         self.port = port
         self.osm_file = osm_file
         self.gtfs_files = gtfs_files or []
         self.enable_caching = enable_caching
+        self.enable_precaching = enable_precaching
 
         # Initialize graphserver engine and providers
         self.engine = None
@@ -674,6 +677,7 @@ class RoutePlannerServer:
             "routing_available": self.engine is not None,
             "provider_count": len(self.providers),
             "caching_enabled": self.enable_caching,
+            "precaching_enabled": self.enable_precaching,
         }
 
         # Store non-serializable objects separately for route calculation
@@ -739,9 +743,59 @@ class RoutePlannerServer:
                 f"✅ OSM providers loaded: {len(osm_data.nodes)} nodes, {len(osm_data.ways)} ways"
             )
 
+            # Precache the entire OSM graph if requested
+            if self.enable_precaching:
+                self._precache_osm_graph(network_provider)
+
         except Exception as e:
             print(f"❌ Failed to load OSM providers: {e}")
             raise
+
+    def _precache_osm_graph(self, network_provider) -> None:
+        """Pre-cache the entire OSM graph for maximum routing performance."""
+        try:
+            print("🚀 Starting OSM graph precaching...")
+
+            # Get all seed vertices from the network provider
+            print("📊 Getting seed vertices from OSM network...")
+            seed_vertices = network_provider.seed_vertices()
+
+            if not seed_vertices:
+                print("⚠️  Warning: No seed vertices found, skipping precaching")
+                return
+
+            vertex_count = len(seed_vertices)
+            print(f"🗂️  Found {vertex_count:,} seed vertices to precache")
+
+            # Record start time for performance reporting
+            import time
+
+            start_time = time.time()
+
+            # Pre-cache the subgraph from all seed vertices
+            print("💾 Pre-caching OSM graph edges...")
+            self.engine.precache_subgraph(
+                provider_name="osm_network",
+                seed_vertices=seed_vertices,
+                max_depth=0,  # No depth limit - cache everything
+                max_vertices=0,  # No vertex limit - cache everything
+            )
+
+            # Calculate and report completion
+            end_time = time.time()
+            duration = end_time - start_time
+
+            print(f"✅ OSM graph precaching completed in {duration:.2f} seconds")
+            print(
+                f"🚀 All {vertex_count:,} vertices and their edges are now cached for maximum performance!"
+            )
+
+        except Exception as e:
+            print(f"❌ Failed to precache OSM graph: {e}")
+            # Don't raise - we can still operate without precaching
+            print(
+                "⚠️  Continuing without precaching, routing will still work but may be slower"
+            )
 
     def _load_transit_providers(self) -> None:
         """Load and register transit providers for GTFS files."""
@@ -782,6 +836,15 @@ class RoutePlannerServer:
 
         if self.gtfs_files:
             print(f"🚌 GTFS files: {', '.join(self.gtfs_files)}")
+
+        # Show caching status
+        caching_status = "enabled" if self.enable_caching else "disabled"
+        print(f"💾 Edge caching: {caching_status}")
+
+        if self.enable_precaching:
+            print("🚀 OSM graph precaching: enabled (maximum performance)")
+        elif self.enable_caching:
+            print("⚡ OSM graph precaching: disabled (edges cached on demand)")
 
         print(f"\n✅ Server ready! Open http://localhost:{self.port} in your browser")
         print("Press Ctrl+C to stop\n")

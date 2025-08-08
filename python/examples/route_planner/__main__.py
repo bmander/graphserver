@@ -17,6 +17,7 @@ Examples:
   python -m route_planner --osm examples/uw_campus.osm
   python -m route_planner --osm city.osm --gtfs transit.zip --port 8080
   python -m route_planner --osm city.osm --enable-caching
+  python -m route_planner --osm city.osm --precache
         """,
     )
 
@@ -52,6 +53,12 @@ Examples:
         help="Enable graph edge caching for better performance (default: disabled)",
     )
 
+    parser.add_argument(
+        "--precache",
+        action="store_true",
+        help="Pre-cache the entire OSM graph for maximum routing performance (automatically enables caching)",
+    )
+
     args = parser.parse_args()
 
     # Validate port range
@@ -76,12 +83,16 @@ Examples:
 
     # Create and run server
     try:
+        # Precaching automatically enables caching
+        enable_caching = args.enable_caching or args.precache
+
         server = RoutePlannerServer(
             host=args.host,
             port=args.port,
             osm_file=args.osm,
             gtfs_files=args.gtfs_files,
-            enable_caching=args.enable_caching,
+            enable_caching=enable_caching,
+            enable_precaching=args.precache,
         )
         server.run()
     except KeyboardInterrupt:
