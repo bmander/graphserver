@@ -15,7 +15,7 @@ from graphserver import CacheAwareEdgeProvider, Edge, Engine, Vertex
 class DynamicMockProvider(CacheAwareEdgeProvider):
     """Mock provider that allows runtime modification of edges."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize with empty edge map."""
         super().__init__()  # Initialize CacheAwareEdgeProvider
         self.edge_map: dict[str, list[tuple[Vertex, Edge]]] = {}
@@ -49,11 +49,18 @@ class DynamicMockProvider(CacheAwareEdgeProvider):
         self.call_count = 0
         self.called_with.clear()
 
+    def seed_vertices(self, *, max_vertices: int | None = None) -> Sequence[Vertex]:
+        """Return all vertices that have outgoing edges."""
+        vertices = [Vertex({"id": vertex_id}) for vertex_id in self.edge_map]
+        if max_vertices is not None:
+            return vertices[:max_vertices]
+        return vertices
+
 
 class TestEdgeCachingBug:
     """Test case demonstrating cache invalidation solving the edge caching problem."""
 
-    def test_cache_invalidation_enables_new_edge_discovery(self):
+    def test_cache_invalidation_enables_new_edge_discovery(self) -> None:
         """Test that cache invalidation enables discovery of dynamically added edges.
 
         This test demonstrates how cache invalidation solves the edge caching problem:
@@ -130,7 +137,7 @@ class TestEdgeCachingBug:
             f"Route A->D found: A->B (cost: {result_ad[0].edge.cost}) -> D (cost: {result_ad[1].edge.cost})"
         )
 
-    def test_cache_invalidation_statistics(self):
+    def test_cache_invalidation_statistics(self) -> None:
         """Verify cache statistics show proper invalidation behavior."""
         engine = Engine(enable_edge_caching=True)
         provider = DynamicMockProvider()

@@ -112,6 +112,26 @@ class CityGridProvider:
         """Reset call statistics."""
         self.call_count = 0
 
+    def out_edges(self, vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
+        """Get outgoing edges from a vertex (delegate to __call__)."""
+        return self.__call__(vertex)
+
+    def in_edges(self, _vertex: Vertex) -> Sequence[tuple[Vertex, Edge]]:
+        """Get incoming edges to a vertex (not implemented for simplicity)."""
+        return []
+
+    def seed_vertices(self, *, max_vertices: int | None = None) -> Sequence[Vertex]:
+        """Get all vertices in the grid as seeds for precaching."""
+        vertices = [
+            Vertex({"x": x, "y": y, "type": "intersection"})
+            for x in range(self.width)
+            for y in range(self.height)
+        ]
+
+        if max_vertices is not None:
+            return vertices[:max_vertices]
+        return vertices
+
 
 def create_high_traffic_seeds(width: int, height: int) -> list[Vertex]:
     """Create seed vertices for high-traffic areas.
@@ -123,7 +143,7 @@ def create_high_traffic_seeds(width: int, height: int) -> list[Vertex]:
     Returns:
         List of seed vertices for precaching
     """
-    seeds = []
+    seeds: list[Vertex] = []
 
     # Downtown core area
     seeds.extend(
@@ -225,7 +245,7 @@ def create_test_routes(
     return routes
 
 
-def demonstrate_precaching():
+def demonstrate_precaching() -> None:
     """Main demonstration of precaching functionality."""
     print("🚗 Graphserver Precaching Performance Demo")
     print("=" * 50)

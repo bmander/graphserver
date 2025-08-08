@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from graphserver import Engine
+    from graphserver import Engine, EngineStats
     from graphserver.providers.osm import OSMAccessProvider, OSMNetworkProvider
     from graphserver.providers.osm.types import WalkingProfile
 except ImportError as e:
@@ -110,11 +110,10 @@ def _load_providers(
             walking_profile=walking_profile,
         )
         access_provider = OSMAccessProvider(
-            parser=network_provider.parser,
+            network_provider.parser,
             walking_profile=walking_profile,
             search_radius_m=SEARCH_RADIUS_M,
             max_nearby_nodes=MAX_NEARBY_NODES,
-            build_index=True,
         )
     except Exception as e:  # pragma: no cover - demo helper
         print(f"❌ Error loading OSM data: {e}")
@@ -133,7 +132,7 @@ def _benchmark_engine(
     engine: Engine,
     routes: list[tuple[tuple[float, float], tuple[float, float]]],
     repetitions: int,
-) -> tuple[list[float], int, dict]:
+) -> tuple[list[float], int, EngineStats]:
     """Benchmark a planning engine."""
 
     times: list[float] = []
@@ -162,8 +161,8 @@ def _benchmark_engine(
                 # Use OSM node pathfinding workaround like in osm_routing_example.py
                 result = None
                 if access_provider:
-                    start_edges = access_provider(start_vertex)
-                    goal_edges = access_provider(goal_vertex)
+                    start_edges = access_provider.out_edges(start_vertex)
+                    goal_edges = access_provider.out_edges(goal_vertex)
 
                     if start_edges and goal_edges:
                         best_cost = float("inf")

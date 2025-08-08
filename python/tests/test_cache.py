@@ -517,7 +517,7 @@ class TestCacheOSMIntegration:
         assert hasattr(stats, "cache_hits")
 
 
-class TestEdgeProvider:
+class MockEdgeProvider:
     """Test provider that allows adding edges dynamically."""
 
     def __init__(self):
@@ -549,7 +549,7 @@ class TestCacheInvalidation:
         engine = Engine(enable_edge_caching=True)
 
         # Create a simple provider
-        provider = TestEdgeProvider()
+        provider = MockEdgeProvider()
         provider.add_edge("A", "B", 1.0)
         provider.add_edge("A", "C", 2.0)
 
@@ -581,7 +581,7 @@ class TestCacheInvalidation:
         engine = Engine(enable_edge_caching=True)
 
         # Create a simple provider
-        provider = TestEdgeProvider()
+        provider = MockEdgeProvider()
         provider.add_edge("A", "B", 1.0)
         provider.add_edge("B", "C", 1.0)
         provider.add_edge("C", "D", 1.0)
@@ -620,7 +620,7 @@ class TestCacheInvalidation:
         engine = Engine(enable_edge_caching=True)
 
         # Create a simple provider
-        provider = TestEdgeProvider()
+        provider = MockEdgeProvider()
         provider.add_edge("A", "B", 1.0)
         provider.add_edge("B", "C", 1.0)
 

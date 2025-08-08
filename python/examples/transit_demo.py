@@ -11,7 +11,7 @@ import zipfile
 from pathlib import Path
 
 from graphserver import Engine, Vertex
-from graphserver.providers import TransitProvider
+from graphserver.providers.transit import TransitProvider
 
 
 def create_example_gtfs() -> Path:
@@ -132,7 +132,7 @@ def main() -> None:
             }
         )
 
-        edges = provider(coord_vertex)
+        edges = provider.out_edges(coord_vertex)
         print(f"Found {len(edges)} nearby stops:")
         for _i, (target, edge) in enumerate(edges):
             stop_name = target.get("stop_name", "Unknown")

@@ -90,7 +90,7 @@ class GridProvider:
 class TestPrecacheBasic:
     """Test basic precaching functionality."""
 
-    def test_precache_single_seed(self):
+    def test_precache_single_seed(self) -> None:
         """Test precaching with a single seed vertex."""
         engine = Engine(enable_edge_caching=True)
         provider = GridProvider(5, 5)
@@ -113,7 +113,7 @@ class TestPrecacheBasic:
         stats = engine.get_stats()
         assert stats.cache_puts > 0
 
-    def test_precache_multiple_seeds(self):
+    def test_precache_multiple_seeds(self) -> None:
         """Test precaching with multiple seed vertices."""
         engine = Engine(enable_edge_caching=True)
         provider = GridProvider(10, 10)
@@ -140,7 +140,7 @@ class TestPrecacheBasic:
         stats = engine.get_stats()
         assert stats.cache_puts > 0
 
-    def test_precache_vertex_limit(self):
+    def test_precache_vertex_limit(self) -> None:
         """Test precaching with vertex limit."""
         engine = Engine(enable_edge_caching=True)
         provider = GridProvider(20, 20)
@@ -159,7 +159,7 @@ class TestPrecacheBasic:
         stats = engine.get_stats()
         assert stats.cache_puts <= 10
 
-    def test_precache_depth_limit(self):
+    def test_precache_depth_limit(self) -> None:
         """Test precaching with depth limit."""
         engine = Engine(enable_edge_caching=True)
         provider = GridProvider(10, 10)
@@ -182,7 +182,7 @@ class TestPrecacheBasic:
 class TestPrecacheErrors:
     """Test error conditions for precaching."""
 
-    def test_precache_cache_disabled(self):
+    def test_precache_cache_disabled(self) -> None:
         """Test precaching with caching disabled."""
         engine = Engine(enable_edge_caching=False)
         provider = GridProvider(5, 5)
@@ -197,7 +197,7 @@ class TestPrecacheErrors:
                 seed_vertices=[seed],
             )
 
-    def test_precache_provider_not_found(self):
+    def test_precache_provider_not_found(self) -> None:
         """Test precaching with non-existent provider."""
         engine = Engine(enable_edge_caching=True)
 
@@ -210,7 +210,7 @@ class TestPrecacheErrors:
                 seed_vertices=[seed],
             )
 
-    def test_precache_empty_seeds(self):
+    def test_precache_empty_seeds(self) -> None:
         """Test precaching with empty seed list."""
         engine = Engine(enable_edge_caching=True)
         provider = GridProvider(5, 5)
@@ -223,7 +223,7 @@ class TestPrecacheErrors:
                 seed_vertices=[],
             )
 
-    def test_precache_invalid_seed_type(self):
+    def test_precache_invalid_seed_type(self) -> None:
         """Test precaching with invalid seed vertex type."""
         engine = Engine(enable_edge_caching=True)
         provider = GridProvider(5, 5)
@@ -235,16 +235,16 @@ class TestPrecacheErrors:
         ):
             engine.precache_subgraph(
                 provider_name="grid",
-                seed_vertices=[{"x": 0, "y": 0}],  # Dictionary instead of Vertex
+                seed_vertices=[{"x": 0, "y": 0}],  # type: ignore[list-item]
             )
 
-    def test_precache_mixed_invalid_seeds(self):
+    def test_precache_mixed_invalid_seeds(self) -> None:
         """Test precaching with mix of valid and invalid seeds."""
         engine = Engine(enable_edge_caching=True)
         provider = GridProvider(5, 5)
         engine.register_provider("grid", provider)
 
-        seeds = [
+        seeds: list[object] = [
             Vertex({"x": 0, "y": 0}),  # Valid
             {"x": 1, "y": 1},  # Invalid - dictionary
         ]
@@ -255,14 +255,14 @@ class TestPrecacheErrors:
         ):
             engine.precache_subgraph(
                 provider_name="grid",
-                seed_vertices=seeds,
+                seed_vertices=seeds,  # type: ignore[arg-type]
             )
 
 
 class TestPrecacheIntegration:
     """Test integration with existing cache functionality."""
 
-    def test_precache_improves_performance(self):
+    def test_precache_improves_performance(self) -> None:
         """Test that precaching improves subsequent operations."""
         engine = Engine(enable_edge_caching=True)
         provider = GridProvider(20, 20)
@@ -300,7 +300,7 @@ class TestPrecacheIntegration:
         # because planning resets statistics
         assert calls_with_precache < calls_without_precache
 
-    def test_precache_cache_statistics(self):
+    def test_precache_cache_statistics(self) -> None:
         """Test that precaching updates cache statistics correctly."""
         engine = Engine(enable_edge_caching=True)
         provider = GridProvider(10, 10)
@@ -329,7 +329,7 @@ class TestPrecacheIntegration:
         # Edges generated should have increased
         assert final_stats.edges_generated > initial_stats.edges_generated
 
-    def test_precache_with_unlimited_parameters(self):
+    def test_precache_with_unlimited_parameters(self) -> None:
         """Test precaching with unlimited depth and vertices."""
         engine = Engine(enable_edge_caching=True)
         provider = GridProvider(5, 5)  # Small grid to avoid infinite precaching
@@ -356,7 +356,7 @@ class TestPrecacheIntegration:
 class TestPrecacheMemory:
     """Test memory management during precaching."""
 
-    def test_precache_memory_cleanup(self):
+    def test_precache_memory_cleanup(self) -> None:
         """Test that precaching doesn't leak memory."""
         engine = Engine(enable_edge_caching=True)
         provider = GridProvider(10, 10)
@@ -382,7 +382,7 @@ class TestPrecacheMemory:
         stats = engine.get_stats()
         assert stats.cache_puts > 0
 
-    def test_precache_large_seed_list(self):
+    def test_precache_large_seed_list(self) -> None:
         """Test precaching with a large number of seeds."""
         engine = Engine(enable_edge_caching=True)
         provider = GridProvider(20, 20)
@@ -403,7 +403,7 @@ class TestPrecacheMemory:
         stats = engine.get_stats()
         assert stats.cache_puts > 0
 
-    def test_precache_with_seed_vertices(self):
+    def test_precache_with_seed_vertices(self) -> None:
         """Test using provider's seed_vertices method with precache_subgraph."""
         engine = Engine(enable_edge_caching=True)
         provider = GridProvider(5, 5)

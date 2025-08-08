@@ -57,7 +57,7 @@ def setup_leaflet(base_dir: Path) -> bool:
     base_url = f"https://unpkg.com/leaflet@{version}/dist"
 
     # Files to download
-    files = [
+    files: list[dict[str, object]] = [
         {
             "url": f"{base_url}/leaflet.css",
             "path": leaflet_dir / "leaflet.css",
@@ -89,7 +89,11 @@ def setup_leaflet(base_dir: Path) -> bool:
 
     success_count = 0
     for file_info in files:
-        if download_file(file_info["url"], file_info["path"], file_info["description"]):
+        if download_file(
+            str(file_info["url"]),
+            Path(file_info["path"]),
+            str(file_info["description"]),
+        ):
             success_count += 1
 
     if success_count == len(files):

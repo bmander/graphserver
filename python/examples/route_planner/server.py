@@ -2,8 +2,10 @@
 
 import json
 import mimetypes
+from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
+from typing import Any
 from urllib.parse import urlparse
 
 # Graphserver imports for routing
@@ -34,7 +36,7 @@ def create_vertex_from_coordinates(lat: float, lng: float) -> "Vertex":
 
 
 def extract_way_segment_coordinates(
-    osm_data,
+    osm_data: "OSMDataSource",
     way_id: int,
     from_node_id: int,
     to_node_id: int,
@@ -95,10 +97,10 @@ def extract_way_segment_coordinates(
 
 def path_result_to_geojson(
     path_result: "graphserver.PathResult",
-    origin: dict,
-    destination: dict,
-    osm_data=None,
-) -> dict:
+    origin: dict[str, float],
+    destination: dict[str, float],
+    osm_data: OSMDataSource | None = None,
+) -> dict[str, Any]:
     """Convert a PathResult to GeoJSON format.
 
     Args:
@@ -118,8 +120,8 @@ def path_result_to_geojson(
 
     # Extract coordinates from path - now with actual OSM way geometry
     coordinates = [[origin["lng"], origin["lat"]]]
-    total_cost = 0
-    total_distance = 0
+    total_cost = 0.0
+    total_distance = 0.0
     waypoints = []
     previous_node_id = None
 
@@ -132,13 +134,13 @@ def path_result_to_geojson(
         if hasattr(edge, "cost"):
             cost = edge.cost
             if isinstance(cost, int | float):
-                total_cost += float(cost)
+                total_cost += cost
 
         # Add to total distance using actual OSM distance metadata
         if hasattr(edge, "metadata") and edge.metadata:
             distance_m = edge.metadata.get("distance_m", 0)
             if isinstance(distance_m, int | float):
-                total_distance += float(distance_m)
+                total_distance += distance_m
 
         # Try to extract actual way geometry if we have OSM data
         if osm_data and "osm_node_id" in target and previous_node_id:
@@ -285,7 +287,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
         except OSError as e:
             self.send_error(500, f"Error reading file: {e}")
 
-    def send_json_response(self, data: dict) -> None:
+    def send_json_response(self, data: dict[str, Any]) -> None:
         """Send JSON response."""
         try:
             response_body = json.dumps(data, indent=2).encode("utf-8")
@@ -300,25 +302,27 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
         except (TypeError, ValueError) as e:
             self.send_error(500, f"Error serializing JSON: {e}")
 
-    def log_message(self, fmt: str, *args) -> None:
+    def log_message(self, fmt: str, *args: Any) -> None:
         """Custom log format."""
         print(f"[{self.address_string()}] {fmt % args}")
 
-    def _get_osm_bounds(self) -> dict:
+    def _get_osm_bounds(self) -> dict[str, float]:
         """Get OSM file bounds for map initialization."""
         # Use cached bounds from OSMDataSource for O(1) lookup
         osm_data = getattr(self.__class__, "osm_data", None)
         if osm_data and hasattr(osm_data, "get_bounds"):
-            return osm_data.get_bounds()
+            bounds = osm_data.get_bounds()
+            if isinstance(bounds, dict):
+                return bounds
 
         # Fallback to default bounds if no OSM data available
         return self._default_bounds()
 
-    def _default_bounds(self) -> dict:
+    def _default_bounds(self) -> dict[str, float]:
         """Return default bounds (Seattle area) if OSM parsing fails."""
         return {"south": 47.6, "west": -122.4, "north": 47.7, "east": -122.2}
 
-    def _get_providers_info(self) -> dict:
+    def _get_providers_info(self) -> dict[str, Any]:
         """Get information about loaded providers."""
         providers = getattr(self.__class__, "providers", {})
 
@@ -381,7 +385,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
             print(f"Route request handling error: {e}")
             self.send_error(500, f"Internal server error: {e}")
 
-    def _validate_and_parse_request(self) -> dict | None:
+    def _validate_and_parse_request(self) -> dict[str, Any] | None:
         """Validate and parse route request. Returns None if there's an error."""
         content_length = int(self.headers.get("Content-Length", 0))
         if content_length == 0:
@@ -417,9 +421,11 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
                 self.send_error(400, f"Invalid {point_name} coordinate values")
                 return None
 
-        return request_data
+        return request_data  # type: ignore[no-any-return]
 
-    def _perform_routing(self, engine, origin: dict, destination: dict) -> None:
+    def _perform_routing(
+        self, engine: "Engine", origin: dict[str, float], destination: dict[str, float]
+    ) -> None:
         """Perform the actual routing calculation."""
         try:
             start_vertex = create_vertex_from_coordinates(origin["lat"], origin["lng"])
@@ -527,9 +533,9 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
     def _handle_linking_error(
         self,
         error: ValueError,
-        access_provider,
-        origin: dict,
-        destination: dict,
+        access_provider: "OSMAccessProvider",
+        origin: dict[str, float],
+        destination: dict[str, float],
         approx_distance_km: float,
     ) -> None:
         """Handle coordinate linking errors with detailed diagnostics."""
@@ -582,7 +588,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
         error_code: str,
         error_message: str,
         error_details: str,
-        debug_info: dict,
+        debug_info: dict[str, Any],
     ) -> None:
         """Send a structured error response with detailed information."""
         response = {
@@ -600,7 +606,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
         self.send_json_response(response)
 
 
-def create_progress_callback() -> callable:
+def create_progress_callback() -> Callable[[str], None]:
     """Create a progress callback that displays updates on the same line.
 
     Returns:
@@ -669,8 +675,8 @@ class RoutePlannerServer:
         self.enable_precaching = enable_precaching
 
         # Initialize graphserver engine and providers
-        self.engine = None
-        self.providers = {}
+        self.engine: Engine | None = None
+        self.providers: dict[str, Any] = {}
         self._init_routing_engine()
 
         # Store config for handlers to access (only JSON-serializable data)
@@ -703,7 +709,7 @@ class RoutePlannerServer:
             self.engine = Engine(enable_edge_caching=self.enable_caching)
 
             # Load OSM providers if OSM file is provided
-            if self.osm_file:
+            if self.osm_file is not None:
                 self._load_osm_providers()
 
             # Load transit providers if GTFS files are provided
@@ -726,7 +732,9 @@ class RoutePlannerServer:
 
             # Initialize OSM data source with same-line progress updates
             progress_callback = create_progress_callback()
-            osm_data = OSMDataSource(self.osm_file, progress_callback=progress_callback)
+            osm_data = OSMDataSource(
+                str(self.osm_file), progress_callback=progress_callback
+            )
 
             # Print newline to complete progress line
             print()
@@ -738,8 +746,9 @@ class RoutePlannerServer:
             network_provider = OSMNetworkProvider(osm_data)
             access_provider = OSMAccessProvider(osm_data)
 
-            self.engine.register_provider("osm_network", network_provider)
-            self.engine.register_provider("osm_access", access_provider)
+            if self.engine is not None:
+                self.engine.register_provider("osm_network", network_provider)
+                self.engine.register_provider("osm_access", access_provider)
 
             self.providers["osm_network"] = network_provider
             self.providers["osm_access"] = access_provider
@@ -756,7 +765,7 @@ class RoutePlannerServer:
             print(f"❌ Failed to load OSM providers: {e}")
             raise
 
-    def _precache_osm_graph(self, network_provider) -> None:
+    def _precache_osm_graph(self, network_provider: "OSMNetworkProvider") -> None:
         """Pre-cache the entire OSM graph for maximum routing performance."""
         try:
             print("🚀 Starting OSM graph precaching...")
@@ -779,12 +788,13 @@ class RoutePlannerServer:
 
             # Pre-cache the subgraph from all seed vertices
             print("💾 Pre-caching OSM graph edges...")
-            self.engine.precache_subgraph(
-                provider_name="osm_network",
-                seed_vertices=seed_vertices,
-                max_depth=0,  # No depth limit - cache everything
-                max_vertices=0,  # No vertex limit - cache everything
-            )
+            if self.engine is not None:
+                self.engine.precache_subgraph(
+                    provider_name="osm_network",
+                    seed_vertices=seed_vertices,
+                    max_depth=0,  # No depth limit - cache everything
+                    max_vertices=0,  # No vertex limit - cache everything
+                )
 
             # Calculate and report completion
             end_time = time.time()
@@ -818,7 +828,8 @@ class RoutePlannerServer:
 
                 # Use filename as provider name
                 provider_name = f"transit_{Path(gtfs_file).stem}"
-                self.engine.register_provider(provider_name, transit_provider)
+                if self.engine is not None:
+                    self.engine.register_provider(provider_name, transit_provider)
                 self.providers[provider_name] = transit_provider
 
             print(f"✅ Transit providers loaded for {len(self.gtfs_files)} GTFS files")

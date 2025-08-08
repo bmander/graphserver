@@ -41,7 +41,7 @@ class OSMHandler(osmium.SimpleHandler):
         self._walkable_way_count = 0
         self._progress_callback = progress_callback
         self._total_estimates = {"nodes": 0, "ways": 0}  # Will be updated as we parse
-        
+
         # Track bounds during parsing for efficient lookups
         self.min_lat: float | None = None
         self.max_lat: float | None = None
@@ -59,7 +59,7 @@ class OSMHandler(osmium.SimpleHandler):
         lat, lon = n.location.lat, n.location.lon
         node = OSMNode(id=n.id, lat=lat, lon=lon, tags=tags)
         self.nodes[n.id] = node
-        
+
         # Update bounds during parsing for efficient caching
         if self.min_lat is None:
             self.min_lat = self.max_lat = lat
@@ -209,7 +209,7 @@ class OSMDataSource:
             # Store parsed data
             self.nodes = handler.nodes
             self.ways = handler.ways
-            
+
             # Calculate and cache bounds from parsed data
             self._calculate_bounds_from_handler(handler)
 
@@ -249,7 +249,7 @@ class OSMDataSource:
 
     def _calculate_bounds_from_handler(self, handler: OSMHandler) -> None:
         """Calculate and cache bounds from parsed OSM handler data.
-        
+
         Args:
             handler: OSM handler with parsed bounds information
         """
@@ -264,7 +264,7 @@ class OSMDataSource:
             lon_range = handler.max_lon - handler.min_lon
             lat_buffer = lat_range * 0.1 if lat_range > 0 else 0.01
             lon_buffer = lon_range * 0.1 if lon_range > 0 else 0.01
-            
+
             self.bounds = {
                 "south": handler.min_lat - lat_buffer,
                 "west": handler.min_lon - lon_buffer,
@@ -277,26 +277,26 @@ class OSMDataSource:
 
     def get_bounds(self) -> dict:
         """Get cached geographic bounds for map initialization.
-        
+
         Returns:
             Dict with south, west, north, east bounds
         """
         if self.bounds is not None:
             return self.bounds
-        
+
         # Fallback: calculate from current filtered nodes if no cached bounds
         if not self.nodes:
             return self._default_bounds()
-        
+
         lats = [node.lat for node in self.nodes.values()]
         lons = [node.lon for node in self.nodes.values()]
-        
+
         # Add buffer
         lat_range = max(lats) - min(lats)
         lon_range = max(lons) - min(lons)
         lat_buffer = lat_range * 0.1 if lat_range > 0 else 0.01
         lon_buffer = lon_range * 0.1 if lon_range > 0 else 0.01
-        
+
         return {
             "south": min(lats) - lat_buffer,
             "west": min(lons) - lon_buffer,
@@ -372,7 +372,7 @@ class OSMDataSource:
 
         # Use precomputed index for O(1) lookup
         ways = []
-        way_ids_seen = set()  # Avoid duplicates if node appears multiple times in same way
+        way_ids_seen = set()  # Avoid duplicates if node appears multiple times
         for way, _ in self.node_way_index[node_id]:
             if way.id not in way_ids_seen:
                 ways.append(way)

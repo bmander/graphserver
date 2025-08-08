@@ -209,7 +209,7 @@ def download_osm_data(
             print(f"✅ File appears valid: {node_count} nodes, {way_count} ways")
         else:
             print("⚠️  Warning: File may not be valid OSM XML")
-            print(f"First 200 bytes: {data[:200]}")
+            print(f"First 200 bytes: {data[:200]!r}")
 
     except Exception as e:
         print(f"❌ Error downloading data: {e}")
