@@ -600,6 +600,43 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
         self.send_json_response(response)
 
 
+def create_progress_callback() -> callable:
+    """Create a progress callback that displays updates on the same line.
+    
+    Returns:
+        Callback function that displays progress with same-line updates
+    """
+    import sys
+    
+    def progress_callback(msg: str) -> None:
+        """Display progress message on the same line, clearing previous content.
+        
+        Args:
+            msg: Progress message to display
+        """
+        # Clear the line by moving cursor to beginning and padding with spaces
+        # Get terminal width or use reasonable default
+        try:
+            import os
+            terminal_width = os.get_terminal_size().columns
+        except (AttributeError, OSError):
+            terminal_width = 80
+        
+        # Format message with indentation
+        formatted_msg = f"  {msg}"
+        
+        # Ensure message doesn't exceed terminal width
+        if len(formatted_msg) >= terminal_width:
+            formatted_msg = formatted_msg[:terminal_width - 4] + "..."
+        
+        # Clear line and print message without newline
+        # Move to beginning of line, clear it, then print message
+        sys.stdout.write(f"\r{' ' * (terminal_width - 1)}\r{formatted_msg}")
+        sys.stdout.flush()
+    
+    return progress_callback
+
+
 def parse_osm_bounds(osm_file_path: str) -> dict:
     """Parse OSM file to extract geographic bounds.
 
@@ -739,10 +776,14 @@ class RoutePlannerServer:
         try:
             print(f"📍 Loading OSM data from {self.osm_file}...")
 
-            # Initialize OSM data source
+            # Initialize OSM data source with same-line progress updates
+            progress_callback = create_progress_callback()
             osm_data = OSMDataSource(
-                self.osm_file, progress_callback=lambda msg: print(f"  {msg}")
+                self.osm_file, progress_callback=progress_callback
             )
+            
+            # Print newline to complete progress line
+            print()
 
             # Store OSM data source for geometry lookups
             self.osm_data = osm_data
@@ -821,9 +862,13 @@ class RoutePlannerServer:
             for gtfs_file in self.gtfs_files:
                 print(f"🚌 Loading GTFS data from {gtfs_file}...")
 
+                progress_callback = create_progress_callback()
                 transit_provider = TransitProvider(
-                    gtfs_file, progress_callback=lambda msg: print(f"  {msg}")
+                    gtfs_file, progress_callback=progress_callback
                 )
+                
+                # Print newline to complete progress line
+                print()
 
                 # Use filename as provider name
                 provider_name = f"transit_{Path(gtfs_file).stem}"
