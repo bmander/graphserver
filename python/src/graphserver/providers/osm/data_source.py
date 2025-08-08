@@ -136,6 +136,8 @@ class OSMDataSource:
         self.walking_profile = walking_profile or WalkingProfile()
         self.nodes: dict[int, OSMNode] = {}
         self.ways: dict[int, OSMWay] = {}
+        # Index for O(1) lookup of ways containing a node and position indices
+        self.node_way_index: dict[int, list[tuple[OSMWay, int]]] = {}
 
         # Parse OSM data
         logger.info("Initializing OSM data source from %s", self.osm_file)
@@ -200,8 +202,14 @@ class OSMDataSource:
         """Filter nodes to only include those referenced by walkable ways."""
         referenced_node_ids = set()
 
+        # Build node-way index while collecting referenced nodes
+        self.node_way_index = {}
         for way in self.ways.values():
-            referenced_node_ids.update(way.node_refs)
+            for position_index, node_id in enumerate(way.node_refs):
+                referenced_node_ids.add(node_id)
+                if node_id not in self.node_way_index:
+                    self.node_way_index[node_id] = []
+                self.node_way_index[node_id].append((way, position_index))
 
         # Keep only referenced nodes
         filtered_nodes = {
@@ -211,7 +219,11 @@ class OSMDataSource:
         }
 
         self.nodes = filtered_nodes
-        logger.info("Filtered to %d referenced nodes", len(self.nodes))
+        logger.info(
+            "Filtered to %d referenced nodes with way index for %d nodes",
+            len(self.nodes),
+            len(self.node_way_index),
+        )
 
     def _build_spatial_index(self) -> None:
         """Build spatial index for fast coordinate-based lookups."""
@@ -272,4 +284,36 @@ class OSMDataSource:
         Returns:
             List of OSMWay objects that reference the given node
         """
-        return [way for way in self.ways.values() if node_id in way.node_refs]
+        if node_id not in self.node_way_index:
+            return []
+
+        # Use precomputed index for O(1) lookup
+        ways = []
+        way_ids_seen = set()  # Avoid duplicates if node appears multiple times in same way
+        for way, _ in self.node_way_index[node_id]:
+            if way.id not in way_ids_seen:
+                ways.append(way)
+                way_ids_seen.add(way.id)
+
+        return ways
+
+    def get_node_positions_in_way(self, node_id: int, way: OSMWay) -> list[int]:
+        """Get all position indices where a node appears in a specific way.
+
+        Args:
+            node_id: OSM node ID
+            way: OSMWay object to search within
+
+        Returns:
+            List of position indices where the node appears in the way
+        """
+        if node_id not in self.node_way_index:
+            return []
+
+        # Find all positions for this node in the specific way
+        positions = []
+        for way_obj, position_index in self.node_way_index[node_id]:
+            if way_obj.id == way.id:
+                positions.append(position_index)
+
+        return positions

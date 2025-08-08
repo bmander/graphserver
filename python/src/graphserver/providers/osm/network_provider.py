@@ -97,7 +97,8 @@ class OSMNetworkProvider:
         ways_for_node = self.data_source.get_ways_for_node(node_id)
 
         for way in ways_for_node:
-            node_indices = [i for i, n in enumerate(way.node_refs) if n == node_id]
+            # Use O(1) lookup instead of O(n) scan
+            node_indices = self.data_source.get_node_positions_in_way(node_id, way)
 
             # Generate edges to adjacent nodes in the way
             for node_index in node_indices:
