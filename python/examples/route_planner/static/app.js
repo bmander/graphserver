@@ -16,6 +16,16 @@ class RoutePlanner {
         this.routeData = null;
         this.isCalculatingRoute = false;
         
+        // Live dragging support with continuous updates
+        this.pendingRouteRequest = null;
+        this.isDragging = false;
+        this.lastCalculatedOrigin = null;
+        this.lastCalculatedDestination = null;
+        this.minDragDistance = 0.0001; // ~11 meters
+        this.liveUpdateRate = 100; // milliseconds (10 Hz)
+        this.lastLiveUpdateTime = 0;
+        this.continuousUpdateTimer = null;
+        
         // Initialize the application
         this.initializeApp();
     }
@@ -91,7 +101,9 @@ class RoutePlanner {
         // Add popup
         this.originMarker.bindPopup(`Origin<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}`);
         
-        // Add drag event handler
+        // Add drag event handlers
+        this.originMarker.on('dragstart', this.onOriginDragStart.bind(this));
+        this.originMarker.on('drag', this.onOriginDrag.bind(this));
         this.originMarker.on('dragend', this.onOriginDragEnd.bind(this));
         
         this.updateUI();
@@ -115,7 +127,9 @@ class RoutePlanner {
         // Add popup
         this.destinationMarker.bindPopup(`Destination<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}`);
         
-        // Add drag event handler
+        // Add drag event handlers
+        this.destinationMarker.on('dragstart', this.onDestinationDragStart.bind(this));
+        this.destinationMarker.on('drag', this.onDestinationDrag.bind(this));
         this.destinationMarker.on('dragend', this.onDestinationDragEnd.bind(this));
         
         this.updateUI();
@@ -147,6 +161,28 @@ class RoutePlanner {
         });
     }
     
+    onOriginDragStart(event) {
+        console.log('Origin drag started');
+        
+        // Set dragging state and start continuous updates
+        this.isDragging = true;
+        if (this.destination) {
+            this.startContinuousUpdates();
+        }
+    }
+    
+    onOriginDrag(event) {
+        const { lat, lng } = event.target.getLatLng();
+        
+        // Update internal coordinates
+        this.origin = { lat, lng };
+        
+        // Trigger immediate live route calculation (throttled)
+        if (this.destination) {
+            this.calculateRouteLive();
+        }
+    }
+    
     onOriginDragEnd(event) {
         const { lat, lng } = event.target.getLatLng();
         
@@ -160,8 +196,34 @@ class RoutePlanner {
         this.updateUI();
         console.log('Origin dragged to:', { lat, lng });
         
+        // Stop continuous updates and do final route calculation
+        this.stopContinuousUpdates();
+        this.isDragging = false;
+        
         if (this.destination) {
-            this.calculateRoute();
+            this.calculateRoute(); // Final accurate calculation
+        }
+    }
+    
+    onDestinationDragStart(event) {
+        console.log('Destination drag started');
+        
+        // Set dragging state and start continuous updates
+        this.isDragging = true;
+        if (this.origin) {
+            this.startContinuousUpdates();
+        }
+    }
+    
+    onDestinationDrag(event) {
+        const { lat, lng } = event.target.getLatLng();
+        
+        // Update internal coordinates
+        this.destination = { lat, lng };
+        
+        // Trigger immediate live route calculation (throttled)
+        if (this.origin) {
+            this.calculateRouteLive();
         }
     }
     
@@ -178,8 +240,58 @@ class RoutePlanner {
         this.updateUI();
         console.log('Destination dragged to:', { lat, lng });
         
+        // Stop continuous updates and do final route calculation
+        this.stopContinuousUpdates();
+        this.isDragging = false;
+        
         if (this.origin) {
-            this.calculateRoute();
+            this.calculateRoute(); // Final accurate calculation
+        }
+    }
+    
+    hasPositionChanged(newOrigin, newDestination) {
+        // Check if position changed enough to warrant a new calculation
+        const originChanged = !this.lastCalculatedOrigin || 
+            Math.abs(newOrigin.lat - this.lastCalculatedOrigin.lat) > this.minDragDistance ||
+            Math.abs(newOrigin.lng - this.lastCalculatedOrigin.lng) > this.minDragDistance;
+            
+        const destinationChanged = !this.lastCalculatedDestination || 
+            Math.abs(newDestination.lat - this.lastCalculatedDestination.lat) > this.minDragDistance ||
+            Math.abs(newDestination.lng - this.lastCalculatedDestination.lng) > this.minDragDistance;
+            
+        return originChanged || destinationChanged;
+    }
+    
+    calculateRouteLive() {
+        const now = Date.now();
+        const timeSinceLastUpdate = now - this.lastLiveUpdateTime;
+        
+        // Only update if enough time has passed (throttle)
+        if (timeSinceLastUpdate >= this.liveUpdateRate) {
+            this.lastLiveUpdateTime = now;
+            
+            if (this.origin && this.destination && this.hasPositionChanged(this.origin, this.destination)) {
+                this.calculateRoute(true); // Pass true to indicate this is a live update
+            }
+        }
+    }
+    
+    startContinuousUpdates() {
+        // Start the continuous update timer if not already running
+        if (!this.continuousUpdateTimer) {
+            this.continuousUpdateTimer = setInterval(() => {
+                if (this.isDragging && this.origin && this.destination) {
+                    this.calculateRouteLive();
+                }
+            }, this.liveUpdateRate);
+        }
+    }
+    
+    stopContinuousUpdates() {
+        // Stop the continuous update timer
+        if (this.continuousUpdateTimer) {
+            clearInterval(this.continuousUpdateTimer);
+            this.continuousUpdateTimer = null;
         }
     }
     
@@ -386,13 +498,33 @@ class RoutePlanner {
         }
     }
     
-    async calculateRoute() {
-        if (!this.origin || !this.destination || this.isCalculatingRoute) {
+    async calculateRoute(isLiveUpdate = false) {
+        if (!this.origin || !this.destination) {
             return;
         }
         
-        this.isCalculatingRoute = true;
-        this.showRouteLoading();
+        // Don't allow overlapping calculations unless it's a live update
+        if (!isLiveUpdate && this.isCalculatingRoute) {
+            return;
+        }
+        
+        // Cancel any pending request for live updates
+        if (this.pendingRouteRequest) {
+            this.pendingRouteRequest.abort();
+        }
+        
+        // Create new AbortController for this request
+        const abortController = new AbortController();
+        this.pendingRouteRequest = abortController;
+        
+        // Update last calculated positions
+        this.lastCalculatedOrigin = { ...this.origin };
+        this.lastCalculatedDestination = { ...this.destination };
+        
+        if (!isLiveUpdate) {
+            this.isCalculatingRoute = true;
+            this.showRouteLoading();
+        }
         
         try {
             const response = await fetch('/api/route', {
@@ -403,7 +535,8 @@ class RoutePlanner {
                 body: JSON.stringify({
                     origin: this.origin,
                     destination: this.destination
-                })
+                }),
+                signal: abortController.signal
             });
             
             if (!response.ok) {
@@ -414,24 +547,42 @@ class RoutePlanner {
             
             if (routeResult.properties && routeResult.properties.status === 'success') {
                 this.routeData = routeResult;
-                this.showRouteResult(routeResult);
-                this.visualizeRoute(routeResult);
+                if (!isLiveUpdate) {
+                    this.showRouteResult(routeResult);
+                }
+                this.visualizeRoute(routeResult, isLiveUpdate);
             } else {
-                this.showRouteError(routeResult.properties || { error: 'No route found' });
+                if (!isLiveUpdate) {
+                    this.showRouteError(routeResult.properties || { error: 'No route found' });
+                }
             }
             
         } catch (error) {
+            // Don't show errors for aborted requests
+            if (error.name === 'AbortError') {
+                return;
+            }
+            
             console.error('Route calculation failed:', error);
-            this.showRouteError({
-                error: 'Route calculation failed',
-                error_details: `Network or server error: ${error.message}`,
-                debug_info: {
-                    error_type: 'network_error',
-                    original_message: error.message
-                }
-            });
+            if (!isLiveUpdate) {
+                this.showRouteError({
+                    error: 'Route calculation failed',
+                    error_details: `Network or server error: ${error.message}`,
+                    debug_info: {
+                        error_type: 'network_error',
+                        original_message: error.message
+                    }
+                });
+            }
         } finally {
-            this.isCalculatingRoute = false;
+            if (!isLiveUpdate) {
+                this.isCalculatingRoute = false;
+            }
+            
+            // Clear the pending request if it's the same one
+            if (this.pendingRouteRequest === abortController) {
+                this.pendingRouteRequest = null;
+            }
         }
     }
     
@@ -519,7 +670,7 @@ class RoutePlanner {
         }
     }
     
-    visualizeRoute(routeData) {
+    visualizeRoute(routeData, isLiveUpdate = false) {
         // Clear existing route
         this.clearRouteVisualization();
         
@@ -530,6 +681,11 @@ class RoutePlanner {
         // Create a layer group for the route
         this.routeLayer = L.layerGroup();
         
+        // Determine opacity based on update type
+        const lineOpacity = isLiveUpdate ? 0.5 : 0.8;
+        const waypointOpacity = isLiveUpdate ? 0.6 : 1.0;
+        const waypointFillOpacity = isLiveUpdate ? 0.4 : 0.8;
+        
         // Add each feature to the route layer
         routeData.features.forEach(feature => {
             if (feature.geometry.type === 'LineString') {
@@ -538,22 +694,22 @@ class RoutePlanner {
                 const routeLine = L.polyline(coordinates, {
                     color: '#e74c3c',
                     weight: 4,
-                    opacity: 0.8,
-                    className: 'route-line'
+                    opacity: lineOpacity,
+                    className: isLiveUpdate ? 'route-line route-line-live' : 'route-line'
                 });
                 
                 this.routeLayer.addLayer(routeLine);
                 
-                // Add waypoint markers if available
-                if (feature.properties.waypoints) {
+                // Add waypoint markers if available (hide during live updates for cleaner look)
+                if (feature.properties.waypoints && !isLiveUpdate) {
                     feature.properties.waypoints.forEach((waypoint, index) => {
                         const waypointMarker = L.circleMarker([waypoint.position[1], waypoint.position[0]], {
                             radius: 6,
                             fillColor: '#e67e22',
                             color: '#d35400',
                             weight: 2,
-                            opacity: 1,
-                            fillOpacity: 0.8,
+                            opacity: waypointOpacity,
+                            fillOpacity: waypointFillOpacity,
                             className: 'route-waypoint'
                         });
                         
@@ -572,8 +728,8 @@ class RoutePlanner {
         // Add the route layer to the map
         this.routeLayer.addTo(this.map);
         
-        // Fit the map view to show the entire route
-        if (this.routeLayer.getBounds && this.routeLayer.getBounds().isValid()) {
+        // Only fit bounds for final routes, not live updates
+        if (!isLiveUpdate && this.routeLayer.getBounds && this.routeLayer.getBounds().isValid()) {
             this.map.fitBounds(this.routeLayer.getBounds(), { padding: [20, 20] });
         }
     }
