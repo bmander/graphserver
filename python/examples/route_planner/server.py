@@ -306,13 +306,13 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
 
     def _get_osm_bounds(self) -> dict:
         """Get OSM file bounds for map initialization."""
-        server_config = getattr(self, "server_config", {})
-        osm_file = server_config.get("osm_file")
+        # Use cached bounds from OSMDataSource for O(1) lookup
+        osm_data = getattr(self.__class__, "osm_data", None)
+        if osm_data and hasattr(osm_data, "get_bounds"):
+            return osm_data.get_bounds()
 
-        if not osm_file:
-            return self._default_bounds()
-
-        return parse_osm_bounds(osm_file)
+        # Fallback to default bounds if no OSM data available
+        return self._default_bounds()
 
     def _default_bounds(self) -> dict:
         """Return default bounds (Seattle area) if OSM parsing fails."""
@@ -602,15 +602,15 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
 
 def create_progress_callback() -> callable:
     """Create a progress callback that displays updates on the same line.
-    
+
     Returns:
         Callback function that displays progress with same-line updates
     """
     import sys
-    
+
     def progress_callback(msg: str) -> None:
         """Display progress message on the same line, clearing previous content.
-        
+
         Args:
             msg: Progress message to display
         """
@@ -618,76 +618,24 @@ def create_progress_callback() -> callable:
         # Get terminal width or use reasonable default
         try:
             import os
+
             terminal_width = os.get_terminal_size().columns
         except (AttributeError, OSError):
             terminal_width = 80
-        
+
         # Format message with indentation
         formatted_msg = f"  {msg}"
-        
+
         # Ensure message doesn't exceed terminal width
         if len(formatted_msg) >= terminal_width:
-            formatted_msg = formatted_msg[:terminal_width - 4] + "..."
-        
+            formatted_msg = formatted_msg[: terminal_width - 4] + "..."
+
         # Clear line and print message without newline
         # Move to beginning of line, clear it, then print message
         sys.stdout.write(f"\r{' ' * (terminal_width - 1)}\r{formatted_msg}")
         sys.stdout.flush()
-    
+
     return progress_callback
-
-
-def parse_osm_bounds(osm_file_path: str) -> dict:
-    """Parse OSM file to extract geographic bounds.
-
-    Args:
-        osm_file_path: Path to the OSM file
-
-    Returns:
-        Dict with south, west, north, east bounds
-    """
-    try:
-        from defusedxml import ElementTree
-
-        tree = ElementTree.parse(osm_file_path)
-        root = tree.getroot()
-
-        # Method 1: Try to find explicit bounds element
-        bounds_elem = root.find("bounds")
-        if bounds_elem is not None:
-            return {
-                "south": float(bounds_elem.get("minlat")),
-                "west": float(bounds_elem.get("minlon")),
-                "north": float(bounds_elem.get("maxlat")),
-                "east": float(bounds_elem.get("maxlon")),
-            }
-
-        # Method 2: Calculate bounds from all nodes
-        lats, lons = [], []
-        for node in root.findall(".//node"):
-            lat = node.get("lat")
-            lon = node.get("lon")
-            if lat is not None and lon is not None:
-                lats.append(float(lat))
-                lons.append(float(lon))
-
-        if lats and lons:
-            # Add a small buffer around the bounds
-            lat_buffer = (max(lats) - min(lats)) * 0.1
-            lon_buffer = (max(lons) - min(lons)) * 0.1
-
-            return {
-                "south": min(lats) - lat_buffer,
-                "west": min(lons) - lon_buffer,
-                "north": max(lats) + lat_buffer,
-                "east": max(lons) + lon_buffer,
-            }
-
-    except Exception as e:
-        print(f"Warning: Failed to parse OSM bounds: {e}")
-
-    # Default bounds (Seattle area) if all else fails
-    return {"south": 47.6, "west": -122.4, "north": 47.7, "east": -122.2}
 
 
 class RoutePlannerServer:
@@ -778,10 +726,8 @@ class RoutePlannerServer:
 
             # Initialize OSM data source with same-line progress updates
             progress_callback = create_progress_callback()
-            osm_data = OSMDataSource(
-                self.osm_file, progress_callback=progress_callback
-            )
-            
+            osm_data = OSMDataSource(self.osm_file, progress_callback=progress_callback)
+
             # Print newline to complete progress line
             print()
 
@@ -866,7 +812,7 @@ class RoutePlannerServer:
                 transit_provider = TransitProvider(
                     gtfs_file, progress_callback=progress_callback
                 )
-                
+
                 # Print newline to complete progress line
                 print()
 

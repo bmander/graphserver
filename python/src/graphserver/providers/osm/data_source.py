@@ -41,6 +41,12 @@ class OSMHandler(osmium.SimpleHandler):
         self._walkable_way_count = 0
         self._progress_callback = progress_callback
         self._total_estimates = {"nodes": 0, "ways": 0}  # Will be updated as we parse
+        
+        # Track bounds during parsing for efficient lookups
+        self.min_lat: float | None = None
+        self.max_lat: float | None = None
+        self.min_lon: float | None = None
+        self.max_lon: float | None = None
 
     def node(self, n: osmium.Node) -> None:
         """Process an OSM node."""
@@ -50,8 +56,19 @@ class OSMHandler(osmium.SimpleHandler):
         tags = {tag.k: tag.v for tag in n.tags}
 
         # Store all nodes - we'll filter later based on way references
-        node = OSMNode(id=n.id, lat=n.location.lat, lon=n.location.lon, tags=tags)
+        lat, lon = n.location.lat, n.location.lon
+        node = OSMNode(id=n.id, lat=lat, lon=lon, tags=tags)
         self.nodes[n.id] = node
+        
+        # Update bounds during parsing for efficient caching
+        if self.min_lat is None:
+            self.min_lat = self.max_lat = lat
+            self.min_lon = self.max_lon = lon
+        else:
+            self.min_lat = min(self.min_lat, lat)
+            self.max_lat = max(self.max_lat, lat)
+            self.min_lon = min(self.min_lon, lon)
+            self.max_lon = max(self.max_lon, lon)
 
         # Report progress every 1,000 nodes
         if self._node_count % 1000 == 0:
@@ -138,6 +155,8 @@ class OSMDataSource:
         self.ways: dict[int, OSMWay] = {}
         # Index for O(1) lookup of ways containing a node and position indices
         self.node_way_index: dict[int, list[tuple[OSMWay, int]]] = {}
+        # Cached bounds for efficient map initialization
+        self.bounds: dict | None = None
 
         # Parse OSM data
         logger.info("Initializing OSM data source from %s", self.osm_file)
@@ -190,6 +209,9 @@ class OSMDataSource:
             # Store parsed data
             self.nodes = handler.nodes
             self.ways = handler.ways
+            
+            # Calculate and cache bounds from parsed data
+            self._calculate_bounds_from_handler(handler)
 
             # Filter nodes to only those referenced by walkable ways
             self._filter_referenced_nodes()
@@ -224,6 +246,67 @@ class OSMDataSource:
             len(self.nodes),
             len(self.node_way_index),
         )
+
+    def _calculate_bounds_from_handler(self, handler: OSMHandler) -> None:
+        """Calculate and cache bounds from parsed OSM handler data.
+        
+        Args:
+            handler: OSM handler with parsed bounds information
+        """
+        if (
+            handler.min_lat is not None
+            and handler.max_lat is not None
+            and handler.min_lon is not None
+            and handler.max_lon is not None
+        ):
+            # Add a small buffer around the bounds (10% of range)
+            lat_range = handler.max_lat - handler.min_lat
+            lon_range = handler.max_lon - handler.min_lon
+            lat_buffer = lat_range * 0.1 if lat_range > 0 else 0.01
+            lon_buffer = lon_range * 0.1 if lon_range > 0 else 0.01
+            
+            self.bounds = {
+                "south": handler.min_lat - lat_buffer,
+                "west": handler.min_lon - lon_buffer,
+                "north": handler.max_lat + lat_buffer,
+                "east": handler.max_lon + lon_buffer,
+            }
+        else:
+            # No bounds could be calculated
+            self.bounds = None
+
+    def get_bounds(self) -> dict:
+        """Get cached geographic bounds for map initialization.
+        
+        Returns:
+            Dict with south, west, north, east bounds
+        """
+        if self.bounds is not None:
+            return self.bounds
+        
+        # Fallback: calculate from current filtered nodes if no cached bounds
+        if not self.nodes:
+            return self._default_bounds()
+        
+        lats = [node.lat for node in self.nodes.values()]
+        lons = [node.lon for node in self.nodes.values()]
+        
+        # Add buffer
+        lat_range = max(lats) - min(lats)
+        lon_range = max(lons) - min(lons)
+        lat_buffer = lat_range * 0.1 if lat_range > 0 else 0.01
+        lon_buffer = lon_range * 0.1 if lon_range > 0 else 0.01
+        
+        return {
+            "south": min(lats) - lat_buffer,
+            "west": min(lons) - lon_buffer,
+            "north": max(lats) + lat_buffer,
+            "east": max(lons) + lon_buffer,
+        }
+
+    def _default_bounds(self) -> dict:
+        """Return default bounds (Seattle area) if no data available."""
+        return {"south": 47.6, "west": -122.4, "north": 47.7, "east": -122.2}
 
     def _build_spatial_index(self) -> None:
         """Build spatial index for fast coordinate-based lookups."""
