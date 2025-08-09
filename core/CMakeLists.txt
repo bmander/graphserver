@@ -25,6 +25,8 @@ set(CORE_SOURCES
     src/engine.c
     src/priority_queue.c
     src/planner_dijkstra.c
+    src/string_dict.c
+    src/common_keys.c
 )
 
 # Example provider sources
@@ -35,12 +37,17 @@ set(EXAMPLE_SOURCES
     ../examples/providers/road_network_provider.c
 )
 
+# Find pthread
+find_package(Threads REQUIRED)
+
 # Create the core library
 add_library(graphserver_core STATIC ${CORE_SOURCES})
+target_link_libraries(graphserver_core Threads::Threads)
 
 # Create the shared library as well
 add_library(graphserver_core_shared SHARED ${CORE_SOURCES})
 set_target_properties(graphserver_core_shared PROPERTIES OUTPUT_NAME graphserver_core)
+target_link_libraries(graphserver_core_shared Threads::Threads)
 
 # Set include directories for the library
 target_include_directories(graphserver_core PUBLIC include)
@@ -51,6 +58,10 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     enable_testing()
 
     # Test executables
+    add_executable(test_string_dict tests/test_string_dict.c)
+    target_link_libraries(test_string_dict graphserver_core)
+    add_test(NAME string_dict_tests COMMAND test_string_dict)
+
     add_executable(test_vertex tests/test_vertex.c)
     target_link_libraries(test_vertex graphserver_core)
     add_test(NAME vertex_tests COMMAND test_vertex)
@@ -109,7 +120,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     # Custom target to run all tests
     add_custom_target(run_tests
         COMMAND ${CMAKE_CTEST_COMMAND} --verbose
-        DEPENDS test_vertex test_edge test_memory test_hashmap test_cache test_engine test_priority_queue test_planner test_dijkstra_internals test_precache test_bidirectional_engine test_integration
+        DEPENDS test_string_dict test_vertex test_edge test_memory test_hashmap test_cache test_engine test_priority_queue test_planner test_dijkstra_internals test_precache test_bidirectional_engine test_integration
         COMMENT "Running all tests"
     )
 endif()
