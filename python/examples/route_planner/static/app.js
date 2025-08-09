@@ -614,6 +614,9 @@ class RoutePlanner {
         const distanceElement = document.getElementById('route-distance');
         const costElement = document.getElementById('route-cost');
         const waypointsElement = document.getElementById('route-waypoints');
+        const routingTimeElement = document.getElementById('routing-time');
+        const geometryTimeElement = document.getElementById('geometry-time');
+        const totalTimeElement = document.getElementById('total-time');
         
         if (statusElement) statusElement.textContent = 'Route Found';
         if (distanceElement) {
@@ -627,6 +630,20 @@ class RoutePlanner {
         if (waypointsElement) {
             const waypoints = routeData.properties?.waypoint_count || 0;
             waypointsElement.textContent = waypoints;
+        }
+        
+        // Update timing information
+        if (routingTimeElement && routeData.properties?.timing) {
+            const routingTime = routeData.properties.timing.routing_time_ms || 0;
+            routingTimeElement.textContent = `${routingTime.toFixed(1)} ms`;
+        }
+        if (geometryTimeElement && routeData.properties?.timing) {
+            const geometryTime = routeData.properties.timing.geometry_time_ms || 0;
+            geometryTimeElement.textContent = `${geometryTime.toFixed(1)} ms`;
+        }
+        if (totalTimeElement && routeData.properties?.timing) {
+            const totalTime = routeData.properties.timing.total_time_ms || 0;
+            totalTimeElement.textContent = `${totalTime.toFixed(1)} ms`;
         }
     }
     

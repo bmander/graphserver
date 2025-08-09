@@ -2,6 +2,7 @@
 
 import json
 import mimetypes
+import time
 from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -467,11 +468,14 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
                 )
                 return
 
-            # Perform route planning
+            # Perform route planning with timing
+            routing_start_time = time.perf_counter()
             try:
                 path_result = engine.plan(
                     start=start_vertex, goal=goal_vertex, planner="dijkstra"
                 )
+                routing_end_time = time.perf_counter()
+                routing_time_ms = (routing_end_time - routing_start_time) * 1000
 
                 # Check if route was found
                 if not path_result or len(path_result) == 0:
@@ -487,11 +491,14 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
                             "search_radius_m": getattr(
                                 access_provider, "search_radius_m", None
                             ),
+                            "routing_time_ms": round(routing_time_ms, 2),
                         },
                     )
                     return
 
             except Exception as routing_error:
+                # Calculate partial timing if we have it
+                routing_error_time_ms = (time.perf_counter() - routing_start_time) * 1000
                 self._send_error_response(
                     error_code="ROUTING_ENGINE_ERROR",
                     error_message="Route calculation failed due to an internal error",
@@ -501,19 +508,29 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
                         "origin": origin,
                         "destination": destination,
                         "approximate_distance_km": round(approx_distance_km, 2),
+                        "routing_time_ms": round(routing_error_time_ms, 2),
                     },
                 )
                 return
 
-            # Successfully found route
+            # Successfully found route - collect geometry with timing
             osm_data = getattr(self.__class__, "osm_data", None)
+            geometry_start_time = time.perf_counter()
             geojson_result = path_result_to_geojson(
                 path_result, origin, destination, osm_data
             )
+            geometry_end_time = time.perf_counter()
+            geometry_time_ms = (geometry_end_time - geometry_start_time) * 1000
+            # Add timing statistics to the response
             geojson_result["request"] = {
                 "origin": origin,
                 "destination": destination,
                 "algorithm": "dijkstra",
+            }
+            geojson_result["properties"]["timing"] = {
+                "routing_time_ms": round(routing_time_ms, 2),
+                "geometry_time_ms": round(geometry_time_ms, 2),
+                "total_time_ms": round(routing_time_ms + geometry_time_ms, 2)
             }
 
             self.send_json_response(geojson_result)
