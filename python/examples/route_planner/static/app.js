@@ -526,6 +526,9 @@ class RoutePlanner {
             this.showRouteLoading();
         }
         
+        // Start frontend API response time measurement
+        const apiStartTime = performance.now();
+        
         try {
             const response = await fetch('/api/route', {
                 method: 'POST',
@@ -544,6 +547,19 @@ class RoutePlanner {
             }
             
             const routeResult = await response.json();
+            
+            // Calculate total API response time from frontend perspective
+            const apiEndTime = performance.now();
+            const apiResponseTimeMs = apiEndTime - apiStartTime;
+            
+            // Add API response time to the route result
+            if (!routeResult.properties) {
+                routeResult.properties = {};
+            }
+            if (!routeResult.properties.timing) {
+                routeResult.properties.timing = {};
+            }
+            routeResult.properties.timing.api_response_time_ms = apiResponseTimeMs;
             
             if (routeResult.properties && routeResult.properties.status === 'success') {
                 this.routeData = routeResult;
@@ -617,6 +633,7 @@ class RoutePlanner {
         const routingTimeElement = document.getElementById('routing-time');
         const geometryTimeElement = document.getElementById('geometry-time');
         const totalTimeElement = document.getElementById('total-time');
+        const apiResponseTimeElement = document.getElementById('api-response-time');
         
         if (statusElement) statusElement.textContent = 'Route Found';
         if (distanceElement) {
@@ -644,6 +661,10 @@ class RoutePlanner {
         if (totalTimeElement && routeData.properties?.timing) {
             const totalTime = routeData.properties.timing.total_time_ms || 0;
             totalTimeElement.textContent = `${totalTime.toFixed(1)} ms`;
+        }
+        if (apiResponseTimeElement && routeData.properties?.timing) {
+            const apiResponseTime = routeData.properties.timing.api_response_time_ms || 0;
+            apiResponseTimeElement.textContent = `${apiResponseTime.toFixed(1)} ms`;
         }
     }
     
