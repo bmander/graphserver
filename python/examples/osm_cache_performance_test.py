@@ -25,9 +25,14 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from graphserver import Engine, EngineStats
+    from typing import TYPE_CHECKING
+
+    from graphserver import Engine
     from graphserver.providers.osm import OSMAccessProvider, OSMNetworkProvider
     from graphserver.providers.osm.types import WalkingProfile
+
+    if TYPE_CHECKING:
+        from graphserver.core import EngineStats
 except ImportError as e:
     print(f"Error importing required modules: {e}")
     print("Please install with: pip install graphserver[osm]")

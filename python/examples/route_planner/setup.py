@@ -91,7 +91,7 @@ def setup_leaflet(base_dir: Path) -> bool:
     for file_info in files:
         if download_file(
             str(file_info["url"]),
-            Path(file_info["path"]),
+            Path(str(file_info["path"])),
             str(file_info["description"]),
         ):
             success_count += 1

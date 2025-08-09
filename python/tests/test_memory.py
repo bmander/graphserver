@@ -61,6 +61,9 @@ def test_provider_reference_counting() -> None:
         def in_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
             return []
 
+        def seed_vertices(self, *, max_vertices: int | None = None) -> Sequence[Vertex]:  # noqa: ARG002
+            return []
+
     provider_obj = ProviderClass()
 
     # Create weak reference to track provider object lifetime
@@ -98,6 +101,9 @@ def test_repeated_operations() -> None:
             return []
 
         def in_edges(self, _vertex: Vertex) -> Sequence[VertexEdgePair]:
+            return []
+
+        def seed_vertices(self, *, max_vertices: int | None = None) -> Sequence[Vertex]:  # noqa: ARG002
             return []
 
     provider_func = ProviderClass()

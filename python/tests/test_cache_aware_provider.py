@@ -297,7 +297,7 @@ class TestEngineIntegration:
         assert provider._invalidation_handler is None
 
         # Register provider - should inject handler
-        engine.register_provider("dynamic", provider)
+        engine.register_provider("dynamic", provider)  # type: ignore[arg-type]
 
         # Handler should now be injected
         assert provider._invalidation_handler is not None
@@ -318,7 +318,7 @@ class TestEngineIntegration:
         provider = RegularProvider()
 
         # Register regular provider
-        engine.register_provider("regular", provider)
+        engine.register_provider("regular", provider)  # type: ignore[arg-type]
 
         # Should not have invalidation handler attribute
         assert not hasattr(provider, "_invalidation_handler")
@@ -333,7 +333,7 @@ class TestEngineIntegration:
         provider.add_edge("B", "C", 1.0)
 
         # Register provider after setup to avoid premature invalidation
-        engine.register_provider("dynamic", provider)
+        engine.register_provider("dynamic", provider)  # type: ignore[arg-type]
 
         # Plan initial path to cache some edges
         start = Vertex({"id": "A"})
@@ -368,7 +368,7 @@ class TestEngineIntegration:
         provider = DynamicGraphProvider()
 
         provider.add_edge("A", "B", 1.0)
-        engine.register_provider("dynamic", provider)
+        engine.register_provider("dynamic", provider)  # type: ignore[arg-type]
 
         # Get initial stats
         initial_stats = engine.get_stats()
@@ -407,8 +407,8 @@ class TestEngineIntegration:
         provider2.add_edge("X", "Y", 2.0)
 
         # Register both providers
-        engine.register_provider("provider1", provider1)
-        engine.register_provider("provider2", provider2)
+        engine.register_provider("provider1", provider1)  # type: ignore[arg-type]
+        engine.register_provider("provider2", provider2)  # type: ignore[arg-type]
 
         # Both should have handlers injected
         assert provider1._invalidation_handler is not None
@@ -427,7 +427,7 @@ class TestErrorHandling:
         """Test invalidation behavior with invalid vertex types."""
         engine = Engine(enable_edge_caching=True)
         provider = DynamicGraphProvider()
-        engine.register_provider("dynamic", provider)
+        engine.register_provider("dynamic", provider)  # type: ignore[arg-type]
 
         # Test invalidation with various vertex types
         # Note: Invalidating vertices not in cache may raise ValueError
@@ -446,7 +446,7 @@ class TestErrorHandling:
         engine = Engine(enable_edge_caching=False)  # No cache
         provider = DynamicGraphProvider()
 
-        engine.register_provider("dynamic", provider)
+        engine.register_provider("dynamic", provider)  # type: ignore[arg-type]
 
         # Handler should still be injected
         assert provider._invalidation_handler is not None

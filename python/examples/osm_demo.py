@@ -19,7 +19,7 @@ COORDINATE_OFFSET = 0.001
 MAX_EDGES_TO_SHOW = 3
 
 
-def main():
+def main() -> None:
     """Demonstrate OSM provider functionality."""
     print("🗺️  OSM Providers Demonstration")
     print("=" * 50)

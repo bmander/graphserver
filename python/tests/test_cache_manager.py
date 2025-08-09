@@ -349,7 +349,7 @@ class TestIntegrationWithProviders:
 
         engine = Engine(enable_edge_caching=True)
         provider = TestProvider()
-        engine.register_provider("test", provider)
+        engine.register_provider("test", provider)  # type: ignore[arg-type]
 
         updates = [
             ("A", "B", 1.0),

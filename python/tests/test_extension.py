@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from graphserver import Vertex, VertexEdgePair
 
 
-def _import_c_extension():
+def _import_c_extension() -> Any:
     """Helper function to import C extension with fallback."""
     try:
         # Try package import first (modern approach)
@@ -61,7 +61,7 @@ def test_provider_registration() -> None:
         engine = Engine()
 
         # Should not raise exception
-        engine.register_provider("test", dummy_provider)
+        engine.register_provider("test", dummy_provider)  # type: ignore[arg-type]
 
         # Test error cases
         with pytest.raises(TypeError, match="Provider must implement out_edges method"):
@@ -94,7 +94,7 @@ def test_plan_with_provider() -> None:
 
         simple_provider = SimpleProvider()
 
-        engine.register_provider("simple", simple_provider)
+        engine.register_provider("simple", simple_provider)  # type: ignore[arg-type]
 
         # Now planning should work
         result = engine.plan(start=Vertex({"x": 0}), goal=Vertex({"x": 1}))
@@ -137,7 +137,7 @@ def test_python_api() -> None:
 
         simple_provider = SimpleProvider()
 
-        engine.register_provider("simple", simple_provider)
+        engine.register_provider("simple", simple_provider)  # type: ignore[arg-type]
         assert "simple" in engine.providers
 
         # Test actual planning
@@ -201,7 +201,7 @@ def test_error_handling() -> None:
 
         dummy_provider = DummyProvider()
 
-        engine.register_provider("test", dummy_provider)
+        engine.register_provider("test", dummy_provider)  # type: ignore[arg-type]
 
         with pytest.raises(TypeError, match="Start must be a Vertex"):
             engine.plan(start="not_vertex", goal=Vertex({"x": 1}))  # type: ignore[arg-type]

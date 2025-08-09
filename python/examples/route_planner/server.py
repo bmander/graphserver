@@ -680,7 +680,7 @@ class RoutePlannerServer:
         self._init_routing_engine()
 
         # Store config for handlers to access (only JSON-serializable data)
-        RoutePlannerHandler.server_config = {
+        RoutePlannerHandler.server_config = {  # type: ignore[attr-defined]
             "osm_file": osm_file,
             "gtfs_files": self.gtfs_files,
             "routing_available": self.engine is not None,
@@ -690,9 +690,9 @@ class RoutePlannerServer:
         }
 
         # Store non-serializable objects separately for route calculation
-        RoutePlannerHandler.engine = self.engine
-        RoutePlannerHandler.providers = self.providers
-        RoutePlannerHandler.osm_data = getattr(self, "osm_data", None)
+        RoutePlannerHandler.engine = self.engine  # type: ignore[attr-defined]
+        RoutePlannerHandler.providers = self.providers  # type: ignore[attr-defined]
+        RoutePlannerHandler.osm_data = getattr(self, "osm_data", None)  # type: ignore[attr-defined]
 
     def _init_routing_engine(self) -> None:
         """Initialize the graphserver engine and load providers."""
