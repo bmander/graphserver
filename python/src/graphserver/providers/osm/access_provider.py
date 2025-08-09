@@ -453,7 +453,7 @@ class OSMAccessProvider(CacheAwareEdgeProvider):
             This only returns vertices that have been explicitly linked using the
             link() method. To get all possible vertices, you must first link them.
         """
-        vertices = []
+        vertices: list[Vertex] = []
         count = 0
 
         for linked_vertex_list in self._linked_vertices.values():

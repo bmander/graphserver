@@ -65,6 +65,10 @@ class OSMHandler(osmium.SimpleHandler):
             self.min_lat = self.max_lat = lat
             self.min_lon = self.max_lon = lon
         else:
+            assert self.min_lat is not None
+            assert self.max_lat is not None
+            assert self.min_lon is not None
+            assert self.max_lon is not None
             self.min_lat = min(self.min_lat, lat)
             self.max_lat = max(self.max_lat, lat)
             self.min_lon = min(self.min_lon, lon)
@@ -156,7 +160,7 @@ class OSMDataSource:
         # Index for O(1) lookup of ways containing a node and position indices
         self.node_way_index: dict[int, list[tuple[OSMWay, int]]] = {}
         # Cached bounds for efficient map initialization
-        self.bounds: dict | None = None
+        self.bounds: dict[str, float] | None = None
 
         # Parse OSM data
         logger.info("Initializing OSM data source from %s", self.osm_file)
@@ -275,7 +279,7 @@ class OSMDataSource:
             # No bounds could be calculated
             self.bounds = None
 
-    def get_bounds(self) -> dict:
+    def get_bounds(self) -> dict[str, float]:
         """Get cached geographic bounds for map initialization.
 
         Returns:
@@ -304,7 +308,7 @@ class OSMDataSource:
             "east": max(lons) + lon_buffer,
         }
 
-    def _default_bounds(self) -> dict:
+    def _default_bounds(self) -> dict[str, float]:
         """Return default bounds (Seattle area) if no data available."""
         return {"south": 47.6, "west": -122.4, "north": 47.7, "east": -122.2}
 

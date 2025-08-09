@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -80,7 +80,7 @@ class SpatialIndex:
         self.properties.fill_factor = 0.9
 
         # R-tree will be created during bulk loading for better performance
-        self.rtree = None
+        self.rtree: index.Index | None = None
 
         # Keep reference to node data
         self.nodes: dict[int, OSMNode] = {}
@@ -123,7 +123,7 @@ class SpatialIndex:
         self._indexed_count = len(nodes)
 
         # Generator function for bulk loading
-        def node_generator():
+        def node_generator() -> Any:
             for node in nodes.values():
                 # Yield tuple with node ID, bounding box, and object
                 # For points, bbox coordinates are duplicated
