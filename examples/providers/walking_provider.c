@@ -2,6 +2,30 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include "../../core/include/gs_string_dict.h"
+#include "../../core/include/gs_common_keys.h"
+
+// Custom keys for walking provider metadata
+static uint16_t KEY_DISTANCE_METERS = 0;
+static uint16_t KEY_BEARING_DEGREES = 0;
+static uint16_t KEY_WALKING_SPEED_MPS = 0;
+static uint16_t KEY_ELEVATION_PENALTY = 0;
+static uint16_t KEY_DESTINATION_NAME = 0;
+static uint16_t KEY_POI_NAME = 0;
+static uint16_t KEY_POI_TYPE = 0;
+
+// Initialize custom keys (call once at startup)
+void walking_provider_init_keys(void) {
+    if (KEY_DISTANCE_METERS == 0) {
+        KEY_DISTANCE_METERS = gs_string_dict_register("distance_meters");
+        KEY_BEARING_DEGREES = gs_string_dict_register("bearing_degrees");
+        KEY_WALKING_SPEED_MPS = gs_string_dict_register("walking_speed_mps");
+        KEY_ELEVATION_PENALTY = gs_string_dict_register("elevation_penalty");
+        KEY_DESTINATION_NAME = gs_string_dict_register("destination_name");
+        KEY_POI_NAME = gs_string_dict_register("poi_name");
+        KEY_POI_TYPE = gs_string_dict_register("poi_type");
+    }
+}
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -86,10 +110,10 @@ static void generate_walking_edges_grid(
             time_t arrival_time = current_time + (time_t)walk_time_seconds;
             
             GraphserverKeyPair pairs[] = {
-                {"lat", gs_value_create_float(dest_lat)},
-                {"lon", gs_value_create_float(dest_lon)},
-                {"time", gs_value_create_int((int64_t)arrival_time)},
-                {"mode", gs_value_create_string("walking")}
+                {GS_KEY_LAT, gs_value_create_float(dest_lat)},
+                {GS_KEY_LON, gs_value_create_float(dest_lon)},
+                {GS_KEY_TIME, gs_value_create_int((int64_t)arrival_time)},
+                {GS_KEY_MODE, gs_value_create_string("walking")}
             };
             GraphserverVertex* dest_vertex = gs_vertex_create(pairs, 4, NULL);
             
@@ -115,14 +139,14 @@ static void generate_walking_edges_grid(
             GraphserverValue edge_bearing = gs_value_create_float(bearing_deg);
             GraphserverValue edge_speed = gs_value_create_float(config->walking_speed_mps);
             
-            gs_edge_set_metadata(edge, "mode", edge_mode);
-            gs_edge_set_metadata(edge, "distance_meters", edge_distance);
-            gs_edge_set_metadata(edge, "bearing_degrees", edge_bearing);
-            gs_edge_set_metadata(edge, "walking_speed_mps", edge_speed);
+            gs_edge_set_metadata(edge, GS_KEY_MODE, edge_mode);
+            gs_edge_set_metadata(edge, KEY_DISTANCE_METERS, edge_distance);
+            gs_edge_set_metadata(edge, KEY_BEARING_DEGREES, edge_bearing);
+            gs_edge_set_metadata(edge, KEY_WALKING_SPEED_MPS, edge_speed);
             
             if (elevation_factor > 1.0) {
                 GraphserverValue elevation_penalty = gs_value_create_float(elevation_factor);
-                gs_edge_set_metadata(edge, "elevation_penalty", elevation_penalty);
+                gs_edge_set_metadata(edge, KEY_ELEVATION_PENALTY, elevation_penalty);
             }
             
             gs_edge_list_add_edge(out_edges, edge);
@@ -176,12 +200,12 @@ static void generate_walking_edges_poi(
         time_t arrival_time = current_time + (time_t)walk_time_seconds;
         
         GraphserverKeyPair pairs[] = {
-            {"lat", gs_value_create_float(pois[i].lat)},
-            {"lon", gs_value_create_float(pois[i].lon)},
-            {"time", gs_value_create_int((int64_t)arrival_time)},
-            {"mode", gs_value_create_string("walking")},
-            {"poi_name", gs_value_create_string(pois[i].name)},
-            {"poi_type", gs_value_create_string(pois[i].type)}
+            {GS_KEY_LAT, gs_value_create_float(pois[i].lat)},
+            {GS_KEY_LON, gs_value_create_float(pois[i].lon)},
+            {GS_KEY_TIME, gs_value_create_int((int64_t)arrival_time)},
+            {GS_KEY_MODE, gs_value_create_string("walking")},
+            {KEY_POI_NAME, gs_value_create_string(pois[i].name)},
+            {KEY_POI_TYPE, gs_value_create_string(pois[i].type)}
         };
         GraphserverVertex* dest_vertex = gs_vertex_create(pairs, 6, NULL);
         
@@ -208,9 +232,9 @@ static void generate_walking_edges_poi(
         GraphserverValue edge_distance = gs_value_create_float(distance);
         GraphserverValue edge_poi_name = gs_value_create_string(pois[i].name);
         
-        gs_edge_set_metadata(edge, "mode", edge_mode);
-        gs_edge_set_metadata(edge, "distance_meters", edge_distance);
-        gs_edge_set_metadata(edge, "destination_name", edge_poi_name);
+        gs_edge_set_metadata(edge, GS_KEY_MODE, edge_mode);
+        gs_edge_set_metadata(edge, KEY_DISTANCE_METERS, edge_distance);
+        gs_edge_set_metadata(edge, KEY_DESTINATION_NAME, edge_poi_name);
         
         gs_edge_list_add_edge(out_edges, edge);
     }
@@ -222,6 +246,9 @@ int walking_provider(
     void* user_data) {
     
     if (!current_vertex || !out_edges || !user_data) return -1;
+    
+    // Initialize custom keys on first call
+    walking_provider_init_keys();
     
     WalkingConfig* config = (WalkingConfig*)user_data;
     
@@ -240,7 +267,7 @@ int walking_provider(
     // Check if we're in a mode that allows walking
     GraphserverValue mode_val;
     bool in_transit = false;
-    if (gs_vertex_get_value(current_vertex, "mode", &mode_val) == GS_SUCCESS) {
+    if (gs_vertex_get_value(current_vertex, GS_KEY_MODE, &mode_val) == GS_SUCCESS) {
         if (mode_val.type == GS_VALUE_STRING) {
             const char* mode = mode_val.as.s_val;
             // Don't generate walking edges if we're currently on transit

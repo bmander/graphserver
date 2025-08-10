@@ -5,6 +5,8 @@
 #include "../include/gs_cache.h"
 #include "../include/gs_vertex.h"
 #include "../include/gs_edge.h"
+#include "../include/gs_string_dict.h"
+#include "../include/gs_common_keys.h"
 #include "test_utils.h"
 
 /**
@@ -18,6 +20,12 @@
 
 // Simple test framework
 static int tests_run = 0;
+
+// Test-specific keys
+static uint16_t KEY_NAME;
+static uint16_t KEY_LATITUDE;
+static uint16_t KEY_LONGITUDE;
+static uint16_t KEY_ID;
 static int tests_passed = 0;
 
 #define TEST(name) \
@@ -350,10 +358,10 @@ TEST(cache_complex_vertex_data) {
     
     // Create vertex with multiple attributes
     GraphserverKeyPair pairs[] = {
-        {"name", gs_value_create_string("complex_vertex")},
-        {"latitude", gs_value_create_float(40.7128)},
-        {"longitude", gs_value_create_float(-74.0060)},
-        {"id", gs_value_create_int(12345)}
+        {KEY_NAME, gs_value_create_string("complex_vertex")},
+        {KEY_LATITUDE, gs_value_create_float(40.7128)},
+        {KEY_LONGITUDE, gs_value_create_float(-74.0060)},
+        {KEY_ID, gs_value_create_int(12345)}
     };
     
     GraphserverVertex* complex_vertex = create_vertex_safe(pairs, 4, NULL);
@@ -662,8 +670,8 @@ TEST(cache_vertex_equality_edge_cases) {
     
     // Create two identical vertices (same content, different objects)
     GraphserverKeyPair pairs[] = {
-        {"x", gs_value_create_int(100)},
-        {"y", gs_value_create_int(200)}
+        {GS_KEY_X, gs_value_create_int(100)},
+        {GS_KEY_Y, gs_value_create_int(200)}
     };
     
     GraphserverVertex* vertex1 = gs_vertex_create(pairs, 2, NULL);
@@ -890,6 +898,16 @@ int main(void) {
     printf("Running Edge Cache Unit Tests\n");
     printf("=============================\n");
     
+    // Initialize string dictionary and common keys
+    gs_string_dict_init();
+    gs_common_keys_init();
+    
+    // Register test-specific keys
+    KEY_NAME = gs_string_dict_register("name");
+    KEY_LATITUDE = gs_string_dict_register("latitude");
+    KEY_LONGITUDE = gs_string_dict_register("longitude");
+    KEY_ID = gs_string_dict_register("id");
+    
     run_test_cache_lifecycle();
     run_test_cache_basic_operations();
     run_test_cache_miss_behavior();
@@ -915,6 +933,9 @@ int main(void) {
     
     printf("\n=============================\n");
     printf("Cache tests completed: %d/%d passed\n", tests_passed, tests_run);
+    
+    // Cleanup
+    gs_string_dict_cleanup();
     
     if (tests_passed == tests_run) {
         printf("All cache tests PASSED!\n");

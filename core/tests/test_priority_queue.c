@@ -5,6 +5,8 @@
 #include <math.h>
 #include "../include/graphserver.h"
 #include "../include/gs_planner_internal.h"
+#include "../include/gs_string_dict.h"
+#include "../include/gs_common_keys.h"
 
 // Forward declaration
 uint64_t gs_vertex_hash(const GraphserverVertex* vertex);
@@ -67,8 +69,8 @@ static int tests_passed = 0;
 // Helper function to create a test vertex with x,y coordinates
 static GraphserverVertex* create_coordinate_vertex(int x, int y) {
     GraphserverKeyPair pairs[] = {
-        {"x", gs_value_create_int(x)},
-        {"y", gs_value_create_int(y)}
+        {GS_KEY_X, gs_value_create_int(x)},
+        {GS_KEY_Y, gs_value_create_int(y)}
     };
     
     GraphserverVertex* vertex = gs_vertex_create(pairs, 2, NULL);
@@ -524,6 +526,10 @@ int main(void) {
     printf("Running Priority Queue Tests\n");
     printf("=============================\n");
     
+    // Initialize string dictionary and common keys
+    gs_string_dict_init();
+    gs_common_keys_init();
+    
     run_test_pq_swap_debug();
     run_test_pq_creation_and_destruction();
     run_test_pq_extract_from_empty();
@@ -540,6 +546,9 @@ int main(void) {
     
     printf("\n=============================\n");
     printf("Tests completed: %d/%d passed\n", tests_passed, tests_run);
+    
+    // Cleanup
+    gs_string_dict_cleanup();
     
     if (tests_passed == tests_run) {
         printf("All tests PASSED!\n");

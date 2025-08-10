@@ -2,6 +2,8 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../../core/include/gs_string_dict.h"
+#include "../../core/include/gs_common_keys.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -39,12 +41,12 @@ GraphserverVertex* create_location_vertex(double lat, double lon, time_t time_se
     size_t pair_count = 2;
     
     // Add latitude and longitude
-    pairs[0] = (GraphserverKeyPair){"lat", gs_value_create_float(lat)};
-    pairs[1] = (GraphserverKeyPair){"lon", gs_value_create_float(lon)};
+    pairs[0] = (GraphserverKeyPair){GS_KEY_LAT, gs_value_create_float(lat)};
+    pairs[1] = (GraphserverKeyPair){GS_KEY_LON, gs_value_create_float(lon)};
     
     // Add time if provided
     if (time_seconds > 0) {
-        pairs[2] = (GraphserverKeyPair){"time", gs_value_create_int((int64_t)time_seconds)};
+        pairs[2] = (GraphserverKeyPair){GS_KEY_TIME, gs_value_create_int((int64_t)time_seconds)};
         pair_count = 3;
     }
     
@@ -63,8 +65,8 @@ bool extract_location_from_vertex(
     GraphserverValue lat_val, lon_val;
     
     // Extract latitude and longitude
-    if (gs_vertex_get_value(vertex, "lat", &lat_val) != GS_SUCCESS ||
-        gs_vertex_get_value(vertex, "lon", &lon_val) != GS_SUCCESS) {
+    if (gs_vertex_get_value(vertex, GS_KEY_LAT, &lat_val) != GS_SUCCESS ||
+        gs_vertex_get_value(vertex, GS_KEY_LON, &lon_val) != GS_SUCCESS) {
         return false;
     }
     
@@ -79,7 +81,7 @@ bool extract_location_from_vertex(
     // Extract time if available and requested
     if (out_time) {
         GraphserverValue time_val;
-        if (gs_vertex_get_value(vertex, "time", &time_val) == GS_SUCCESS &&
+        if (gs_vertex_get_value(vertex, GS_KEY_TIME, &time_val) == GS_SUCCESS &&
             time_val.type == GS_VALUE_INT) {
             *out_time = (time_t)time_val.as.i_val;
         } else {

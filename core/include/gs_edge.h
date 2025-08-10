@@ -15,10 +15,10 @@ void gs_edge_destroy(GraphserverEdge* edge);
 GraphserverEdge* gs_edge_clone(const GraphserverEdge* edge);
 
 // Edge metadata management
-GraphserverResult gs_edge_set_metadata(GraphserverEdge* edge, const char* key, GraphserverValue value);
-GraphserverResult gs_edge_get_metadata(const GraphserverEdge* edge, const char* key, GraphserverValue* out_value);
-GraphserverResult gs_edge_has_metadata_key(const GraphserverEdge* edge, const char* key, bool* out_has_key);
-GraphserverResult gs_edge_remove_metadata_key(GraphserverEdge* edge, const char* key);
+GraphserverResult gs_edge_set_metadata(GraphserverEdge* edge, uint16_t key, GraphserverValue value);
+GraphserverResult gs_edge_get_metadata(const GraphserverEdge* edge, uint16_t key, GraphserverValue* out_value);
+GraphserverResult gs_edge_has_metadata_key(const GraphserverEdge* edge, uint16_t key, bool* out_has_key);
+GraphserverResult gs_edge_remove_metadata_key(GraphserverEdge* edge, uint16_t key);
 
 // Edge introspection
 GraphserverVertex* gs_edge_get_target_vertex(const GraphserverEdge* edge);

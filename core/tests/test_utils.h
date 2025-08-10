@@ -3,6 +3,8 @@
 
 #include <time.h>
 #include "../include/gs_vertex.h"
+#include "../include/gs_string_dict.h"
+#include "../include/gs_common_keys.h"
 
 /**
  * @brief Safe vertex creation helper that properly manages memory
@@ -31,10 +33,21 @@ static inline GraphserverVertex* create_vertex_safe(GraphserverKeyPair* pairs, s
  * @brief Create a simple test vertex with name, lat, lon
  */
 static inline GraphserverVertex* create_test_vertex_safe(const char* name, double lat, double lon) {
+    static uint16_t KEY_NAME = 0;
+    static uint16_t KEY_LAT = 0;
+    static uint16_t KEY_LON = 0;
+    
+    // Initialize keys on first use
+    if (KEY_NAME == 0) {
+        KEY_NAME = gs_string_dict_register("name");
+        KEY_LAT = gs_string_dict_register("lat");
+        KEY_LON = gs_string_dict_register("lon");
+    }
+    
     GraphserverKeyPair pairs[] = {
-        {"name", gs_value_create_string(name)},
-        {"lat", gs_value_create_float(lat)},
-        {"lon", gs_value_create_float(lon)}
+        {KEY_NAME, gs_value_create_string(name)},
+        {KEY_LAT, gs_value_create_float(lat)},
+        {KEY_LON, gs_value_create_float(lon)}
     };
     
     return create_vertex_safe(pairs, 3, NULL);
@@ -44,8 +57,15 @@ static inline GraphserverVertex* create_test_vertex_safe(const char* name, doubl
  * @brief Create a simple test vertex with just a name
  */
 static inline GraphserverVertex* create_named_vertex_safe(const char* name) {
+    static uint16_t KEY_NAME = 0;
+    
+    // Initialize key on first use
+    if (KEY_NAME == 0) {
+        KEY_NAME = gs_string_dict_register("name");
+    }
+    
     GraphserverKeyPair pairs[] = {
-        {"name", gs_value_create_string(name)}
+        {KEY_NAME, gs_value_create_string(name)}
     };
     
     return create_vertex_safe(pairs, 1, NULL);
@@ -55,9 +75,18 @@ static inline GraphserverVertex* create_named_vertex_safe(const char* name) {
  * @brief Create a coordinate vertex with x, y values
  */
 static inline GraphserverVertex* create_coordinate_vertex_safe(int x, int y) {
+    static uint16_t KEY_X = 0;
+    static uint16_t KEY_Y = 0;
+    
+    // Initialize keys on first use
+    if (KEY_X == 0) {
+        KEY_X = gs_string_dict_register("x");
+        KEY_Y = gs_string_dict_register("y");
+    }
+    
     GraphserverKeyPair pairs[] = {
-        {"x", gs_value_create_int(x)},
-        {"y", gs_value_create_int(y)}
+        {KEY_X, gs_value_create_int(x)},
+        {KEY_Y, gs_value_create_int(y)}
     };
     
     return create_vertex_safe(pairs, 2, NULL);
@@ -67,15 +96,26 @@ static inline GraphserverVertex* create_coordinate_vertex_safe(int x, int y) {
  * @brief Create a location vertex with lat, lon, and optional time
  */
 static inline GraphserverVertex* create_location_vertex_safe(double lat, double lon, time_t time_seconds) {
+    static uint16_t KEY_LAT = 0;
+    static uint16_t KEY_LON = 0;
+    static uint16_t KEY_TIME = 0;
+    
+    // Initialize keys on first use
+    if (KEY_LAT == 0) {
+        KEY_LAT = gs_string_dict_register("lat");
+        KEY_LON = gs_string_dict_register("lon");
+        KEY_TIME = gs_string_dict_register("time");
+    }
+    
     GraphserverKeyPair pairs[3];
     size_t pair_count = 2;
     
-    pairs[0] = (GraphserverKeyPair){"lat", gs_value_create_float(lat)};
-    pairs[1] = (GraphserverKeyPair){"lon", gs_value_create_float(lon)};
+    pairs[0] = (GraphserverKeyPair){KEY_LAT, gs_value_create_float(lat)};
+    pairs[1] = (GraphserverKeyPair){KEY_LON, gs_value_create_float(lon)};
     
     // Add time if provided
     if (time_seconds > 0) {
-        pairs[2] = (GraphserverKeyPair){"time", gs_value_create_int((int64_t)time_seconds)};
+        pairs[2] = (GraphserverKeyPair){KEY_TIME, gs_value_create_int((int64_t)time_seconds)};
         pair_count = 3;
     }
     

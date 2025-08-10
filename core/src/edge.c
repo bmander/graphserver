@@ -1,5 +1,6 @@
 #include "../include/gs_edge.h"
 #include "../include/gs_vertex.h"
+#include "../include/gs_string_dict.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -19,7 +20,7 @@ static double* duplicate_distance_vector(const double* vector, size_t size) {
 }
 
 // Helper function to find metadata position
-static size_t find_metadata_position(const GraphserverEdge* edge, const char* key, bool* found) {
+static size_t find_metadata_position(const GraphserverEdge* edge, uint16_t key, bool* found) {
     *found = false;
     
     if (!edge->metadata || edge->metadata_count == 0) return 0;
@@ -29,12 +30,12 @@ static size_t find_metadata_position(const GraphserverEdge* edge, const char* ke
     
     while (left < right) {
         size_t mid = left + (right - left) / 2;
-        int cmp = strcmp(key, edge->metadata[mid].key);
+        uint16_t mid_key = edge->metadata[mid].key;
         
-        if (cmp == 0) {
+        if (key == mid_key) {
             *found = true;
             return mid;
-        } else if (cmp < 0) {
+        } else if (key < mid_key) {
             right = mid;
         } else {
             left = mid + 1;
@@ -111,7 +112,7 @@ void gs_edge_destroy(GraphserverEdge* edge) {
     // Cleanup metadata
     if (edge->metadata) {
         for (size_t i = 0; i < edge->metadata_count; i++) {
-            free((void*)edge->metadata[i].key);
+            // No need to free keys (they are uint16_t values, not strings)
             gs_value_destroy(&edge->metadata[i].value);
         }
         free(edge->metadata);
@@ -154,8 +155,8 @@ GraphserverEdge* gs_edge_clone(const GraphserverEdge* edge) {
 }
 
 // Edge metadata management
-GraphserverResult gs_edge_set_metadata(GraphserverEdge* edge, const char* key, GraphserverValue value) {
-    if (!edge || !key) return GS_ERROR_NULL_POINTER;
+GraphserverResult gs_edge_set_metadata(GraphserverEdge* edge, uint16_t key, GraphserverValue value) {
+    if (!edge) return GS_ERROR_NULL_POINTER;
     
     bool found;
     size_t pos = find_metadata_position(edge, key, &found);
@@ -177,17 +178,15 @@ GraphserverResult gs_edge_set_metadata(GraphserverEdge* edge, const char* key, G
     }
     
     // Insert new pair
-    edge->metadata[pos].key = strdup(key);
-    if (!edge->metadata[pos].key) return GS_ERROR_OUT_OF_MEMORY;
-    
+    edge->metadata[pos].key = key;  // No string duplication needed
     edge->metadata[pos].value = value;
     edge->metadata_count++;
     
     return GS_SUCCESS;
 }
 
-GraphserverResult gs_edge_get_metadata(const GraphserverEdge* edge, const char* key, GraphserverValue* out_value) {
-    if (!edge || !key || !out_value) return GS_ERROR_NULL_POINTER;
+GraphserverResult gs_edge_get_metadata(const GraphserverEdge* edge, uint16_t key, GraphserverValue* out_value) {
+    if (!edge || !out_value) return GS_ERROR_NULL_POINTER;
     
     bool found;
     size_t pos = find_metadata_position(edge, key, &found);
@@ -198,15 +197,15 @@ GraphserverResult gs_edge_get_metadata(const GraphserverEdge* edge, const char* 
     return GS_SUCCESS;
 }
 
-GraphserverResult gs_edge_has_metadata_key(const GraphserverEdge* edge, const char* key, bool* out_has_key) {
-    if (!edge || !key || !out_has_key) return GS_ERROR_NULL_POINTER;
+GraphserverResult gs_edge_has_metadata_key(const GraphserverEdge* edge, uint16_t key, bool* out_has_key) {
+    if (!edge || !out_has_key) return GS_ERROR_NULL_POINTER;
     
     find_metadata_position(edge, key, out_has_key);
     return GS_SUCCESS;
 }
 
-GraphserverResult gs_edge_remove_metadata_key(GraphserverEdge* edge, const char* key) {
-    if (!edge || !key) return GS_ERROR_NULL_POINTER;
+GraphserverResult gs_edge_remove_metadata_key(GraphserverEdge* edge, uint16_t key) {
+    if (!edge) return GS_ERROR_NULL_POINTER;
     
     bool found;
     size_t pos = find_metadata_position(edge, key, &found);
@@ -214,7 +213,7 @@ GraphserverResult gs_edge_remove_metadata_key(GraphserverEdge* edge, const char*
     if (!found) return GS_ERROR_KEY_NOT_FOUND;
     
     // Cleanup the removed pair
-    free((void*)edge->metadata[pos].key);
+    // No need to free key (it's a uint16_t value, not a string)
     gs_value_destroy(&edge->metadata[pos].value);
     
     // Shift elements down
@@ -356,7 +355,7 @@ bool gs_edge_equals(const GraphserverEdge* a, const GraphserverEdge* b) {
     // Compare metadata
     if (a->metadata_count != b->metadata_count) return false;
     for (size_t i = 0; i < a->metadata_count; i++) {
-        if (strcmp(a->metadata[i].key, b->metadata[i].key) != 0) return false;
+        if (a->metadata[i].key != b->metadata[i].key) return false;
         if (!gs_value_equals(&a->metadata[i].value, &b->metadata[i].value)) return false;
     }
     

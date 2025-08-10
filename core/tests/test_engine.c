@@ -3,11 +3,16 @@
 #include <string.h>
 #include <assert.h>
 #include "../include/graphserver.h"
+#include "../include/gs_string_dict.h"
+#include "../include/gs_common_keys.h"
 #include "test_utils.h"
 
 // Simple test framework
 static int tests_run = 0;
 static int tests_passed = 0;
+
+// Test-specific keys - will be initialized in main
+static uint16_t KEY_NAME;
 
 #define TEST(name) \
     static void test_##name(void); \
@@ -144,7 +149,7 @@ static bool is_target_vertex(const GraphserverVertex* vertex, void* user_data) {
     (void)user_data;
     
     GraphserverValue name_value;
-    if (gs_vertex_get_value(vertex, "name", &name_value) != GS_SUCCESS) {
+    if (gs_vertex_get_value(vertex, KEY_NAME, &name_value) != GS_SUCCESS) {
         return false;
     }
     
@@ -1062,6 +1067,13 @@ int main(void) {
     printf("Running Graphserver Engine Tests\n");
     printf("=================================\n");
     
+    // Initialize string dictionary and common keys
+    gs_string_dict_init();
+    gs_common_keys_init();
+    
+    // Register test-specific keys
+    KEY_NAME = gs_string_dict_register("name");
+    
     run_test_engine_lifecycle();
     run_test_engine_custom_config();
     run_test_engine_provider_registration();
@@ -1090,6 +1102,9 @@ int main(void) {
     
     printf("\n=================================\n");
     printf("Tests completed: %d/%d passed\n", tests_passed, tests_run);
+    
+    // Cleanup
+    gs_string_dict_cleanup();
     
     if (tests_passed == tests_run) {
         printf("All tests PASSED!\n");

@@ -32,13 +32,13 @@ void gs_vertex_destroy(GraphserverVertex* vertex);
 GraphserverVertex* gs_vertex_clone(const GraphserverVertex* vertex);
 
 // Vertex access (immutable - no mutation functions)
-GraphserverResult gs_vertex_get_value(const GraphserverVertex* vertex, const char* key, GraphserverValue* out_value);
-GraphserverResult gs_vertex_has_key(const GraphserverVertex* vertex, const char* key, bool* out_has_key);
+GraphserverResult gs_vertex_get_value(const GraphserverVertex* vertex, uint16_t key, GraphserverValue* out_value);
+GraphserverResult gs_vertex_has_key(const GraphserverVertex* vertex, uint16_t key, bool* out_has_key);
 
 // Vertex introspection
 size_t gs_vertex_get_key_count(const GraphserverVertex* vertex);
-GraphserverResult gs_vertex_get_key_at_index(const GraphserverVertex* vertex, size_t index, const char** out_key);
-GraphserverResult gs_vertex_get_keys(const GraphserverVertex* vertex, const char*** out_keys, size_t* out_count);
+GraphserverResult gs_vertex_get_key_at_index(const GraphserverVertex* vertex, size_t index, uint16_t* out_key);
+GraphserverResult gs_vertex_get_keys(const GraphserverVertex* vertex, uint16_t** out_keys, size_t* out_count);
 
 // Vertex comparison and hashing
 bool gs_vertex_equals(const GraphserverVertex* a, const GraphserverVertex* b);
@@ -46,6 +46,9 @@ uint64_t gs_vertex_hash(const GraphserverVertex* vertex);
 
 // Vertex serialization (for debugging)
 char* gs_vertex_to_string(const GraphserverVertex* vertex);
+
+// Helper function to convert key to string (for debugging)
+const char* gs_key_to_string(uint16_t key);
 
 #ifdef __cplusplus
 }

@@ -4,6 +4,8 @@
 #include <time.h>
 #include <math.h>
 #include "../include/graphserver.h"
+#include "../include/gs_string_dict.h"
+#include "../include/gs_common_keys.h"
 #include "../../examples/include/example_providers.h"
 #include "test_utils.h"
 
@@ -277,15 +279,15 @@ static void benchmark_provider_performance(void) {
         if (p == 2) { // Add car mode for road network - create new vertex with mode
             // Extract data from existing vertex and create new one with mode
             GraphserverValue lat_val, lon_val, time_val;
-            gs_vertex_get_value(start, "lat", &lat_val);
-            gs_vertex_get_value(start, "lon", &lon_val);
-            gs_vertex_get_value(start, "time", &time_val);
+            gs_vertex_get_value(start, GS_KEY_LAT, &lat_val);
+            gs_vertex_get_value(start, GS_KEY_LON, &lon_val);
+            gs_vertex_get_value(start, GS_KEY_TIME, &time_val);
             
             GraphserverKeyPair pairs[] = {
-                {"lat", lat_val},
-                {"lon", lon_val},
-                {"time", time_val},
-                {"mode", gs_value_create_string("car")}
+                {GS_KEY_LAT, lat_val},
+                {GS_KEY_LON, lon_val},
+                {GS_KEY_TIME, time_val},
+                {GS_KEY_MODE, gs_value_create_string("car")}
             };
             
             gs_vertex_destroy(start);
@@ -533,6 +535,10 @@ int main(void) {
     printf("===================================\n");
     printf("Testing planning performance, memory usage, and scalability\n");
     
+    // Initialize string dictionary and common keys
+    gs_string_dict_init();
+    gs_common_keys_init();
+    
     benchmark_scalability();
     benchmark_memory_efficiency();
     benchmark_concurrent_planning();
@@ -543,6 +549,9 @@ int main(void) {
     printf("Performance benchmarks completed!\n");
     printf("Results can be used to validate performance targets\n");
     printf("and identify optimization opportunities.\n");
+    
+    // Cleanup
+    gs_string_dict_cleanup();
     
     return 0;
 }

@@ -8,6 +8,8 @@
 #include "../include/gs_vertex.h"
 #include "../include/gs_edge.h"
 #include "../include/gs_cache.h"
+#include "../include/gs_string_dict.h"
+#include "../include/gs_common_keys.h"
 
 // Test provider for grid graph
 typedef struct {
@@ -26,8 +28,8 @@ static int grid_provider_generate_edges(
     
     // Get vertex coordinates from vertex
     GraphserverValue x_val, y_val;
-    if (gs_vertex_get_value(vertex, "x", &x_val) != GS_SUCCESS ||
-        gs_vertex_get_value(vertex, "y", &y_val) != GS_SUCCESS) {
+    if (gs_vertex_get_value(vertex, GS_KEY_X, &x_val) != GS_SUCCESS ||
+        gs_vertex_get_value(vertex, GS_KEY_Y, &y_val) != GS_SUCCESS) {
         return -1;
     }
     
@@ -50,8 +52,8 @@ static int grid_provider_generate_edges(
         if (new_x >= 0 && new_x < grid->width && new_y >= 0 && new_y < grid->height) {
             // Create target vertex
             GraphserverKeyPair pairs[] = {
-                {"x", gs_value_create_int(new_x)},
-                {"y", gs_value_create_int(new_y)}
+                {GS_KEY_X, gs_value_create_int(new_x)},
+                {GS_KEY_Y, gs_value_create_int(new_y)}
             };
             GraphserverVertex* target = gs_vertex_create(pairs, 2, NULL);
             if (!target) continue;
@@ -75,8 +77,8 @@ static int grid_provider_generate_edges(
 // Helper function to create a grid vertex
 static GraphserverVertex* create_grid_vertex(int x, int y) {
     GraphserverKeyPair pairs[] = {
-        {"x", gs_value_create_int(x)},
-        {"y", gs_value_create_int(y)}
+        {GS_KEY_X, gs_value_create_int(x)},
+        {GS_KEY_Y, gs_value_create_int(y)}
     };
     
     GraphserverVertex* vertex = gs_vertex_create(pairs, 2, NULL);
@@ -275,6 +277,10 @@ static void test_performance_comparison(void) {
 int main(void) {
     printf("Running precaching tests...\n");
     
+    // Initialize string dictionary and common keys
+    gs_string_dict_init();
+    gs_common_keys_init();
+    
     test_basic_precaching();
     test_multiple_seeds();
     test_vertex_limit();
@@ -282,5 +288,9 @@ int main(void) {
     test_performance_comparison();
     
     printf("All precaching tests passed!\n");
+    
+    // Cleanup
+    gs_string_dict_cleanup();
+    
     return 0;
 }

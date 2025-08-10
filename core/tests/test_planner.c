@@ -5,10 +5,19 @@
 #include <math.h>
 #include "../include/graphserver.h"
 #include "../include/gs_planner_internal.h"
+#include "../include/gs_string_dict.h"
+#include "../include/gs_common_keys.h"
 
 // Simple test framework
 static int tests_run = 0;
 static int tests_passed = 0;
+
+// Test-specific keys - will be initialized in main
+static uint16_t KEY_EDGE_TYPE;
+static uint16_t KEY_DIRECTION;
+static uint16_t KEY_WAY_ID;
+static uint16_t KEY_SOURCE;
+static uint16_t KEY_TARGET;
 
 #define TEST(name) \
     static void test_##name(void); \
@@ -64,8 +73,8 @@ static int tests_passed = 0;
 // Helper function to create a test vertex with x,y coordinates
 static GraphserverVertex* create_coordinate_vertex(int x, int y) {
     GraphserverKeyPair pairs[] = {
-        {"x", gs_value_create_int(x)},
-        {"y", gs_value_create_int(y)}
+        {GS_KEY_X, gs_value_create_int(x)},
+        {GS_KEY_Y, gs_value_create_int(y)}
     };
     
     GraphserverVertex* vertex = gs_vertex_create(pairs, 2, NULL);
@@ -80,8 +89,8 @@ static int grid_provider(const GraphserverVertex* current_vertex,
     (void)user_data; // Unused parameter
     
     GraphserverValue x_val, y_val;
-    if (gs_vertex_get_value(current_vertex, "x", &x_val) != GS_SUCCESS ||
-        gs_vertex_get_value(current_vertex, "y", &y_val) != GS_SUCCESS) {
+    if (gs_vertex_get_value(current_vertex, GS_KEY_X, &x_val) != GS_SUCCESS ||
+        gs_vertex_get_value(current_vertex, GS_KEY_Y, &y_val) != GS_SUCCESS) {
         return -1;
     }
     
@@ -128,8 +137,8 @@ static bool coordinate_goal_predicate(const GraphserverVertex* vertex, void* use
     CoordinateGoal* goal = (CoordinateGoal*)user_data;
     
     GraphserverValue x_val, y_val;
-    if (gs_vertex_get_value(vertex, "x", &x_val) != GS_SUCCESS ||
-        gs_vertex_get_value(vertex, "y", &y_val) != GS_SUCCESS) {
+    if (gs_vertex_get_value(vertex, GS_KEY_X, &x_val) != GS_SUCCESS ||
+        gs_vertex_get_value(vertex, GS_KEY_Y, &y_val) != GS_SUCCESS) {
         return false;
     }
     
@@ -246,7 +255,7 @@ static int linear_provider(const GraphserverVertex* current_vertex,
     (void)user_data; // Unused parameter
     
     GraphserverValue id_val;
-    if (gs_vertex_get_value(current_vertex, "id", &id_val) != GS_SUCCESS) {
+    if (gs_vertex_get_value(current_vertex, GS_KEY_ID, &id_val) != GS_SUCCESS) {
         return -1;
     }
     
@@ -255,7 +264,7 @@ static int linear_provider(const GraphserverVertex* current_vertex,
     
     if (id < max_id) {
         GraphserverKeyPair pairs[] = {
-            {"id", gs_value_create_int(id + 1)}
+            {GS_KEY_ID, gs_value_create_int(id + 1)}
         };
         GraphserverVertex* next = gs_vertex_create(pairs, 1, NULL);
         
@@ -275,7 +284,7 @@ static bool linear_goal_predicate(const GraphserverVertex* vertex, void* user_da
     int* target_id = (int*)user_data;
     
     GraphserverValue id_val;
-    if (gs_vertex_get_value(vertex, "id", &id_val) != GS_SUCCESS) {
+    if (gs_vertex_get_value(vertex, GS_KEY_ID, &id_val) != GS_SUCCESS) {
         return false;
     }
     
@@ -288,7 +297,7 @@ TEST(dijkstra_long_path) {
     gs_engine_register_provider(engine, "linear", linear_provider, NULL);
     
     GraphserverKeyPair pairs[] = {
-        {"id", gs_value_create_int(0)}
+        {GS_KEY_ID, gs_value_create_int(0)}
     };
     GraphserverVertex* start = gs_vertex_create(pairs, 1, NULL);
     
@@ -394,8 +403,8 @@ static int metadata_provider(const GraphserverVertex* current_vertex,
     (void)user_data; // Unused parameter
     
     GraphserverValue x_val, y_val;
-    if (gs_vertex_get_value(current_vertex, "x", &x_val) != GS_SUCCESS ||
-        gs_vertex_get_value(current_vertex, "y", &y_val) != GS_SUCCESS) {
+    if (gs_vertex_get_value(current_vertex, GS_KEY_X, &x_val) != GS_SUCCESS ||
+        gs_vertex_get_value(current_vertex, GS_KEY_Y, &y_val) != GS_SUCCESS) {
         return -1;
     }
     
@@ -426,16 +435,16 @@ static int metadata_provider(const GraphserverVertex* current_vertex,
         
         // Add rich metadata
         GraphserverValue way_id_val = gs_value_create_int(x * 100 + y * 10 + i);
-        gs_edge_set_metadata(edge, "way_id", way_id_val);
+        gs_edge_set_metadata(edge, KEY_WAY_ID, way_id_val);
         
         GraphserverValue edge_type_val = gs_value_create_string("test_road");
-        gs_edge_set_metadata(edge, "edge_type", edge_type_val);
+        gs_edge_set_metadata(edge, KEY_EDGE_TYPE, edge_type_val);
         
         GraphserverValue direction_val = gs_value_create_string(directions[i]);
-        gs_edge_set_metadata(edge, "direction", direction_val);
+        gs_edge_set_metadata(edge, KEY_DIRECTION, direction_val);
         
         GraphserverValue speed_val = gs_value_create_float(5.0);
-        gs_edge_set_metadata(edge, "speed_kmh", speed_val);
+        gs_edge_set_metadata(edge, GS_KEY_SPEED_KMH, speed_val);
         
         // Set edge to own the target vertex since we created it specifically for this edge
         gs_edge_set_owns_target_vertex(edge, true);
@@ -507,21 +516,21 @@ TEST(dijkstra_metadata_preservation) {
         
         // Check specific metadata values
         GraphserverValue way_id_val;
-        GraphserverResult result = gs_edge_get_metadata(edge, "way_id", &way_id_val);
+        GraphserverResult result = gs_edge_get_metadata(edge, KEY_WAY_ID, &way_id_val);
         ASSERT_EQ(GS_SUCCESS, result);
         ASSERT_EQ(GS_VALUE_INT, way_id_val.type);
         // way_id should be > 0 (calculated as x * 100 + y * 10 + direction_index)
         ASSERT(way_id_val.as.i_val > 0);
         
         GraphserverValue edge_type_val;
-        result = gs_edge_get_metadata(edge, "edge_type", &edge_type_val);
+        result = gs_edge_get_metadata(edge, KEY_EDGE_TYPE, &edge_type_val);
         ASSERT_EQ(GS_SUCCESS, result);
         ASSERT_EQ(GS_VALUE_STRING, edge_type_val.type);
         ASSERT(strcmp(edge_type_val.as.s_val, "test_road") == 0);
         gs_value_destroy(&edge_type_val);
         
         GraphserverValue direction_val;
-        result = gs_edge_get_metadata(edge, "direction", &direction_val);
+        result = gs_edge_get_metadata(edge, KEY_DIRECTION, &direction_val);
         ASSERT_EQ(GS_SUCCESS, result);
         ASSERT_EQ(GS_VALUE_STRING, direction_val.type);
         // For a straight line from (0,0) to (2,0), all edges should go "east"
@@ -529,7 +538,7 @@ TEST(dijkstra_metadata_preservation) {
         gs_value_destroy(&direction_val);
         
         GraphserverValue speed_val;
-        result = gs_edge_get_metadata(edge, "speed_kmh", &speed_val);
+        result = gs_edge_get_metadata(edge, GS_KEY_SPEED_KMH, &speed_val);
         ASSERT_EQ(GS_SUCCESS, result);
         ASSERT_EQ(GS_VALUE_FLOAT, speed_val.type);
         ASSERT_DOUBLE_EQ(5.0, speed_val.as.f_val, 1e-6);
@@ -562,7 +571,7 @@ TEST(dijkstra_node_incoming_edge) {
     
     // Verify the metadata came through the incoming_edge mechanism
     GraphserverValue edge_type_val;
-    GraphserverResult result = gs_edge_get_metadata(edge, "edge_type", &edge_type_val);
+    GraphserverResult result = gs_edge_get_metadata(edge, KEY_EDGE_TYPE, &edge_type_val);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_STRING, edge_type_val.type);
     ASSERT(strcmp(edge_type_val.as.s_val, "test_road") == 0);
@@ -595,7 +604,7 @@ TEST(dijkstra_path_reconstruction_metadata) {
         
         // All edges should be going north, so direction should be "north"
         GraphserverValue direction_val;
-        GraphserverResult result = gs_edge_get_metadata(edge, "direction", &direction_val);
+        GraphserverResult result = gs_edge_get_metadata(edge, KEY_DIRECTION, &direction_val);
         ASSERT_EQ(GS_SUCCESS, result);
         ASSERT_EQ(GS_VALUE_STRING, direction_val.type);
         ASSERT(strcmp(direction_val.as.s_val, "north") == 0);
@@ -603,7 +612,7 @@ TEST(dijkstra_path_reconstruction_metadata) {
         
         // Each edge should have a different way_id based on the formula
         GraphserverValue way_id_val;
-        result = gs_edge_get_metadata(edge, "way_id", &way_id_val);
+        result = gs_edge_get_metadata(edge, KEY_WAY_ID, &way_id_val);
         ASSERT_EQ(GS_SUCCESS, result);
         ASSERT_EQ(GS_VALUE_INT, way_id_val.type);
         
@@ -648,7 +657,7 @@ TEST(dijkstra_edge_cloning_relaxation) {
         
         // Verify that metadata is accessible and correct
         GraphserverValue edge_type_val;
-        GraphserverResult result = gs_edge_get_metadata(edge, "edge_type", &edge_type_val);
+        GraphserverResult result = gs_edge_get_metadata(edge, KEY_EDGE_TYPE, &edge_type_val);
         ASSERT_EQ(GS_SUCCESS, result);
         ASSERT_EQ(GS_VALUE_STRING, edge_type_val.type);
         ASSERT(strcmp(edge_type_val.as.s_val, "test_road") == 0);
@@ -656,7 +665,7 @@ TEST(dijkstra_edge_cloning_relaxation) {
         
         // Metadata should not be corrupted or pointing to invalid memory
         GraphserverValue speed_val;
-        result = gs_edge_get_metadata(edge, "speed_kmh", &speed_val);
+        result = gs_edge_get_metadata(edge, GS_KEY_SPEED_KMH, &speed_val);
         ASSERT_EQ(GS_SUCCESS, result);
         ASSERT_EQ(GS_VALUE_FLOAT, speed_val.type);
         ASSERT_DOUBLE_EQ(5.0, speed_val.as.f_val, 1e-6);
@@ -671,6 +680,17 @@ TEST(dijkstra_edge_cloning_relaxation) {
 int main(void) {
     printf("Running Graphserver Planner Tests\n");
     printf("==================================\n");
+    
+    // Initialize string dictionary and common keys
+    gs_string_dict_init();
+    gs_common_keys_init();
+    
+    // Register test-specific keys
+    KEY_EDGE_TYPE = gs_string_dict_register("edge_type");
+    KEY_DIRECTION = gs_string_dict_register("direction");
+    KEY_WAY_ID = gs_string_dict_register("way_id");
+    KEY_SOURCE = gs_string_dict_register("source");
+    KEY_TARGET = gs_string_dict_register("target");
     
     run_test_dijkstra_simple_path();
     run_test_dijkstra_l_shaped_path();
@@ -688,6 +708,9 @@ int main(void) {
     
     printf("\n==================================\n");
     printf("Tests completed: %d/%d passed\n", tests_passed, tests_run);
+    
+    // Cleanup
+    gs_string_dict_cleanup();
     
     if (tests_passed == tests_run) {
         printf("All tests PASSED!\n");

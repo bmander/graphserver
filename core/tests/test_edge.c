@@ -4,11 +4,18 @@
 #include <assert.h>
 #include "../include/gs_edge.h"
 #include "../include/gs_vertex.h"
+#include "../include/gs_string_dict.h"
+#include "../include/gs_common_keys.h"
 #include "test_utils.h"
 
 // Simple test framework (same as vertex tests)
 static int tests_run = 0;
 static int tests_passed = 0;
+
+// Test-specific keys
+static uint16_t KEY_MODE;
+static uint16_t KEY_SPEED_KMH;
+static uint16_t KEY_NONEXISTENT;
 
 #define TEST(name) \
     static void test_##name(void); \
@@ -124,48 +131,48 @@ TEST(edge_metadata) {
     
     // Add metadata
     GraphserverValue mode_val = gs_value_create_string("walking");
-    GraphserverResult result = gs_edge_set_metadata(edge, "mode", mode_val);
+    GraphserverResult result = gs_edge_set_metadata(edge, KEY_MODE, mode_val);
     ASSERT_EQ(GS_SUCCESS, result);
     
     GraphserverValue speed_val = gs_value_create_float(5.0);
-    result = gs_edge_set_metadata(edge, "speed_kmh", speed_val);
+    result = gs_edge_set_metadata(edge, KEY_SPEED_KMH, speed_val);
     ASSERT_EQ(GS_SUCCESS, result);
     
     ASSERT_EQ(2, gs_edge_get_metadata_count(edge));
     
     // Check if metadata exists
     bool has_key;
-    result = gs_edge_has_metadata_key(edge, "mode", &has_key);
+    result = gs_edge_has_metadata_key(edge, KEY_MODE, &has_key);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT(has_key);
     
-    result = gs_edge_has_metadata_key(edge, "nonexistent", &has_key);
+    result = gs_edge_has_metadata_key(edge, KEY_NONEXISTENT, &has_key);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT(!has_key);
     
     // Get metadata back
     GraphserverValue retrieved_val;
-    result = gs_edge_get_metadata(edge, "mode", &retrieved_val);
+    result = gs_edge_get_metadata(edge, KEY_MODE, &retrieved_val);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_STRING, retrieved_val.type);
     ASSERT_STR_EQ("walking", retrieved_val.as.s_val);
     gs_value_destroy(&retrieved_val);
     
-    result = gs_edge_get_metadata(edge, "speed_kmh", &retrieved_val);
+    result = gs_edge_get_metadata(edge, KEY_SPEED_KMH, &retrieved_val);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_FLOAT, retrieved_val.type);
     ASSERT_FLOAT_EQ(5.0, retrieved_val.as.f_val, 0.001);
     
     // Remove metadata
-    result = gs_edge_remove_metadata_key(edge, "mode");
+    result = gs_edge_remove_metadata_key(edge, KEY_MODE);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(1, gs_edge_get_metadata_count(edge));
     
-    result = gs_edge_has_metadata_key(edge, "mode", &has_key);
+    result = gs_edge_has_metadata_key(edge, KEY_MODE, &has_key);
     ASSERT(!has_key);
     
     // Try to get removed metadata
-    result = gs_edge_get_metadata(edge, "mode", &retrieved_val);
+    result = gs_edge_get_metadata(edge, KEY_MODE, &retrieved_val);
     ASSERT_EQ(GS_ERROR_KEY_NOT_FOUND, result);
     
     gs_edge_destroy(edge);
@@ -183,7 +190,7 @@ TEST(edge_cloning) {
     
     // Add some metadata
     GraphserverValue mode_val = gs_value_create_string("transit");
-    gs_edge_set_metadata(original, "mode", mode_val);
+    gs_edge_set_metadata(original, KEY_MODE, mode_val);
     
     // Clone the edge
     GraphserverEdge* clone = gs_edge_clone(original);
@@ -207,7 +214,7 @@ TEST(edge_cloning) {
     
     // Metadata should be cloned
     GraphserverValue retrieved_val;
-    GraphserverResult result = gs_edge_get_metadata(clone, "mode", &retrieved_val);
+    GraphserverResult result = gs_edge_get_metadata(clone, KEY_MODE, &retrieved_val);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_STR_EQ("transit", retrieved_val.as.s_val);
     gs_value_destroy(&retrieved_val);
@@ -291,14 +298,14 @@ TEST(edge_equality) {
     
     // Add metadata to one edge
     GraphserverValue mode_val = gs_value_create_string("walking");
-    gs_edge_set_metadata(edge1, "mode", mode_val);
+    gs_edge_set_metadata(edge1, KEY_MODE, mode_val);
     
     // Should no longer be equal
     ASSERT(!gs_edge_equals(edge1, edge2));
     
     // Add same metadata to second edge
     GraphserverValue mode_val2 = gs_value_create_string("walking");
-    gs_edge_set_metadata(edge2, "mode", mode_val2);
+    gs_edge_set_metadata(edge2, KEY_MODE, mode_val2);
     
     // Should be equal again
     ASSERT(gs_edge_equals(edge1, edge2));
@@ -343,16 +350,14 @@ TEST(edge_error_conditions) {
     edge = gs_edge_create(target, dist, 1);
     
     GraphserverValue val = gs_value_create_int(1);
-    ASSERT_EQ(GS_ERROR_NULL_POINTER, gs_edge_set_metadata(NULL, "key", val));
-    ASSERT_EQ(GS_ERROR_NULL_POINTER, gs_edge_set_metadata(edge, NULL, val));
+    ASSERT_EQ(GS_ERROR_NULL_POINTER, gs_edge_set_metadata(NULL, KEY_MODE, val));
     
     GraphserverValue out_val;
-    ASSERT_EQ(GS_ERROR_NULL_POINTER, gs_edge_get_metadata(NULL, "key", &out_val));
-    ASSERT_EQ(GS_ERROR_NULL_POINTER, gs_edge_get_metadata(edge, NULL, &out_val));
-    ASSERT_EQ(GS_ERROR_NULL_POINTER, gs_edge_get_metadata(edge, "key", NULL));
+    ASSERT_EQ(GS_ERROR_NULL_POINTER, gs_edge_get_metadata(NULL, KEY_MODE, &out_val));
+    ASSERT_EQ(GS_ERROR_NULL_POINTER, gs_edge_get_metadata(edge, KEY_MODE, NULL));
     
     // Key not found
-    ASSERT_EQ(GS_ERROR_KEY_NOT_FOUND, gs_edge_get_metadata(edge, "nonexistent", &out_val));
+    ASSERT_EQ(GS_ERROR_KEY_NOT_FOUND, gs_edge_get_metadata(edge, KEY_NONEXISTENT, &out_val));
     
     gs_edge_destroy(edge);
     gs_vertex_destroy(target);
@@ -363,6 +368,15 @@ TEST(edge_error_conditions) {
 int main(void) {
     printf("Running Graphserver Edge Tests\n");
     printf("==============================\n");
+    
+    // Initialize string dictionary and common keys
+    gs_string_dict_init();
+    gs_common_keys_init();
+    
+    // Register test-specific keys
+    KEY_MODE = gs_string_dict_register("mode");
+    KEY_SPEED_KMH = gs_string_dict_register("speed_kmh");
+    KEY_NONEXISTENT = gs_string_dict_register("nonexistent");
     
     run_test_edge_creation();
     run_test_edge_no_distance();
@@ -375,6 +389,9 @@ int main(void) {
     
     printf("\n==============================\n");
     printf("Tests completed: %d/%d passed\n", tests_passed, tests_run);
+    
+    // Cleanup
+    gs_string_dict_cleanup();
     
     if (tests_passed == tests_run) {
         printf("All tests PASSED!\n");

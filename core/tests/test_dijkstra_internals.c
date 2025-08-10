@@ -5,6 +5,8 @@
 #include <math.h>
 #include "../include/graphserver.h"
 #include "../include/gs_planner_internal.h"
+#include "../include/gs_string_dict.h"
+#include "../include/gs_common_keys.h"
 
 // Simple test framework
 static int tests_run = 0;
@@ -64,8 +66,8 @@ static int tests_passed = 0;
 // Helper function to create a test vertex with x,y coordinates
 static GraphserverVertex* create_coordinate_vertex(int x, int y) {
     GraphserverKeyPair pairs[] = {
-        {"x", gs_value_create_int(x)},
-        {"y", gs_value_create_int(y)}
+        {GS_KEY_X, gs_value_create_int(x)},
+        {GS_KEY_Y, gs_value_create_int(y)}
     };
     
     GraphserverVertex* vertex = gs_vertex_create(pairs, 2, NULL);
@@ -82,8 +84,8 @@ static bool coordinate_goal_predicate(const GraphserverVertex* vertex, void* use
     CoordinateGoal* goal = (CoordinateGoal*)user_data;
     
     GraphserverValue x_val, y_val;
-    if (gs_vertex_get_value(vertex, "x", &x_val) != GS_SUCCESS ||
-        gs_vertex_get_value(vertex, "y", &y_val) != GS_SUCCESS) {
+    if (gs_vertex_get_value(vertex, GS_KEY_X, &x_val) != GS_SUCCESS ||
+        gs_vertex_get_value(vertex, GS_KEY_Y, &y_val) != GS_SUCCESS) {
         return false;
     }
     
@@ -162,8 +164,8 @@ static int simple_grid_provider(const GraphserverVertex* current_vertex,
     (void)user_data; // Unused
     
     GraphserverValue x_val, y_val;
-    if (gs_vertex_get_value(current_vertex, "x", &x_val) != GS_SUCCESS ||
-        gs_vertex_get_value(current_vertex, "y", &y_val) != GS_SUCCESS) {
+    if (gs_vertex_get_value(current_vertex, GS_KEY_X, &x_val) != GS_SUCCESS ||
+        gs_vertex_get_value(current_vertex, GS_KEY_Y, &y_val) != GS_SUCCESS) {
         return -1;
     }
     
@@ -229,7 +231,7 @@ TEST(dijkstra_path_reconstruction_basic) {
         ASSERT_NOT_NULL(target);
         
         GraphserverValue x_val;
-        ASSERT_EQ(GS_SUCCESS, gs_vertex_get_value(target, "x", &x_val));
+        ASSERT_EQ(GS_SUCCESS, gs_vertex_get_value(target, GS_KEY_X, &x_val));
         ASSERT_EQ((int)(i + 1), (int)x_val.as.i_val); // Should be x = i+1
     }
     
@@ -245,8 +247,8 @@ static int zero_cost_provider(const GraphserverVertex* current_vertex,
     (void)user_data;
     
     GraphserverValue x_val, y_val;
-    if (gs_vertex_get_value(current_vertex, "x", &x_val) != GS_SUCCESS ||
-        gs_vertex_get_value(current_vertex, "y", &y_val) != GS_SUCCESS) {
+    if (gs_vertex_get_value(current_vertex, GS_KEY_X, &x_val) != GS_SUCCESS ||
+        gs_vertex_get_value(current_vertex, GS_KEY_Y, &y_val) != GS_SUCCESS) {
         return -1;
     }
     
@@ -316,8 +318,8 @@ static int cycle_provider(const GraphserverVertex* current_vertex,
     (void)user_data;
     
     GraphserverValue x_val, y_val;
-    if (gs_vertex_get_value(current_vertex, "x", &x_val) != GS_SUCCESS ||
-        gs_vertex_get_value(current_vertex, "y", &y_val) != GS_SUCCESS) {
+    if (gs_vertex_get_value(current_vertex, GS_KEY_X, &x_val) != GS_SUCCESS ||
+        gs_vertex_get_value(current_vertex, GS_KEY_Y, &y_val) != GS_SUCCESS) {
         return -1;
     }
     
@@ -561,6 +563,10 @@ int main(void) {
     printf("Running Dijkstra Internals Tests\n");
     printf("=================================\n");
     
+    // Initialize string dictionary and common keys
+    gs_string_dict_init();
+    gs_common_keys_init();
+    
     run_test_dijkstra_state_initialization();
     run_test_dijkstra_state_null_parameters();
     run_test_dijkstra_path_reconstruction_basic();
@@ -574,6 +580,9 @@ int main(void) {
     
     printf("\n=================================\n");
     printf("Tests completed: %d/%d passed\n", tests_passed, tests_run);
+    
+    // Cleanup
+    gs_string_dict_cleanup();
     
     if (tests_passed == tests_run) {
         printf("All tests PASSED!\n");

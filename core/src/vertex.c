@@ -1,4 +1,5 @@
 #include "../include/gs_vertex.h"
+#include "../include/gs_string_dict.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -75,7 +76,9 @@ static char** duplicate_string_array(const char* const* data, size_t count) {
 static int compare_key_pairs(const void* a, const void* b) {
     const GraphserverKeyPair* pair_a = (const GraphserverKeyPair*)a;
     const GraphserverKeyPair* pair_b = (const GraphserverKeyPair*)b;
-    return strcmp(pair_a->key, pair_b->key);
+    if (pair_a->key < pair_b->key) return -1;
+    if (pair_a->key > pair_b->key) return 1;
+    return 0;
 }
 
 // Calculate hash for vertex data
@@ -86,7 +89,7 @@ static uint64_t calculate_vertex_hash(const GraphserverKeyPair* pairs, size_t nu
     
     for (size_t i = 0; i < num_pairs; i++) {
         // Hash the key
-        hash ^= hash_bytes(pairs[i].key, strlen(pairs[i].key));
+        hash ^= hash_bytes(&pairs[i].key, sizeof(pairs[i].key));
         hash *= 1099511628211ULL;
         
         // Hash the value based on its type
@@ -328,18 +331,8 @@ GraphserverVertex* gs_vertex_create(const GraphserverKeyPair* pairs, size_t num_
     
     // Copy and sort the pairs
     for (size_t i = 0; i < num_pairs; i++) {
-        // Duplicate the key
-        vertex->pairs[i].key = duplicate_string(pairs[i].key);
-        if (!vertex->pairs[i].key) {
-            // Cleanup on failure
-            for (size_t j = 0; j < i; j++) {
-                free((void*)vertex->pairs[j].key);
-                gs_value_destroy(&vertex->pairs[j].value);
-            }
-            free(vertex->pairs);
-            free(vertex);
-            return NULL;
-        }
+        // Copy the key (no string duplication needed)
+        vertex->pairs[i].key = pairs[i].key;
         
         // Copy the value
         vertex->pairs[i].value = gs_value_copy(&pairs[i].value);
@@ -362,7 +355,7 @@ void gs_vertex_destroy(GraphserverVertex* vertex) {
     if (!vertex) return;
     
     for (size_t i = 0; i < vertex->num_pairs; i++) {
-        free((void*)vertex->pairs[i].key);
+        // No need to free keys (they are uint16_t values, not strings)
         gs_value_destroy(&vertex->pairs[i].value);
     }
     
@@ -378,7 +371,7 @@ GraphserverVertex* gs_vertex_clone(const GraphserverVertex* vertex) {
 }
 
 // Binary search for key position
-static size_t find_key_position(const GraphserverVertex* vertex, const char* key, bool* found) {
+static size_t find_key_position(const GraphserverVertex* vertex, uint16_t key, bool* found) {
     *found = false;
     
     if (vertex->num_pairs == 0) return 0;
@@ -388,12 +381,12 @@ static size_t find_key_position(const GraphserverVertex* vertex, const char* key
     
     while (left < right) {
         size_t mid = left + (right - left) / 2;
-        int cmp = strcmp(key, vertex->pairs[mid].key);
+        uint16_t mid_key = vertex->pairs[mid].key;
         
-        if (cmp == 0) {
+        if (key == mid_key) {
             *found = true;
             return mid;
-        } else if (cmp < 0) {
+        } else if (key < mid_key) {
             right = mid;
         } else {
             left = mid + 1;
@@ -404,8 +397,8 @@ static size_t find_key_position(const GraphserverVertex* vertex, const char* key
 }
 
 
-GraphserverResult gs_vertex_get_value(const GraphserverVertex* vertex, const char* key, GraphserverValue* out_value) {
-    if (!vertex || !key || !out_value) return GS_ERROR_NULL_POINTER;
+GraphserverResult gs_vertex_get_value(const GraphserverVertex* vertex, uint16_t key, GraphserverValue* out_value) {
+    if (!vertex || !out_value) return GS_ERROR_NULL_POINTER;
     
     bool found;
     size_t pos = find_key_position(vertex, key, &found);
@@ -416,8 +409,8 @@ GraphserverResult gs_vertex_get_value(const GraphserverVertex* vertex, const cha
     return GS_SUCCESS;
 }
 
-GraphserverResult gs_vertex_has_key(const GraphserverVertex* vertex, const char* key, bool* out_has_key) {
-    if (!vertex || !key || !out_has_key) return GS_ERROR_NULL_POINTER;
+GraphserverResult gs_vertex_has_key(const GraphserverVertex* vertex, uint16_t key, bool* out_has_key) {
+    if (!vertex || !out_has_key) return GS_ERROR_NULL_POINTER;
     
     find_key_position(vertex, key, out_has_key);
     return GS_SUCCESS;
@@ -429,7 +422,7 @@ size_t gs_vertex_get_key_count(const GraphserverVertex* vertex) {
     return vertex ? vertex->num_pairs : 0;
 }
 
-GraphserverResult gs_vertex_get_key_at_index(const GraphserverVertex* vertex, size_t index, const char** out_key) {
+GraphserverResult gs_vertex_get_key_at_index(const GraphserverVertex* vertex, size_t index, uint16_t* out_key) {
     if (!vertex || !out_key) return GS_ERROR_NULL_POINTER;
     if (index >= vertex->num_pairs) return GS_ERROR_INVALID_ARGUMENT;
     
@@ -437,7 +430,7 @@ GraphserverResult gs_vertex_get_key_at_index(const GraphserverVertex* vertex, si
     return GS_SUCCESS;
 }
 
-GraphserverResult gs_vertex_get_keys(const GraphserverVertex* vertex, const char*** out_keys, size_t* out_count) {
+GraphserverResult gs_vertex_get_keys(const GraphserverVertex* vertex, uint16_t** out_keys, size_t* out_count) {
     if (!vertex || !out_keys || !out_count) return GS_ERROR_NULL_POINTER;
     
     if (vertex->num_pairs == 0) {
@@ -446,7 +439,7 @@ GraphserverResult gs_vertex_get_keys(const GraphserverVertex* vertex, const char
         return GS_SUCCESS;
     }
     
-    const char** keys = malloc(sizeof(const char*) * vertex->num_pairs);
+    uint16_t* keys = malloc(sizeof(uint16_t) * vertex->num_pairs);
     if (!keys) return GS_ERROR_OUT_OF_MEMORY;
     
     for (size_t i = 0; i < vertex->num_pairs; i++) {
@@ -471,7 +464,7 @@ bool gs_vertex_equals(const GraphserverVertex* a, const GraphserverVertex* b) {
     
     // Since keys are sorted, we can compare sequentially
     for (size_t i = 0; i < a->num_pairs; i++) {
-        if (strcmp(a->pairs[i].key, b->pairs[i].key) != 0) return false;
+        if (a->pairs[i].key != b->pairs[i].key) return false;
         if (!gs_value_equals(&a->pairs[i].value, &b->pairs[i].value)) return false;
     }
     
@@ -500,7 +493,8 @@ char* gs_vertex_to_string(const GraphserverVertex* vertex) {
             pos += snprintf(buffer + pos, buffer_size - pos, ", ");
         }
         
-        pos += snprintf(buffer + pos, buffer_size - pos, "\"%s\": ", vertex->pairs[i].key);
+        const char* key_string = gs_string_dict_get(vertex->pairs[i].key);
+        pos += snprintf(buffer + pos, buffer_size - pos, "\"%s\": ", key_string ? key_string : "unknown");
         
         const GraphserverValue* value = &vertex->pairs[i].value;
         switch (value->type) {
@@ -537,4 +531,9 @@ char* gs_vertex_to_string(const GraphserverVertex* vertex) {
     pos += snprintf(buffer + pos, buffer_size - pos, "}");
     
     return buffer;
+}
+
+// Helper function to convert key to string for debugging
+const char* gs_key_to_string(uint16_t key) {
+    return gs_string_dict_get(key);
 }

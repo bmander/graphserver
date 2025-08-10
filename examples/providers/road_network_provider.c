@@ -3,6 +3,24 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include "../../core/include/gs_string_dict.h"
+#include "../../core/include/gs_common_keys.h"
+
+// Custom keys for road network provider metadata
+static uint16_t KEY_ROAD_TYPE = 0;
+static uint16_t KEY_DISTANCE_METERS = 0;
+static uint16_t KEY_TRAFFIC_FACTOR = 0;
+static uint16_t KEY_SEGMENT_ID = 0;
+
+// Initialize custom keys (call once at startup)
+void road_network_provider_init_keys(void) {
+    if (KEY_ROAD_TYPE == 0) {
+        KEY_ROAD_TYPE = gs_string_dict_register("road_type");
+        KEY_DISTANCE_METERS = gs_string_dict_register("distance_meters");
+        KEY_TRAFFIC_FACTOR = gs_string_dict_register("traffic_factor");
+        KEY_SEGMENT_ID = gs_string_dict_register("segment_id");
+    }
+}
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE  // For strdup
@@ -170,12 +188,12 @@ static void generate_road_edges(
             // Create destination vertex with all information
             time_t arrival_time = current_time + (time_t)(travel_time_minutes * 60);
             GraphserverKeyPair pairs[] = {
-                {"lat", gs_value_create_float(segment->end_lat)},
-                {"lon", gs_value_create_float(segment->end_lon)},
-                {"time", gs_value_create_int((int64_t)arrival_time)},
-                {"mode", gs_value_create_string(network->vehicle_type)},
-                {"road_type", gs_value_create_string(segment->road_type)},
-                {"segment_id", gs_value_create_int(segment->segment_id)}
+                {GS_KEY_LAT, gs_value_create_float(segment->end_lat)},
+                {GS_KEY_LON, gs_value_create_float(segment->end_lon)},
+                {GS_KEY_TIME, gs_value_create_int((int64_t)arrival_time)},
+                {GS_KEY_MODE, gs_value_create_string(network->vehicle_type)},
+                {KEY_ROAD_TYPE, gs_value_create_string(segment->road_type)},
+                {KEY_SEGMENT_ID, gs_value_create_int(segment->segment_id)}
             };
             GraphserverVertex* dest_vertex = gs_vertex_create(pairs, 6, NULL);
             
@@ -205,11 +223,11 @@ static void generate_road_edges(
             GraphserverValue edge_speed = gs_value_create_float(effective_speed);
             GraphserverValue edge_traffic = gs_value_create_float(segment->current_traffic_factor);
             
-            gs_edge_set_metadata(edge, "mode", edge_mode);
-            gs_edge_set_metadata(edge, "road_type", edge_road_type);
-            gs_edge_set_metadata(edge, "distance_meters", edge_distance);
-            gs_edge_set_metadata(edge, "speed_kmh", edge_speed);
-            gs_edge_set_metadata(edge, "traffic_factor", edge_traffic);
+            gs_edge_set_metadata(edge, GS_KEY_MODE, edge_mode);
+            gs_edge_set_metadata(edge, KEY_ROAD_TYPE, edge_road_type);
+            gs_edge_set_metadata(edge, KEY_DISTANCE_METERS, edge_distance);
+            gs_edge_set_metadata(edge, GS_KEY_SPEED_KMH, edge_speed);
+            gs_edge_set_metadata(edge, KEY_TRAFFIC_FACTOR, edge_traffic);
             
             gs_edge_list_add_edge(out_edges, edge);
         }
@@ -227,12 +245,12 @@ static void generate_road_edges(
                 
                 time_t arrival_time = current_time + (time_t)(travel_time_minutes * 60);
                 GraphserverKeyPair pairs[] = {
-                    {"lat", gs_value_create_float(segment->start_lat)},
-                    {"lon", gs_value_create_float(segment->start_lon)},
-                    {"time", gs_value_create_int((int64_t)arrival_time)},
-                    {"mode", gs_value_create_string(network->vehicle_type)},
-                    {"road_type", gs_value_create_string(segment->road_type)},
-                    {"segment_id", gs_value_create_int(segment->segment_id)}
+                    {GS_KEY_LAT, gs_value_create_float(segment->start_lat)},
+                    {GS_KEY_LON, gs_value_create_float(segment->start_lon)},
+                    {GS_KEY_TIME, gs_value_create_int((int64_t)arrival_time)},
+                    {GS_KEY_MODE, gs_value_create_string(network->vehicle_type)},
+                    {KEY_ROAD_TYPE, gs_value_create_string(segment->road_type)},
+                    {KEY_SEGMENT_ID, gs_value_create_int(segment->segment_id)}
                 };
                 GraphserverVertex* dest_vertex = gs_vertex_create(pairs, 6, NULL);
                 
@@ -262,11 +280,11 @@ static void generate_road_edges(
                 GraphserverValue edge_speed = gs_value_create_float(effective_speed);
                 GraphserverValue edge_traffic = gs_value_create_float(segment->current_traffic_factor);
                 
-                gs_edge_set_metadata(edge, "mode", edge_mode);
-                gs_edge_set_metadata(edge, "road_type", edge_road_type);
-                gs_edge_set_metadata(edge, "distance_meters", edge_distance);
-                gs_edge_set_metadata(edge, "speed_kmh", edge_speed);
-                gs_edge_set_metadata(edge, "traffic_factor", edge_traffic);
+                gs_edge_set_metadata(edge, GS_KEY_MODE, edge_mode);
+                gs_edge_set_metadata(edge, KEY_ROAD_TYPE, edge_road_type);
+                gs_edge_set_metadata(edge, KEY_DISTANCE_METERS, edge_distance);
+                gs_edge_set_metadata(edge, GS_KEY_SPEED_KMH, edge_speed);
+                gs_edge_set_metadata(edge, KEY_TRAFFIC_FACTOR, edge_traffic);
                 
                 gs_edge_list_add_edge(out_edges, edge);
             }
@@ -280,6 +298,9 @@ int road_network_provider(
     void* user_data) {
     
     if (!current_vertex || !out_edges || !user_data) return -1;
+    
+    // Initialize custom keys on first call
+    road_network_provider_init_keys();
     
     RoadNetwork* network = (RoadNetwork*)user_data;
     
@@ -297,7 +318,7 @@ int road_network_provider(
     
     // Check if we're in the correct mode for this vehicle type
     GraphserverValue mode_val;
-    if (gs_vertex_get_value(current_vertex, "mode", &mode_val) == GS_SUCCESS) {
+    if (gs_vertex_get_value(current_vertex, GS_KEY_MODE, &mode_val) == GS_SUCCESS) {
         if (mode_val.type == GS_VALUE_STRING) {
             const char* mode = mode_val.as.s_val;
             // Only generate road edges if we're in the right vehicle mode or walking

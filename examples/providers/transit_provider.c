@@ -3,6 +3,26 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include "../../core/include/gs_string_dict.h"
+#include "../../core/include/gs_common_keys.h"
+
+// Custom keys for transit provider metadata
+static uint16_t KEY_STOP_ID = 0;
+static uint16_t KEY_STOP_NAME = 0;
+static uint16_t KEY_ROUTE_NAME = 0;
+static uint16_t KEY_DISTANCE_METERS = 0;
+static uint16_t KEY_WAIT_TIME_MINUTES = 0;
+
+// Initialize custom keys (call once at startup)
+void transit_provider_init_keys(void) {
+    if (KEY_STOP_ID == 0) {
+        KEY_STOP_ID = gs_string_dict_register("stop_id");
+        KEY_STOP_NAME = gs_string_dict_register("stop_name");
+        KEY_ROUTE_NAME = gs_string_dict_register("route_name");
+        KEY_DISTANCE_METERS = gs_string_dict_register("distance_meters");
+        KEY_WAIT_TIME_MINUTES = gs_string_dict_register("wait_time_minutes");
+    }
+}
 
 /**
  * @file transit_provider.c
@@ -119,12 +139,12 @@ static GraphserverEdge* create_walk_to_stop_edge(
     // Create target vertex at the stop with all information
     time_t arrival_time = current_time + (time_t)(walk_time_minutes * 60);
     GraphserverKeyPair pairs[] = {
-        {"lat", gs_value_create_float(stop->lat)},
-        {"lon", gs_value_create_float(stop->lon)},
-        {"time", gs_value_create_int((int64_t)arrival_time)},
-        {"stop_id", gs_value_create_int(stop->stop_id)},
-        {"stop_name", gs_value_create_string(stop->stop_name)},
-        {"mode", gs_value_create_string("walking")}
+        {GS_KEY_LAT, gs_value_create_float(stop->lat)},
+        {GS_KEY_LON, gs_value_create_float(stop->lon)},
+        {GS_KEY_TIME, gs_value_create_int((int64_t)arrival_time)},
+        {KEY_STOP_ID, gs_value_create_int(stop->stop_id)},
+        {KEY_STOP_NAME, gs_value_create_string(stop->stop_name)},
+        {GS_KEY_MODE, gs_value_create_string("walking")}
     };
     GraphserverVertex* stop_vertex = gs_vertex_create(pairs, 6, NULL);
     
@@ -148,8 +168,8 @@ static GraphserverEdge* create_walk_to_stop_edge(
     // Add metadata to edge
     GraphserverValue edge_mode = gs_value_create_string("walking");
     GraphserverValue edge_distance = gs_value_create_float(distance);
-    gs_edge_set_metadata(edge, "mode", edge_mode);
-    gs_edge_set_metadata(edge, "distance_meters", edge_distance);
+    gs_edge_set_metadata(edge, GS_KEY_MODE, edge_mode);
+    gs_edge_set_metadata(edge, KEY_DISTANCE_METERS, edge_distance);
     
     return edge;
 }
@@ -182,13 +202,13 @@ static GraphserverEdge* create_transit_edge(
     // Create target vertex with all information
     time_t arrival_time = current_time + (time_t)(total_time * 60);
     GraphserverKeyPair pairs[] = {
-        {"lat", gs_value_create_float(to_stop->lat)},
-        {"lon", gs_value_create_float(to_stop->lon)},
-        {"time", gs_value_create_int((int64_t)arrival_time)},
-        {"stop_id", gs_value_create_int(to_stop->stop_id)},
-        {"stop_name", gs_value_create_string(to_stop->stop_name)},
-        {"mode", gs_value_create_string(route->route_type)},
-        {"route_name", gs_value_create_string(route->route_name)}
+        {GS_KEY_LAT, gs_value_create_float(to_stop->lat)},
+        {GS_KEY_LON, gs_value_create_float(to_stop->lon)},
+        {GS_KEY_TIME, gs_value_create_int((int64_t)arrival_time)},
+        {KEY_STOP_ID, gs_value_create_int(to_stop->stop_id)},
+        {KEY_STOP_NAME, gs_value_create_string(to_stop->stop_name)},
+        {GS_KEY_MODE, gs_value_create_string(route->route_type)},
+        {KEY_ROUTE_NAME, gs_value_create_string(route->route_name)}
     };
     GraphserverVertex* target_vertex = gs_vertex_create(pairs, 7, NULL);
     
@@ -216,10 +236,10 @@ static GraphserverEdge* create_transit_edge(
     GraphserverValue edge_distance = gs_value_create_float(distance);
     GraphserverValue edge_wait = gs_value_create_float(wait_time);
     
-    gs_edge_set_metadata(edge, "mode", edge_mode);
-    gs_edge_set_metadata(edge, "route_name", edge_route);
-    gs_edge_set_metadata(edge, "distance_meters", edge_distance);
-    gs_edge_set_metadata(edge, "wait_time_minutes", edge_wait);
+    gs_edge_set_metadata(edge, GS_KEY_MODE, edge_mode);
+    gs_edge_set_metadata(edge, KEY_ROUTE_NAME, edge_route);
+    gs_edge_set_metadata(edge, KEY_DISTANCE_METERS, edge_distance);
+    gs_edge_set_metadata(edge, KEY_WAIT_TIME_MINUTES, edge_wait);
     
     return edge;
 }
@@ -230,6 +250,9 @@ int transit_provider(
     void* user_data) {
     
     if (!current_vertex || !out_edges || !user_data) return -1;
+    
+    // Initialize custom keys on first call
+    transit_provider_init_keys();
     
     TransitNetwork* network = (TransitNetwork*)user_data;
     
@@ -247,7 +270,7 @@ int transit_provider(
     
     // Check if we're already at a transit stop
     GraphserverValue stop_id_val;
-    bool at_stop = (gs_vertex_get_value(current_vertex, "stop_id", &stop_id_val) == GS_SUCCESS);
+    bool at_stop = (gs_vertex_get_value(current_vertex, KEY_STOP_ID, &stop_id_val) == GS_SUCCESS);
     
     if (at_stop) {
         // Generate transit edges from this stop
@@ -294,10 +317,10 @@ int transit_provider(
         
         // Also allow walking away from the stop
         GraphserverKeyPair pairs[] = {
-            {"lat", gs_value_create_float(current_lat)},
-            {"lon", gs_value_create_float(current_lon)},
-            {"time", gs_value_create_int((int64_t)current_time)},
-            {"mode", gs_value_create_string("walking")}
+            {GS_KEY_LAT, gs_value_create_float(current_lat)},
+            {GS_KEY_LON, gs_value_create_float(current_lon)},
+            {GS_KEY_TIME, gs_value_create_int((int64_t)current_time)},
+            {GS_KEY_MODE, gs_value_create_string("walking")}
         };
         GraphserverVertex* walk_vertex = gs_vertex_create(pairs, 4, NULL);
         
@@ -310,7 +333,7 @@ int transit_provider(
             if (walk_edge) {
                 gs_edge_set_owns_target_vertex(walk_edge, true);
                 GraphserverValue edge_mode = gs_value_create_string("walking");
-                gs_edge_set_metadata(walk_edge, "mode", edge_mode);
+                gs_edge_set_metadata(walk_edge, GS_KEY_MODE, edge_mode);
                 gs_edge_list_add_edge(out_edges, walk_edge);
             } else {
                 gs_vertex_destroy(walk_vertex);

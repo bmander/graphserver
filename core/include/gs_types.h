@@ -51,7 +51,7 @@ struct GraphserverValue {
 
 // Key-value pair structure
 struct GraphserverKeyPair {
-    const char* key;
+    uint16_t key;
     GraphserverValue value;
 };
 

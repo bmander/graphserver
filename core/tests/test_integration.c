@@ -5,8 +5,19 @@
 #include <math.h>
 #include <time.h>
 #include "../include/graphserver.h"
+#include "../include/gs_string_dict.h"
+#include "../include/gs_common_keys.h"
 #include "../../examples/include/example_providers.h"
 #include "test_utils.h"
+
+// Test-specific keys for integration tests
+static uint16_t KEY_LNG;
+static uint16_t KEY_TYPE;
+static uint16_t KEY_WAY_ID;
+static uint16_t KEY_EDGE_TYPE;
+static uint16_t KEY_DISTANCE_M;
+static uint16_t KEY_DURATION_S;
+static uint16_t KEY_HIGHWAY;
 
 // Simple test framework
 static int tests_run = 0;
@@ -136,7 +147,7 @@ TEST(walking_provider_basic) {
     
     // Verify edge has walking mode metadata
     GraphserverValue mode_val;
-    if (gs_edge_get_metadata(edge, "mode", &mode_val) == GS_SUCCESS) {
+    if (gs_edge_get_metadata(edge, GS_KEY_MODE, &mode_val) == GS_SUCCESS) {
         ASSERT_EQ(GS_VALUE_STRING, mode_val.type);
         ASSERT(strcmp(mode_val.as.s_val, "walking") == 0);
         gs_value_destroy(&mode_val);
@@ -198,19 +209,19 @@ TEST(road_network_provider_basic) {
     
     // For now, create a new vertex with mode by extracting location and adding mode
     GraphserverValue lat_val, lon_val, time_val;
-    gs_vertex_get_value(start, "lat", &lat_val);
-    gs_vertex_get_value(start, "lon", &lon_val);
-    bool has_time = (gs_vertex_get_value(start, "time", &time_val) == GS_SUCCESS);
+    gs_vertex_get_value(start, GS_KEY_LAT, &lat_val);
+    gs_vertex_get_value(start, GS_KEY_LON, &lon_val);
+    bool has_time = (gs_vertex_get_value(start, GS_KEY_TIME, &time_val) == GS_SUCCESS);
     GraphserverValue mode_val = gs_value_create_string("car");
     
     GraphserverKeyPair pairs[4];
     size_t pair_count = 3;
-    pairs[0] = (GraphserverKeyPair){"lat", lat_val};
-    pairs[1] = (GraphserverKeyPair){"lon", lon_val};
-    pairs[2] = (GraphserverKeyPair){"mode", mode_val};
+    pairs[0] = (GraphserverKeyPair){GS_KEY_LAT, lat_val};
+    pairs[1] = (GraphserverKeyPair){GS_KEY_LON, lon_val};
+    pairs[2] = (GraphserverKeyPair){GS_KEY_MODE, mode_val};
     
     if (has_time) {
-        pairs[3] = (GraphserverKeyPair){"time", time_val};
+        pairs[3] = (GraphserverKeyPair){GS_KEY_TIME, time_val};
         pair_count = 4;
     }
     
@@ -467,7 +478,7 @@ static bool lat_goal_predicate(const GraphserverVertex* vertex, void* user_data)
     
     LatGoal* goal = (LatGoal*)user_data;
     GraphserverValue lat_val;
-    if (gs_vertex_get_value(vertex, "lat", &lat_val) != GS_SUCCESS) {
+    if (gs_vertex_get_value(vertex, GS_KEY_LAT, &lat_val) != GS_SUCCESS) {
         return false;
     }
     bool result = lat_val.as.f_val >= goal->target_lat;
@@ -482,10 +493,10 @@ static int rich_metadata_provider(const GraphserverVertex* current_vertex,
     (void)user_data; // Unused parameter
     
     GraphserverValue lat_val, lng_val;
-    if (gs_vertex_get_value(current_vertex, "lat", &lat_val) != GS_SUCCESS) {
+    if (gs_vertex_get_value(current_vertex, GS_KEY_LAT, &lat_val) != GS_SUCCESS) {
         return -1;
     }
-    if (gs_vertex_get_value(current_vertex, "lng", &lng_val) != GS_SUCCESS) {
+    if (gs_vertex_get_value(current_vertex, KEY_LNG, &lng_val) != GS_SUCCESS) {
         gs_value_destroy(&lat_val);
         return -1;
     }
@@ -502,9 +513,9 @@ static int rich_metadata_provider(const GraphserverVertex* current_vertex,
     double target_lng = lng;
     
     GraphserverKeyPair target_pairs[] = {
-        {"lat", gs_value_create_float(target_lat)},
-        {"lng", gs_value_create_float(target_lng)},
-        {"type", gs_value_create_string("location")}
+        {GS_KEY_LAT, gs_value_create_float(target_lat)},
+        {KEY_LNG, gs_value_create_float(target_lng)},
+        {KEY_TYPE, gs_value_create_string("location")}
     };
     
     GraphserverVertex* target = gs_vertex_create(target_pairs, 3, NULL);
@@ -525,19 +536,19 @@ static int rich_metadata_provider(const GraphserverVertex* current_vertex,
     
     // Add comprehensive metadata similar to OSM provider
     GraphserverValue way_id_val = gs_value_create_int(12345);
-    gs_edge_set_metadata(edge, "way_id", way_id_val);
+    gs_edge_set_metadata(edge, KEY_WAY_ID, way_id_val);
     
     GraphserverValue edge_type_val = gs_value_create_string("osm_way");
-    gs_edge_set_metadata(edge, "edge_type", edge_type_val);
+    gs_edge_set_metadata(edge, KEY_EDGE_TYPE, edge_type_val);
     
     GraphserverValue distance_m_val = gs_value_create_float(distance);
-    gs_edge_set_metadata(edge, "distance_m", distance_m_val);
+    gs_edge_set_metadata(edge, KEY_DISTANCE_M, distance_m_val);
     
     GraphserverValue duration_s_val = gs_value_create_float(distance / 1.4); // ~5 km/h walking
-    gs_edge_set_metadata(edge, "duration_s", duration_s_val);
+    gs_edge_set_metadata(edge, KEY_DURATION_S, duration_s_val);
     
     GraphserverValue highway_val = gs_value_create_string("residential");
-    gs_edge_set_metadata(edge, "highway", highway_val);
+    gs_edge_set_metadata(edge, KEY_HIGHWAY, highway_val);
     
     gs_edge_set_owns_target_vertex(edge, true);
     gs_edge_list_add_edge(out_edges, edge);
@@ -555,9 +566,9 @@ TEST(metadata_preservation_isolated) {
     
     // Create start vertex (location-based)
     GraphserverKeyPair start_pairs[] = {
-        {"lat", gs_value_create_float(40.7074)},
-        {"lng", gs_value_create_float(-74.0113)},
-        {"type", gs_value_create_string("location")}
+        {GS_KEY_LAT, gs_value_create_float(40.7074)},
+        {KEY_LNG, gs_value_create_float(-74.0113)},
+        {KEY_TYPE, gs_value_create_string("location")}
     };
     GraphserverVertex* start = gs_vertex_create(start_pairs, 3, NULL);
     
@@ -589,35 +600,35 @@ TEST(metadata_preservation_isolated) {
     
     // Verify each metadata field
     GraphserverValue way_id_val;
-    GraphserverResult result = gs_edge_get_metadata(edge, "way_id", &way_id_val);
+    GraphserverResult result = gs_edge_get_metadata(edge, KEY_WAY_ID, &way_id_val);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_INT, way_id_val.type);
     ASSERT_EQ(12345, way_id_val.as.i_val);
     gs_value_destroy(&way_id_val);
     
     GraphserverValue edge_type_val;
-    result = gs_edge_get_metadata(edge, "edge_type", &edge_type_val);
+    result = gs_edge_get_metadata(edge, KEY_EDGE_TYPE, &edge_type_val);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_STRING, edge_type_val.type);
     ASSERT(strcmp(edge_type_val.as.s_val, "osm_way") == 0);
     gs_value_destroy(&edge_type_val);
     
     GraphserverValue distance_m_val;
-    result = gs_edge_get_metadata(edge, "distance_m", &distance_m_val);
+    result = gs_edge_get_metadata(edge, KEY_DISTANCE_M, &distance_m_val);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_FLOAT, distance_m_val.type);
     ASSERT_DOUBLE_EQ(111.0, distance_m_val.as.f_val, 1e-6);
     gs_value_destroy(&distance_m_val);
     
     GraphserverValue duration_s_val;
-    result = gs_edge_get_metadata(edge, "duration_s", &duration_s_val);
+    result = gs_edge_get_metadata(edge, KEY_DURATION_S, &duration_s_val);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_FLOAT, duration_s_val.type);
     ASSERT_DOUBLE_EQ(111.0 / 1.4, duration_s_val.as.f_val, 1e-6);
     gs_value_destroy(&duration_s_val);
     
     GraphserverValue highway_val;
-    result = gs_edge_get_metadata(edge, "highway", &highway_val);
+    result = gs_edge_get_metadata(edge, KEY_HIGHWAY, &highway_val);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_STRING, highway_val.type);
     ASSERT(strcmp(highway_val.as.s_val, "residential") == 0);
@@ -639,9 +650,9 @@ TEST(provider_metadata_flow_integration) {
     
     // Create start vertex (location-based)
     GraphserverKeyPair start_pairs[] = {
-        {"lat", gs_value_create_float(40.7074)},
-        {"lng", gs_value_create_float(-74.0113)},
-        {"type", gs_value_create_string("location")}
+        {GS_KEY_LAT, gs_value_create_float(40.7074)},
+        {KEY_LNG, gs_value_create_float(-74.0113)},
+        {KEY_TYPE, gs_value_create_string("location")}
     };
     GraphserverVertex* start = gs_vertex_create(start_pairs, 3, NULL);
     
@@ -673,35 +684,35 @@ TEST(provider_metadata_flow_integration) {
     
     // Verify each metadata field
     GraphserverValue way_id_val;
-    GraphserverResult result = gs_edge_get_metadata(edge, "way_id", &way_id_val);
+    GraphserverResult result = gs_edge_get_metadata(edge, KEY_WAY_ID, &way_id_val);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_INT, way_id_val.type);
     ASSERT_EQ(12345, way_id_val.as.i_val);
     gs_value_destroy(&way_id_val);
     
     GraphserverValue edge_type_val;
-    result = gs_edge_get_metadata(edge, "edge_type", &edge_type_val);
+    result = gs_edge_get_metadata(edge, KEY_EDGE_TYPE, &edge_type_val);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_STRING, edge_type_val.type);
     ASSERT(strcmp(edge_type_val.as.s_val, "osm_way") == 0);
     gs_value_destroy(&edge_type_val);
     
     GraphserverValue distance_m_val;
-    result = gs_edge_get_metadata(edge, "distance_m", &distance_m_val);
+    result = gs_edge_get_metadata(edge, KEY_DISTANCE_M, &distance_m_val);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_FLOAT, distance_m_val.type);
     ASSERT_DOUBLE_EQ(111.0, distance_m_val.as.f_val, 1e-6);
     gs_value_destroy(&distance_m_val);
     
     GraphserverValue duration_s_val;
-    result = gs_edge_get_metadata(edge, "duration_s", &duration_s_val);
+    result = gs_edge_get_metadata(edge, KEY_DURATION_S, &duration_s_val);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_FLOAT, duration_s_val.type);
     ASSERT_DOUBLE_EQ(111.0 / 1.4, duration_s_val.as.f_val, 1e-6);
     gs_value_destroy(&duration_s_val);
     
     GraphserverValue highway_val;
-    result = gs_edge_get_metadata(edge, "highway", &highway_val);
+    result = gs_edge_get_metadata(edge, KEY_HIGHWAY, &highway_val);
     ASSERT_EQ(GS_SUCCESS, result);
     ASSERT_EQ(GS_VALUE_STRING, highway_val.type);
     ASSERT(strcmp(highway_val.as.s_val, "residential") == 0);
@@ -718,6 +729,19 @@ int main(void) {
     printf("Running Graphserver Integration Tests\n");
     printf("=====================================\n");
     
+    // Initialize string dictionary and common keys
+    gs_string_dict_init();
+    gs_common_keys_init();
+    
+    // Initialize test-specific keys
+    KEY_LNG = gs_string_dict_register("lng");
+    KEY_TYPE = gs_string_dict_register("type");
+    KEY_WAY_ID = gs_string_dict_register("way_id");
+    KEY_EDGE_TYPE = gs_string_dict_register("edge_type");
+    KEY_DISTANCE_M = gs_string_dict_register("distance_m");
+    KEY_DURATION_S = gs_string_dict_register("duration_s");
+    KEY_HIGHWAY = gs_string_dict_register("highway");
+    
     run_test_utility_functions();
     run_test_walking_provider_basic();
     run_test_transit_provider_basic();
@@ -732,6 +756,9 @@ int main(void) {
     
     printf("\n=====================================\n");
     printf("Tests completed: %d/%d passed\n", tests_passed, tests_run);
+    
+    // Cleanup
+    gs_string_dict_cleanup();
     
     if (tests_passed == tests_run) {
         printf("All integration tests PASSED!\n");
