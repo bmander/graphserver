@@ -36,6 +36,61 @@ def create_vertex_from_coordinates(lat: float, lng: float) -> "Vertex":
     return Vertex({"lat": lat, "lng": lng, "type": "coordinate"})
 
 
+def encode_polyline(coordinates: list[list[float]]) -> str:
+    """Encode a list of [lng, lat] coordinates as a polyline string.
+
+    Uses Google's polyline encoding algorithm to compress coordinate data.
+
+    Args:
+        coordinates: List of [longitude, latitude] pairs
+
+    Returns:
+        Encoded polyline string
+    """
+    if not coordinates:
+        return ""
+
+    # Constants for polyline encoding
+    chunk_size = 0x20
+    chunk_mask = 0x1F
+    ascii_offset = 63
+
+    def encode_value(value: int) -> str:
+        """Encode a single coordinate value using variable-length encoding."""
+        # Left shift and apply two's complement for negative values
+        value = ~(value << 1) if value < 0 else (value << 1)
+
+        encoded = ""
+        while value >= chunk_size:
+            encoded += chr((chunk_size | (value & chunk_mask)) + ascii_offset)
+            value >>= 5
+        encoded += chr(value + ascii_offset)
+        return encoded
+
+    polyline = ""
+    prev_lat = 0
+    prev_lng = 0
+
+    for lng, lat in coordinates:
+        # Convert to integers (multiply by 1e5 for precision)
+        lat_int = int(round(lat * 1e5))
+        lng_int = int(round(lng * 1e5))
+
+        # Calculate deltas from previous point
+        delta_lat = lat_int - prev_lat
+        delta_lng = lng_int - prev_lng
+
+        # Encode deltas
+        polyline += encode_value(delta_lat)
+        polyline += encode_value(delta_lng)
+
+        # Update previous values
+        prev_lat = lat_int
+        prev_lng = lng_int
+
+    return polyline
+
+
 def extract_way_segment_coordinates(
     osm_data: "OSMDataSource",
     way_id: int,
@@ -189,11 +244,38 @@ def path_result_to_geojson(
     # Add destination
     coordinates.append([destination["lng"], destination["lat"]])
 
-    # Create the route LineString feature
+    # Encode polyline for efficient transmission with timing
+    import json
+    import time
+
+    polyline_start_time = time.perf_counter()
+    encoded_polyline = encode_polyline(coordinates)
+    polyline_end_time = time.perf_counter()
+    polyline_encoding_time_ms = (polyline_end_time - polyline_start_time) * 1000
+
+    # Calculate bandwidth savings
+    original_coords_size = len(json.dumps(coordinates).encode("utf-8"))
+    encoded_polyline_size = len(encoded_polyline.encode("utf-8"))
+    bandwidth_savings_bytes = original_coords_size - encoded_polyline_size
+    bandwidth_savings_percent = (
+        (bandwidth_savings_bytes / original_coords_size * 100)
+        if original_coords_size > 0
+        else 0
+    )
+
+    # Create the route LineString feature with optimized geometry
+    # Only include encoded polyline to minimize response size
     route_feature = {
         "type": "Feature",
-        "geometry": {"type": "LineString", "coordinates": coordinates},
-        "properties": {"route_type": "calculated_route", "waypoints": waypoints},
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [],
+        },  # Empty to save bandwidth
+        "properties": {
+            "route_type": "calculated_route",
+            "waypoints": waypoints,
+            "encoded_polyline": encoded_polyline,
+        },
     }
 
     return {
@@ -204,6 +286,13 @@ def path_result_to_geojson(
             "total_distance": total_distance,  # Actual distance from OSM edge metadata
             "status": "success",
             "waypoint_count": len(waypoints),
+            "coordinate_count": len(coordinates),
+            "polyline_length": len(encoded_polyline),
+            "polyline_encoding_time_ms": round(polyline_encoding_time_ms, 2),
+            "original_coords_size_bytes": original_coords_size,
+            "encoded_polyline_size_bytes": encoded_polyline_size,
+            "bandwidth_savings_bytes": bandwidth_savings_bytes,
+            "bandwidth_savings_percent": round(bandwidth_savings_percent, 1),
         },
     }
 
@@ -498,7 +587,9 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
 
             except Exception as routing_error:
                 # Calculate partial timing if we have it
-                routing_error_time_ms = (time.perf_counter() - routing_start_time) * 1000
+                routing_error_time_ms = (
+                    time.perf_counter() - routing_start_time
+                ) * 1000
                 self._send_error_response(
                     error_code="ROUTING_ENGINE_ERROR",
                     error_message="Route calculation failed due to an internal error",
@@ -530,7 +621,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
             geojson_result["properties"]["timing"] = {
                 "routing_time_ms": round(routing_time_ms, 2),
                 "geometry_time_ms": round(geometry_time_ms, 2),
-                "total_time_ms": round(routing_time_ms + geometry_time_ms, 2)
+                "total_time_ms": round(routing_time_ms + geometry_time_ms, 2),
             }
 
             self.send_json_response(geojson_result)

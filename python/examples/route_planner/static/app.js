@@ -3,6 +3,54 @@
  * Phase 3: Routing integration with visualization
  */
 
+/**
+ * Decode a polyline string into coordinate pairs
+ * @param {string} encoded - Encoded polyline string
+ * @returns {Array<Array<number>>} Array of [lat, lng] coordinates
+ */
+function decodePolyline(encoded) {
+    if (!encoded) return [];
+    
+    const coordinates = [];
+    let index = 0;
+    let lat = 0;
+    let lng = 0;
+    
+    while (index < encoded.length) {
+        // Decode latitude
+        let shift = 0;
+        let result = 0;
+        let byte;
+        
+        do {
+            byte = encoded.charCodeAt(index++) - 63;
+            result |= (byte & 0x1f) << shift;
+            shift += 5;
+        } while (byte >= 0x20);
+        
+        const deltaLat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+        lat += deltaLat;
+        
+        // Decode longitude
+        shift = 0;
+        result = 0;
+        
+        do {
+            byte = encoded.charCodeAt(index++) - 63;
+            result |= (byte & 0x1f) << shift;
+            shift += 5;
+        } while (byte >= 0x20);
+        
+        const deltaLng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+        lng += deltaLng;
+        
+        // Convert back to decimal degrees and add to coordinates
+        coordinates.push([lat / 1e5, lng / 1e5]);
+    }
+    
+    return coordinates;
+}
+
 class RoutePlanner {
     constructor() {
         this.map = null;
@@ -634,6 +682,11 @@ class RoutePlanner {
         const geometryTimeElement = document.getElementById('geometry-time');
         const totalTimeElement = document.getElementById('total-time');
         const apiResponseTimeElement = document.getElementById('api-response-time');
+        const polylineEncodingTimeElement = document.getElementById('polyline-encoding-time');
+        const coordinateCountElement = document.getElementById('coordinate-count');
+        const polylineLengthElement = document.getElementById('polyline-length');
+        const originalSizeElement = document.getElementById('original-size');
+        const bandwidthSavedElement = document.getElementById('bandwidth-saved');
         
         if (statusElement) statusElement.textContent = 'Route Found';
         if (distanceElement) {
@@ -665,6 +718,31 @@ class RoutePlanner {
         if (apiResponseTimeElement && routeData.properties?.timing) {
             const apiResponseTime = routeData.properties.timing.api_response_time_ms || 0;
             apiResponseTimeElement.textContent = `${apiResponseTime.toFixed(1)} ms`;
+        }
+        
+        // Update polyline encoding metrics
+        if (polylineEncodingTimeElement && routeData.properties?.polyline_encoding_time_ms) {
+            const encodingTime = routeData.properties.polyline_encoding_time_ms;
+            polylineEncodingTimeElement.textContent = `${encodingTime.toFixed(2)} ms`;
+        }
+        if (coordinateCountElement && routeData.properties?.coordinate_count) {
+            const coordCount = routeData.properties.coordinate_count;
+            coordinateCountElement.textContent = `${coordCount.toLocaleString()}`;
+        }
+        if (polylineLengthElement && routeData.properties?.polyline_length) {
+            const polylineLength = routeData.properties.polyline_length;
+            polylineLengthElement.textContent = `${polylineLength} chars`;
+        }
+        
+        // Update bandwidth savings metrics
+        if (originalSizeElement && routeData.properties?.original_coords_size_bytes) {
+            const originalSize = routeData.properties.original_coords_size_bytes;
+            originalSizeElement.textContent = `${originalSize} bytes`;
+        }
+        if (bandwidthSavedElement && routeData.properties?.bandwidth_savings_bytes && routeData.properties?.bandwidth_savings_percent) {
+            const savedBytes = routeData.properties.bandwidth_savings_bytes;
+            const savedPercent = routeData.properties.bandwidth_savings_percent;
+            bandwidthSavedElement.textContent = `${savedBytes} bytes (${savedPercent}%)`;
         }
     }
     
@@ -727,7 +805,13 @@ class RoutePlanner {
         // Add each feature to the route layer
         routeData.features.forEach(feature => {
             if (feature.geometry.type === 'LineString') {
-                const coordinates = feature.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                // Always use encoded polyline for maximum efficiency
+                if (!feature.properties.encoded_polyline) {
+                    console.error('Missing encoded polyline in route response');
+                    return;
+                }
+                
+                const coordinates = decodePolyline(feature.properties.encoded_polyline);
                 
                 const routeLine = L.polyline(coordinates, {
                     color: '#e74c3c',
