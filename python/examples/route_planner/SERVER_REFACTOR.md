@@ -109,7 +109,7 @@ This plan improves clarity, conciseness, and maintainability of `python/examples
 ## Work Items Checklist
 - [x] Add logging and configure levels.
 - [x] Add `web_utils.py` with HTTP helpers.
-- [ ] Create `routing_utils.py` and move routing helpers.
+- [x] Create `routing_utils.py` and move routing helpers.
 - [ ] Add optional `types.py` and `constants.py`.
 - [ ] Implement handler factory; remove class attribute globals.
 - [ ] Introduce route dispatch maps in handler.
