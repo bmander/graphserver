@@ -27,6 +27,10 @@ static PyMethodDef GraphserverMethods[] = {
      "Invalidate cached edges for multiple vertices"},
     {"clear_cache", py_clear_cache, METH_VARARGS,
      "Clear the entire edge cache"},
+    {"register_key", py_register_key, METH_VARARGS,
+     "Register a string key and return its uint16_t ID"},
+    {"get_key_string", py_get_key_string, METH_VARARGS,
+     "Get the string representation of a uint16_t key ID"},
     {NULL, NULL, 0, NULL}
 };
 
@@ -45,6 +49,15 @@ static struct PyModuleDef graphserver_module = {
 
 // Module initialization with error handling
 PyMODINIT_FUNC PyInit__graphserver(void) {
+    // Initialize the string dictionary system before creating the module
+    gs_string_dict_init();
+    
+    // Initialize common keys after dictionary is ready
+    if (!gs_common_keys_init()) {
+        PyErr_SetString(PyExc_RuntimeError, "Failed to initialize common keys");
+        return NULL;
+    }
+    
     PyObject* module = PyModule_Create(&graphserver_module);
     if (module == NULL) {
         return NULL;

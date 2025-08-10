@@ -289,8 +289,10 @@ bool identity_aware_goal_predicate(
     GraphserverValue id_hash_val;
     GraphserverValue goal_id_hash_val;
     
-    bool has_id = gs_vertex_get_value(vertex, "_hash", &id_hash_val) == GS_SUCCESS;
-    bool goal_has_id = gs_vertex_get_value(goal_data->goal_vertex, "_hash", &goal_id_hash_val) == GS_SUCCESS;
+    // Register _hash key and use uint16_t key ID
+    uint16_t hash_key = gs_string_dict_register("_hash");
+    bool has_id = gs_vertex_get_value(vertex, hash_key, &id_hash_val) == GS_SUCCESS;
+    bool goal_has_id = gs_vertex_get_value(goal_data->goal_vertex, hash_key, &goal_id_hash_val) == GS_SUCCESS;
     
     if (has_id && goal_has_id) {
         // Compare identity hashes - this allows coordinate matching with tolerance

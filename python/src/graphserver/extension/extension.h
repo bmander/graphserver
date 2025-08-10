@@ -4,6 +4,8 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include "../../../../core/include/graphserver.h"
+#include "../../../../core/include/gs_string_dict.h"
+#include "../../../../core/include/gs_common_keys.h"
 
 /**
  * @file extension.h
@@ -75,5 +77,9 @@ void cleanup_vertex_array(GraphserverVertex** vertices, size_t count);
 PyObject* py_invalidate_vertex_cache(PyObject* self, PyObject* args);
 PyObject* py_invalidate_vertices_cache(PyObject* self, PyObject* args);
 PyObject* py_clear_cache(PyObject* self, PyObject* args);
+
+// Key registration functions (keys.c)
+PyObject* py_register_key(PyObject* self, PyObject* args);
+PyObject* py_get_key_string(PyObject* self, PyObject* args);
 
 #endif // GRAPHSERVER_EXTENSION_H

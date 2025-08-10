@@ -142,3 +142,50 @@ PyObject* py_clear_cache(PyObject* self, PyObject* args) {
     
     Py_RETURN_NONE;
 }
+
+/**
+ * Register a string key and return its uint16_t ID.
+ * 
+ * @param self Module object (unused)
+ * @param args Arguments tuple containing the string key
+ * @return Python integer containing the key ID
+ */
+PyObject* py_register_key(PyObject* self, PyObject* args) {
+    (void)self;  // Suppress unused parameter warning
+    const char* key_str;
+    
+    if (!PyArg_ParseTuple(args, "s", &key_str)) {
+        return NULL;
+    }
+    
+    uint16_t key_id = gs_string_dict_register(key_str);
+    return PyLong_FromUnsignedLong(key_id);
+}
+
+/**
+ * Get the string representation of a uint16_t key ID.
+ * 
+ * @param self Module object (unused)
+ * @param args Arguments tuple containing the key ID
+ * @return Python string containing the key string, or None if invalid
+ */
+PyObject* py_get_key_string(PyObject* self, PyObject* args) {
+    (void)self;  // Suppress unused parameter warning
+    unsigned int key_id;
+    
+    if (!PyArg_ParseTuple(args, "I", &key_id)) {
+        return NULL;
+    }
+    
+    if (key_id > UINT16_MAX) {
+        PyErr_Format(PyExc_ValueError, "Key ID %u exceeds maximum value %u", key_id, UINT16_MAX);
+        return NULL;
+    }
+    
+    const char* key_str = gs_key_to_string((uint16_t)key_id);
+    if (key_str) {
+        return PyUnicode_FromString(key_str);
+    } else {
+        Py_RETURN_NONE;
+    }
+}

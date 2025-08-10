@@ -48,16 +48,24 @@ PyObject* vertex_to_python_dict(const GraphserverVertex* vertex) {
     
     // Convert each key-value pair using index-based access
     for (size_t i = 0; i < key_count; i++) {
-        const char* key;
-        GraphserverResult result = gs_vertex_get_key_at_index(vertex, i, &key);
+        uint16_t key_id;
+        GraphserverResult result = gs_vertex_get_key_at_index(vertex, i, &key_id);
         if (result != GS_SUCCESS) {
             Py_DECREF(dict);
             handle_graphserver_error(result, "vertex key retrieval");
             return NULL;
         }
         
+        // Convert uint16_t key back to string for Python
+        const char* key = gs_key_to_string(key_id);
+        if (!key) {
+            Py_DECREF(dict);
+            PyErr_Format(PyExc_RuntimeError, "Invalid key ID %u", key_id);
+            return NULL;
+        }
+        
         GraphserverValue gs_value;
-        result = gs_vertex_get_value(vertex, key, &gs_value);
+        result = gs_vertex_get_value(vertex, key_id, &gs_value);
         if (result != GS_SUCCESS) {
             Py_DECREF(dict);
             handle_graphserver_error(result, "vertex value retrieval");
@@ -324,7 +332,14 @@ PyObject* create_python_edge_object(const GraphserverEdge* edge) {
         
         // Iterate through metadata directly from the C structure
         for (size_t i = 0; i < metadata_count; i++) {
-            const char* key = edge->metadata[i].key;
+            uint16_t key_id = edge->metadata[i].key;
+            const char* key = gs_key_to_string(key_id);
+            if (!key) {
+                Py_DECREF(metadata_dict);
+                Py_DECREF(cost_obj);
+                PyErr_Format(PyExc_RuntimeError, "Invalid metadata key ID %u", key_id);
+                return NULL;
+            }
             const GraphserverValue* gs_value = &edge->metadata[i].value;
             
             // Convert GraphserverValue to Python object
@@ -826,7 +841,9 @@ int python_edges_to_c_edges(PyObject* edge_list, GraphserverEdgeList* out_edges)
                     return -1;
                 }
                 
-                GraphserverResult result = gs_edge_set_metadata(edge, meta_key_str, meta_gs_value);
+                // Convert string key to uint16_t using string dictionary
+                uint16_t meta_key_id = gs_string_dict_register(meta_key_str);
+                GraphserverResult result = gs_edge_set_metadata(edge, meta_key_id, meta_gs_value);
                 if (result != GS_SUCCESS) {
                     gs_edge_destroy(edge);
                     handle_graphserver_error(result, "edge metadata setting");
@@ -967,8 +984,11 @@ GraphserverVertex* python_dict_to_vertex(PyObject* dict) {
             return NULL;
         }
         
+        // Convert string key to uint16_t using string dictionary
+        uint16_t key_id = gs_string_dict_register(key_str);
+        
         // Store the key-value pair
-        pairs[pair_index].key = key_str;
+        pairs[pair_index].key = key_id;
         pairs[pair_index].value = gs_value;
         pair_index++;
     }
@@ -1074,7 +1094,9 @@ GraphserverVertex* python_vertex_to_vertex(PyObject* vertex_obj) {
             return NULL;
         }
         
-        pairs[pair_index].key = key_str;
+        // Convert string key to uint16_t using string dictionary
+        uint16_t key_id = gs_string_dict_register(key_str);
+        pairs[pair_index].key = key_id;
         
         // Convert Python value to GraphserverValue using helper function
         GraphserverValue gs_value;
@@ -1301,7 +1323,9 @@ int python_vertex_edge_pairs_to_c_edges(PyObject* pair_list, GraphserverEdgeList
                     return -1;
                 }
                 
-                GraphserverResult result = gs_edge_set_metadata(edge, meta_key_str, meta_gs_value);
+                // Convert string key to uint16_t using string dictionary
+                uint16_t meta_key_id = gs_string_dict_register(meta_key_str);
+                GraphserverResult result = gs_edge_set_metadata(edge, meta_key_id, meta_gs_value);
                 if (result != GS_SUCCESS) {
                     Py_DECREF(metadata_attr);
                     gs_edge_destroy(edge);
