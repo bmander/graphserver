@@ -178,10 +178,9 @@ def path_result_to_geojson(
     coordinates = [[origin["lng"], origin["lat"]]]
     total_cost = 0.0
     total_distance = 0.0
-    waypoints = []
     previous_node_id = None
 
-    for i, path_edge in enumerate(path_result):
+    for _, path_edge in enumerate(path_result):
         # Get target vertex and edge information
         target = path_edge.target
         edge = path_edge.edge
@@ -233,14 +232,6 @@ def path_result_to_geojson(
         if "osm_node_id" in target:
             previous_node_id = target["osm_node_id"]
 
-        # Create waypoint information
-        waypoint = {
-            "position": [target.get("lng", 0), target.get("lat", 0)],
-            "instruction": f"Continue to waypoint {i + 1}",
-            "cost": float(cost) if isinstance(cost, int | float) else 0,
-        }
-        waypoints.append(waypoint)
-
     # Add destination
     coordinates.append([destination["lng"], destination["lat"]])
 
@@ -253,13 +244,23 @@ def path_result_to_geojson(
     polyline_end_time = time.perf_counter()
     polyline_encoding_time_ms = (polyline_end_time - polyline_start_time) * 1000
 
-    # Calculate bandwidth savings
+    # Calculate bandwidth savings from optimizations
+    # 1. Coordinates JSON vs encoded polyline
     original_coords_size = len(json.dumps(coordinates).encode("utf-8"))
     encoded_polyline_size = len(encoded_polyline.encode("utf-8"))
-    bandwidth_savings_bytes = original_coords_size - encoded_polyline_size
+
+    # 2. Estimate waypoint data size that would have been sent
+    # Each waypoint typically has position[2], instruction, cost = ~60-80 bytes per waypoint
+    estimated_waypoint_count = len(path_result)
+    estimated_waypoints_size = estimated_waypoint_count * 70  # Rough estimate
+
+    # Total savings: coordinates + waypoints
+    total_original_size = original_coords_size + estimated_waypoints_size
+    total_optimized_size = encoded_polyline_size
+    bandwidth_savings_bytes = total_original_size - total_optimized_size
     bandwidth_savings_percent = (
-        (bandwidth_savings_bytes / original_coords_size * 100)
-        if original_coords_size > 0
+        (bandwidth_savings_bytes / total_original_size * 100)
+        if total_original_size > 0
         else 0
     )
 
@@ -273,7 +274,6 @@ def path_result_to_geojson(
         },  # Empty to save bandwidth
         "properties": {
             "route_type": "calculated_route",
-            "waypoints": waypoints,
             "encoded_polyline": encoded_polyline,
         },
     }
@@ -285,11 +285,12 @@ def path_result_to_geojson(
             "total_cost": total_cost,
             "total_distance": total_distance,  # Actual distance from OSM edge metadata
             "status": "success",
-            "waypoint_count": len(waypoints),
             "coordinate_count": len(coordinates),
             "polyline_length": len(encoded_polyline),
             "polyline_encoding_time_ms": round(polyline_encoding_time_ms, 2),
             "original_coords_size_bytes": original_coords_size,
+            "estimated_waypoints_size_bytes": estimated_waypoints_size,
+            "total_original_size_bytes": total_original_size,
             "encoded_polyline_size_bytes": encoded_polyline_size,
             "bandwidth_savings_bytes": bandwidth_savings_bytes,
             "bandwidth_savings_percent": round(bandwidth_savings_percent, 1),

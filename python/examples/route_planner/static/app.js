@@ -677,7 +677,6 @@ class RoutePlanner {
         const statusElement = document.getElementById('route-status');
         const distanceElement = document.getElementById('route-distance');
         const costElement = document.getElementById('route-cost');
-        const waypointsElement = document.getElementById('route-waypoints');
         const routingTimeElement = document.getElementById('routing-time');
         const geometryTimeElement = document.getElementById('geometry-time');
         const totalTimeElement = document.getElementById('total-time');
@@ -696,10 +695,6 @@ class RoutePlanner {
         if (costElement) {
             const cost = routeData.properties?.total_cost || 0;
             costElement.textContent = `${cost.toFixed(1)} units`;
-        }
-        if (waypointsElement) {
-            const waypoints = routeData.properties?.waypoint_count || 0;
-            waypointsElement.textContent = waypoints;
         }
         
         // Update timing information
@@ -735,9 +730,11 @@ class RoutePlanner {
         }
         
         // Update bandwidth savings metrics
-        if (originalSizeElement && routeData.properties?.original_coords_size_bytes) {
-            const originalSize = routeData.properties.original_coords_size_bytes;
-            originalSizeElement.textContent = `${originalSize} bytes`;
+        if (originalSizeElement && routeData.properties?.total_original_size_bytes) {
+            const totalOriginalSize = routeData.properties.total_original_size_bytes;
+            const coordsSize = routeData.properties.original_coords_size_bytes || 0;
+            const waypointsSize = routeData.properties.estimated_waypoints_size_bytes || 0;
+            originalSizeElement.textContent = `${totalOriginalSize} bytes (${coordsSize} coords + ${waypointsSize} waypoints)`;
         }
         if (bandwidthSavedElement && routeData.properties?.bandwidth_savings_bytes && routeData.properties?.bandwidth_savings_percent) {
             const savedBytes = routeData.properties.bandwidth_savings_bytes;
@@ -799,8 +796,6 @@ class RoutePlanner {
         
         // Determine opacity based on update type
         const lineOpacity = isLiveUpdate ? 0.5 : 0.8;
-        const waypointOpacity = isLiveUpdate ? 0.6 : 1.0;
-        const waypointFillOpacity = isLiveUpdate ? 0.4 : 0.8;
         
         // Add each feature to the route layer
         routeData.features.forEach(feature => {
@@ -821,29 +816,6 @@ class RoutePlanner {
                 });
                 
                 this.routeLayer.addLayer(routeLine);
-                
-                // Add waypoint markers if available (hide during live updates for cleaner look)
-                if (feature.properties.waypoints && !isLiveUpdate) {
-                    feature.properties.waypoints.forEach((waypoint, index) => {
-                        const waypointMarker = L.circleMarker([waypoint.position[1], waypoint.position[0]], {
-                            radius: 6,
-                            fillColor: '#e67e22',
-                            color: '#d35400',
-                            weight: 2,
-                            opacity: waypointOpacity,
-                            fillOpacity: waypointFillOpacity,
-                            className: 'route-waypoint'
-                        });
-                        
-                        waypointMarker.bindPopup(`
-                            <strong>Waypoint ${index + 1}</strong><br>
-                            ${waypoint.instruction}<br>
-                            Cost: ${waypoint.cost.toFixed(2)}
-                        `);
-                        
-                        this.routeLayer.addLayer(waypointMarker);
-                    });
-                }
             }
         });
         
