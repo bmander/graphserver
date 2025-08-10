@@ -1,6 +1,5 @@
 """HTTP server for the route planner application."""
 
-import json
 import logging
 import mimetypes
 import time
@@ -9,6 +8,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
+
+from . import web_utils
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -319,17 +320,18 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
             self.serve_file(file_path)
         # API endpoints
         elif path == "/api/status":
-            self.send_json_response(
+            web_utils.send_json_response(
+                self,
                 {
                     "status": "ok",
                     "message": "Route planner is running",
                     "config": getattr(self, "server_config", {}),
-                }
+                },
             )
         elif path == "/api/bounds":
-            self.send_json_response(self._get_osm_bounds())
+            web_utils.send_json_response(self, self._get_osm_bounds())
         elif path == "/api/providers":
-            self.send_json_response(self._get_providers_info())
+            web_utils.send_json_response(self, self._get_providers_info())
         else:
             self.send_error(404, "Not found")
 
@@ -381,21 +383,6 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
                 self.wfile.write(f.read())
         except OSError as e:
             self.send_error(500, f"Error reading file: {e}")
-
-    def send_json_response(self, data: dict[str, Any]) -> None:
-        """Send JSON response."""
-        try:
-            response_body = json.dumps(data, indent=2).encode("utf-8")
-
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(response_body)))
-            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-            self.end_headers()
-
-            self.wfile.write(response_body)
-        except (TypeError, ValueError) as e:
-            self.send_error(500, f"Error serializing JSON: {e}")
 
     def log_message(self, fmt: str, *args: Any) -> None:
         """Custom log format."""
@@ -465,11 +452,11 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
             # Check engine availability
             engine = getattr(self.__class__, "engine", None)
             if not engine:
-                self.send_json_response(
-                    {
-                        "error": "Routing engine not available",
-                        "message": "Graphserver engine not initialized or routing data not loaded",
-                    }
+                web_utils.send_json_error(
+                    self,
+                    500,
+                    "Routing engine not available",
+                    error_details="Graphserver engine not initialized or routing data not loaded",
                 )
                 return
 
@@ -482,41 +469,35 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
 
     def _validate_and_parse_request(self) -> dict[str, Any] | None:
         """Validate and parse route request. Returns None if there's an error."""
-        content_length = int(self.headers.get("Content-Length", 0))
-        if content_length == 0:
-            self.send_error(400, "Empty request body")
-            return None
-
-        try:
-            post_data = self.rfile.read(content_length)
-            request_data = json.loads(post_data.decode("utf-8"))
-        except (json.JSONDecodeError, UnicodeDecodeError) as e:
-            self.send_error(400, f"Invalid JSON: {e}")
+        # Parse JSON body
+        request_data = web_utils.parse_json_body(self)
+        if request_data is None:
             return None
 
         # Validate required fields
         required_fields = ["origin", "destination"]
-        for field in required_fields:
-            if field not in request_data:
-                self.send_error(400, f"Missing required field: {field}")
-                return None
+        missing_fields = web_utils.validate_request_fields(
+            request_data, required_fields
+        )
+        if missing_fields:
+            web_utils.send_http_error(
+                self, 400, f"Missing required field: {missing_fields[0]}"
+            )
+            return None
 
         # Validate coordinates
-        for point_name, point in [
-            ("origin", request_data["origin"]),
-            ("destination", request_data["destination"]),
-        ]:
-            if not isinstance(point, dict) or "lat" not in point or "lng" not in point:
-                self.send_error(400, f"Invalid {point_name} coordinates")
+        for point_name in ["origin", "destination"]:
+            point = request_data[point_name]
+            validated_point = web_utils.validate_point(point, point_name)
+            if validated_point is None:
+                web_utils.send_http_error(
+                    self, 400, f"Invalid {point_name} coordinates"
+                )
                 return None
-            try:
-                float(point["lat"])
-                float(point["lng"])
-            except (ValueError, TypeError):
-                self.send_error(400, f"Invalid {point_name} coordinate values")
-                return None
+            # Update the request data with normalized coordinates
+            request_data[point_name] = validated_point
 
-        return request_data  # type: ignore[no-any-return]
+        return request_data
 
     def _perform_routing(
         self, engine: "Engine", origin: dict[str, float], destination: dict[str, float]
@@ -533,9 +514,11 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
             access_provider = providers.get("osm_access")
 
             if not access_provider:
-                self._send_error_response(
+                web_utils.send_json_error(
+                    self,
+                    500,
+                    "OSM access provider not available",
                     error_code="PROVIDER_UNAVAILABLE",
-                    error_message="OSM access provider not available",
                     error_details="The routing engine could not access OSM network data. This may indicate a configuration issue.",
                     debug_info={"providers_available": list(providers.keys())},
                 )
@@ -573,9 +556,11 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
 
                 # Check if route was found
                 if not path_result or len(path_result) == 0:
-                    self._send_error_response(
+                    web_utils.send_json_error(
+                        self,
+                        404,
+                        "No route could be calculated between the selected points",
                         error_code="NO_ROUTE_FOUND",
-                        error_message="No route could be calculated between the selected points",
                         error_details="The routing algorithm could not find a connected path between the origin and destination.",
                         debug_info={
                             "origin": origin,
@@ -595,9 +580,11 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
                 routing_error_time_ms = (
                     time.perf_counter() - routing_start_time
                 ) * 1000
-                self._send_error_response(
+                web_utils.send_json_error(
+                    self,
+                    500,
+                    "Route calculation failed due to an internal error",
                     error_code="ROUTING_ENGINE_ERROR",
-                    error_message="Route calculation failed due to an internal error",
                     error_details=f"The routing engine encountered an error: {str(routing_error)}",
                     debug_info={
                         "engine_error": str(routing_error),
@@ -629,13 +616,15 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
                 "total_time_ms": round(routing_time_ms + geometry_time_ms, 2),
             }
 
-            self.send_json_response(geojson_result)
+            web_utils.send_json_response(self, geojson_result)
 
         except Exception as e:
             logger.exception("Route calculation error")
-            self._send_error_response(
+            web_utils.send_json_error(
+                self,
+                500,
+                "An unexpected error occurred during route calculation",
                 error_code="UNKNOWN_ERROR",
-                error_message="An unexpected error occurred during route calculation",
                 error_details=f"Internal server error: {str(e)}",
                 debug_info={
                     "exception_type": type(e).__name__,
@@ -669,9 +658,11 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
             ):
                 failed_point = "destination"
 
-            self._send_error_response(
+            web_utils.send_json_error(
+                self,
+                400,
+                "No roads found near the selected coordinates",
                 error_code="NO_NEARBY_ROADS",
-                error_message="No roads found near the selected coordinates",
                 error_details=f"Could not find any OSM road network within {search_radius}m of the {failed_point} point.",
                 debug_info={
                     "failed_point": failed_point,
@@ -683,9 +674,11 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
                 },
             )
         else:
-            self._send_error_response(
+            web_utils.send_json_error(
+                self,
+                400,
+                "Failed to connect coordinates to the road network",
                 error_code="COORDINATE_LINKING_FAILED",
-                error_message="Failed to connect coordinates to the road network",
                 error_details=f"Coordinate linking error: {error_msg}",
                 debug_info={
                     "search_radius_m": search_radius,
@@ -695,28 +688,6 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
                     "raw_error": error_msg,
                 },
             )
-
-    def _send_error_response(
-        self,
-        error_code: str,
-        error_message: str,
-        error_details: str,
-        debug_info: dict[str, Any],
-    ) -> None:
-        """Send a structured error response with detailed information."""
-        response = {
-            "type": "FeatureCollection",
-            "features": [],
-            "properties": {
-                "status": "error",
-                "error": error_message,
-                "error_code": error_code,
-                "error_details": error_details,
-                "debug_info": debug_info,
-                "total_cost": 0,
-            },
-        }
-        self.send_json_response(response)
 
 
 def create_progress_callback() -> Callable[[str], None]:
