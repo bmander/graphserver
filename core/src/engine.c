@@ -881,6 +881,74 @@ GraphserverPath* gs_plan_simple(
     }
 }
 
+GraphserverPath* gs_plan_with_planner(
+    GraphserverEngine* engine,
+    const GraphserverVertex* start_vertex,
+    gs_goal_predicate_fn is_goal,
+    void* goal_user_data,
+    const char* planner_name,
+    GraphserverPlanStats* out_stats) {
+    
+    if (!engine || !start_vertex || !is_goal || !planner_name) return NULL;
+    
+    // Create arena for planning operations
+    GraphserverArena* arena = gs_arena_create(engine->config.default_arena_size);
+    if (!arena) return NULL;
+    
+    GraphserverPath* path = NULL;
+    GraphserverPlanStats stats = {0};
+    GraphserverResult result = GS_ERROR_INVALID_ARGUMENT;
+    
+    if (strcmp(planner_name, "dijkstra") == 0) {
+        // Use Dijkstra planner
+        result = gs_plan_dijkstra(
+            engine,
+            start_vertex,
+            is_goal,
+            goal_user_data,
+            engine->config.default_timeout_seconds,
+            arena,
+            &path,
+            &stats
+        );
+    } else if (strcmp(planner_name, "astar") == 0) {
+        // Use A* planner with geographic heuristic
+        result = gs_plan_astar(
+            engine,
+            start_vertex,
+            is_goal,
+            goal_user_data,
+            geographic_distance_heuristic,
+            goal_user_data, // Use same goal data for heuristic
+            engine->config.default_timeout_seconds,
+            arena,
+            &path,
+            &stats
+        );
+    }
+    
+    // Merge planner stats with existing engine stats
+    engine->last_plan_stats.vertices_expanded = stats.vertices_expanded;
+    engine->last_plan_stats.cache_hits += stats.cache_hits;
+    engine->last_plan_stats.cache_misses += stats.cache_misses;
+    engine->last_plan_stats.cache_puts += stats.cache_puts;
+    engine->last_plan_stats.providers_called += stats.providers_called;
+    engine->last_plan_stats.edges_generated += stats.edges_generated;
+    
+    if (out_stats) {
+        *out_stats = stats;
+    }
+    
+    gs_arena_destroy(arena);
+    
+    if (result == GS_SUCCESS) {
+        return path;
+    } else {
+        if (path) gs_path_destroy(path);
+        return NULL;
+    }
+}
+
 // Utility functions
 const char* gs_get_error_message(GraphserverResult result) {
     switch (result) {

@@ -327,6 +327,25 @@ GraphserverPath* gs_plan_simple(
     GraphserverPlanStats* out_stats
 );
 
+/**
+ * Find a path using the specified planner algorithm
+ * @param engine Engine instance
+ * @param start_vertex Starting vertex
+ * @param is_goal Goal predicate function
+ * @param goal_user_data User data for goal predicate
+ * @param planner_name Planner algorithm name ("dijkstra" or "astar")
+ * @param out_stats Optional statistics output (can be NULL)
+ * @return Single path, or NULL if no path found
+ */
+GraphserverPath* gs_plan_with_planner(
+    GraphserverEngine* engine,
+    const GraphserverVertex* start_vertex,
+    gs_goal_predicate_fn is_goal,
+    void* goal_user_data,
+    const char* planner_name,
+    GraphserverPlanStats* out_stats
+);
+
 /** @} */
 
 #ifdef __cplusplus

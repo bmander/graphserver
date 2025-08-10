@@ -25,6 +25,7 @@ set(CORE_SOURCES
     src/engine.c
     src/priority_queue.c
     src/planner_dijkstra.c
+    src/planner_astar.c
     src/string_dict.c
     src/common_keys.c
 )
@@ -83,27 +84,27 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     add_test(NAME cache_tests COMMAND test_cache)
 
     add_executable(test_engine tests/test_engine.c)
-    target_link_libraries(test_engine graphserver_core)
+    target_link_libraries(test_engine graphserver_core m)
     add_test(NAME engine_tests COMMAND test_engine)
 
     add_executable(test_priority_queue tests/test_priority_queue.c)
-    target_link_libraries(test_priority_queue graphserver_core)
+    target_link_libraries(test_priority_queue graphserver_core m)
     add_test(NAME priority_queue_tests COMMAND test_priority_queue)
 
     add_executable(test_planner tests/test_planner.c)
-    target_link_libraries(test_planner graphserver_core)
+    target_link_libraries(test_planner graphserver_core m)
     add_test(NAME planner_tests COMMAND test_planner)
 
     add_executable(test_dijkstra_internals tests/test_dijkstra_internals.c)
-    target_link_libraries(test_dijkstra_internals graphserver_core)
+    target_link_libraries(test_dijkstra_internals graphserver_core m)
     add_test(NAME dijkstra_internals_tests COMMAND test_dijkstra_internals)
 
     add_executable(test_precache tests/test_precache.c)
-    target_link_libraries(test_precache graphserver_core)
+    target_link_libraries(test_precache graphserver_core m)
     add_test(NAME precache_tests COMMAND test_precache)
 
     add_executable(test_bidirectional_engine tests/test_bidirectional_engine.c)
-    target_link_libraries(test_bidirectional_engine graphserver_core)
+    target_link_libraries(test_bidirectional_engine graphserver_core m)
     add_test(NAME bidirectional_engine_tests COMMAND test_bidirectional_engine)
 
     add_executable(test_integration tests/test_integration.c ${EXAMPLE_SOURCES})
@@ -116,6 +117,11 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     target_include_directories(test_performance PRIVATE ../examples/include)
     # Note: Performance tests are not run automatically with 'make test'
     # Run manually with: ./test_performance
+
+    add_executable(test_astar_performance tests/test_astar_performance.c ${EXAMPLE_SOURCES})
+    target_link_libraries(test_astar_performance graphserver_core m)
+    target_include_directories(test_astar_performance PRIVATE ../examples/include)
+    # Simple A* vs Dijkstra comparison test
 
     # Custom target to run all tests
     add_custom_target(run_tests
