@@ -123,6 +123,11 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     target_include_directories(test_astar_performance PRIVATE ../examples/include)
     # Simple A* vs Dijkstra comparison test
 
+    add_executable(test_astar_direct tests/test_astar_direct.c ${EXAMPLE_SOURCES})
+    target_link_libraries(test_astar_direct graphserver_core m)
+    target_include_directories(test_astar_direct PRIVATE ../examples/include)
+    # Direct A* algorithm test
+
     # Custom target to run all tests
     add_custom_target(run_tests
         COMMAND ${CMAKE_CTEST_COMMAND} --verbose
