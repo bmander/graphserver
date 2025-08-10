@@ -1,6 +1,7 @@
 """HTTP server for the route planner application."""
 
 import json
+import logging
 import mimetypes
 import time
 from collections.abc import Callable
@@ -8,6 +9,9 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 # Graphserver imports for routing
 try:
@@ -473,7 +477,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
             self._perform_routing(engine, origin, destination)
 
         except Exception as e:
-            print(f"Route request handling error: {e}")
+            logger.exception("Route request handling error")
             self.send_error(500, f"Internal server error: {e}")
 
     def _validate_and_parse_request(self) -> dict[str, Any] | None:
@@ -628,7 +632,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
             self.send_json_response(geojson_result)
 
         except Exception as e:
-            print(f"Route calculation error: {e}")
+            logger.exception("Route calculation error")
             self._send_error_response(
                 error_code="UNKNOWN_ERROR",
                 error_message="An unexpected error occurred during route calculation",
@@ -806,15 +810,13 @@ class RoutePlannerServer:
     def _init_routing_engine(self) -> None:
         """Initialize the graphserver engine and load providers."""
         if not GRAPHSERVER_AVAILABLE:
-            print(
-                "⚠️  Warning: Graphserver not available - routing functionality disabled"
-            )
+            logger.warning("Graphserver not available - routing functionality disabled")
             return
 
         try:
             # Initialize the graphserver engine
             caching_status = "enabled" if self.enable_caching else "disabled"
-            print(f"🚀 Initializing graphserver engine (caching {caching_status})...")
+            logger.info("Initializing graphserver engine (caching %s)", caching_status)
             self.engine = Engine(enable_edge_caching=self.enable_caching)
 
             # Load OSM providers if OSM file is provided
@@ -825,19 +827,19 @@ class RoutePlannerServer:
             if self.gtfs_files and TRANSIT_AVAILABLE:
                 self._load_transit_providers()
 
-            print(
-                f"✅ Graphserver engine initialized with {len(self.providers)} providers"
+            logger.info(
+                "Graphserver engine initialized with %d providers", len(self.providers)
             )
 
-        except Exception as e:
-            print(f"❌ Failed to initialize graphserver engine: {e}")
+        except Exception:
+            logger.exception("Failed to initialize graphserver engine")
             self.engine = None
             self.providers = {}
 
     def _load_osm_providers(self) -> None:
         """Load and register OSM providers."""
         try:
-            print(f"📍 Loading OSM data from {self.osm_file}...")
+            logger.info("Loading OSM data from %s", self.osm_file)
 
             # Initialize OSM data source with same-line progress updates
             progress_callback = create_progress_callback()
@@ -862,33 +864,35 @@ class RoutePlannerServer:
             self.providers["osm_network"] = network_provider
             self.providers["osm_access"] = access_provider
 
-            print(
-                f"✅ OSM providers loaded: {len(osm_data.nodes)} nodes, {len(osm_data.ways)} ways"
+            logger.info(
+                "OSM providers loaded: %d nodes, %d ways",
+                len(osm_data.nodes),
+                len(osm_data.ways),
             )
 
             # Precache the entire OSM graph if requested
             if self.enable_precaching:
                 self._precache_osm_graph(network_provider)
 
-        except Exception as e:
-            print(f"❌ Failed to load OSM providers: {e}")
+        except Exception:
+            logger.exception("Failed to load OSM providers")
             raise
 
     def _precache_osm_graph(self, network_provider: "OSMNetworkProvider") -> None:
         """Pre-cache the entire OSM graph for maximum routing performance."""
         try:
-            print("🚀 Starting OSM graph precaching...")
+            logger.info("Starting OSM graph precaching")
 
             # Get all seed vertices from the network provider
-            print("📊 Getting seed vertices from OSM network...")
+            logger.debug("Getting seed vertices from OSM network")
             seed_vertices = network_provider.seed_vertices()
 
             if not seed_vertices:
-                print("⚠️  Warning: No seed vertices found, skipping precaching")
+                logger.warning("No seed vertices found, skipping precaching")
                 return
 
             vertex_count = len(seed_vertices)
-            print(f"🗂️  Found {vertex_count:,} seed vertices to precache")
+            logger.info("Found %s seed vertices to precache", f"{vertex_count:,}")
 
             # Record start time for performance reporting
             import time
@@ -896,7 +900,7 @@ class RoutePlannerServer:
             start_time = time.time()
 
             # Pre-cache the subgraph from all seed vertices
-            print("💾 Pre-caching OSM graph edges...")
+            logger.info("Pre-caching OSM graph edges")
             if self.engine is not None:
                 self.engine.precache_subgraph(
                     provider_name="osm_network",
@@ -909,23 +913,24 @@ class RoutePlannerServer:
             end_time = time.time()
             duration = end_time - start_time
 
-            print(f"✅ OSM graph precaching completed in {duration:.2f} seconds")
-            print(
-                f"🚀 All {vertex_count:,} vertices and their edges are now cached for maximum performance!"
+            logger.info("OSM graph precaching completed in %.2f seconds", duration)
+            logger.info(
+                "All %s vertices and their edges are now cached for maximum performance",
+                f"{vertex_count:,}",
             )
 
-        except Exception as e:
-            print(f"❌ Failed to precache OSM graph: {e}")
+        except Exception:
+            logger.exception("Failed to precache OSM graph")
             # Don't raise - we can still operate without precaching
-            print(
-                "⚠️  Continuing without precaching, routing will still work but may be slower"
+            logger.warning(
+                "Continuing without precaching, routing will still work but may be slower"
             )
 
     def _load_transit_providers(self) -> None:
         """Load and register transit providers for GTFS files."""
         try:
             for gtfs_file in self.gtfs_files:
-                print(f"🚌 Loading GTFS data from {gtfs_file}...")
+                logger.info("Loading GTFS data from %s", gtfs_file)
 
                 progress_callback = create_progress_callback()
                 transit_provider = TransitProvider(
@@ -941,10 +946,12 @@ class RoutePlannerServer:
                     self.engine.register_provider(provider_name, transit_provider)
                 self.providers[provider_name] = transit_provider
 
-            print(f"✅ Transit providers loaded for {len(self.gtfs_files)} GTFS files")
+            logger.info(
+                "Transit providers loaded for %d GTFS files", len(self.gtfs_files)
+            )
 
-        except Exception as e:
-            print(f"❌ Failed to load transit providers: {e}")
+        except Exception:
+            logger.exception("Failed to load transit providers")
             raise
 
     def run(self) -> None:

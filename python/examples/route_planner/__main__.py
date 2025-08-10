@@ -1,6 +1,7 @@
 """Route planner web application entry point."""
 
 import argparse
+import logging
 import sys
 from pathlib import Path
 
@@ -56,10 +57,25 @@ Examples:
     parser.add_argument(
         "--precache",
         action="store_true",
-        help="Pre-cache the entire OSM graph for maximum routing performance (automatically enables caching)",
+        help="Pre-cache the entire OSM graph for maximum routing performance "
+        "(automatically enables caching)",
+    )
+
+    parser.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        default="INFO",
+        help="Set the logging level (default: INFO)",
     )
 
     args = parser.parse_args()
+
+    # Configure logging
+    logging.basicConfig(
+        level=getattr(logging, args.log_level),
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
     # Validate port range
     max_port = 65535
