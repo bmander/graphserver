@@ -46,41 +46,41 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
     server_config: dict[str, Any] = {}
 
     def do_GET(self) -> None:  # noqa: N802
-        """Handle GET requests."""
+        """Handle GET requests using route dispatch."""
         parsed_url = urlparse(self.path)
         path = parsed_url.path
 
-        # Serve index.html for root
-        if path == "/":
-            self.serve_file("static/index.html", "text/html")
-        # Serve static files
+        # Route dispatch map for GET requests
+        route_handlers = {
+            "/": lambda: self.serve_file("static/index.html", "text/html"),
+            "/api/status": self._handle_status,
+            "/api/bounds": self._handle_bounds,
+            "/api/providers": self._handle_providers,
+        }
+
+        # Check exact route matches first
+        if path in route_handlers:
+            route_handlers[path]()
+        # Handle static files prefix
         elif path.startswith("/static/"):
             file_path = path[1:]  # Remove leading slash
             self.serve_file(file_path)
-        # API endpoints
-        elif path == "/api/status":
-            web_utils.send_json_response(
-                self,
-                {
-                    "status": "ok",
-                    "message": "Route planner is running",
-                    "config": self.server_config,
-                },
-            )
-        elif path == "/api/bounds":
-            web_utils.send_json_response(self, self._get_osm_bounds())
-        elif path == "/api/providers":
-            web_utils.send_json_response(self, self._get_providers_info())
         else:
             self.send_error(404, "Not found")
 
     def do_POST(self) -> None:  # noqa: N802
-        """Handle POST requests."""
+        """Handle POST requests using route dispatch."""
         parsed_url = urlparse(self.path)
         path = parsed_url.path
 
-        if path == "/api/route":
-            self._handle_route_request()
+        # Route dispatch map for POST requests
+        route_handlers = {
+            "/api/route": self._handle_route_request,
+        }
+
+        # Check exact route matches
+        if path in route_handlers:
+            route_handlers[path]()
         else:
             self.send_error(404, "Not found")
 
@@ -123,6 +123,25 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
                 self.wfile.write(f.read())
         except OSError as e:
             self.send_error(500, f"Error reading file: {e}")
+
+    def _handle_status(self) -> None:
+        """Handle GET /api/status - return server status and configuration."""
+        web_utils.send_json_response(
+            self,
+            {
+                "status": "ok",
+                "message": "Route planner is running",
+                "config": self.server_config,
+            },
+        )
+
+    def _handle_bounds(self) -> None:
+        """Handle GET /api/bounds - return OSM file bounds."""
+        web_utils.send_json_response(self, self._get_osm_bounds())
+
+    def _handle_providers(self) -> None:
+        """Handle GET /api/providers - return provider information."""
+        web_utils.send_json_response(self, self._get_providers_info())
 
     def log_message(self, fmt: str, *args: Any) -> None:
         """Custom log format."""
