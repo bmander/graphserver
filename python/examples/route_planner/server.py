@@ -35,8 +35,6 @@ except ImportError:
     TRANSIT_AVAILABLE = False
 
 
-
-
 class RoutePlannerHandler(BaseHTTPRequestHandler):
     """HTTP request handler for route planner."""
 
@@ -238,7 +236,9 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
     ) -> None:
         """Perform the actual routing calculation."""
         try:
-            start_vertex = routing_utils.create_vertex_from_coordinates(origin["lat"], origin["lng"])
+            start_vertex = routing_utils.create_vertex_from_coordinates(
+                origin["lat"], origin["lng"]
+            )
             goal_vertex = routing_utils.create_vertex_from_coordinates(
                 destination["lat"], destination["lng"]
             )

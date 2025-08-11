@@ -682,9 +682,6 @@ class RoutePlanner {
         const totalTimeElement = document.getElementById('total-time');
         const apiResponseTimeElement = document.getElementById('api-response-time');
         const polylineEncodingTimeElement = document.getElementById('polyline-encoding-time');
-        const coordinateCountElement = document.getElementById('coordinate-count');
-        const polylineLengthElement = document.getElementById('polyline-length');
-        const originalSizeElement = document.getElementById('original-size');
         
         if (statusElement) statusElement.textContent = 'Route Found';
         if (distanceElement) {
@@ -719,22 +716,8 @@ class RoutePlanner {
             const encodingTime = routeData.properties.polyline_encoding_time_ms;
             polylineEncodingTimeElement.textContent = `${encodingTime.toFixed(2)} ms`;
         }
-        if (coordinateCountElement && routeData.properties?.coordinate_count) {
-            const coordCount = routeData.properties.coordinate_count;
-            coordinateCountElement.textContent = `${coordCount.toLocaleString()}`;
-        }
-        if (polylineLengthElement && routeData.properties?.polyline_length) {
-            const polylineLength = routeData.properties.polyline_length;
-            polylineLengthElement.textContent = `${polylineLength} chars`;
-        }
         
         // Update bandwidth savings metrics
-        if (originalSizeElement && routeData.properties?.total_original_size_bytes) {
-            const totalOriginalSize = routeData.properties.total_original_size_bytes;
-            const coordsSize = routeData.properties.original_coords_size_bytes || 0;
-            const waypointsSize = routeData.properties.estimated_waypoints_size_bytes || 0;
-            originalSizeElement.textContent = `${totalOriginalSize} bytes (${coordsSize} coords + ${waypointsSize} waypoints)`;
-        }
     }
     
     showRouteError(errorData) {

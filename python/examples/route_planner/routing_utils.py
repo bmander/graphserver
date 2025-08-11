@@ -1,6 +1,5 @@
 """Routing utility functions for the route planner application."""
 
-import json
 import logging
 import time
 from typing import TYPE_CHECKING, Any
@@ -17,6 +16,7 @@ def create_vertex_from_coordinates(lat: float, lng: float) -> "Vertex":
     """Create a Vertex object from latitude/longitude coordinates."""
     try:
         from graphserver import Vertex
+
         return Vertex({"lat": lat, "lng": lng, "type": "coordinate"})
     except ImportError as e:
         # Handle case where graphserver is not available
@@ -262,33 +262,19 @@ def path_result_to_geojson(
 
     # Only compute and include metrics when debug_metrics is enabled
     if debug_metrics:
-        # Calculate bandwidth savings from optimizations
-        # 1. Coordinates JSON vs encoded polyline
-        original_coords_size = len(json.dumps(coordinates).encode("utf-8"))
+        # Calculate encoded polyline size for metrics
         encoded_polyline_size = len(encoded_polyline.encode("utf-8"))
 
-        # 2. Estimate waypoint data size that would have been sent
-        # Each waypoint typically has position[2], instruction, cost = ~60-80 bytes per waypoint
-        estimated_waypoint_count = len(path_result)
-        estimated_waypoints_size = estimated_waypoint_count * 70  # Rough estimate
-
-        # Calculate total original size for metrics
-        total_original_size = original_coords_size + estimated_waypoints_size
-
         # Add debug metrics to properties
-        properties.update({
-            "coordinate_count": len(coordinates),
-            "polyline_length": len(encoded_polyline),
-            "polyline_encoding_time_ms": round(polyline_encoding_time_ms, 2),
-            "original_coords_size_bytes": original_coords_size,
-            "estimated_waypoints_size_bytes": estimated_waypoints_size,
-            "total_original_size_bytes": total_original_size,
-            "encoded_polyline_size_bytes": encoded_polyline_size,
-        })
+        properties.update(
+            {
+                "polyline_encoding_time_ms": round(polyline_encoding_time_ms, 2),
+                "encoded_polyline_size_bytes": encoded_polyline_size,
+            }
+        )
 
     return {
         "type": "FeatureCollection",
         "features": [route_feature],
         "properties": properties,
     }
-
