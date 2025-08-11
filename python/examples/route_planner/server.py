@@ -1,7 +1,10 @@
 """HTTP server for the route planner application."""
 
 import logging
+import math
 import mimetypes
+import os
+import sys
 import time
 from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -226,6 +229,22 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
             logger.exception("Route request handling error")
             self.send_error(500, f"Internal server error: {e}")
 
+    def _calculate_approx_distance_km(
+        self, origin: dict[str, float], destination: dict[str, float]
+    ) -> float:
+        """Calculate approximate distance between two points in kilometers.
+
+        Args:
+            origin: Origin coordinates with lat/lng
+            destination: Destination coordinates with lat/lng
+
+        Returns:
+            Approximate distance in kilometers (using simple Euclidean formula)
+        """
+        lat_diff = abs(destination["lat"] - origin["lat"])
+        lng_diff = abs(destination["lng"] - origin["lng"])
+        return math.sqrt(lat_diff**2 + lng_diff**2) * 111  # Rough conversion
+
     def _validate_and_parse_request(self) -> dict[str, Any] | None:
         """Validate and parse route request. Returns None if there's an error."""
         # Parse JSON body
@@ -286,13 +305,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
                 return
 
             # Calculate distance between points for diagnostics
-            import math
-
-            lat_diff = abs(destination["lat"] - origin["lat"])
-            lng_diff = abs(destination["lng"] - origin["lng"])
-            approx_distance_km = (
-                math.sqrt(lat_diff**2 + lng_diff**2) * 111
-            )  # Rough conversion
+            approx_distance_km = self._calculate_approx_distance_km(origin, destination)
 
             # Link vertices to network
             try:
@@ -457,7 +470,6 @@ def create_progress_callback() -> Callable[[str], None]:
     Returns:
         Callback function that displays progress with same-line updates
     """
-    import sys
 
     def progress_callback(msg: str) -> None:
         """Display progress message on the same line, clearing previous content.
@@ -468,8 +480,6 @@ def create_progress_callback() -> Callable[[str], None]:
         # Clear the line by moving cursor to beginning and padding with spaces
         # Get terminal width or use reasonable default
         try:
-            import os
-
             terminal_width = os.get_terminal_size().columns
         except (AttributeError, OSError):
             terminal_width = 80
@@ -626,8 +636,6 @@ class RoutePlannerServer:
             logger.info("Found %s seed vertices to precache", f"{vertex_count:,}")
 
             # Record start time for performance reporting
-            import time
-
             start_time = time.time()
 
             # Pre-cache the subgraph from all seed vertices
