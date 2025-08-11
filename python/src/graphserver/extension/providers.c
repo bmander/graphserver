@@ -136,12 +136,13 @@ PyObject* py_plan(PyObject* self, PyObject* args, PyObject* kwargs) {
     GoalPredicateData goal_data;
     goal_data.goal_vertex = goal_vertex;
     
-    // Run planning using the identity-aware planner interface
-    GraphserverPath* path = gs_plan_simple(
+    // Run planning using the specified planner algorithm
+    GraphserverPath* path = gs_plan_with_planner(
         engine,
         start_vertex,
         identity_aware_goal_predicate,
         &goal_data,
+        planner_name,
         NULL // No stats for now
     );
     

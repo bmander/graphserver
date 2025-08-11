@@ -56,7 +56,7 @@ WalkingConfig walking_config_default(void) {
     return config;
 }
 
-// Generate walking edges in cardinal and diagonal directions
+// Generate walking edges in cardinal and diagonal directions with optimized counts
 static void generate_walking_edges_grid(
     double current_lat,
     double current_lon,
@@ -64,12 +64,12 @@ static void generate_walking_edges_grid(
     const WalkingConfig* config,
     GraphserverEdgeList* out_edges) {
     
-    // Generate walking options in 6 directions at 2 distances (reduced from 8x4=32 to 6x2=12 edges)
-    double distances[] = {100.0, 300.0}; // Reduced from 4 to 2 distances
+    // Generate walking options at 2 distances only (reduced from original)
+    double distances[] = {50.0, 150.0}; // Shorter distances for faster search
     size_t num_distances = sizeof(distances) / sizeof(distances[0]);
     
-    // 6 directions: N, NE, E, S, SW, W (reduced from 8 to 6, skip redundant SE, NW)
-    double bearings[] = {0.0, 60.0, 90.0, 180.0, 240.0, 270.0};
+    // 4 cardinal directions only (reduced from 6 or 8) 
+    double bearings[] = {0.0, 90.0, 180.0, 270.0}; // N, E, S, W only
     size_t num_bearings = sizeof(bearings) / sizeof(bearings[0]);
     
     for (size_t d = 0; d < num_distances; d++) {

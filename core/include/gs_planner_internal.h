@@ -280,6 +280,129 @@ GraphserverResult gs_plan_dijkstra(
     GraphserverPlanStats* out_stats
 );
 
+/**
+ * Heuristic function for A* search
+ * @param vertex Current vertex
+ * @param goal_data User data containing goal information
+ * @return Estimated cost to goal (must be admissible)
+ */
+typedef double (*gs_astar_heuristic_fn)(const GraphserverVertex* vertex, void* goal_data);
+
+/**
+ * A* search state
+ */
+typedef struct {
+    PriorityQueue* open_set;
+    HashMap* closed_set;
+    HashMap* node_map; // Maps vertex -> AStarNode*
+    GraphserverArena* arena;
+    
+    // Search configuration
+    const GraphserverVertex* start_vertex;
+    gs_goal_predicate_fn is_goal;
+    void* goal_user_data;
+    gs_astar_heuristic_fn heuristic;
+    void* heuristic_data;
+    double timeout_seconds;
+    
+    // Statistics
+    size_t vertices_expanded;
+    size_t edges_examined;
+    size_t nodes_generated;
+    double search_time_seconds;
+    bool timeout_reached;
+    bool goal_found;
+} AStarState;
+
+/**
+ * A* search node
+ */
+typedef struct AStarNode {
+    GraphserverVertex* vertex;
+    GraphserverVertex* parent;
+    double g_cost; // Actual cost from start
+    double f_cost; // g_cost + heuristic
+    GraphserverEdge* incoming_edge;
+    struct AStarNode* next; // For hash table chaining
+} AStarNode;
+
+/**
+ * Initialize A* search state
+ * @param state A* state structure
+ * @param start_vertex Starting vertex for search
+ * @param is_goal Goal predicate function
+ * @param goal_user_data User data for goal predicate
+ * @param heuristic Heuristic function for cost estimation
+ * @param heuristic_data User data for heuristic function
+ * @param arena Arena allocator for memory management
+ * @param timeout_seconds Maximum search time
+ * @return GS_SUCCESS on success, error code on failure
+ */
+GraphserverResult astar_init(
+    AStarState* state,
+    const GraphserverVertex* start_vertex,
+    gs_goal_predicate_fn is_goal,
+    void* goal_user_data,
+    gs_astar_heuristic_fn heuristic,
+    void* heuristic_data,
+    GraphserverArena* arena,
+    double timeout_seconds
+);
+
+/**
+ * Run A* search
+ * @param state Initialized A* state
+ * @param engine Engine instance for vertex expansion
+ * @param out_path Output path if goal found
+ * @return GS_SUCCESS if goal found, GS_ERROR_NO_PATH_FOUND if no path, error code on failure
+ */
+GraphserverResult astar_search(
+    AStarState* state,
+    GraphserverEngine* engine,
+    GraphserverPath** out_path
+);
+
+/**
+ * Clean up A* search state
+ * @param state A* state structure
+ */
+void astar_cleanup(AStarState* state);
+
+/**
+ * Run A* planning algorithm
+ * @param engine Engine instance for vertex expansion
+ * @param start_vertex Starting vertex for search
+ * @param is_goal Goal predicate function
+ * @param goal_user_data User data for goal predicate
+ * @param heuristic Heuristic function for cost estimation
+ * @param heuristic_data User data for heuristic function
+ * @param timeout_seconds Maximum search time (0 for no timeout)
+ * @param arena Arena allocator for memory management
+ * @param out_path Output path if goal found
+ * @param out_stats Optional statistics output
+ * @return GS_SUCCESS if goal found, error code otherwise
+ */
+GraphserverResult gs_plan_astar(
+    GraphserverEngine* engine,
+    const GraphserverVertex* start_vertex,
+    gs_goal_predicate_fn is_goal,
+    void* goal_user_data,
+    gs_astar_heuristic_fn heuristic,
+    void* heuristic_data,
+    double timeout_seconds,
+    GraphserverArena* arena,
+    GraphserverPath** out_path,
+    GraphserverPlanStats* out_stats
+);
+
+/**
+ * Geographic distance heuristic for routing with lat/lng coordinates
+ * @param vertex Current vertex (must have 'lat' and 'lng' keys)
+ * @param goal_data LocationGoal* with target coordinates
+ * @return Estimated travel time in minutes based on straight-line distance
+ */
+double geographic_distance_heuristic(const GraphserverVertex* vertex, void* goal_data);
+
 /** @} */
 
 #ifdef __cplusplus

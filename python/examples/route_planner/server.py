@@ -317,7 +317,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
             routing_start_time = time.perf_counter()
             try:
                 path_result = engine.plan(
-                    start=start_vertex, goal=goal_vertex, planner="dijkstra"
+                    start=start_vertex, goal=goal_vertex, planner="astar"
                 )
                 routing_end_time = time.perf_counter()
                 routing_time_ms = (routing_end_time - routing_start_time) * 1000
@@ -334,7 +334,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
                             "origin": origin,
                             "destination": destination,
                             "approximate_distance_km": round(approx_distance_km, 2),
-                            "algorithm": "dijkstra",
+                            "algorithm": "astar",
                             "search_radius_m": getattr(
                                 access_provider, "search_radius_m", None
                             ),
@@ -376,7 +376,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
             geojson_result["request"] = {
                 "origin": origin,
                 "destination": destination,
-                "algorithm": "dijkstra",
+                "algorithm": "astar",
             }
             geojson_result["properties"]["timing"] = {
                 "routing_time_ms": round(routing_time_ms, 2),
