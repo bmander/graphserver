@@ -272,15 +272,8 @@ def path_result_to_geojson(
         estimated_waypoint_count = len(path_result)
         estimated_waypoints_size = estimated_waypoint_count * 70  # Rough estimate
 
-        # Total savings: coordinates + waypoints
+        # Calculate total original size for metrics
         total_original_size = original_coords_size + estimated_waypoints_size
-        total_optimized_size = encoded_polyline_size
-        bandwidth_savings_bytes = total_original_size - total_optimized_size
-        bandwidth_savings_percent = (
-            (bandwidth_savings_bytes / total_original_size * 100)
-            if total_original_size > 0
-            else 0
-        )
 
         # Add debug metrics to properties
         properties.update({
@@ -291,8 +284,6 @@ def path_result_to_geojson(
             "estimated_waypoints_size_bytes": estimated_waypoints_size,
             "total_original_size_bytes": total_original_size,
             "encoded_polyline_size_bytes": encoded_polyline_size,
-            "bandwidth_savings_bytes": bandwidth_savings_bytes,
-            "bandwidth_savings_percent": round(bandwidth_savings_percent, 1),
         })
 
     return {

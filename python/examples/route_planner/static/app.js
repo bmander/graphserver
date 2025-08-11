@@ -685,7 +685,6 @@ class RoutePlanner {
         const coordinateCountElement = document.getElementById('coordinate-count');
         const polylineLengthElement = document.getElementById('polyline-length');
         const originalSizeElement = document.getElementById('original-size');
-        const bandwidthSavedElement = document.getElementById('bandwidth-saved');
         
         if (statusElement) statusElement.textContent = 'Route Found';
         if (distanceElement) {
@@ -735,11 +734,6 @@ class RoutePlanner {
             const coordsSize = routeData.properties.original_coords_size_bytes || 0;
             const waypointsSize = routeData.properties.estimated_waypoints_size_bytes || 0;
             originalSizeElement.textContent = `${totalOriginalSize} bytes (${coordsSize} coords + ${waypointsSize} waypoints)`;
-        }
-        if (bandwidthSavedElement && routeData.properties?.bandwidth_savings_bytes && routeData.properties?.bandwidth_savings_percent) {
-            const savedBytes = routeData.properties.bandwidth_savings_bytes;
-            const savedPercent = routeData.properties.bandwidth_savings_percent;
-            bandwidthSavedElement.textContent = `${savedBytes} bytes (${savedPercent}%)`;
         }
     }
     
