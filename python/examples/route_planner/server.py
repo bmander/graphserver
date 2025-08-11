@@ -38,6 +38,13 @@ except ImportError:
 class RoutePlannerHandler(BaseHTTPRequestHandler):
     """HTTP request handler for route planner."""
 
+    # Dependencies will be set by the server before serving requests
+    # These replace the previous pattern of setting them on the class
+    engine: "Engine | None" = None
+    providers: dict[str, Any] = {}
+    osm_data: "OSMDataSource | None" = None
+    server_config: dict[str, Any] = {}
+
     def do_GET(self) -> None:  # noqa: N802
         """Handle GET requests."""
         parsed_url = urlparse(self.path)
@@ -57,7 +64,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
                 {
                     "status": "ok",
                     "message": "Route planner is running",
-                    "config": getattr(self, "server_config", {}),
+                    "config": self.server_config,
                 },
             )
         elif path == "/api/bounds":
@@ -124,7 +131,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
     def _get_osm_bounds(self) -> dict[str, float]:
         """Get OSM file bounds for map initialization."""
         # Use cached bounds from OSMDataSource for O(1) lookup
-        osm_data = getattr(self.__class__, "osm_data", None)
+        osm_data = self.osm_data
         if osm_data and hasattr(osm_data, "get_bounds"):
             bounds = osm_data.get_bounds()
             if isinstance(bounds, dict):
@@ -139,7 +146,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
 
     def _get_providers_info(self) -> dict[str, Any]:
         """Get information about loaded providers."""
-        providers = getattr(self.__class__, "providers", {})
+        providers = self.providers
 
         provider_info = {}
         for name, provider in providers.items():
@@ -168,7 +175,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
         return {
             "providers": provider_info,
             "total_count": len(providers),
-            "routing_available": getattr(self.__class__, "engine", None) is not None,
+            "routing_available": self.engine is not None,
         }
 
     def _handle_route_request(self) -> None:
@@ -183,7 +190,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
             destination = request_data["destination"]
 
             # Check engine availability
-            engine = getattr(self.__class__, "engine", None)
+            engine = self.engine
             if not engine:
                 web_utils.send_json_error(
                     self,
@@ -245,7 +252,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
             )
 
             # Get access provider
-            providers = getattr(self.__class__, "providers", {})
+            providers = self.providers
             access_provider = providers.get("osm_access")
 
             if not access_provider:
@@ -332,7 +339,7 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
                 return
 
             # Successfully found route - collect geometry with timing
-            osm_data = getattr(self.__class__, "osm_data", None)
+            osm_data = self.osm_data
             geometry_start_time = time.perf_counter()
             geojson_result = routing_utils.path_result_to_geojson(
                 path_result, origin, destination, osm_data, debug_metrics=True
@@ -498,8 +505,9 @@ class RoutePlannerServer:
         self.providers: dict[str, Any] = {}
         self._init_routing_engine()
 
-        # Store config for handlers to access (only JSON-serializable data)
-        RoutePlannerHandler.server_config = {  # type: ignore[attr-defined]
+        # Store dependencies on the handler class for access during requests
+        # This replaces the previous pattern of using getattr()
+        RoutePlannerHandler.server_config = {
             "osm_file": osm_file,
             "gtfs_files": self.gtfs_files,
             "routing_available": self.engine is not None,
@@ -507,11 +515,9 @@ class RoutePlannerServer:
             "caching_enabled": self.enable_caching,
             "precaching_enabled": self.enable_precaching,
         }
-
-        # Store non-serializable objects separately for route calculation
-        RoutePlannerHandler.engine = self.engine  # type: ignore[attr-defined]
-        RoutePlannerHandler.providers = self.providers  # type: ignore[attr-defined]
-        RoutePlannerHandler.osm_data = getattr(self, "osm_data", None)  # type: ignore[attr-defined]
+        RoutePlannerHandler.engine = self.engine
+        RoutePlannerHandler.providers = self.providers
+        RoutePlannerHandler.osm_data = getattr(self, "osm_data", None)
 
     def _init_routing_engine(self) -> None:
         """Initialize the graphserver engine and load providers."""
