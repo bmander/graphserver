@@ -140,7 +140,17 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
 
     def _handle_bounds(self) -> None:
         """Handle GET /api/bounds - return OSM file bounds."""
-        web_utils.send_json_response(self, self._get_osm_bounds())
+        bounds = self.osm_data.get_bounds()
+        if bounds is None:
+            web_utils.send_json_error(
+                self,
+                503,
+                "OSM bounds not available",
+                error_code="BOUNDS_UNAVAILABLE",
+                error_details="No OSM data loaded or bounds could not be determined",
+            )
+        else:
+            web_utils.send_json_response(self, bounds)
 
     def _handle_providers(self) -> None:
         """Handle GET /api/providers - return provider information."""
@@ -149,22 +159,6 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt: str, *args: Any) -> None:
         """Custom log format."""
         print(f"[{self.address_string()}] {fmt % args}")
-
-    def _get_osm_bounds(self) -> dict[str, float]:
-        """Get OSM file bounds for map initialization."""
-        # Use cached bounds from OSMDataSource for O(1) lookup
-        osm_data = self.osm_data
-        if osm_data and hasattr(osm_data, "get_bounds"):
-            bounds = osm_data.get_bounds()
-            if isinstance(bounds, dict):
-                return bounds
-
-        # Fallback to default bounds if no OSM data available
-        return self._default_bounds()
-
-    def _default_bounds(self) -> dict[str, float]:
-        """Return default bounds (Seattle area) if OSM parsing fails."""
-        return {"south": 47.6, "west": -122.4, "north": 47.7, "east": -122.2}
 
     def _get_providers_info(self) -> dict[str, Any]:
         """Get information about loaded providers."""
