@@ -87,11 +87,12 @@ class RoutePlannerHandler(BaseHTTPRequestHandler):
         try:
             full_path = full_path.resolve()
             base_dir = base_dir.resolve()
-            if not str(full_path).startswith(str(base_dir)):
-                self.send_error(403, "Forbidden")
+
+            if not full_path.is_relative_to(base_dir):
+                self.send_error(403, "Forbidden: Path outside base directory")
                 return
         except (OSError, ValueError):
-            self.send_error(400, "Bad request")
+            self.send_error(400, "Bad request: Invalid path")
             return
 
         if not full_path.exists() or not full_path.is_file():
